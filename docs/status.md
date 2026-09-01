@@ -52,7 +52,11 @@ wrong every time; see `plan.md` § Two kinds of phase.
 
 ## In flight
 
-Nothing. Working tree clean, `main` pushed.
+Uncommitted: the new commit rule in `CLAUDE.md`, and this note.
+
+Uncommitted work is normal here and is not a defect to clean up. The owner
+reviews diffs before they enter history — see `CLAUDE.md` § Never commit without
+being asked.
 
 ## Open threads
 

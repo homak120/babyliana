@@ -123,11 +123,29 @@ Do not guess anything in `docs/open-questions.md`. Each entry names what closes
 it. A marked hole is worth more than a confident guess, because a guess gets
 built on.
 
+## Never commit without being asked
+
+**`git commit` and `git push` require the owner's explicit consent, in the
+message that asks for them.** He reviews the diff before it enters history.
+
+- "Go ahead", "do it", "yes", or approval of a plan authorises the **work**. It
+  does not authorise a commit.
+- Consent does not carry forward. Being asked to commit one batch says nothing
+  about the next one.
+- If you think the work is worth committing, say so and stop. Do not commit and
+  report it afterwards.
+
+An uncommitted working tree is the normal end state of a session, not a problem
+to tidy away. Record what is pending under *In flight* in `docs/status.md` so a
+cold session knows what is sitting there and why.
+
 ## Before you finish
 
-1. Update `docs/status.md` — position, next action, and a session-log entry.
-   Delete the oldest log entry if there are more than three.
+1. Update `docs/status.md` — position, next action, a session-log entry, and
+   anything uncommitted under *In flight*. Delete the oldest log entry if there
+   are more than three.
 2. Tick what you completed in `docs/tasks.md`.
-3. Commit. A dirty tree is the worst thing to hand to a cold session.
+3. Summarise what changed, list the files, and stop. Leave committing to the
+   owner.
 
 Leave the repo in a state that makes sense cold.
