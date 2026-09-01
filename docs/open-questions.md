@@ -85,3 +85,65 @@ at once.
 "BabyLiana" is a working title. Keep it out of anything expensive to change.
 
 **Closed by:** Phase 7.
+
+---
+
+### Q-009 — How faithful does the day view need to be to the paper page?
+
+`.specify/memory/product-definition.md` names two things paper cannot do, and
+one of them — remote visibility — is a *reading* problem. But Q-001 and Q-002
+are both about the logging surface. Nothing currently tests whether the day view
+is as scannable as the paper page, which is genuinely good at this: four
+columns, date inherited down the rows, days separated by a blank line, roughly
+eight rows.
+
+The coverage test is "enter all seven days and compare to the photograph." That
+test cannot be run without a read-back view, and the comparison is the point.
+
+**Closed by:** Phase 2 prototype, alongside Q-001 and Q-002.
+
+**Constraint it must satisfy:** blank and `?` must stay visually distinct — see
+`.specify/memory/paper-log-baseline.md` § Blank is not unknown.
+
+---
+
+### Q-010 — What exactly do `corrects` and `deleted` mean?
+
+`.specify/memory/event-model.md` lists `deleted` as an envelope field *and* says
+a deletion is a tombstone event. Those are two different designs. If `deleted`
+is a flag set on the original, that mutates an event in place and breaks a
+non-negotiable. If a tombstone is a new event carrying `deleted` plus
+`corrects`, the field is fine but the envelope table reads as though it belongs
+on every event.
+
+Unresolved alongside it: if B corrects A and C corrects B, does `corrects` point
+at the immediate predecessor or at the head of the chain? Union-by-id merge
+means two devices can each produce a correction to the same event while offline.
+"There is no conflict to resolve" is true of storage and not true of the reader.
+
+**Closed by:** Phase 4, on ground the spike has proven.
+
+**Do not** write correction or deletion code before this closes.
+
+---
+
+### Q-011 — Compress the build, or accept that v1 ships for a later baby?
+
+D-009 says the target expires: feeds consolidate around 6 weeks, and by 3 months
+the interesting variable is sleep rather than milk. The log starts 2026-08-26.
+
+`plan.md` estimates phases 2–7 at a weekend or two, and phases 8 and 10 are
+calendar-bound at roughly three weeks combined. Best case, reveal lands near 6
+weeks and the Phase 11 decision gate near 9 — by which point the coverage
+checklist is being validated against a log the baby has outgrown.
+
+This is the largest structural risk in the project. It does not invalidate the
+plan; it means either the effort-bound phases get compressed hard, or v1 is
+knowingly aimed at a stage that will have moved. Both are legitimate. Drifting
+into the second without choosing it is not.
+
+**Closed by:** owner's decision. Not an agent's call, and not one to make by
+default.
+
+**Related:** the kill criteria in `.specify/memory/product-definition.md`
+mention a time budget but not this specific collision.

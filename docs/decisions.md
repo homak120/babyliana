@@ -67,8 +67,14 @@ device joins by QR code.
 is exactly the failure that sends someone back to the pen. Less "correct",
 dramatically better for the actual users.
 
+**Security property, stated plainly.** The household ID is a bearer token.
+Possession is full access, there is nothing to revoke, and no second factor.
+That is the right trade for two parents and one baby, but it has consequences:
+keep the ID out of URLs, where it would reach browser history, referrers, and
+any analytics. A QR code shown on a screen is fine.
+
 **Reversal condition.** If the app is ever used by families beyond this one
-(Phase 12), identity needs revisiting.
+(Phase 12), identity needs revisiting — and this is the property that forces it.
 
 ---
 
@@ -100,7 +106,7 @@ both systems are in use, the app has lost. Breadth beats minimalism when the
 competitor accepts anything.
 
 **Reversal condition.** None. This overrides the usual MVP instinct deliberately.
-See `../.specify/memory/coverage-requirement.md`.
+See `.specify/memory/coverage-requirement.md`.
 
 ---
 
@@ -186,6 +192,13 @@ the event model gets shaped by an evening's hacking.
 **Why.** Seven days of paper log contain zero sleep entries. Featuring it would
 be inventing a requirement the user does not have. But it is the thing paper
 handles worst and the pain moves there around 8–12 weeks, so the type exists.
+
+**The type is cheap; the reader is not.** Every other event is an instant. Sleep
+is an interval, with `ended_at` or open-ended. Intervals break three things that
+are otherwise trivial: "time since last X", the duplicate-detection window, and
+day-boundary attribution when a sleep crosses midnight (D-015). Adding the type
+to the registry costs nothing. Handling it correctly in the derived views does.
+Either accept that knowingly, or leave the type out until Q-006 promotes it.
 
 ---
 

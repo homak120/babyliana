@@ -23,7 +23,7 @@ available. Speed has to be won inside the app — cold start, first paint, and t
 to log — not outside it.
 
 Going native is a separate future project, not a continuation of this one. See
-`../docs/decisions.md` D-001.
+`docs/decisions.md` D-001.
 
 ## Local-first is a hard requirement
 
@@ -64,7 +64,7 @@ Shared household ID, no accounts, no passwords, no email.
 Generated once on the first device. A second device joins by scanning a QR code.
 Nothing to reset, no session to expire, no login to fail at 3am.
 
-Rationale in `../docs/decisions.md` D-004.
+Rationale in `docs/decisions.md` D-004.
 
 ## Non-negotiables
 

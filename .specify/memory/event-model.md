@@ -50,6 +50,12 @@ Every event, regardless of type:
 | `corrects` | Optional. ID of an event this supersedes |
 | `deleted` | Tombstone marker |
 
+**`corrects` and `deleted` are not settled.** As written, `deleted` reads like a
+flag on the original event, which would mutate it in place. Chain semantics are
+undefined, and two offline devices can each correct the same event. See
+`docs/open-questions.md` Q-010, which closes in Phase 4. Do not write
+correction or deletion code against this table as it stands.
+
 ## Type registry
 
 Open registry. Adding a type is configuration, not migration.
@@ -80,7 +86,7 @@ without reading rows.
 ### Additional types — supported, not featured
 
 Built into the registry, reachable behind a secondary affordance. Not on the
-primary logging surface at launch. See `decisions.md` D-010.
+primary logging surface at launch. See `docs/decisions.md` D-010.
 
 | Type | Fields |
 | --- | --- |
@@ -114,6 +120,10 @@ Day boundary is midnight local, matching how the paper log groups dates.
 - Duplicate detection is a read-time concern: two same-type events within a few
   minutes are flagged as possible duplicates for the user to resolve. Never
   merged silently, never resolved server-side.
+- **A split feed has the same signature as a duplicate.** Two parents logging
+  the two halves of `25(B) + 45(F)` produce exactly what the rule flags.
+  Surfacing it is still correct, but the resolution needs a third option beyond
+  keep and discard: *these are one feed, combine them into components*.
 
 ## Export
 

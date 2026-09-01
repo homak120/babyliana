@@ -15,12 +15,14 @@ Not an App Store app. No Apple Developer account. No native code. Running cost: 
 
 ## Status
 
-Phases 0 and 1 are complete. Everything else is open.
+See `docs/status.md`. It is the only file that records position, so this one
+cannot go stale.
 
 ## Where things are
 
 | Path | What it holds |
 | --- | --- |
+| `docs/status.md` | Where the project is and what happens next. Read first |
 | `docs/plan.md` | Phase plan, current version |
 | `docs/decisions.md` | Decisions with rationale. Read before relitigating anything |
 | `docs/tasks.md` | Task list, by phase, with owner |

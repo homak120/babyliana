@@ -34,7 +34,7 @@ This is the number both parents compute mentally at 3am and the one paper makes
 them scan for. It is the default answer the screen gives before anything is read.
 
 Provisional. Alternatives to be evaluated against the Phase 2 prototype rather
-than fixed here — see `../docs/open-questions.md` Q-002.
+than fixed here — see `docs/open-questions.md` Q-002.
 
 ## Scope: newborn phase
 
@@ -50,7 +50,7 @@ append-only event model makes extending cheap.
 
 The app must be genuinely useful to one parent alone.
 
-The first release is a surprise (see `decisions.md` D-005), which binds the gift
+The first release is a surprise (see `docs/decisions.md` D-005), which binds the gift
 to the product. If the second user keeps using paper, the first user must still
 be left with something worth using. This is a hard requirement on the design,
 not an aspiration.

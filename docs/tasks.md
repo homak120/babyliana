@@ -64,7 +64,7 @@ them is how Phase 0 quietly never happens.
 - [ ] **CH** Household ID and QR join flow
 - [ ] **CH** Offline strategy, informed by the Safari findings from Phase 3
 - [ ] **CH** Export format
-- [ ] **H** Review and edit `event-model.md` to final
+- [ ] **H** Review and edit `.specify/memory/event-model.md` to final
 
 ## Phase 5 — MVP spec package
 
@@ -78,6 +78,9 @@ them is how Phase 0 quietly never happens.
 
 - [ ] **CC** Vertical slice: one event type, one device
 - [ ] **CC** Same event visible on a second device
+- [ ] **CC** JSON export. Early, not late — `technical-constraints.md` makes it
+      a non-negotiable before a second person sees the app, and the free tier
+      has no backups
 - [ ] **CC** Feed events, including the two-component split
 - [ ] **CC** Diaper events, including colour and consistency
 - [ ] **CC** Backdating with approximate and unknown times
@@ -85,7 +88,6 @@ them is how Phase 0 quietly never happens.
 - [ ] **CC** Free-text note on every event
 - [ ] **CC** Secondary types behind a "more" affordance
 - [ ] **CC** Derived views — time since last feed, daily totals, day list
-- [ ] **CC** JSON export
 - [ ] **CC** Household QR join flow
 - [ ] **CC** Duplicate detection at read time
 - [ ] **CC** Keep the spike page on a route as a smoke test

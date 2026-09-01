@@ -3,6 +3,9 @@
 **Living document.** Phases 0 and 8–10 will change what is believed here. Edit
 it as you learn. It is not a contract to execute.
 
+This file holds the *shape* of the work and which phases are finished. It does
+not hold the current position or the next move — those are in `status.md`.
+
 ## Framing
 
 Two users, both parents, both primary. The first release is a surprise, so it
@@ -27,7 +30,7 @@ Append to the baseline document as it accumulates. This does not block anything.
 
 ## Phase 1 — Product definition ✅ COMPLETE
 
-See `.specify/memory/product-definition.md` and `event-model.md`.
+See `.specify/memory/product-definition.md` and `.specify/memory/event-model.md`.
 Success and kill criteria written.
 
 ---
@@ -46,6 +49,12 @@ Exit: Q-001 and Q-002 in `open-questions.md` are closed.
 
 ## Phase 3 — Infrastructure spike (walking skeleton)
 
+**Start this before Phase 2.** The two phases are independent but not
+symmetric. Q-004 closes only by installing the spike and leaving it alone for a
+week — seven days of wall clock nothing compresses. Phase 2 closes the moment
+you tap the prototype. Deploy the spike, then design during the wait. The idle
+week also exercises the Supabase 7-day pause, so one wait answers two questions.
+
 Goal: a page reachable from a public URL on two devices, writing to a real
 database, updating live. A button and a counter. No baby data, no design.
 
@@ -56,8 +65,8 @@ Boundary: infrastructure is kept, application code is deleted (D-012).
 
 ## Phase 4 — Technical design
 
-Finalise `event-model.md` on proven ground, informed by what the spike revealed
-about Safari, IndexedDB persistence, and realtime latency.
+Finalise `.specify/memory/event-model.md` on proven ground, informed by what the
+spike revealed about Safari, IndexedDB persistence, and realtime latency.
 
 ## Phase 5 — MVP spec package
 
