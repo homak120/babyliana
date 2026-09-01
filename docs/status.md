@@ -75,6 +75,10 @@ Read the full document set and both paper-log photographs. Findings landed as:
 - JSON export moved earlier in Phase 6 of `tasks.md`, to match the
   non-negotiable in `technical-constraints.md` that says to build it early.
 - This file, plus a restructured `CLAUDE.md`.
+- Paper-log photographs moved out of `.specify/memory/design/` into
+  `.specify/memory/paper-log/`. They are Phase 0 inputs and were making the
+  untouched Phase 2 output folder look populated — which it did, misleadingly.
+  `design/` is now empty but for a README that says so plainly.
 
 A Q-011 was raised and then withdrawn the same day. It claimed the schedule
 collided with D-009's expiry, on the arithmetic that reveal would land near six

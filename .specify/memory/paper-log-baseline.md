@@ -1,8 +1,9 @@
 # Paper log baseline (Phase 0)
 
-Source: photographs of the actual bedside log, 2026-08-26 through 2026-09-01.
-This is the primary requirements document. It was written by the real user,
-during real night feeds, without knowing an app was coming.
+Source: photographs of the actual bedside log, 2026-08-26 through 2026-09-01,
+held in `.specify/memory/paper-log/`. This is the primary requirements document.
+It was written by the real user, during real night feeds, without knowing an app
+was coming.
 
 Where this document and any other document disagree, this one wins.
 
