@@ -117,6 +117,12 @@ Two to three weeks. Not compressible.
 - The pen disappearing is the signal. Don't ask, notice
 - Collect friction, resist adding features
 
+Note on timing: reveal lands around three weeks old, well inside the window
+D-009 targets. This phase then runs to roughly six weeks, which is where feeds
+start to consolidate — so friction collected late in the window may be about a
+stage already shifting. Worth knowing when reading the notes. It changes nothing
+about what to build.
+
 ## Phase 11 — Decision gate
 
 Two independent questions. Do not let them collapse into one.

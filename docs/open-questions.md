@@ -124,26 +124,3 @@ means two devices can each produce a correction to the same event while offline.
 **Closed by:** Phase 4, on ground the spike has proven.
 
 **Do not** write correction or deletion code before this closes.
-
----
-
-### Q-011 — Compress the build, or accept that v1 ships for a later baby?
-
-D-009 says the target expires: feeds consolidate around 6 weeks, and by 3 months
-the interesting variable is sleep rather than milk. The log starts 2026-08-26.
-
-`plan.md` estimates phases 2–7 at a weekend or two, and phases 8 and 10 are
-calendar-bound at roughly three weeks combined. Best case, reveal lands near 6
-weeks and the Phase 11 decision gate near 9 — by which point the coverage
-checklist is being validated against a log the baby has outgrown.
-
-This is the largest structural risk in the project. It does not invalidate the
-plan; it means either the effort-bound phases get compressed hard, or v1 is
-knowingly aimed at a stage that will have moved. Both are legitimate. Drifting
-into the second without choosing it is not.
-
-**Closed by:** owner's decision. Not an agent's call, and not one to make by
-default.
-
-**Related:** the kill criteria in `.specify/memory/product-definition.md`
-mention a time budget but not this specific collision.

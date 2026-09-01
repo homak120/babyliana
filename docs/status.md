@@ -67,17 +67,21 @@ fourth. This is orientation, not history. `git log` is the history.
 
 Read the full document set and both paper-log photographs. Findings landed as:
 
-- Three additions to `paper-log-baseline.md` (see *In flight*).
-- Q-009, Q-010, Q-011 in `open-questions.md`.
+- Three additions to `paper-log-baseline.md` (non-round volumes, blank-vs-`?`,
+  field-level corrections).
+- Q-009 and Q-010 in `open-questions.md`.
 - Notes on D-004 and D-013 in `decisions.md`.
 - Duplicate-detection edge case in `event-model.md`.
 - JSON export moved earlier in Phase 6 of `tasks.md`, to match the
   non-negotiable in `technical-constraints.md` that says to build it early.
 - This file, plus a restructured `CLAUDE.md`.
 
-The one finding with no home yet is the schedule collision — see Q-011. It is
-the largest structural risk in the project and it needs an owner decision, not
-an agent's.
+A Q-011 was raised and then withdrawn the same day. It claimed the schedule
+collided with D-009's expiry, on the arithmetic that reveal would land near six
+weeks. That was wrong — it counted Phase 10 into the pre-reveal path, and Phase
+10 comes after Phase 9. Reveal is phases 2–7 plus the solo run, so it lands
+around three weeks old, inside the target window. What survives is a note in
+`plan.md` Phase 10 and nothing more. Do not re-raise it as a blocker.
 
 D-008 was rewritten from private to public. The repo had been public since it
 was created; the owner confirmed that is intentional and is the starting point.
