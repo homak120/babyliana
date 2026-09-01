@@ -24,6 +24,13 @@ file is the summary and the next move.
 
 ## Next action
 
+**Phase 3 is waiting on you, at a browser.** The scaffold is committed and
+builds; the remaining steps need accounts and a phone. Follow
+`.specify/memory/spike-spec.md` § Human steps — create the Supabase project, run
+the SQL in that file, fill `.env.local` from `.env.example`, import into Vercel,
+then install the PWA on your phone and leave it alone. That last step is the
+Q-004 test and it runs itself.
+
 **Phase 2 is running, in Claude Design.** The brief is committed at
 `.specify/memory/design/phase-2-brief.md` — self-contained, paste-ready, and the
 place to edit if the design pass needs re-running.
@@ -95,6 +102,12 @@ coming back.
 
 Phase 2 was briefed out to Claude Design; the brief is committed under
 `.specify/memory/design/`.
+
+Phase 3 scaffold built: Vite 8, React 19, TypeScript 6, `vite-plugin-pwa`,
+`@supabase/supabase-js`, plain CSS. Spec at `.specify/memory/spike-spec.md`
+including the throwaway table's SQL. Hosting closed as Vercel (D-016); styling
+deliberately left open until the prototype lands (D-017). Placeholder icons are
+placeholders — real ones are Phase 7.
 
 D-008 was rewritten from private to public. The repo had been public since it
 was created; the owner confirmed that is intentional and is the starting point.

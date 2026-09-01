@@ -238,3 +238,31 @@ was considered and rejected as diverging from the existing mental model.
 
 **Reversal condition.** If daily totals feel wrong in use, revisit. Cheap to
 change — it is a display concern, not a storage one.
+
+---
+
+## D-016 — Vercel for hosting
+
+`technical-constraints.md` said "Vercel or Cloudflare Pages" and left it open.
+Closed: **Vercel.**
+
+**Why.** One-click GitHub integration and no configuration for a Vite/React app.
+Cloudflare Pages' advantage is bandwidth, which two parents logging roughly
+thirty events a day will never approach.
+
+**Reversal condition.** Cheap. The app is a static bundle with no server-side
+code, so moving hosts is a repoint, not a migration. Revisit only if Vercel's
+free tier changes shape.
+
+---
+
+## D-017 — Styling system deferred until the design prototype lands
+
+The spike uses plain CSS. The real styling decision — Tailwind, CSS modules,
+something else — is not made yet.
+
+**Why.** Claude Design is producing the Phase 2 prototype now, and what it hands
+back changes the answer. Deciding before seeing it risks redoing the work. The
+spike's CSS is deleted under D-012 regardless, so nothing is lost by waiting.
+
+**Closed by:** Phase 4 or 5, with the prototype in hand.

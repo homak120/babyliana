@@ -7,9 +7,12 @@
 | App | PWA — React + TypeScript + Vite |
 | Local storage | IndexedDB, holding the full event log |
 | Sync | Supabase (Postgres, realtime, row-level security) |
-| Hosting | Vercel or Cloudflare Pages |
+| Hosting | Vercel (D-016) |
 | CI/CD | GitHub → automatic build → deploy |
 | Cost | $0 |
+
+Scaffold-level choices under this — package manager, PWA plugin, lint, and what
+is deliberately still open — are pinned in `.specify/memory/spike-spec.md`.
 
 ## Not native, and why it matters
 

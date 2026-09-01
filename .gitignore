@@ -5,3 +5,8 @@ dist/
 .DS_Store
 *.log
 .vercel
+dist-ssr/
+dev-dist/
+*.local
+.idea/
+.vscode/

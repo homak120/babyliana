@@ -1,0 +1,117 @@
+# Infrastructure spike — spec
+
+Per D-011 this slice gets a short artifact, not the full package.
+
+## Purpose
+
+Prove the pipeline carries weight before anything valuable rides on it, and
+answer Q-004 and Q-005, which only a real deployment on a real phone can answer.
+
+It proves six things and nothing else:
+
+1. `git push` → build → live URL, without a manual step
+2. A browser write reaches Postgres and comes back
+3. A write on one device appears on the other (Q-005)
+4. Add to Home Screen produces a full-screen app (D-001 rests on this)
+5. The app opens with no signal
+6. Local storage survives being left alone (Q-004)
+
+**It is not the first slice of the app.** No baby data, no design decisions, no
+event model. A button and a counter.
+
+## Stack, pinned
+
+The table in `technical-constraints.md` names the architecture. These are the
+scaffold-level choices under it.
+
+| | Choice | Note |
+| --- | --- | --- |
+| Package manager | npm | No extra install, no lockfile debate |
+| Build | Vite 8 | |
+| UI | React 19 + TypeScript 6 | |
+| Lint | oxlint | Ships with the Vite template |
+| PWA | `vite-plugin-pwa` | Manifest, service worker and offline in one dep |
+| Supabase | `@supabase/supabase-js` | |
+| Hosting | **Vercel** | D-016 |
+| Routing | none | One page |
+| Styling | plain CSS | Deliberately deferred — see below |
+
+**Styling is deliberately unresolved.** Claude Design is producing the Phase 2
+prototype now, and what it returns changes the answer. Choosing a styling system
+before seeing it is a coin flip that may have to be redone. The spike uses plain
+CSS, which D-012 deletes anyway.
+
+Local storage is likewise not chosen here. Q-004 has to answer before the
+IndexedDB approach is settled, and that is Phase 4 work.
+
+## The throwaway table
+
+Append-only, matching the project's instincts. The counter is a row count, so
+one table exercises insert, select, realtime and RLS together.
+
+```sql
+create table public.spike_taps (
+  id uuid primary key default gen_random_uuid(),
+  device_id text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.spike_taps enable row level security;
+
+create policy "spike: anon can read"
+  on public.spike_taps for select to anon using (true);
+
+create policy "spike: anon can insert"
+  on public.spike_taps for insert to anon with check (true);
+
+-- Required. Projects created since 2026-05-30 need the Data API grant stated
+-- explicitly; without it the table returns empty or 401 from the browser and
+-- every pre-mid-2026 tutorial will tell you it should have worked.
+grant select, insert on public.spike_taps to anon;
+
+-- Realtime is opt-in per table.
+alter publication supabase_realtime add table public.spike_taps;
+```
+
+RLS is switched on deliberately rather than skipped. The real app's auth model
+is unusual — shared household ID, no accounts, anon key only (D-004) — and RLS
+against an anon key is exactly where it could fail. Proving one policy works now
+is cheap; discovering it in Phase 6 is not.
+
+## Human steps
+
+The scaffold is committed and builds. These need a browser and cannot be
+delegated:
+
+1. Create the Supabase project by hand. Nearest region — it affects Q-005.
+   `tasks.md` marks this human-only on purpose: you will be debugging it alone
+   at 11pm one day, and watching someone else create it teaches you nothing.
+2. Run the SQL above in the Supabase SQL editor.
+3. Copy `.env.example` to `.env.local`; fill in the URL and anon key from
+   Project Settings → API.
+4. `npm install && npm run dev` — the page should go green on "Supabase
+   configured" and "Realtime subscribed".
+5. Import the repo into Vercel. Add the same two variables as environment
+   variables there. Deploy.
+6. Push a trivial change and confirm it deploys with no manual step.
+7. Open the deployed URL on the phone → Share → Add to Home Screen.
+8. iOS checks: full screen, no address bar, icon renders, airplane mode still
+   opens the app, survives being backgrounded.
+9. Leave it installed and untouched. That is the Q-004 test, and it runs itself.
+
+## Boundary — D-012
+
+**Kept:** the repo, Vercel project and its env vars, the Supabase project, the
+PWA manifest and icons, the build and deploy pipeline, `.env.example`.
+
+**Deleted before Phase 6:** `src/App.tsx`, `src/App.css`, the `spike_taps` table
+and its policies. The tap page may survive on a route as a smoke test if that
+proves useful — that is the only exception, and it is already in `tasks.md`.
+
+The spike's application code carries a comment saying so, so it cannot quietly
+become the foundation.
+
+## Exit
+
+Six items above proven, Q-005 answered, Q-004 running. Placeholder icons stay
+placeholder until Phase 7.

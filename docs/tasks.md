@@ -44,7 +44,8 @@ them is how Phase 0 quietly never happens.
 - [x] **H** Create the GitHub repo. Public, deliberately — see D-008
 - [ ] **H** Create the Supabase project. Do this by hand — you'll be debugging
       it alone at 11pm one day
-- [ ] **CC** Vite + React + TypeScript scaffold
+- [x] **CC** Vite + React + TypeScript scaffold — builds, lints, PWA manifest
+      and service worker generated
 - [ ] **H** First deploy by hand (Vercel or Cloudflare Pages)
 - [ ] **CC** Wire git push → build → deploy; prove with a trivial change
 - [ ] **CC** Throwaway table; reads and writes from the deployed page
