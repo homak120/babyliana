@@ -1,0 +1,25 @@
+# BabyLiana — Copilot instructions
+
+Full orientation is in `CLAUDE.md` at the repo root. Read it, plus
+`.specify/memory/paper-log-baseline.md`, before contributing.
+
+## Summary
+
+PWA replacing a paper newborn log. React + TypeScript + Vite, IndexedDB local
+replica, Supabase sync. Not native, not becoming native.
+
+## Hard rules
+
+- Never block a write on the network. Local first, background sync.
+- Never mutate an event. Corrections are new events; deletions are tombstones.
+- Never require a login. Shared household ID, no accounts.
+- Never resolve a duplicate silently.
+- Every event type has a free-text note field.
+- Approximate and unknown timestamps are first-class, not edge cases.
+
+## Do not
+
+- Add growth percentiles, normal-range judgements, or health assessment. The app
+  records; it does not assess.
+- Make mascot or UI states evaluative. Descriptive only.
+- Guess anything listed in `docs/open-questions.md`.

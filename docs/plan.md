@@ -1,0 +1,139 @@
+# BabyLiana — Project plan
+
+**Living document.** Phases 0 and 8–10 will change what is believed here. Edit
+it as you learn. It is not a contract to execute.
+
+## Framing
+
+Two users, both parents, both primary. The first release is a surprise, so it
+must feel finished at reveal. Platform is settled: PWA, $0, no App Store.
+
+## Cross-cutting: specification track
+
+Spec is a track, not a phase (D-011). Each build slice gets its own artifact in
+`.specify/memory/`, written immediately before it, at the fidelity that slice
+deserves. Design mockups land there too — visual specs are what agent handoffs
+most often lack.
+
+---
+
+## Phase 0 — Baseline & silent research ✅ COMPLETE
+
+Paper log photographed and analysed. See
+`.specify/memory/paper-log-baseline.md`.
+
+Ongoing, passive: keep noting your own 3am friction and what she asks you.
+Append to the baseline document as it accumulates. This does not block anything.
+
+## Phase 1 — Product definition ✅ COMPLETE
+
+See `.specify/memory/product-definition.md` and `event-model.md`.
+Success and kill criteria written.
+
+---
+
+## Phase 2 — Structural design & prototype
+
+Claude Design. Owns the layout decision outright (D-007).
+
+- Clickable prototype, working from the paper log photo and the event model
+- Night surface and day surface, both
+- Palette tested dimmed, not only at full brightness
+- Try it. Decide button hierarchy and primary readout by tapping, not arguing
+- Mockups and the resolved decisions into `.specify/memory/`
+
+Exit: Q-001 and Q-002 in `open-questions.md` are closed.
+
+## Phase 3 — Infrastructure spike (walking skeleton)
+
+Goal: a page reachable from a public URL on two devices, writing to a real
+database, updating live. A button and a counter. No baby data, no design.
+
+Timeboxed to one or two evenings. If the pipeline isn't green by then, the stack
+is wrong and that is cheap information.
+
+Boundary: infrastructure is kept, application code is deleted (D-012).
+
+## Phase 4 — Technical design
+
+Finalise `event-model.md` on proven ground, informed by what the spike revealed
+about Safari, IndexedDB persistence, and realtime latency.
+
+## Phase 5 — MVP spec package
+
+Full Spec Kit artifacts. Sliced so each Claude Code session has a closeable
+scope. Drafted with assistance, edited by hand — the spec is where judgment gets
+encoded.
+
+## Phase 6 — Build
+
+Thin vertical slice first: one event type, one device, then visible on a second.
+Then breadth to satisfy the coverage checklist. Keep the spike page on a route
+as a smoke test.
+
+## Phase 7 — Visual identity & polish
+
+Before reveal, because a gift cannot look like a prototype (D-005).
+
+- Mascot: the baby as a character, or a separate creature
+- Character states descriptive, never evaluative — sleepy, awake, hungry; never
+  sad, worried, or scolding. Postpartum anxiety is real and an app that emotes
+  disapproval at 4am lands very differently than intended
+- Asset production. Consistency across the set is the hard part
+- App icon, launch experience, the small things that make it feel made
+- Naming decision lives here
+
+## Phase 8 — Solo run
+
+Real 3am shifts, several nights. Not compressible by tooling.
+
+- Run the coverage checklist: enter all seven photographed days
+- Fix what breaks before anyone else sees it
+- Note which secondary types you actually reach for — this decides promotion
+- Kill criteria check
+
+## Phase 9 — Reveal
+
+- Calm moment, not mid-feed
+- Framed as a gift on top of her system, never as a fix for it. She invented a
+  working system while recovering from childbirth
+- Let her try it unwatched
+- Second device onboarding must be trivial — QR code, no account, no login
+
+## Phase 10 — Real use
+
+Two to three weeks. Not compressible.
+
+- Paper stays available, and that is fine
+- The pen disappearing is the signal. Don't ask, notice
+- Collect friction, resist adding features
+
+## Phase 11 — Decision gate
+
+Two independent questions. Do not let them collapse into one.
+
+**Did it beat paper?** If partly, name the gap. Only if the gap is specifically
+speed of entry at 3am is native worth considering, and that is a fresh project
+with its own cost. Any other gap is a PWA problem.
+
+**Is there a product here?** Unrelated to the native question. A product can stay
+a PWA; going native can be purely for your own family.
+
+## Phase 12 — Product exploration (conditional)
+
+Opens only if Phase 10 held and Phase 11 says yes. Second-family testing before
+anything public. Naming, art originality, and handling other people's children's
+data all become real questions at that point.
+
+---
+
+## What compresses and what doesn't
+
+Phases 2–7 are effort-bound and compress well with agentic tooling — plausibly a
+weekend or two.
+
+Phases 8 and 10 are calendar-bound. You cannot compress "several real nights" or
+"two weeks of living with it". Roughly three weeks of waiting, and no tooling
+shortens it.
+
+Plan accordingly: the build is not the bottleneck.
