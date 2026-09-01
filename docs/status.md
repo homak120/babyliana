@@ -24,20 +24,24 @@ file is the summary and the next move.
 
 ## Next action
 
-**Start Phase 3 (infrastructure spike) before Phase 2 (design prototype).**
+**Phase 2 is running, in Claude Design.** The brief is committed at
+`.specify/memory/design/phase-2-brief.md` — self-contained, paste-ready, and the
+place to edit if the design pass needs re-running.
 
-The two phases are independent, but they are not symmetric, and the plan does
-not say this:
+It has to come back with a clickable prototype, night and day surfaces, a
+palette checked dimmed, and comparable *alternatives* rather than one answer —
+D-007 says these get decided by tapping. It closes Q-001, Q-002, Q-007, Q-009.
+When it lands: screenshots into `.specify/memory/design/`, resolved decisions
+into `decisions.md` as a new D-entry, those four questions deleted from
+`open-questions.md`.
 
-Q-004 — does Safari evict IndexedDB — closes only by installing the spike and
-leaving it alone for a week. That is seven days of wall clock nothing can
-compress, and the answer decides whether the JSON export is merely prudent or
-actually mandatory. Phase 2 closes the moment you tap the prototype, with no
-waiting period at all.
+Phase 3 is independent and can run alongside. Its first steps are human-only —
+Supabase project by hand, first deploy by hand, install on the phone — and
+getting the PWA installed early is worth doing, because Q-004 is the one thing
+here that answers only by leaving it alone.
 
-So: deploy the spike, install it on your phone, then run Phase 2 during the
-wait. The idle week also exercises the Supabase 7-day project pause, so one wait
-answers two questions.
+**No duration estimates.** The owner works with LLM tooling and they have been
+wrong every time; see `plan.md` § Two kinds of phase.
 
 ## In flight
 
@@ -80,12 +84,17 @@ Read the full document set and both paper-log photographs. Findings landed as:
   untouched Phase 2 output folder look populated — which it did, misleadingly.
   `design/` is now empty but for a README that says so plainly.
 
-A Q-011 was raised and then withdrawn the same day. It claimed the schedule
-collided with D-009's expiry, on the arithmetic that reveal would land near six
-weeks. That was wrong — it counted Phase 10 into the pre-reveal path, and Phase
-10 comes after Phase 9. Reveal is phases 2–7 plus the solo run, so it lands
-around three weeks old, inside the target window. What survives is a note in
-`plan.md` Phase 10 and nothing more. Do not re-raise it as a blocker.
+A Q-011 was raised and then withdrawn the same day. It claimed the build
+schedule collided with D-009's expiry; the arithmetic was wrong, and the whole
+framing was unwanted. Do not re-raise it.
+
+Duration estimates were then stripped from `plan.md`, `tasks.md` and this file
+at the owner's instruction — they were noise, not planning. `plan.md` § Two
+kinds of phase and the rule in `CLAUDE.md` § Working style now prevent them
+coming back.
+
+Phase 2 was briefed out to Claude Design; the brief is committed under
+`.specify/memory/design/`.
 
 D-008 was rewritten from private to public. The repo had been public since it
 was created; the owner confirmed that is intentional and is the starting point.

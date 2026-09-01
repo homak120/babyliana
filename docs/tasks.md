@@ -103,7 +103,7 @@ them is how Phase 0 quietly never happens.
 
 ## Phase 8 — Solo run
 
-- [ ] **H** Use it on your own night shifts, several nights
+- [ ] **H** Use it on your own night shifts, until you know what breaks
 - [ ] **H** Run the coverage checklist — enter all seven photographed days
 - [ ] **H** Note which secondary types you actually reach for
 - [ ] **CC** Fix what broke
@@ -115,7 +115,7 @@ them is how Phase 0 quietly never happens.
 
 ## Phase 10 — Real use
 
-- [ ] **H** Two to three weeks of living with it
+- [ ] **H** Live with it until the pen's fate is clear
 - [ ] **H** Notice whether the pen disappears. Don't ask
 - [ ] **H** Log friction. Resist fixing live
 

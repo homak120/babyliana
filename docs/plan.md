@@ -49,17 +49,16 @@ Exit: Q-001 and Q-002 in `open-questions.md` are closed.
 
 ## Phase 3 — Infrastructure spike (walking skeleton)
 
-**Start this before Phase 2.** The two phases are independent but not
-symmetric. Q-004 closes only by installing the spike and leaving it alone for a
-week — seven days of wall clock nothing compresses. Phase 2 closes the moment
-you tap the prototype. Deploy the spike, then design during the wait. The idle
-week also exercises the Supabase 7-day pause, so one wait answers two questions.
+Independent of Phase 2 — run them in either order, or both at once. The one
+reason to get the spike deployed early is Q-004: it only answers by installing
+the PWA and leaving it untouched, so the sooner it is on a phone the sooner
+there is an answer. Nothing else waits on it.
 
 Goal: a page reachable from a public URL on two devices, writing to a real
 database, updating live. A button and a counter. No baby data, no design.
 
-Timeboxed to one or two evenings. If the pipeline isn't green by then, the stack
-is wrong and that is cheap information.
+If the pipeline does not go green quickly, the stack is wrong, and that is cheap
+information.
 
 Boundary: infrastructure is kept, application code is deleted (D-012).
 
@@ -94,7 +93,9 @@ Before reveal, because a gift cannot look like a prototype (D-005).
 
 ## Phase 8 — Solo run
 
-Real 3am shifts, several nights. Not compressible by tooling.
+Real 3am shifts. Runs until you have used it on enough of your own night shifts
+to know what breaks — that is a condition, not a duration, and no tooling
+substitutes for it.
 
 - Run the coverage checklist: enter all seven photographed days
 - Fix what breaks before anyone else sees it
@@ -111,17 +112,11 @@ Real 3am shifts, several nights. Not compressible by tooling.
 
 ## Phase 10 — Real use
 
-Two to three weeks. Not compressible.
+Runs until the pen's fate is clear. A condition, not a duration.
 
 - Paper stays available, and that is fine
 - The pen disappearing is the signal. Don't ask, notice
 - Collect friction, resist adding features
-
-Note on timing: reveal lands around three weeks old, well inside the window
-D-009 targets. This phase then runs to roughly six weeks, which is where feeds
-start to consolidate — so friction collected late in the window may be about a
-stage already shifting. Worth knowing when reading the notes. It changes nothing
-about what to build.
 
 ## Phase 11 — Decision gate
 
@@ -142,13 +137,19 @@ data all become real questions at that point.
 
 ---
 
-## What compresses and what doesn't
+## Two kinds of phase
 
-Phases 2–7 are effort-bound and compress well with agentic tooling — plausibly a
-weekend or two.
+**Build phases** — 2 through 7. Bounded by effort, and the owner is working with
+LLM tooling, so they move fast. **Do not put duration estimates on these.** They
+have been wrong every time they were attempted here, and they generate
+confusion rather than planning value. Track them by what is done, not by how
+long they should take.
 
-Phases 8 and 10 are calendar-bound. You cannot compress "several real nights" or
-"two weeks of living with it". Roughly three weeks of waiting, and no tooling
-shortens it.
+**Observation phases** — 8 and 10. These are not slow because they are hard;
+they are gated on real nights happening and on a second person forming a habit.
+No tooling substitutes for that. They end on a condition — enough shifts logged,
+the pen's fate clear — not on a date.
 
-Plan accordingly: the build is not the bottleneck.
+The only thing in the project with genuine unavoidable elapsed time is Q-004,
+which needs the PWA installed and left alone. Deploy the spike early and it
+answers itself while other work continues.

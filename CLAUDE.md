@@ -112,6 +112,13 @@ comprehensive and stale.
 Sessions are short and scattered — often twenty minutes, often late. Prefer
 closeable scopes over long-running work.
 
+**Do not estimate how long build work will take.** No "a weekend or two", no
+"one or two evenings", no calendar arithmetic about what lands when. The owner
+builds with LLM tooling and intends to reach MVP in days; every estimate
+attempted here has been wrong and has cost a round trip to correct. Track work
+by what is done. See `docs/plan.md` § Two kinds of phase — the only genuine
+elapsed-time constraint in the project is Q-004.
+
 Do not guess anything in `docs/open-questions.md`. Each entry names what closes
 it. A marked hole is worth more than a confident guess, because a guess gets
 built on.
