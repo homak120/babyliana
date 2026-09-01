@@ -19,7 +19,8 @@ A legend at the top of the Pee/Poop column defines `1` = pee, `2` = poop.
 - **Date** is written once, on the first row of the day, and inherited by the
   rows below it. Days are separated by a blank line.
 - **Time** is 24-hour, `HH:MM`.
-- **Milk** is a number in millilitres. Observed range 5–60, typically 30–60.
+- **Milk** is a number in millilitres. Observed range 5–60, typically 30–60, and
+  not rounded — see below.
 - **Pee/Poop** is `1`, `2`, or `2` with a parenthetical annotation.
 
 Roughly 8 rows per day.
@@ -50,6 +51,15 @@ consistently written first.
 
 Two portions in one feed with no source given.
 
+### Volumes are not round
+
+Observed values include `31`, `41`, `43`, `46`, `57`. The log records what the
+bottle actually read, not a tidy figure.
+
+A preset picker — `30` / `45` / `60` — or a stepper in fives cannot express
+these. Arbitrary integer entry is the primary path, not a "custom" option behind
+the presets.
+
 ### Poop annotations
 
 Free-text colour and consistency, appended in parentheses:
@@ -72,9 +82,33 @@ most in weeks 1–4.
 
 Unknown times appear roughly once per day, mostly overnight.
 
+### Blank is not unknown
+
+An empty Milk cell and a `?` in the Milk cell are different facts:
+
+- **Blank** — no feed happened at this moment. The row exists for the diaper.
+- **`?`** — a feed happened; the volume was not known.
+
+The same holds in the Pee/Poop column. Blank means no diaper, not a diaper
+someone failed to record.
+
+A careless renderer collapses both into one empty cell. The day view must keep
+them apart, or the coverage test passes on entry and fails on read-back.
+
 ### Corrections
 
-Struck-through entries appear on at least two days.
+Struck-through marks appear on at least two days, and they generally operate on
+**values, not rows**:
+
+- 8/31, `07:00` — the milk value is struck and rewritten beside it. The time and
+  the diaper entry on that row stand.
+- 8/29, `22:30` — the strike lands on the time.
+- 8/31, `4:10` — a struck fragment inside a two-component feed cell, and a
+  struck value on the line below it.
+
+The correction is scoped to the field that was wrong; the rest of the row
+survives. Storage may supersede the whole event (see `event-model.md`), but the
+*interaction* is field-level and has to behave that way.
 
 ### Out-of-order entry
 
@@ -107,4 +141,10 @@ These are derived from the log, not chosen:
 5. Poop needs colour and consistency. It is already being recorded by hand.
 6. Every entry needs a free-text escape hatch. Paper has one by nature; the app
    must supply one deliberately.
-7. Sleep is a type to support, not a type to feature. See `decisions.md` D-010.
+7. Sleep is a type to support, not a type to feature. See `docs/decisions.md` D-010.
+8. Volume entry must accept any integer. Presets and steppers are an accelerator
+   layered on top, never the only path.
+9. Blank and unknown are distinct in both storage and display. "No feed" and "a
+   feed of unknown volume" must not render the same.
+10. Correction is a field-level interaction, whatever the storage does
+    underneath.
