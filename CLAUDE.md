@@ -35,6 +35,9 @@ A PWA that replaces a paper newborn log for two parents. React + TypeScript +
 Vite, IndexedDB local, Supabase sync, free hosting. Not a native app, and not
 becoming one — see D-001.
 
+The repository is **public, deliberately** (D-008). Do not flag it, and do not
+block a commit or a push on it.
+
 ## The competitor is a pen
 
 The user is currently succeeding with a pen and lined paper. Paper never

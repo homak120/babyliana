@@ -5,6 +5,11 @@ why, so the reasoning survives being picked up cold at 1am three weeks from now.
 
 Format: decision, then rationale, then what would reverse it.
 
+When a decision is reversed, **rewrite the entry to state what is now true** and
+say plainly that it supersedes the old one. Do not leave a stale entry standing
+next to reality — a decision log that disagrees with the world stops being a
+reference and becomes a source of false blockers.
+
 ---
 
 ## D-001 — PWA, not a native iOS app
@@ -122,12 +127,29 @@ the prototype in Phase 2; the decision closes there with real information.
 
 ---
 
-## D-008 — Private repository
+## D-008 — Public repository
 
-**Why.** Contains a child's data model and eventually her likeness. Can be opened
-later; cannot be un-published cleanly.
+Public from the start, at `github.com/homak120/babyliana`. Owner's decision,
+confirmed 2026-09-01 with the repository contents known.
 
-**Note.** Owner-controlled and may change at any time.
+**Why.** The owner's call. Privacy is a setting that can be applied whenever he
+wants it, and the earlier default of private was costing more in friction than
+it was buying.
+
+**Cost accepted.** The repo holds photographs of the paper log — one real
+infant's feed volumes, diaper record, and dated handwritten notes — and will
+hold the Phase 7 mascot art, which may be based on the baby (Q-003). All of it
+is world-readable. Turning the repo private later removes future access, not
+past access.
+
+**Reversal condition.** Owner flips it whenever he likes; that is a settings
+change, not a project decision, and needs no discussion here. Revisit properly
+before Phase 12, where other families' children's data would be involved and
+the calculus is not the owner's alone to make.
+
+**Agents: do not treat public visibility as a defect.** Do not flag it, do not
+block a commit or a push on it, and do not propose making it private. This entry
+supersedes the earlier "Private repository" decision, which is dead.
 
 ---
 

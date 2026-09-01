@@ -41,9 +41,7 @@ answers two questions.
 
 ## In flight
 
-The whole 2026-09-01 session is uncommitted — see the session log below for what
-it covers. Nothing is half-finished; it is one reviewable batch of documentation
-changes, no code.
+Nothing. Working tree clean, `main` pushed.
 
 ## Open threads
 
@@ -80,3 +78,8 @@ Read the full document set and both paper-log photographs. Findings landed as:
 The one finding with no home yet is the schedule collision — see Q-011. It is
 the largest structural risk in the project and it needs an owner decision, not
 an agent's.
+
+D-008 was rewritten from private to public. The repo had been public since it
+was created; the owner confirmed that is intentional and is the starting point.
+The old entry was the stale side of that, and it cost a session a blocked push
+before it got fixed. Do not re-raise it.

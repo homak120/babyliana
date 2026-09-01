@@ -41,7 +41,7 @@ them is how Phase 0 quietly never happens.
 
 ## Phase 3 — Infrastructure spike
 
-- [ ] **H** Create the GitHub repo, private
+- [x] **H** Create the GitHub repo. Public, deliberately — see D-008
 - [ ] **H** Create the Supabase project. Do this by hand — you'll be debugging
       it alone at 11pm one day
 - [ ] **CC** Vite + React + TypeScript scaffold
