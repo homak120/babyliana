@@ -83,14 +83,17 @@ is cheap; discovering it in Phase 6 is not.
 The scaffold is committed and builds. These need a browser and cannot be
 delegated:
 
-1. Create the Supabase project by hand. Nearest region — it affects Q-005.
-   `tasks.md` marks this human-only on purpose: you will be debugging it alone
-   at 11pm one day, and watching someone else create it teaches you nothing.
-2. Run the SQL above in the Supabase SQL editor.
-3. Copy `.env.example` to `.env.local`; fill in the URL and anon key from
-   Project Settings → API.
-4. `npm install && npm run dev` — the page should go green on "Supabase
-   configured" and "Realtime subscribed".
+1. ~~Create the Supabase project by hand.~~ **Done 2026-09-02**, project ref
+   `fhqbgnlzqnpzqbhjkxda`, US East. Named `babyliana`, not `-spike`: D-012 keeps
+   the project, so the name outlives the throwaway code.
+2. ~~Run the SQL above in the Supabase SQL editor.~~ **Done.**
+3. ~~Copy `.env.example` to `.env.local`.~~ **Done.** Note the dashboard now
+   issues a **publishable** key (`sb_publishable_…`) rather than one labelled
+   `anon`. Same thing, same browser-safe status; the Postgres *role* is still
+   called `anon`, which is what the policies and grants refer to.
+4. ~~Local check.~~ **Done.** Table, RLS, both policies, both grants, the
+   read/write round trip and realtime all verified from two independent clients.
+   Realtime push measured at roughly one second.
 5. Import the repo into Vercel. Add the same two variables as environment
    variables there. Deploy.
 6. Push a trivial change and confirm it deploys with no manual step.
@@ -98,6 +101,40 @@ delegated:
 8. iOS checks: full screen, no address bar, icon renders, airplane mode still
    opens the app, survives being backgrounded.
 9. Leave it installed and untouched. That is the Q-004 test, and it runs itself.
+
+## Three ways this fails silently
+
+Worth knowing before debugging it tired.
+
+**Realtime lags behind `alter publication`.** The subscription reports
+`SUBSCRIBED` and delivers nothing, for tens of seconds after the table is added
+to the publication. This happened here: the first check timed out at 12s and a
+retry minutes later worked first time, ~1s latency. **If realtime looks dead
+immediately after running the SQL, wait and retry before changing anything.**
+Config that was already correct is the easiest thing in the world to "fix".
+
+**RLS on with no policy returns `[]`, not an error.** The table looks healthy in
+the dashboard, the API returns `200` with an empty array, and nothing says a
+policy is missing. If reads come back empty and rows exist, suspect policies
+first.
+
+**The Data API grant.** Projects created since 2026-05-30 need
+`grant … to anon` stated explicitly, or the table 401s or reads empty from the
+browser while every tutorial written before mid-2026 insists it should work.
+
+### Isolating a failure
+
+Test Supabase directly before blaming app code:
+
+```bash
+curl "https://<ref>.supabase.co/rest/v1/spike_taps?select=*" \
+  -H "apikey: <key>" -H "Authorization: Bearer <key>"
+```
+
+`[]` is correct and healthy. `401` means the key or grant is wrong.
+`PGRST205 … not found in the schema cache` means the table does not exist —
+which is also the signal that the URL and key are *right*, since a bad key
+fails earlier with a 401.
 
 ## Boundary — D-012
 
