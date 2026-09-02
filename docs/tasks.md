@@ -46,8 +46,8 @@ them is how Phase 0 quietly never happens.
 - [x] **CC** Vite + React + TypeScript scaffold — builds, lints, PWA manifest
       and service worker generated
 - [x] **H** First deploy by hand — Vercel, https://babyliana.vercel.app
-- [ ] **CC** Wire git push → build → deploy — wiring created by the Vercel
-      import; the next push is the proof
+- [x] **CC** Wire git push → build → deploy — proven: commit 781680d changed the
+      bundle hash and the deployed site picked it up in ~20s, no manual step
 - [x] **CC** Throwaway table; reads and writes from the deployed page — tap on
       the deployed origin wrote row 6; verified from a second client
 - [x] **CC** Realtime proven across two devices
