@@ -77,5 +77,13 @@ Stop, or shelve, if any of these is true:
   fixable in one further session.
 - It has stopped being enjoyable and become an obligation.
 
-Shelving is a legitimate outcome. The repo will still be there in six months,
-and so will the append-only log.
+Shelving is a legitimate outcome — but it has one prerequisite.
+
+The repo will still be there in six months. **The hosted log may not.** A paused
+free-tier Supabase project is eventually deleted outright, and the free tier
+keeps no backups; see `.specify/memory/technical-constraints.md`. Shelving means
+no database activity, which is exactly the condition that starts that clock.
+
+So: **export before shelving.** With a JSON export and the local replicas, the
+append-only log survives anything Supabase does and shelving costs nothing but
+time. Without one, shelving is data loss on a delay.

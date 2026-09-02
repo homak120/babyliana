@@ -129,6 +129,10 @@ with its own cost. Any other gap is a PWA problem.
 **Is there a product here?** Unrelated to the native question. A product can stay
 a PWA; going native can be purely for your own family.
 
+**If the answer is shelve: export first.** A shelved project stops generating
+database activity, which pauses the Supabase project and eventually deletes it.
+Take a JSON export before walking away.
+
 ## Phase 12 — Product exploration (conditional)
 
 Opens only if Phase 10 held and Phase 11 says yes. Second-family testing before

@@ -49,12 +49,17 @@ Verified limits: 500 MB Postgres, 5 GB egress, 2 million realtime messages,
 Projected usage: two users, ~30 events/day, ~150 bytes/row. Under 5 MB per year.
 Capacity is not a consideration.
 
-Two things that are:
+Three things that are:
 
 - **Projects pause after 7 days with no database activity.** Resuming is a
   manual dashboard click, ~30 seconds. Daily use makes this a non-issue, but a
   week's gap will pause it.
-- **No backups on the free tier.** Mitigated by the local replicas and the JSON
+- **A project left paused is eventually deleted, permanently.** Pausing is
+  recoverable — a dashboard click, data intact. Deletion is not. This is the
+  step that turns an inconvenience into data loss, and it is why the export is
+  mandatory rather than prudent.
+- **No backups on the free tier.** Zero days of retention; there is no snapshot
+  sitting behind a paused project. Mitigated by the local replicas and the JSON
   export. Build the export early.
 
 Note: new projects since 2026-05-30 require explicit Postgres grants for the
