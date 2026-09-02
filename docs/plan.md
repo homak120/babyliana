@@ -67,6 +67,11 @@ Boundary: infrastructure is kept, application code is deleted (D-012).
 Finalise `.specify/memory/event-model.md` on proven ground, informed by what the
 spike revealed about Safari, IndexedDB persistence, and realtime latency.
 
+The spike ran offline with no local layer at all, and the result is written up
+in `.specify/memory/spike-spec.md` § What offline actually does. It is the
+clearest statement of why the local replica is non-negotiable: a tired parent
+who gets an error on a tap reaches for the pen.
+
 ## Phase 5 — MVP spec package
 
 Full Spec Kit artifacts. Sliced so each Claude Code session has a closeable

@@ -136,6 +136,38 @@ curl "https://<ref>.supabase.co/rest/v1/spike_taps?select=*" \
 which is also the signal that the URL and key are *right*, since a bad key
 fails earlier with a 401.
 
+## What offline actually does, and what it does not
+
+Tested on the installed PWA in airplane mode, 2026-09-02.
+
+**It opens.** The service worker serves the shell from cache, React boots, the
+UI renders. That is the sixth thing this spike exists to prove, and it holds.
+
+**It shows 0, and a tap fails with `TypeError: Load failed`.** Both are correct
+for the spike as built. There is no local storage here at all: the page reads
+from Supabase on mount and holds the result in React state, and
+`vite-plugin-pwa` precaches static assets rather than API responses. Nothing was
+ever stored locally, so there is nothing to show and nowhere to write.
+
+### Two lessons for Phase 4 and Phase 6
+
+This is worth more than a passing test, because it is a live demonstration of
+the failure the first non-negotiable exists to prevent.
+
+**A failed write must never reach the user.** At 3am a parent taps to log a
+feed and gets `TypeError: Load failed`. They cannot tell whether it saved. They
+reach for the pen — and once the pen is back on the nightstand, the app has
+lost. The real app writes to IndexedDB, updates the UI immediately, and syncs
+when it can. A network failure should be invisible at the point of entry.
+
+**Zero is a lie.** Showing `0` while seven events exist is worse than showing
+nothing, because it is confidently wrong. A full local replica — not a cache of
+recent items — means the count is right whether or not the network is.
+
+Neither is fixed here. D-012 deletes this application code before Phase 6
+precisely so an evening's hacking does not shape the event model. The local
+layer is designed in Phase 4, with Q-004 answered, and built in Phase 6.
+
 ## Boundary — D-012
 
 **Kept:** the repo, Vercel project and its env vars, the Supabase project, the

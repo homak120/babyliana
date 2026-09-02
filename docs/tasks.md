@@ -52,7 +52,8 @@ them is how Phase 0 quietly never happens.
       the deployed origin wrote row 6; verified from a second client
 - [x] **CC** Realtime proven across two devices
 - [x] **CC** PWA manifest; Add to Home Screen works — installed on iPhone
-- [ ] **CC** Confirm it opens offline
+- [x] **CC** Confirm it opens offline — opens from cache; shows 0 and a failed
+      tap, which is correct with no local layer. See spike-spec.md
 - [x] **H** Environment variables and secrets handled properly — .env.local
       gitignored, .env.example holds placeholders only, Vercel vars set before
       first build, and the public bundle confirmed to carry no secret material
