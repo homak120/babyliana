@@ -61,7 +61,6 @@ them is how Phase 0 quietly never happens.
       survives a day backgrounded, whether Safari evicts IndexedDB
 - [x] **H** Install on your own phone and leave it there — installed; the
       "leave it" half is the Q-004 clock, now running
-- [ ] **H** Delete spike application code before Phase 6 (D-012)
 
 ## Phase 4 — Technical design
 
@@ -82,6 +81,9 @@ them is how Phase 0 quietly never happens.
 
 ## Phase 6 — Build
 
+- [ ] **H** Delete the spike application code first — src/App.tsx, src/App.css,
+      and the spike_taps table (D-012). Moved here from Phase 3: it gates the
+      start of this phase, it is not a Phase 3 exit condition
 - [ ] **CC** Vertical slice: one event type, one device
 - [ ] **CC** Same event visible on a second device
 - [ ] **CC** JSON export. Early, not late — `technical-constraints.md` makes it

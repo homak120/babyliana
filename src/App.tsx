@@ -69,7 +69,7 @@ export default function App() {
 
   return (
     <main>
-      <p className="label">Infrastructure spike</p>
+      <p className="label">Walking skeleton</p>
       <h1>{taps.length}</h1>
       <p className="label">
         {mine} from this device · {taps.length - mine} from elsewhere

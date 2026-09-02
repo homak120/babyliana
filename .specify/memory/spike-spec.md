@@ -168,6 +168,17 @@ Neither is fixed here. D-012 deletes this application code before Phase 6
 precisely so an evening's hacking does not shape the event model. The local
 layer is designed in Phase 4, with Q-004 answered, and built in Phase 6.
 
+## Q-005 — answered
+
+**Realtime latency is acceptable.** Measured at roughly one second from a Node
+client, and confirmed by the owner on 2026-09-02 across an installed iPhone PWA
+and a laptop browser on a home network — a tap on one device showed up on the
+other fast enough for "did she already feed her", which is the only bar that
+matters.
+
+Q-005 is struck from `docs/open-questions.md`. Q-004 is still running: it needs
+the installed app left alone, and nothing else waits on it.
+
 ## Boundary — D-012
 
 **Kept:** the repo, Vercel project and its env vars, the Supabase project, the

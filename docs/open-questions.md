@@ -50,16 +50,6 @@ recovery plan and the export becomes mandatory rather than prudent.
 
 ---
 
-### Q-005 — Is realtime latency acceptable in practice?
-
-Expected to be seconds. Fine for "did she already feed her". Needs confirming on
-a real home network with a backgrounded PWA, which is a different case from a
-foregrounded tab.
-
-**Closed by:** Phase 3 spike.
-
----
-
 ### Q-006 — Which secondary event types get promoted?
 
 Sleep, weight, temperature, supplements, spit-up all exist in the registry. Some
