@@ -45,17 +45,21 @@ them is how Phase 0 quietly never happens.
 - [x] **H** Create the Supabase project — ref `fhqbgnlzqnpzqbhjkxda`, US East
 - [x] **CC** Vite + React + TypeScript scaffold — builds, lints, PWA manifest
       and service worker generated
-- [ ] **H** First deploy by hand — Vercel (D-016)
-- [ ] **CC** Wire git push → build → deploy; prove with a trivial change
-- [ ] **CC** Throwaway table; reads and writes from the deployed page — table
-      and policies verified locally and via curl; awaiting deploy
-- [ ] **CC** Realtime proven across two devices
-- [ ] **CC** PWA manifest; Add to Home Screen works
+- [x] **H** First deploy by hand — Vercel, https://babyliana.vercel.app
+- [ ] **CC** Wire git push → build → deploy — wiring created by the Vercel
+      import; the next push is the proof
+- [x] **CC** Throwaway table; reads and writes from the deployed page — tap on
+      the deployed origin wrote row 6; verified from a second client
+- [x] **CC** Realtime proven across two devices
+- [x] **CC** PWA manifest; Add to Home Screen works — installed on iPhone
 - [ ] **CC** Confirm it opens offline
-- [ ] **H** Environment variables and secrets handled properly
+- [x] **H** Environment variables and secrets handled properly — .env.local
+      gitignored, .env.example holds placeholders only, Vercel vars set before
+      first build, and the public bundle confirmed to carry no secret material
 - [ ] **H** iOS reality checks — full screen, no address bar, icon rendering,
       survives a day backgrounded, whether Safari evicts IndexedDB
-- [ ] **H** Install on your own phone and leave it there
+- [x] **H** Install on your own phone and leave it there — installed; the
+      "leave it" half is the Q-004 clock, now running
 - [ ] **H** Delete spike application code before Phase 6 (D-012)
 
 ## Phase 4 — Technical design
