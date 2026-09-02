@@ -83,6 +83,12 @@ most in weeks 1–4.
 
 Unknown times appear roughly once per day, mostly overnight.
 
+> **The app does not reproduce `04:?` — see `docs/decisions.md` D-018.** The
+> observation above stands as a record of the paper; the decision is that a
+> button which stamps the current time removes the cause, so the app makes the
+> time fast to set instead of making imprecision storable. The `?` for
+> *volume* is unaffected and still has to be expressible.
+
 ### Blank is not unknown
 
 An empty Milk cell and a `?` in the Milk cell are different facts:
@@ -134,8 +140,10 @@ breastfeeding is recorded, so there is no side and no duration to capture.
 
 These are derived from the log, not chosen:
 
-1. Backdating is a core flow, not an edge case. `04:?` proves exact times are
-   often unavailable at logging time.
+1. Backdating is a core flow, not an edge case. `04:?` proves the pen was often
+   picked up long after the event. The app answers this with entry speed — a
+   default of now, quick offsets, a picker — and not with a `?`. See
+   `docs/decisions.md` D-018.
 2. Out-of-order insertion must work. It already happens on paper.
 3. Editing and correcting entries must work. Strikethroughs already happen.
 4. A feed carries up to two volumes with sources. One number is not enough.

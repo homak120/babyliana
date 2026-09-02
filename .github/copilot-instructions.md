@@ -15,7 +15,8 @@ replica, Supabase sync. Not native, not becoming native.
 - Never require a login. Shared household ID, no accounts.
 - Never resolve a duplicate silently.
 - Every event type has a free-text note field.
-- Approximate and unknown timestamps are first-class, not edge cases.
+- Setting a time by hand is a core flow. There is no precision marker and no
+  `?` for time — it defaults to now and must be fast to adjust (D-018).
 
 ## Do not
 

@@ -64,8 +64,9 @@ Authority: `.specify/memory/technical-constraints.md` § Non-negotiables.
 - **Never resolve a duplicate silently.** Surface it, let the user decide.
 - **Every event type carries a free-text note.** It is the escape hatch that
   makes the app as accepting as paper.
-- **Approximate and unknown times are first-class.** The paper log uses `?`
-  about once a day.
+- **Setting a time by hand is a core flow, not an edge case.** The app has no
+  `?` for time and no precision marker — D-018. Backdating earns its keep by
+  being fast, so this rule is about entry speed, not about notation.
 
 ## Things that look like edge cases and are not
 
@@ -76,7 +77,6 @@ All of these appear in seven days of the real paper log:
 
 - A feed split across two sources with different volumes — `25(B) + 45(F)`
 - A feed with an unknown volume — `?`
-- An entry with an unknown time — `04:?`
 - An entry inserted hours later, out of chronological order
 - A correction struck through a single value, leaving the rest of the row intact
 - A row with a diaper and no feed, or a feed and no diaper

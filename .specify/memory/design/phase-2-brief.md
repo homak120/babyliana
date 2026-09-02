@@ -51,7 +51,6 @@ Every one of these appears in seven days of the real log. None is an edge case.
 | `25(B) + 45(F)` | One feed, part breast milk, part formula, separate volumes |
 | `30 + 30` | Two portions in one feed, source not given |
 | `?` | A feed happened; the volume is not known |
-| `04:?` | The time is not known. Happens about once a day, mostly overnight |
 | `1` | A pee |
 | `2` | A poop |
 | `2 (G→Y liquid)` | A poop with colour and consistency. `G` green, `Y` yellow |
@@ -80,10 +79,13 @@ duration to capture.
 
 ## The data shape behind it
 
-Every entry carries: when it happened, a precision marker (**exact /
-approximate / unknown**), and an optional **free-text note**. The note is on
-every type without exception — it is the escape hatch that makes the app as
-accepting as paper.
+Every entry carries: when it happened, and an optional **free-text note**. The
+note is on every type without exception — it is the escape hatch that makes the
+app as accepting as paper.
+
+There is **no precision marker on the time** — no exact/approximate/unknown, no
+`?`, no `~`. A time is a time. The paper log writes `04:?` about once a day, and
+the app answers that with speed rather than notation; see below.
 
 **Feed** — up to two components, each a volume plus an optional source
 (breast milk / formula / unknown). Volume may be empty.
@@ -96,6 +98,35 @@ firm / other).
 supplement, spit-up. They must be reachable, but a dropdown of ten types at 3am
 costs a tap, a scroll, a read and a selection — and the pen wins. Feed and
 diaper are the only two with evidence of constant use.
+
+## Entering and adjusting the time
+
+The paper log's `04:?` exists because a pen has no idea what time it is. A phone
+does. So the app removes the problem at the source rather than giving the user a
+way to express uncertainty — there is no `?` and no precision marker (D-018).
+
+That puts the whole weight on entry. **Setting a time must be faster than
+writing one.** Four affordances, in the order they should be reached for:
+
+1. **Default to now.** Logging stamps the current time. Zero taps, and this is
+   the overwhelmingly common case.
+2. **Quick relative offsets** — one tap for "that was a few minutes ago". The
+   set is not fixed; `−5 / −15 / −30 / −1h` is a starting proposal. Feeds run
+   every 2–3 hours, so anything past about an hour has another feed inside it
+   and the picker is probably the better tool.
+3. **A time picker**, for the genuinely retroactive case — logging a 4am feed
+   over breakfast. It must be draggable one-handed.
+4. **Direct numeric entry** — typing `0410` on a keypad. Fast, one-handed,
+   unambiguous.
+
+**Do not build natural-language time parsing** ("half four", "4ish", "an hour
+ago"). It fails silently and guesses wrong, and the person using it is tired and
+will not notice. Numeric entry gets the same speed with none of the ambiguity.
+
+**These four are candidates, not a settled ranking.** Which one is primary and
+which sit behind an affordance is a prototype question, like the four below —
+D-007 says this gets decided by tapping, not by argument. Build enough of each
+that they can be compared.
 
 ## What the app adds that paper cannot
 
@@ -143,7 +174,8 @@ matters as much as writing. The paper page is genuinely good at this — four
 columns, date inherited down the rows, days separated by a blank line, about
 eight rows. The acceptance test is entering seven real days and comparing
 against a photograph of the page, so the read-back view has to support that
-comparison. Blank and `?` must stay visually distinct here.
+comparison. Blank and `?` must stay visually distinct here — that is the *Milk*
+column's `?`, meaning a feed of unknown volume. Times carry no `?` at all.
 
 ## Tone — this one matters
 

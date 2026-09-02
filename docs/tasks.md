@@ -84,7 +84,8 @@ them is how Phase 0 quietly never happens.
       has no backups
 - [ ] **CC** Feed events, including the two-component split
 - [ ] **CC** Diaper events, including colour and consistency
-- [ ] **CC** Backdating with approximate and unknown times
+- [ ] **CC** Time entry: defaults to now, quick offsets, picker, numeric entry
+      (D-018 — no precision marker, so this has to be fast instead)
 - [ ] **CC** Edit, correct, and delete via correction events
 - [ ] **CC** Free-text note on every event
 - [ ] **CC** Secondary types behind a "more" affordance

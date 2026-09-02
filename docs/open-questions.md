@@ -102,8 +102,9 @@ test cannot be run without a read-back view, and the comparison is the point.
 
 **Closed by:** Phase 2 prototype, alongside Q-001 and Q-002.
 
-**Constraint it must satisfy:** blank and `?` must stay visually distinct — see
-`.specify/memory/paper-log-baseline.md` § Blank is not unknown.
+**Constraint it must satisfy:** in the Milk column, blank and `?` must stay
+visually distinct — see `.specify/memory/paper-log-baseline.md` § Blank is not
+unknown. This is about *volume* only. Times carry no `?`, by D-018.
 
 ---
 

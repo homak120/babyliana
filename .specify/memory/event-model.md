@@ -19,19 +19,23 @@ offline devices a concatenation rather than a conflict resolution.
 
 **Two timestamps, always distinct.**
 
-- `occurred_at` — when the thing happened. Editable. May be approximate.
+- `occurred_at` — when the thing happened. Editable. Defaults to now.
 - `recorded_at` — when it was written. Never editable. Set by the device.
 
-The paper log proves these diverge: `04:?` written in the morning, `4:10`
-inserted after `12:40`. One timestamp is not enough.
+The paper log proves these diverge: `4:10` inserted after `12:40`, logged hours
+after it happened. One timestamp is not enough.
 
-**Approximation is first-class.** `occurred_at` carries a precision marker
-(exact / approximate / unknown). The log uses `?` roughly once a day. An app
-that demands an exact time will be lied to.
+**`occurred_at` is editable and carries no precision marker.** There is no
+exact / approximate / unknown distinction — see `docs/decisions.md` D-018. The
+paper log's `04:?` is solved by making the time fast to set and fast to adjust,
+not by making imprecision storable. Backdating is a core flow; qualifying the
+result is not.
 
 **Everything optional except the essentials.** An event needs an ID, a type, a
 timestamp, and a device. Every other field may be absent. A feed with an unknown
-volume is a valid feed — the paper log contains one.
+volume is a valid feed — the paper log contains one. Note the asymmetry with
+time: a volume the user does not know cannot be inferred, so `volume_ml` may be
+null. A time can always be inferred, so `occurred_at` is always present.
 
 ## Envelope
 
@@ -43,8 +47,7 @@ Every event, regardless of type:
 | `household_id` | Container for the family |
 | `device_id` | Which device created it |
 | `type` | See registry below |
-| `occurred_at` | When it happened |
-| `occurred_at_precision` | `exact` \| `approximate` \| `unknown` |
+| `occurred_at` | When it happened. Editable. Always present |
 | `recorded_at` | When it was written. Immutable |
 | `note` | Free text. Available on every type. The escape hatch |
 | `corrects` | Optional. ID of an event this supersedes |

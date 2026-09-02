@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-01
+Last updated: 2026-09-02
 
 ---
 
@@ -48,7 +48,16 @@ wrong every time; see `plan.md` § Two kinds of phase.
 
 ## In flight
 
-Nothing. Working tree clean, and pushed.
+**D-018 uncommitted.** Nine documents changed, no code. The time precision
+marker is gone — no `exact/approximate/unknown`, no `?` for time, no `~`.
+`docs/decisions.md` D-018 holds the reasoning; the other eight are consistency
+edits so nothing still says `04:?`. Volume `?` is untouched and still required.
+
+**The Phase 2 brief is one of the nine, and Phase 2 is currently out with
+Claude Design against the old version.** The running pass may come back with a
+time-precision control in it. That is not a failure of the design pass —
+disregard that part and use the new § Entering and adjusting the time, or
+re-run the brief if the prototype leans on it heavily.
 
 When something *is* pending, name it here — a cold session needs to know what is
 sitting uncommitted and why. Uncommitted work is a normal end state, not a
@@ -74,6 +83,32 @@ Noticed, not blocking, no owner yet.
 
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
+
+### 2026-09-02 — D-018, time precision removed
+
+The owner's call, and the reasoning is worth keeping: `04:?` is what you write
+when a pen has no idea what time it is. A phone does, so the app removes the
+cause rather than giving the user a way to express uncertainty. His test for the
+notation was "if a human cannot read a mark and immediately know what it means,
+it does not belong" — which is also why the marker was dropped outright rather
+than softened to a `~`.
+
+What was knowingly given up: a time typed from memory and a time tapped live are
+now indistinguishable, forever, including in exports. Recorded in D-018 so it is
+not later read as an oversight.
+
+What replaces it is entry speed, written into the Phase 2 brief as a new
+§ Entering and adjusting the time — default to now, quick offsets, picker,
+numeric entry. Ranking is left to the prototype under D-007. Natural-language
+time parsing is explicitly ruled out; it fails silently on a tired user.
+
+The coverage test loosened from *every glyph reproduced* to *every fact
+represented*, which is the one real cost and is stated in
+`coverage-requirement.md` rather than left implicit.
+
+`paper-log-baseline.md` § Unknown values was **not** rewritten — it records what
+the paper actually says, and editing evidence to match a decision would destroy
+the ability to re-derive later. It carries a pointer to D-018 instead.
 
 ### 2026-09-01 — analysis pass, no code
 

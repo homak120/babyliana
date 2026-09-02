@@ -33,7 +33,8 @@ Derived directly from `paper-log-baseline.md`. Every item must be expressible:
 - [ ] A poop
 - [ ] A poop with colour and consistency — `2 (G→Y liquid)`
 - [ ] A pee and a poop in the same change
-- [ ] An entry with an unknown or approximate time — `04:?`
+- [ ] An entry whose time is set by hand, long after it happened — the app has
+      no `?` for time (D-018), so this must be fast rather than expressible
 - [ ] An entry with an unknown volume — `?`
 - [ ] An entry logged out of order, hours after it happened
 - [ ] An entry corrected after it was recorded
@@ -49,5 +50,13 @@ the app's equivalent of paper accepting a stray scribble.
 
 Take the photographed log. Enter all seven days into the app. If any entry
 cannot be represented faithfully, the app is not ready.
+
+**"Faithfully" means every fact is represented, not every glyph reproduced.**
+The one deliberate divergence is time: `04:?` becomes an ordinary time, because
+D-018 removed the precision marker on purpose. Everything else on the page —
+including `?` in the Milk column, which is a *volume* and is unaffected — must
+still come through. When comparing against the photograph, judge whether the
+same events at the same moments with the same values are there. Do not fail the
+test on the missing question mark, and do not let it excuse anything else.
 
 This is a real test that should be run before Phase 9 (reveal).

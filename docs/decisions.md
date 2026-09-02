@@ -54,9 +54,9 @@ migration is an export and a replay, not a rewrite.
 
 Immutable events. Edits are correction events. Deletes are tombstones.
 
-**Why.** Not architectural taste — the paper log already contains strikethroughs,
-a retroactively inserted row, and unknown times. Corrections and out-of-order
-entry are real usage. It also makes offline merge a union rather than a conflict
+**Why.** Not architectural taste — the paper log already contains strikethroughs
+and a retroactively inserted row. Corrections and out-of-order entry are real
+usage. It also makes offline merge a union rather than a conflict
 resolution, and makes the backend replaceable.
 
 **Reversal condition.** None anticipated. This is load-bearing.
@@ -266,3 +266,47 @@ back changes the answer. Deciding before seeing it risks redoing the work. The
 spike's CSS is deleted under D-012 regardless, so nothing is lost by waiting.
 
 **Closed by:** Phase 4 or 5, with the prototype in hand.
+
+---
+
+## D-018 — No time precision marker. A time is a time
+
+The app does not record, store, or display whether a time was tapped live or
+typed from memory. There is no `exact` / `approximate` / `unknown` distinction,
+no `?`, and no `~`. Every event carries an ordinary timestamp.
+
+**Why.** `04:?` in the paper log is not a notation the user wants — it is what
+you write when you are reconstructing a 4am feed at breakfast with a pen and no
+better option. The app removes the cause. Logging is a button that stamps the
+current time, so the overwhelmingly common case is an exact time at zero cost,
+and the remaining retroactive case is served by making time *adjustment* fast
+rather than by making imprecision expressible.
+
+**The owner's test, and it is the right one:** if a human cannot read a mark and
+immediately know what it means, it does not belong in the app. `?` fails that.
+So does a tilde, which is why the marker was dropped entirely rather than
+softened into a symbol.
+
+**Cost accepted, stated plainly.** A time typed from memory and a time tapped
+live are indistinguishable forever, including to the other parent reading
+remotely and to any future export. This is knowingly given up. Where paper is
+honest about its own uncertainty, the app is not.
+
+**What replaces it** is entry speed, not notation — see
+`.specify/memory/design/phase-2-brief.md` § Entering and adjusting the time.
+Default to now; quick relative offsets; a picker; direct numeric entry.
+
+**What this does *not* touch.** `?` in the Milk column is a different fact and
+survives unchanged: a feed happened and the volume was not known. The app cannot
+infer a volume the way it can infer a time, and blank versus unknown volume
+remains a real distinction — see `.specify/memory/paper-log-baseline.md`
+§ Blank is not unknown.
+
+**Consequence for the coverage test.** The acceptance test becomes *every fact
+is represented*, not *every glyph is reproduced*. One row of the photographed
+log will not render identically. That is a deliberate loosening, recorded here
+so it is not later mistaken for a bug.
+
+**Reversal condition.** If the retroactive case turns out to be common in the
+solo run (Phase 8) and guessed times start polluting the derived arithmetic,
+revisit — but reintroduce it as a *word*, never a symbol.
