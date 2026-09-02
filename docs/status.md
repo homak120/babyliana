@@ -16,8 +16,9 @@ Last updated: 2026-09-01
 
 ## Position
 
-Phases 0 and 1 complete. **No application code exists yet** — the repo is spec
-only, one commit.
+Phases 0 and 1 complete. Phase 2 is out with Claude Design. Phase 3's scaffold
+is committed and builds — a Vite + React + TypeScript PWA shell that runs
+locally without Supabase; its remaining steps need a browser and a phone.
 
 Task-level state is in `tasks.md`. Phase-level completion is in `plan.md`. This
 file is the summary and the next move.
@@ -42,21 +43,17 @@ When it lands: screenshots into `.specify/memory/design/`, resolved decisions
 into `decisions.md` as a new D-entry, those four questions deleted from
 `open-questions.md`.
 
-Phase 3 is independent and can run alongside. Its first steps are human-only —
-Supabase project by hand, first deploy by hand, install on the phone — and
-getting the PWA installed early is worth doing, because Q-004 is the one thing
-here that answers only by leaving it alone.
-
 **No duration estimates.** The owner works with LLM tooling and they have been
 wrong every time; see `plan.md` § Two kinds of phase.
 
 ## In flight
 
-Uncommitted: the new commit rule in `CLAUDE.md`, and this note.
+Nothing. Working tree clean, and pushed.
 
-Uncommitted work is normal here and is not a defect to clean up. The owner
-reviews diffs before they enter history — see `CLAUDE.md` § Never commit without
-being asked.
+When something *is* pending, name it here — a cold session needs to know what is
+sitting uncommitted and why. Uncommitted work is a normal end state, not a
+defect to tidy away: the owner reviews diffs before they enter history. See
+`CLAUDE.md` § Never commit without being asked.
 
 ## Open threads
 
