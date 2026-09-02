@@ -99,6 +99,10 @@ them is how Phase 0 quietly never happens.
 - [ ] **CC** Derived views — time since last feed, daily totals, day list
 - [ ] **CC** Household QR join flow
 - [ ] **CC** Duplicate detection at read time
+- [ ] **CC** Update strategy — check for a new service worker when the app
+      becomes visible, and reload silently only when no entry is in progress.
+      Never a modal. Depends on the local layer: a reload is only free once the
+      write has already landed in IndexedDB
 - [ ] **CC** Keep the spike page on a route as a smoke test
 
 ## Phase 7 — Visual identity & polish
