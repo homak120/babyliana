@@ -32,13 +32,19 @@ drop table if exists public.spike_taps;
 -- `device` deliberately does NOT reference a baby. A phone belongs to a parent,
 -- not to a child — if a sibling ever arrives the same two phones log for both.
 -- The baby lives on the moment, which is what is actually about her.
+--
+-- Every table carries `updated_by`: free text, null by default, for tagging rows
+-- touched by a manual script. **The app never writes it.** That is the whole
+-- point — a non-null value means exactly "a human ran something", which only
+-- stays a reliable signal if nothing else ever sets it.
 -- ---------------------------------------------------------------------------
 
 create table if not exists public.baby (
   id         uuid primary key default gen_random_uuid(),
   name       text not null,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  updated_by text
 );
 
 -- No default on id below this line, deliberately. These rows are always written
@@ -51,7 +57,8 @@ create table if not exists public.device (
   id         uuid primary key,
   name       text,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  updated_by text
 );
 
 create table if not exists public.timeslot (
@@ -62,6 +69,7 @@ create table if not exists public.timeslot (
   ended_at    timestamptz,
   recorded_at timestamptz not null default now(),
   updated_at  timestamptz not null default now(),
+  updated_by  text,
   note        text,
   constraint period_is_forward
     check (ended_at is null or ended_at >= occurred_at)
@@ -77,6 +85,7 @@ create table if not exists public.event (
   note          text,
   recorded_at   timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
+  updated_by    text,
 
   -- feed. A split feed is two rows in one timeslot, not one row with two
   -- halves (D-019). `source` is never null on a feed row — 'unknown' is a real

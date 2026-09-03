@@ -45,6 +45,7 @@ One row per moment someone sat down and logged something.
 | `ended_at` | Optional. Null means a point in time; set means a period |
 | `recorded_at` | When first written. Never edited |
 | `updated_at` | Bumped on every edit. The last-write-wins tiebreaker |
+| `updated_by` | Free text, null by default. For manual scripts — the app never writes it |
 | `note` | Free text about the moment |
 
 A timeslot always has at least one event. The UI enforces this: if nothing was
@@ -81,6 +82,7 @@ human-readable summary of the same thing.
 | `type` | all | See registry |
 | `note` | all | Free text. The escape hatch, on every type |
 | `recorded_at`, `updated_at` | all | |
+| `updated_by` | all | Free text, null by default. Manual scripts only |
 | `volume_ml` | feed | Integer. May be null — the log contains `?` |
 | `source` | feed | `breast_milk` \| `formula` \| `unknown` |
 | `pee` | diaper | Boolean |
@@ -145,12 +147,18 @@ nothing to store beyond its own id, where a baby has a name the app can display.
 `device` deliberately does not reference the baby. A phone belongs to a parent,
 not to a child; if a sibling arrives the same two phones log for both.
 
+Every table carries **`updated_by`** — free text, null by default, for tagging
+rows touched by a manual script. **The app never writes it.** That is the point:
+a non-null value means exactly "a human ran something", and it only stays a
+reliable signal as long as nothing else sets it.
+
 ```sql
 create table if not exists public.baby (
   id         uuid primary key default gen_random_uuid(),
   name       text not null,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  updated_by text
 );
 
 -- No default on id below this line, deliberately. These rows are always written
@@ -163,7 +171,8 @@ create table if not exists public.device (
   id         uuid primary key,
   name       text,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  updated_by text
 );
 
 create table if not exists public.timeslot (
@@ -174,6 +183,7 @@ create table if not exists public.timeslot (
   ended_at    timestamptz,
   recorded_at timestamptz not null default now(),
   updated_at  timestamptz not null default now(),
+  updated_by  text,
   note        text,
   constraint period_is_forward
     check (ended_at is null or ended_at >= occurred_at)
@@ -189,6 +199,7 @@ create table if not exists public.event (
   note          text,
   recorded_at   timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
+  updated_by    text,
 
   -- feed. A split feed is two rows in one timeslot, not one row with two
   -- halves (D-019). `source` is never null on a feed row — 'unknown' is a real

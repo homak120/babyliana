@@ -42,6 +42,21 @@ unnamed device logging events is fine, and gating logging on a form is not
 to `devices`, so the device row has to reach the server before any timeslot that
 references it. Sync pushes devices first.
 
+## Running a manual script
+
+Every table has an **`updated_by`** column — free text, null by default. Set it
+when a script touches rows, so they can be found again afterwards. The app never
+writes it, which is what makes a non-null value mean exactly "a human ran
+something".
+
+It records *which* rows were touched, not what they held before. If you want to
+be able to put things back, snapshot first — one line, and the free tier has
+500 MB against a projected 5 MB a year:
+
+```sql
+create table event_backup_20260903 as select * from public.event;
+```
+
 ## Two things that will otherwise cost you an evening
 
 **The Data API grants in `0001` are not optional.** Projects created since
