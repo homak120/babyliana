@@ -35,6 +35,11 @@ not something an agent should hold.
   already in `tasks.md`
 - Hard-code the baby id (D-022)
 
+**Dropping `spike_taps` does not clean the phones.** Both already hold
+`babyliana.device_id` in `localStorage`, which is per-origin and survives any
+deploy. S1 has to cope with that rather than assume a clean slate — see the
+upsert note there.
+
 **Device rows are not seeded.** A `device_id` is generated on the device and
 kept in `localStorage`, so a row created in SQL would carry an id no phone ever
 uses. The app writes its own row on first run, with a null name; the welcome
@@ -48,9 +53,24 @@ each of the three tables returns `[]` rather than an error.
 No network. This is the whole write path, proven on one device.
 
 - IndexedDB store; TypeScript types matching the schema
-- **On first run, write this device's own `device` row** — the id from
+- **Upsert this device's own `device` row on every startup** — the id from
   `localStorage`, name left null. `timeslot.logged_by` is a foreign key, so
-  nothing can be logged until it exists
+  nothing can be logged until the row exists.
+
+  **Do not detect "first run" by the absence of the localStorage key.** The
+  spike already wrote `babyliana.device_id` on both phones and it survives —
+  `localStorage` is per-origin and the real app deploys to the same origin, so
+  dropping `spike_taps` does not clear it. A first-run check would find the key,
+  conclude the device is registered, skip the insert, and then every timeslot
+  write would fail its foreign key. An app that opens fine and cannot save.
+
+  Upserting is immune to that, and to two other ways the flag desyncs: Safari
+  evicting `localStorage` (which is what Q-004 is measuring), and a `device` row
+  that was deleted or never synced. Reusing the spike's UUID is harmless once
+  `spike_taps` is dropped — nothing references it and a UUID is a UUID.
+
+  **Do not "fix" this by deleting the PWA and reinstalling.** That install is the
+  running Q-004 experiment.
 - The write path from `event-model.md` § Writing a timeslot: **generate both
   UUIDs up front**, write the timeslot and its events as one local unit. The
   naive insert-await-insert is what produces orphan timeslots
