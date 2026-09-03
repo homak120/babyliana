@@ -14,7 +14,7 @@ const store = new Map<string, string>()
   length: 0,
 } as Storage
 
-const { ensureThisDevice, logMoment, getMoments, deleteMoment } = await import('../src/moments.ts')
+const { ensureThisDevice, logMoment, getMoments, removeMoment } = await import('../src/moments.ts')
 const { getDevices } = await import('../src/db.ts')
 
 let failures = 0
@@ -54,7 +54,7 @@ check('baby and device stamped on the moment',
 const reread = await getMoments()
 check('survives a reload', reread.length === 3 && reread.some((m) => m.events.length === 2))
 
-await deleteMoment(split.timeslot.id)
+await removeMoment(split.timeslot.id)
 const after = await getMoments()
 const orphans = after.flatMap((m) => m.events).filter((e) => e.timeslot_id === split.timeslot.id)
 check('deleting a moment takes its entries', after.length === 2 && orphans.length === 0)
