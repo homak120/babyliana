@@ -26,21 +26,23 @@ So breadth at launch beats minimalism at launch, even at some cost to speed.
 
 Derived directly from `paper-log-baseline.md`. Every item must be expressible:
 
-- [ ] A feed with a single volume — `60`
-- [ ] A feed split by source — `25(B) + 45(F)`
-- [ ] A feed split without source — `30 + 30`
-- [ ] A pee
-- [ ] A poop
-- [ ] A poop with colour and consistency — `2 (G→Y liquid)`
-- [ ] A pee and a poop in the same change
+- [x] A feed with a single volume — `60`
+- [x] A feed split by source — `25(B) + 45(F)`
+- [x] A feed split without source — `30 + 30`
+- [x] A pee
+- [x] A poop
+- [ ] A poop with colour and consistency — `2 (G→Y liquid)`. Colour and
+      consistency work (S4); the `G→Y` transition itself is prose and needs the
+      note, which is S6
+- [x] A pee and a poop in the same change
 - [ ] An entry whose time is set by hand, long after it happened — the app has
       no `?` for time (D-018), so this must be fast rather than expressible
-- [ ] An entry with an unknown volume — `?`
+- [x] An entry with an unknown volume — `?`
 - [ ] An entry logged out of order, hours after it happened
 - [ ] An entry corrected after it was recorded
 - [ ] An entry deleted after it was recorded
-- [ ] A row with a diaper and no feed
-- [ ] A row with a feed and no diaper
+- [x] A row with a diaper and no feed
+- [x] A row with a feed and no diaper
 - [ ] Something that took a stretch of time rather than happening at an instant
 - [ ] Anything not anticipated above — the `other` type, plus a free-text note
       on any event (D-020)

@@ -1,12 +1,10 @@
-import type { Source } from '../types'
+import type { MilkDraft } from './drafts'
 
 // One bottle. A split feed is two of these in one moment (D-019) — the sheet
 // adds another block rather than this one growing a second half.
 //
 // Arbitrary integers, not presets: the real log contains 31, 41, 43, 46, 57,
 // and a picker of 30/45/60 cannot express it (paper-log-baseline.md).
-
-export type MilkDraft = { volume: number | null; unknown: boolean; source: Source }
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '?', '0', '⌫']
 

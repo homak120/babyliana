@@ -1,43 +1,63 @@
 import { useState } from 'react'
 import { logMoment } from '../moments'
-import type { DraftEntry } from '../types'
-import { MilkBlock, type MilkDraft } from './MilkBlock'
+import {
+  canSave,
+  newDiaper,
+  newMilk,
+  toEntry,
+  type Block,
+  type DiaperDraft,
+  type MilkDraft,
+} from './drafts'
+import { DiaperBlock } from './DiaperBlock'
+import { MilkBlock } from './MilkBlock'
 
 // The sheet is one moment (D-019, D-021). It opens with NO type selected and
-// save stays disabled until a block exists, which is what enforces "a moment
-// always has at least one entry" at the point of entry.
+// save stays disabled until a block exists, which enforces "a moment always has
+// at least one entry" at the point of entry rather than in a constraint nobody
+// sees.
 //
-// S1 offers milk only. Diaper arrives in S4 and other in S6, and they drop into
-// this same pattern — the bubbles render from a list rather than being three
-// hard-coded buttons.
+// Bubbles render from a list, so S6's `other` drops in without touching this.
 //
 // Time is not here yet. It defaults to now; S5 builds the steppers, offsets and
-// numeric entry, which is the slice that decides whether this beats the pen.
+// numeric entry — the slice that decides whether this beats the pen.
 
-type Block = { key: string; type: 'milk'; draft: MilkDraft }
+type BlockType = Block['type']
 
-const AVAILABLE = [{ type: 'milk' as const, label: '+ milk' }]
+const AVAILABLE: { type: BlockType; label: string }[] = [
+  { type: 'milk', label: '+ milk' },
+  { type: 'diaper', label: '+ diaper' },
+]
 
 export function AddSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const [blocks, setBlocks] = useState<Block[]>([])
   const [saving, setSaving] = useState(false)
 
-  function add(type: 'milk') {
-    const draft: MilkDraft = { volume: null, unknown: false, source: 'unknown' }
-    setBlocks((b) => [...b, { key: crypto.randomUUID(), type, draft }])
+  function add(type: BlockType) {
+    const key = crypto.randomUUID()
+    setBlocks((b) => [
+      ...b,
+      type === 'milk'
+        ? { key, type, draft: newMilk() }
+        : { key, type, draft: newDiaper() },
+    ])
   }
+
+  const update = (i: number, draft: MilkDraft | DiaperDraft) =>
+    setBlocks((prev) =>
+      prev.map((p, j) => (j === i ? ({ ...p, draft } as Block) : p)),
+    )
+
+  const remove = (i: number) => setBlocks((prev) => prev.filter((_, j) => j !== i))
 
   async function save() {
     setSaving(true)
-    const entries: DraftEntry[] = blocks.map((b) => ({
-      type: 'feed',
-      volume_ml: b.draft.unknown ? null : b.draft.volume,
-      source: b.draft.source,
-    }))
-    await logMoment({ entries })
+    await logMoment({ entries: blocks.map(toEntry) })
     setSaving(false)
     onSaved()
   }
+
+  const ready = canSave(blocks) && !saving
 
   return (
     <div className="sheet">
@@ -50,16 +70,23 @@ export function AddSheet({ onClose, onSaved }: { onClose: () => void; onSaved: (
 
       <p className="hint">time is now — S5 makes it adjustable</p>
 
-      {blocks.map((b, i) => (
-        <MilkBlock
-          key={b.key}
-          value={b.draft}
-          onChange={(draft) =>
-            setBlocks((prev) => prev.map((p, j) => (j === i ? { ...p, draft } : p)))
-          }
-          onRemove={() => setBlocks((prev) => prev.filter((_, j) => j !== i))}
-        />
-      ))}
+      {blocks.map((b, i) =>
+        b.type === 'milk' ? (
+          <MilkBlock
+            key={b.key}
+            value={b.draft}
+            onChange={(d) => update(i, d)}
+            onRemove={() => remove(i)}
+          />
+        ) : (
+          <DiaperBlock
+            key={b.key}
+            value={b.draft}
+            onChange={(d) => update(i, d)}
+            onRemove={() => remove(i)}
+          />
+        ),
+      )}
 
       <div className="bubbles">
         {AVAILABLE.map((a) => (
@@ -69,12 +96,7 @@ export function AddSheet({ onClose, onSaved }: { onClose: () => void; onSaved: (
         ))}
       </div>
 
-      <button
-        type="button"
-        className="save"
-        disabled={blocks.length === 0 || saving}
-        onClick={save}
-      >
+      <button type="button" className="save" disabled={!ready} onClick={save}>
         save
       </button>
     </div>

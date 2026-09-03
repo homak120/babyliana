@@ -103,7 +103,8 @@ when". Read that first; this list is the checklist view of the same thing.
       against the live database, including the stale-after-backgrounding bug
 - [x] **S3** The home screen — elapsed hero, totals, recent list, mascot,
       day separators, theme by clock, tokens.css wired
-- [ ] **S4** Diapers — pee/poop, optional colour and consistency
+- [x] **S4** Diapers — pee/poop, optional colour and consistency revealed only
+      when poop is on. New blocks default to pee, per the real log
 - [ ] **S5** Time entry — steppers, offsets, numeric, optional end time. **The
       slice that decides whether the app beats the pen.** Usable for real after
       this one
