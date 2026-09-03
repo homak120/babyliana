@@ -142,7 +142,7 @@ export function DayScreen() {
         </div>
       )}
 
-      <button type="button" className="fab" onClick={() => setAdding(true)} aria-label="log">
+      <button type="button" className="fab" onClick={() => setAdding(true)} aria-label="log a moment">
         <Icon name="add" size={30} />
       </button>
 

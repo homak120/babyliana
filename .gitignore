@@ -10,3 +10,4 @@ dev-dist/
 *.local
 .idea/
 .vscode/
+scripts/shots/

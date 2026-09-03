@@ -9,7 +9,9 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "verify": "npm run typecheck && tsx scripts/verify-s1.mts && tsx scripts/verify-s2.mts && tsx scripts/verify-s3.mts && tsx scripts/verify-s4.mts && tsx scripts/verify-s5.mts && tsx scripts/verify-s6.mts && tsx scripts/verify-s7.mts && tsx scripts/verify-s8.mts && tsx scripts/verify-s9.mts",
-    "typecheck": "tsc -b && tsc --noEmit -p tsconfig.scripts.json"
+    "typecheck": "tsc -b && tsc --noEmit -p tsconfig.scripts.json",
+    "shoot": "tsx scripts/shoot.mts",
+    "inspect": "tsx scripts/inspect.mts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.95.0",
@@ -24,9 +26,10 @@
     "@vitejs/plugin-react": "^6.1.0",
     "fake-indexeddb": "^6.2.5",
     "oxlint": "^1.79.0",
+    "playwright": "^1.62.1",
+    "tsx": "^4.23.13",
     "typescript": "~6.0.2",
     "vite": "^8.2.2",
-    "vite-plugin-pwa": "^1.0.3",
-    "tsx": "^4.23.13"
+    "vite-plugin-pwa": "^1.0.3"
   }
 }

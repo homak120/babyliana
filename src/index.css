@@ -1,15 +1,5 @@
-:root {
-  --bg: #11131a;
-  --fg: #e8e6e3;
-  --dim: #7c8190;
-  --ok: #4a9e6f;
-  --warn: #b8894a;
-  --err: #c46a6a;
-
-  color-scheme: dark;
-  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
+/* Reset only. Colour, type, radius and motion all come from tokens.css, which
+   is the design's own file and authoritative for them. */
 
 * {
   box-sizing: border-box;
@@ -23,8 +13,7 @@ body,
 }
 
 body {
-  background: var(--bg);
-  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
   /* Respect the notch and home indicator when installed. */
   padding: env(safe-area-inset-top) env(safe-area-inset-right)
     env(safe-area-inset-bottom) env(safe-area-inset-left);

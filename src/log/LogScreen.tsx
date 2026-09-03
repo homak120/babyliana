@@ -147,7 +147,7 @@ export function LogScreen() {
         })}
       </ul>
 
-      <button type="button" className="fab" onClick={() => setSheet(true)} aria-label="log">
+      <button type="button" className="fab" onClick={() => setSheet(true)} aria-label="log a moment">
         <Icon name="add" size={30} />
       </button>
 

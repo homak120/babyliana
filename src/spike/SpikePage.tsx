@@ -77,7 +77,7 @@ export default function SpikePage() {
   ]
 
   return (
-    <main>
+    <main className="spikepage">
       <p className="label">Smoke test</p>
       <h1>{checks.filter((c) => c.ok).length}/{checks.length}</h1>
 

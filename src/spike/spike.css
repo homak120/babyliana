@@ -1,4 +1,11 @@
-main {
+.spikepage {
+  /* The smoke test's own styles. Scoped, because bare element selectors
+     here previously applied to the whole app: `button { min-width: 11rem }`
+     was inflating the FAB to 176px, and `main { align-items: center }` was
+     shrink-wrapping every screen. */
+}
+
+.spikepage {
   min-height: 100%;
   display: flex;
   flex-direction: column;
@@ -9,20 +16,20 @@ main {
   text-align: center;
 }
 
-h1 {
+.spikepage h1 {
   font-size: 4.5rem;
   font-weight: 300;
   margin: 0;
   font-variant-numeric: tabular-nums;
 }
 
-.label {
+.spikepage .label {
   color: var(--dim);
   font-size: 0.875rem;
   margin: 0;
 }
 
-button {
+.spikepage button {
   /* One thumb, in the dark. Generous target even in a throwaway page. */
   min-width: 11rem;
   min-height: 3.5rem;
@@ -36,16 +43,16 @@ button {
   cursor: pointer;
 }
 
-button:active {
+.spikepage button:active {
   background: #232837;
 }
 
-button:disabled {
+.spikepage button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.status {
+.spikepage .status {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -56,39 +63,39 @@ button:disabled {
   color: var(--dim);
 }
 
-.status li {
+.spikepage .status li {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.status span {
+.spikepage .status span {
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
-.status .ok {
+.spikepage .status .ok {
   background: var(--ok);
 }
 
-.status .warn {
+.spikepage .status .warn {
   background: var(--warn);
 }
 
-.status .err {
+.spikepage .status .err {
   background: var(--err);
 }
 
-.error {
+.spikepage .error {
   max-width: 30rem;
   color: var(--err);
   font-size: 0.8125rem;
   font-family: ui-monospace, monospace;
 }
 
-.device {
+.spikepage .device {
   color: #4a4f5c;
   font-size: 0.75rem;
   font-family: ui-monospace, monospace;
