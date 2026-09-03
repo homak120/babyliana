@@ -16,17 +16,36 @@ Editor, paste each file in order, run it.
 
 | File | What it does | When |
 | --- | --- | --- |
-| `migrations/0001_initial_schema.sql` | Drops the spike table, creates the three tables, RLS, grants, realtime | Once |
-| `migrations/0002_seed_household.sql` | Creates one household and its devices | Once, after 0001. **Edit the names first** |
+| `migrations/0001_initial_schema.sql` | Drops the spike table, creates the three tables, RLS, grants, realtime | Once. Safe to re-run |
 
-`0001` is safe to re-run — everything is `if not exists` / `if exists`.
-**`0002` is not**: running it twice creates a second household.
+That is the whole schema. There is nothing else to run.
 
-## After running them
+## The household id
 
-`0002` returns the `household_id` in the result pane. That value gets hard-coded
-in the client (D-022 — no pairing flow for MVP), so keep it somewhere you can
-find it.
+Mint one UUID and hard-code it in the client (D-022 — no pairing flow for MVP):
+
+```sh
+uuidgen | tr 'A-Z' 'a-z'
+```
+
+or `select gen_random_uuid();` in the SQL editor. **It is not inserted
+anywhere** — D-004 has no accounts and there is no `households` table, so a
+household is nothing more than a UUID that both phones agree on. Keep it
+somewhere you can find it.
+
+## Device rows are not seeded
+
+A `device_id` is generated **on the device** — `crypto.randomUUID()`, kept in
+`localStorage` — so a row created here would carry an id no phone will ever use.
+
+The app writes its own row on first run, with that device's id, the hard-coded
+household id, and a null name. The welcome screen fills the name in later; an
+unnamed device logging events is fine, and gating logging on a form is not
+(`.specify/memory/household-devices.md`).
+
+**One ordering constraint this creates:** `timeslot.logged_by` is a foreign key
+to `devices`, so the device row has to reach the server before any timeslot that
+references it. Sync pushes devices first.
 
 ## Two things that will otherwise cost you an evening
 

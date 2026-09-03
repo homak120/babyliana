@@ -24,8 +24,9 @@ not something an agent should hold.
 
 1. Run `supabase/migrations/0001_initial_schema.sql` — drops the spike table,
    creates the three tables, RLS, grants, realtime
-2. Edit the two device names in `0002_seed_household.sql`, then run it
-3. Hand back the `household_id` it returns
+2. Mint one household UUID (`uuidgen`, or `select gen_random_uuid();`) and hand
+   it back. It is not inserted anywhere — there is no `households` table, so a
+   household is just a value both phones agree on
 
 **Then, agent side:**
 
@@ -33,6 +34,11 @@ not something an agent should hold.
 - Keep the tap page on a `/spike` route as a smoke test — the one exception,
   already in `tasks.md`
 - Hard-code the household id (D-022)
+
+**Device rows are not seeded.** A `device_id` is generated on the device and
+kept in `localStorage`, so a row created in SQL would carry an id no phone ever
+uses. The app writes its own row on first run, with a null name; the welcome
+screen in S9 fills the name in. This is why `devices.name` is nullable.
 
 **Done when:** `npm run build` passes, `/spike` still works, and `curl` against
 each of the three tables returns `[]` rather than an error.
@@ -42,6 +48,9 @@ each of the three tables returns `[]` rather than an error.
 No network. This is the whole write path, proven on one device.
 
 - IndexedDB store; TypeScript types matching the schema
+- **On first run, write this device's own `devices` row** — the id from
+  `localStorage`, the hard-coded household id, name left null. `timeslot`'s
+  `logged_by` is a foreign key, so nothing can be logged until it exists
 - The write path from `event-model.md` § Writing a timeslot: **generate both
   UUIDs up front**, write the timeslot and its events as one local unit. The
   naive insert-await-insert is what produces orphan timeslots
@@ -60,7 +69,8 @@ volume, reload the page, all three are still there and correct.
 
 ## S2 — Make it shared
 
-- Push local writes to Supabase
+- Push local writes to Supabase. **Devices first** — `timeslot.logged_by` is a
+  foreign key, so a timeslot arriving before its device row is rejected
 - **Full-refresh reconcile** on mount and on `visibilitychange` → visible
 - Realtime subscription as a latency optimisation on top
 
