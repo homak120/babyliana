@@ -35,7 +35,7 @@ Success and kill criteria written.
 
 ---
 
-## Phase 2 — Structural design & prototype
+## Phase 2 — Structural design & prototype ✅ COMPLETE
 
 Claude Design. Owns the layout decision outright (D-007).
 
@@ -45,7 +45,8 @@ Claude Design. Owns the layout decision outright (D-007).
 - Try it. Decide button hierarchy and primary readout by tapping, not arguing
 - Mockups and the resolved decisions into `.specify/memory/`
 
-Exit: Q-001 and Q-002 in `open-questions.md` are closed.
+Exit met: Q-001, Q-002, Q-007 and Q-009 closed. Decisions in D-021,
+artifact in `.specify/memory/design/handoff/`.
 
 ## Phase 3 — Infrastructure spike (walking skeleton)
 

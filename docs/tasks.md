@@ -29,14 +29,15 @@ them is how Phase 0 quietly never happens.
 
 ---
 
-## Phase 2 — Structural design & prototype
+## Phase 2 — Structural design & prototype ✅
 
 - [x] **CD** Clickable prototype from the paper log photo + event model
 - [x] **CD** Night surface and day surface variants
 - [x] **CD** Palette tested at reduced brightness — night theme in tokens.css
-- [ ] **H** Try the prototype. Ideally at night, not at a desk
-- [ ] **H** Decide button hierarchy and primary readout → closes Q-001, Q-002
-- [ ] **CH** Record the resolved decisions in `decisions.md`
+- [x] **H** Try the prototype — done in the Claude Design session, with
+      feedback fed back into the handoff
+- [x] **H** Decide button hierarchy and primary readout → Q-001, Q-002 closed
+- [x] **CH** Record the resolved decisions in `decisions.md` — D-021
 - [x] **H** Commit mockups to `.specify/memory/design/handoff/`
 
 ## Phase 3 — Infrastructure spike

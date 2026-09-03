@@ -394,3 +394,58 @@ survive contact with reality.
 **Open, and deliberately not decided here.** Whether a period can be opened now
 and closed later, or must be entered complete, is an entry-flow question for
 Phase 2 (Q-007). The schema supports either.
+
+---
+
+## D-021 — The Phase 2 layout, resolved
+
+Decided by the owner in the Claude Design session, by building and trying the
+prototype rather than by argument — which is what D-007 required. The artifact
+is at `.specify/memory/design/handoff/`, and its shipped defaults are the
+decision. This closes Q-001, Q-002, Q-007 and Q-009.
+
+**Two screens carry the product.** *Log* (home) and *day* (read-back).
+Everything else is a sheet over them.
+
+**The screen leads with elapsed time since the last feed** — `Xh MMm`, 64px,
+tabular. Q-002. Three leads were built to compare (elapsed / elapsed + volume /
+mascot-first); elapsed is the shipped default, confirming the provisional answer
+in `product-definition.md`. The other two survive as alternatives, not as
+undecided.
+
+**One sheet is one moment.** Q-007. It opens with *no type selected* and three
+equal bubbles — `+ milk`, `+ diaper`, `+ other` — each adding a removable block.
+Save is disabled until at least one block exists, which is what enforces
+"a timeslot always has at least one event" at the point of entry. The prototype
+hard-codes this flow rather than exposing it as a variant.
+
+**Feed and diaper are the primary surface; everything else is behind `other`.**
+Q-001, and D-010 upheld: sleep, weight, temperature, supplement and spit-up are
+rows inside the `other` block, with the note carrying the detail.
+
+**The day view is a table by default**, matching the paper page — five columns,
+with the date printed only on the first row of a day and inherited below it.
+Q-009. Cards and timeline are kept as a user preference, not as open questions.
+
+**Time entry is steppers, offset pills, and direct numeric entry.** Hold-to-
+repeat accelerates after ~1.5s. No natural-language parsing, per the brief —
+it fails silently and the person using it is tired. This is what D-018 meant by
+answering `04:?` with speed instead of notation.
+
+**Theme switches by clock, not by a setting.** Night surface overnight, day
+surface in daylight.
+
+**The mascot's state is derived, never set** — settled / awake / hungry /
+sleeping, plus a one-off *logged* flash. Descriptive only, and she never nags,
+which is the tone rule holding.
+
+**Reversal condition.** Phase 8 is the real test. If something here does not
+survive actual 3am use, it changes — that is what the solo run is for. Until
+then it is settled and should not be relitigated from the spec.
+
+**Not decided here.** Q-003 (is the mascot the baby or a creature) and Q-008
+(the final name) remain Phase 7 owner decisions. The handoff answers both
+implicitly — it calls Liana "the app's own character" while naming her after the
+baby, and puts "BabyLiana" in the icon and copy — but neither was Design's to
+settle.
+

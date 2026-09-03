@@ -32,15 +32,18 @@ the SQL in that file, fill `.env.local` from `.env.example`, import into Vercel,
 then install the PWA on your phone and leave it alone. That last step is the
 Q-004 test and it runs itself.
 
-**Phase 2 has come back.** The handoff is at
-`.specify/memory/design/handoff/` — prototype, tokens, icons and a full spec.
-**Read `.specify/memory/design/phase-2-reconciliation.md` first**: it was built
-from a brief predating D-019 and D-020, so its data shapes need remapping, and
-its unknown-minute marker was struck as a D-018 conflict.
+**Phase 2 is complete.** The owner tried the prototype in the Claude Design
+session and fed decisions back into it, so the handoff at
+`.specify/memory/design/handoff/` is final, not a proposal. Q-001, Q-002, Q-007
+and Q-009 are closed; the decisions are recorded in D-021.
 
-Q-001, Q-002, Q-007 and Q-009 are answered *as proposals*. D-007 says they close
-by tapping the prototype at night on a phone, not by reading it. Until then they
-stay open.
+**Before building from it, read
+`.specify/memory/design/phase-2-reconciliation.md`.** The handoff came from a
+brief predating D-019 and D-020, so its data shapes are Design's assumptions and
+need remapping. Its unknown-minute marker was struck as a D-018 conflict.
+
+**Phase 4 is the live thread.** Schema is finalised; sync, the QR join, export
+and the offline strategy remain — the last of those still waiting on Q-004.
 
 **No duration estimates.** The owner works with LLM tooling and they have been
 wrong every time; see `plan.md` § Two kinds of phase.
