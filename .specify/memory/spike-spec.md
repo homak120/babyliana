@@ -168,6 +168,55 @@ Neither is fixed here. D-012 deletes this application code before Phase 6
 precisely so an evening's hacking does not shape the event model. The local
 layer is designed in Phase 4, with Q-004 answered, and built in Phase 6.
 
+## Realtime is not sync — the stale-after-resume finding
+
+Observed on the installed iPhone PWA, 2026-09-02, and the most valuable thing
+this spike surfaced.
+
+The phone was showing 20 and went to sleep. Four taps were made on the laptop.
+On reopening the phone, the subscription visibly reconnected — the realtime
+light went amber, then green — **and the count stayed at 20.** The database held
+23.
+
+### Why
+
+iOS suspends the WebSocket when the app is backgrounded. The four inserts
+happened while the socket was dead. On resume the client reconnected and
+resubscribed, but `postgres_changes` is a **live broadcast, not a durable
+queue**: it has no replay, so resubscribing means "from now on". The spike
+fetches once on mount and never again, so nothing reconciles the gap.
+
+### Why it matters more than it looks
+
+Same failure class as the offline `0`: a confidently wrong number, no error
+shown. But this one lands on the app's core value.
+
+*"Did she already feed her"* is one of only two things the app does that paper
+cannot. A phone that has been in a pocket for twenty minutes, reporting the last
+feed as three hours ago when the other parent fed her twenty minutes ago, is not
+merely unhelpful — it is misleading, at 4am, with nothing on screen to suggest
+anything is wrong. **Backgrounded is the normal state of a phone**, not an edge
+case; it is what happens between every use.
+
+### The model already handles this; the spike does not
+
+Append-only events, client-generated UUIDs, and merge-as-union-by-`id` make
+re-fetching idempotent — pulling the same event twice costs nothing and there is
+no conflict to resolve. The design is right. The spike is simply thin.
+
+**The rule for Phase 6:**
+
+> Realtime is a latency optimisation, not a sync mechanism.
+
+- On mount: render from IndexedDB immediately, then reconcile with the server
+- On resume (`visibilitychange` → visible): reconcile again
+- Realtime keeps an already-open screen fresh
+- Never treat the stream as complete
+
+Not fixed here. D-012 deletes this code before Phase 6, and the finding is worth
+more than the five-line fix. Consequence for anyone still using the spike: it
+will keep showing stale numbers after any backgrounding, and that is expected.
+
 ## Q-005 — answered
 
 **Realtime latency is acceptable.** Measured at roughly one second from a Node
@@ -178,6 +227,11 @@ matters.
 
 Q-005 is struck from `docs/open-questions.md`. Q-004 is still running: it needs
 the installed app left alone, and nothing else waits on it.
+
+**Scope of that answer.** Latency is fine *while connected*. It says nothing
+about staying correct across a disconnect — see the section above. Realtime
+being fast and realtime being sufficient are different claims, and only the
+first was tested.
 
 ## Boundary — D-012
 

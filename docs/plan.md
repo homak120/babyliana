@@ -72,6 +72,12 @@ in `.specify/memory/spike-spec.md` § What offline actually does. It is the
 clearest statement of why the local replica is non-negotiable: a tired parent
 who gets an error on a tap reaches for the pen.
 
+Sync must also **reconcile on resume**. Realtime has no replay, and iOS suspends
+the socket whenever the app is backgrounded — which is its normal state between
+uses. The spike demonstrated the consequence: a phone sat at 20 while the
+database held 23, with the subscription showing green. Treat realtime as a
+latency optimisation over a reconcile, never as the sync mechanism itself.
+
 Sync must also tolerate **version skew**: two parents, two devices, one running
 older code. An installed PWA only picks up a new build on a fresh navigation, so
 this is the normal state after any deploy, not an edge case. Append-only and

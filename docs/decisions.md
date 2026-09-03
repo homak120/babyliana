@@ -59,7 +59,16 @@ and a retroactively inserted row. Corrections and out-of-order entry are real
 usage. It also makes offline merge a union rather than a conflict
 resolution, and makes the backend replaceable.
 
-**Reversal condition.** None anticipated. This is load-bearing.
+**One deliberate exception, added after the fact.** D-003 was written before the
+devices table existed. That table — household members and their names — holds
+genuinely mutable rows: a name can be corrected, and correcting it should change
+how past events display. It is therefore *not* append-only, and it carries a
+conflict story events do not have (concurrent renames are last-write-wins).
+Everything in the event log remains immutable. See
+`.specify/memory/household-devices.md`.
+
+**Reversal condition.** None anticipated for the event log. This is
+load-bearing.
 
 ---
 

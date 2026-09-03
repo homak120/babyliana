@@ -65,8 +65,13 @@ them is how Phase 0 quietly never happens.
 ## Phase 4 — Technical design
 
 - [ ] **CH** Finalise event schema and field types
-- [ ] **CH** Sync, merge, and duplicate-detection behaviour
-- [ ] **CH** Household ID and QR join flow
+- [ ] **CH** Sync, merge, and duplicate-detection behaviour — including
+      reconcile-on-resume. Realtime is a latency optimisation, not a sync
+      mechanism: it has no replay, so anything written while a phone was
+      backgrounded is missed permanently. See spike-spec.md
+- [ ] **CH** Household ID and QR join flow — design note drafted at
+      `.specify/memory/household-devices.md`; devices table, naming, and the
+      join are one screen with two paths
 - [ ] **CH** Offline strategy, informed by the Safari findings from Phase 3
 - [ ] **CH** Export format
 - [ ] **H** Review and edit `.specify/memory/event-model.md` to final
@@ -99,10 +104,14 @@ them is how Phase 0 quietly never happens.
 - [ ] **CC** Derived views — time since last feed, daily totals, day list
 - [ ] **CC** Household QR join flow
 - [ ] **CC** Duplicate detection at read time
+- [ ] **CC** Reconcile on resume — on `visibilitychange` to visible, re-fetch
+      from the server and merge by id. Without it a backgrounded phone shows a
+      confidently wrong count, which breaks "did she already feed her"
 - [ ] **CC** Update strategy — check for a new service worker when the app
       becomes visible, and reload silently only when no entry is in progress.
       Never a modal. Depends on the local layer: a reload is only free once the
-      write has already landed in IndexedDB
+      write has already landed in IndexedDB. Same `visibilitychange` hook as
+      reconcile-on-resume, so build them together
 - [ ] **CC** Keep the spike page on a route as a smoke test
 
 ## Phase 7 — Visual identity & polish
