@@ -97,8 +97,8 @@ when". Read that first; this list is the checklist view of the same thing.
 
 - [x] **S0** Clear the decks — migration applied, Liana inserted and her id
       hard-coded in `src/config.ts`, spike replaced by a read-only smoke test
-- [ ] **S1** Log a moment locally — IndexedDB, the write path, the add sheet
-      skeleton, the milk block. Split feeds work here for free
+- [x] **S1** Log a moment locally — IndexedDB, the write path, the add sheet
+      skeleton, the milk block. `npm run verify` covers the done-when
 - [ ] **S2** Make it shared — push, full-refresh reconcile on mount and resume,
       realtime on top. The stale-after-backgrounding bug is the test
 - [ ] **S3** The home screen — elapsed hero, totals, recent list, mascot states

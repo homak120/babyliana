@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { supabase, isConfigured, deviceId } from '../supabase'
+import { supabase, isConfigured } from '../supabase'
+import { deviceId } from '../device-id'
 import { BABY_ID } from '../config'
 import './spike.css'
 
