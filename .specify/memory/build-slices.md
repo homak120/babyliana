@@ -57,6 +57,13 @@ No network. This is the whole write path, proven on one device.
   `localStorage`, name left null. `timeslot.logged_by` is a foreign key, so
   nothing can be logged until the row exists.
 
+  Upsert means *create if absent, do nothing if present* — one row per device,
+  forever, not a write per startup. `id` is the primary key, so after the first
+  time the conflict always matches. **Use `ignoreDuplicates: true`**:
+  `supabase-js`'s `.upsert()` defaults to updating on conflict, which would
+  overwrite `name` with null on every startup and silently erase the name set on
+  the welcome screen. Setting a name is a separate explicit update.
+
   **Do not detect "first run" by the absence of the localStorage key.** The
   spike already wrote `babyliana.device_id` on both phones and it survives —
   `localStorage` is per-origin and the real app deploys to the same origin, so
