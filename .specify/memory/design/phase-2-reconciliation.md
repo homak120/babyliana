@@ -35,6 +35,16 @@ D-019 that is two feed entries in the same moment, so the affordance is closer t
 *add another bottle* than *edit the second half*. Everything else is invisible to
 the user.
 
+## Delete is missing from the design
+
+The handoff specifies swipe-to-edit as a single 88px action and does not mention
+delete anywhere. The coverage checklist has required *"an entry deleted after it
+was recorded"* since Phase 0, so this is a gap rather than a decision.
+
+D-025 settles it: the swipe reveals **two** actions, delete takes the whole
+moment, and it is immediate with an undo toast rather than a confirm dialog.
+Build to D-025, not to the handoff, on this one point.
+
 ## Pairing needs rethinking against D-004
 
 The welcome screen shows a **device id** (`LNA-7QD4-8213`) and tells the user to

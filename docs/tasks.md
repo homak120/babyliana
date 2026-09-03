@@ -108,8 +108,8 @@ when". Read that first; this list is the checklist view of the same thing.
       this one
 - [ ] **S6** Notes and the `other` type — the escape hatch
 - [ ] **S7** The day view — the paper-shaped table, date printed once per day
-- [ ] **S8** Edit and delete — plain updates and real deletes (D-003), not
-      correction events
+- [ ] **S8** Edit and delete — swipe reveals both; delete takes the whole moment
+      with an undo toast (D-025). Plain updates, real deletes (D-003)
 - [ ] **S9** Ready for the solo run — name entry, theme by clock, update
       strategy, offline check
 - [ ] **H** Run the coverage checklist: enter all seven photographed days. This

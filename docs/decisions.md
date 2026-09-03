@@ -513,3 +513,34 @@ opens when the pen goes away, which is Phase 10.
 **Trigger.** Before Phase 9. Getting a file off an installed iOS PWA is the hard
 part, not the JSON shape.
 
+---
+
+## D-025 — Row actions: swipe reveals edit *and* delete
+
+Dragging a row in the day view reveals two actions. **Edit** reopens the add
+sheet pre-filled. **Delete** removes the moment.
+
+**Why this is recorded separately.** The Phase 2 handoff — final under D-021 —
+has swipe-to-edit as a single action and **no delete affordance anywhere**. This
+extends it, on the owner's call. D-021's reversal condition is real use, and the
+coverage checklist has required *"an entry deleted after it was recorded"* since
+Phase 0; the design simply did not cover it.
+
+**Delete takes the whole moment, and its entries with it.** You swiped a row,
+the row is a moment, `on delete cascade` does the rest. Removing only one part
+of a moment is done through edit — the sheet already gives every block a `×` —
+so both granularities exist without inventing new UI for the rare one.
+
+**Delete is immediate, with an undo toast for a few seconds.** The row vanishes
+at once and the actual delete fires when the toast expires.
+
+This matters more here than in most apps. D-003 uses **hard delete** — no
+tombstones, no soft delete — so once it is gone there is nothing to restore it
+from, and the deletion syncs to the other phone. A confirmation dialog would be
+safer but puts a modal in front of someone holding a baby at 4am, which is the
+friction that sends people back to the pen. Immediate-with-undo keeps the action
+one tap and still survives a mis-swipe.
+
+**Consequence for the build.** The client holds a deleted moment briefly rather
+than deleting straight away, so S8 owns the undo window, not just the delete.
+

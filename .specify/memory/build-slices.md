@@ -126,13 +126,24 @@ not in the view.
 
 Mutable rows (D-003) — plain updates, real deletes, no correction events.
 
-- Swipe a row to reveal edit; the sheet reopens pre-filled
-- Editing a value leaves the rest of the moment intact — the paper log's
-  corrections strike a *value*, not a row
-- Deleting a moment takes its entries with it (`on delete cascade`)
+- Swipe a row to reveal **two** actions: edit and delete (D-025). The handoff
+  has only edit and no delete anywhere, so this extends the design
+- **Edit** reopens the sheet pre-filled. Editing a value leaves the rest of the
+  moment intact — the paper log's corrections strike a *value*, not a row
+- **Delete** removes the whole moment and its entries (`on delete cascade`). To
+  remove only one part, edit and `×` that block — the sheet already does this
+- **Delete is immediate with an undo toast**, roughly five seconds, and the
+  actual delete fires when it expires. The client therefore *holds* the moment
+  during the window rather than deleting straight away — that holding is part of
+  this slice, not an extra
+
+The undo window is doing real work here. D-003 is hard delete: nothing to
+restore from, and the deletion syncs to the other phone. A confirm dialog would
+be safer and puts a modal in front of someone holding a baby at 4am.
 
 **Done when:** correct a volume without disturbing the diaper logged at the same
-moment, and delete a moment entirely.
+moment; delete a moment and get it back with undo; delete another, let the toast
+expire, and confirm it is gone from the other device too.
 
 ## S9 — Ready for the solo run
 
