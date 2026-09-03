@@ -3,6 +3,11 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  // Lets /spike answer "did my deploy actually land", which came up repeatedly
+  // during Phase 3 and will again once S9 adds the update strategy.
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString().slice(0, 16) + 'Z'),
+  },
   plugins: [
     react(),
     VitePWA({

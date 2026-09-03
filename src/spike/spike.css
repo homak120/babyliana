@@ -77,6 +77,10 @@ button:disabled {
   background: var(--warn);
 }
 
+.status .err {
+  background: var(--err);
+}
+
 .error {
   max-width: 30rem;
   color: var(--err);

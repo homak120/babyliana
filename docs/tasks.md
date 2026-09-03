@@ -95,8 +95,8 @@ Sliced in `.specify/memory/build-slices.md` — ten slices, each ending with the
 app still working and something new demonstrable, each with a concrete "done
 when". Read that first; this list is the checklist view of the same thing.
 
-- [ ] **S0** Clear the decks — delete spike app code (D-012), keep `/spike` as a
-      smoke test, run the migration, insert the baby row, hard-code her id
+- [x] **S0** Clear the decks — migration applied, Liana inserted and her id
+      hard-coded in `src/config.ts`, spike replaced by a read-only smoke test
 - [ ] **S1** Log a moment locally — IndexedDB, the write path, the add sheet
       skeleton, the milk block. Split feeds work here for free
 - [ ] **S2** Make it shared — push, full-refresh reconcile on mount and resume,

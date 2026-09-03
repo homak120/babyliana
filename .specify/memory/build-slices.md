@@ -31,8 +31,12 @@ not something an agent should hold.
 **Then, agent side:**
 
 - Delete `src/App.tsx` and `src/App.css`
-- Keep the tap page on a `/spike` route as a smoke test — the one exception,
-  already in `tasks.md`
+- Keep a smoke test on `/spike` — the one exception D-012 allows, already in
+  `tasks.md`. **Not the tap page.** Its table is dropped, so keeping it would
+  leave a permanently broken smoke test. Rewritten read-only against the real
+  schema: reads the baby row, subscribes to `timeslot`, and reports config,
+  connectivity, install state and build time. It writes nothing, so it cannot
+  put junk rows into real tables
 - Hard-code the baby id (D-022)
 
 **Dropping `spike_taps` does not clean the phones.** Both already hold
