@@ -9,9 +9,10 @@ import {
   totalsFor,
   type MascotState,
 } from '../derive'
+import { getDevices } from '../db'
 import { getMoments } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
-import type { Moment } from '../types'
+import type { Device, Moment } from '../types'
 import { AddSheet } from './AddSheet'
 import { Icon } from './Icon'
 import { Mascot } from './Mascot'
@@ -23,6 +24,14 @@ const STATE: Record<MascotState, { word: string; icon: string }> = {
   hungry: { word: 'hungry', icon: 'local_drink' },
   sleeping: { word: 'sleeping', icon: 'bedtime' },
   logged: { word: 'logged', icon: 'auto_awesome' },
+}
+
+/** The poop chip shows the colour when there is one — the prototype prints
+ *  "Dark" and "olive", not "poop", because that is what was actually seen. */
+function poopLabel(m: Moment) {
+  const p = m.events.find((e) => e.poop)
+  if (!p) return null
+  return p.poop_colour && p.poop_colour !== 'other' ? p.poop_colour : 'poop'
 }
 
 function feedLabel(m: Moment) {
@@ -51,6 +60,7 @@ const time = (iso: string) =>
 
 export function LogScreen() {
   const [moments, setMoments] = useState<Moment[]>([])
+  const [devices, setDevices] = useState<Device[]>([])
   const [sheet, setSheet] = useState(false)
   const [sync_, setSync] = useState(syncState())
   const [justLogged, setJustLogged] = useState(false)
@@ -58,6 +68,7 @@ export function LogScreen() {
 
   const refresh = useCallback(() => {
     getMoments().then(setMoments)
+    getDevices().then(setDevices)
   }, [])
 
   useEffect(refresh, [refresh])
@@ -83,15 +94,29 @@ export function LogScreen() {
     <main className="log">
       <div className="statusrow">
         <span>
-          <Icon name="schedule" size={14} /> {time(now.toISOString())}
+          <Icon name={theme === 'night' ? 'bedtime' : 'wb_sunny'} size={15} />
+          {time(now.toISOString())}
         </span>
-        <span className={`sync ${sync_.state}`}>{sync_.state}</span>
+        <span className="whos">
+          {devices
+            .filter((d) => d.name)
+            .map((d, i) => (
+              <i key={d.id} className={`avatar ${i % 2 ? 'b' : 'a'}`}>
+                {d.name!.charAt(0).toUpperCase()}
+              </i>
+            ))}
+          <span className={`sync ${sync_.state}`}>
+            <Icon name="cloud_done" size={15} />
+          </span>
+        </span>
       </div>
 
-      <section className="hero">
+      <section className="herocard">
         <Mascot state={state} />
         <div>
-          <p className="kicker">since last feed</p>
+          <p className="kicker">
+            <Icon name="schedule" size={13} /> since last feed
+          </p>
           <p className="elapsed">{formatElapsed(since)}</p>
           <span className={`statetag ${state}`}>
             <Icon name={STATE[state].icon} size={16} />
@@ -100,13 +125,27 @@ export function LogScreen() {
         </div>
       </section>
 
+      <div className="statcards">
+        <div className="stat rose">
+          <p><Icon name="local_drink" size={14} /> feeds</p>
+          <b>{totals.feeds}</b>
+        </div>
+        <div className="stat lav">
+          <p><Icon name="water_full" size={14} /> mL</p>
+          <b>{totals.ml}</b>
+        </div>
+        <div className="stat mint">
+          <p><Icon name="water_drop" size={14} /> pee / poop</p>
+          <b>{totals.pee} / {totals.poop}</b>
+        </div>
+      </div>
+
       <div className="totals">
-        <span className="tag rose">{totals.feeds} feeds</span>
-        <span className="tag lav">{totals.ml} mL</span>
-        <span className="tag yellow">{totals.pee} pee</span>
-        <span className="tag mint">{totals.poop} poop</span>
+        <span className="tag lilac"><Icon name="favorite" size={13} /> B {totals.breastMl}</span>
+        <span className="tag amber"><Icon name="local_drink" size={13} /> F {totals.formulaMl}</span>
+        {totals.unmarkedMl > 0 && <span className="tag chip">unmarked {totals.unmarkedMl}</span>}
         {totals.unknownVolumes > 0 && (
-          <span className="tag chip">unmarked {totals.unknownVolumes}</span>
+          <span className="tag chip">? &times; {totals.unknownVolumes}</span>
         )}
       </div>
 
@@ -125,9 +164,21 @@ export function LogScreen() {
               <div className="row">
                 <time>{time(m.timeslot.occurred_at)}</time>
                 <span className="chips">
-                  {feeds && <span className="chip-rose">{feeds}</span>}
-                  {m.events.some((e) => e.pee) && <span className="chip-yellow">pee</span>}
-                  {m.events.some((e) => e.poop) && <span className="chip-mint">poop</span>}
+                  {feeds && (
+                    <span className="chip-rose">
+                      <Icon name="local_drink" size={14} /> {feeds}
+                    </span>
+                  )}
+                  {m.events.some((e) => e.pee) && (
+                    <span className="chip-yellow">
+                      <Icon name="water_drop" size={14} /> pee
+                    </span>
+                  )}
+                  {m.events.some((e) => e.poop) && (
+                    <span className="chip-mint">
+                      <Icon name="cookie" size={14} /> {poopLabel(m)}
+                    </span>
+                  )}
                   {m.events
                     .filter((e) => e.type !== 'feed' && e.type !== 'diaper')
                     .map((e) => (
@@ -136,6 +187,10 @@ export function LogScreen() {
                       </span>
                     ))}
                 </span>
+                {(() => {
+                  const who = devices.find((d) => d.id === m.timeslot.logged_by)?.name
+                  return who ? <i className="avatar a">{who.charAt(0).toUpperCase()}</i> : null
+                })()}
               </div>
               {m.timeslot.note && (
                 <p className="rownote">
@@ -146,10 +201,6 @@ export function LogScreen() {
           )
         })}
       </ul>
-
-      <button type="button" className="fab" onClick={() => setSheet(true)} aria-label="log a moment">
-        <Icon name="add" size={30} />
-      </button>
 
       {sheet && (
         <AddSheet

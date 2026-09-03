@@ -52,17 +52,29 @@ export type Totals = {
   unknownVolumes: number
   pee: number
   poop: number
+  /** Millilitres by source. `unmarked` is volume logged without one. */
+  breastMl: number
+  formulaMl: number
+  unmarkedMl: number
 }
 
 export function totalsFor(moments: Moment[], day = new Date()): Totals {
-  const t: Totals = { feeds: 0, ml: 0, unknownVolumes: 0, pee: 0, poop: 0 }
+  const t: Totals = {
+    feeds: 0, ml: 0, unknownVolumes: 0, pee: 0, poop: 0,
+    breastMl: 0, formulaMl: 0, unmarkedMl: 0,
+  }
   for (const m of moments) {
     if (!sameDay(m.timeslot.occurred_at, day)) continue
     for (const e of m.events) {
       if (e.type === 'feed') {
         t.feeds++
         if (e.volume_ml === null) t.unknownVolumes++
-        else t.ml += e.volume_ml
+        else {
+          t.ml += e.volume_ml
+          if (e.source === 'breast_milk') t.breastMl += e.volume_ml
+          else if (e.source === 'formula') t.formulaMl += e.volume_ml
+          else t.unmarkedMl += e.volume_ml
+        }
       }
       if (e.type === 'diaper') {
         if (e.pee) t.pee++

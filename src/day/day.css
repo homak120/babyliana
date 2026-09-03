@@ -100,12 +100,25 @@
   right: 0;
   bottom: 0;
   display: flex;
-  justify-content: center;
-  gap: 2.5rem;
-  padding: 0.5rem 0 calc(0.5rem + env(safe-area-inset-bottom));
+  align-items: center;
+  justify-content: space-around;
+  padding: 0.5rem 1.5rem calc(0.5rem + env(safe-area-inset-bottom));
   background: var(--card);
   border-top: 1px solid var(--hair);
 }
+
+/* Raised out of the bar, which is where the prototype puts it — reachable from
+   either screen without floating over the content. */
+.tabs .fab {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--onAccent, #fff8fa);
+  box-shadow: 0 8px 18px var(--roseShadow);
+  margin-top: -1.75rem;
+}
+.tabs .fab.on { background: var(--accent); }
 
 .tabs button {
   width: 3.25rem;

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { sameDay, totalsFor } from '../derive'
-import { Icon } from '../log/Icon'
 import { AddSheet } from '../log/AddSheet'
 import { getMoments, removeMoment } from '../moments'
 import { getDevices } from '../db'
@@ -26,7 +25,6 @@ export function DayScreen() {
   const [devices, setDevices] = useState<Device[]>([])
   const [day, setDay] = useState<Date | null>(null)
   const [editing, setEditing] = useState<Moment | null>(null)
-  const [adding, setAdding] = useState(false)
 
   // The moment is hidden at once and actually deleted when the toast expires.
   // D-003 is a hard delete with no tombstone, so once it goes there is nothing
@@ -140,21 +138,6 @@ export function DayScreen() {
             undo
           </button>
         </div>
-      )}
-
-      <button type="button" className="fab" onClick={() => setAdding(true)} aria-label="log a moment">
-        <Icon name="add" size={30} />
-      </button>
-
-      {adding && (
-        <AddSheet
-          onClose={() => setAdding(false)}
-          onSaved={() => {
-            setAdding(false)
-            refresh()
-            void sync()
-          }}
-        />
       )}
 
       {editing && (

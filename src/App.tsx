@@ -16,12 +16,16 @@ import './day/day.css'
 // a router would buy nothing but a dependency — /spike stays a path check
 // because it is a diagnostic, not a screen anyone navigates to.
 
+import { AddSheet } from './log/AddSheet'
+
 type Screen = 'log' | 'day'
 
 export default function App() {
   const [ready, setReady] = useState(false)
   const [screen, setScreen] = useState<Screen>('log')
   const [welcomed, setWelcomed] = useState(true)
+  const [adding, setAdding] = useState(false)
+  const [saved, setSaved] = useState(0)
 
   useEffect(() => {
     // Upsert, never a first-run check — see db.ensureDevice.
@@ -39,8 +43,10 @@ export default function App() {
 
   return (
     <>
-      {screen === 'log' ? <LogScreen /> : <DayScreen />}
+      {screen === 'log' ? <LogScreen key={saved} /> : <DayScreen key={saved} />}
 
+      {/* The FAB lives in the tab bar, raised and centred, so logging is
+          reachable from either screen without it floating over the content. */}
       <nav className="tabs">
         <button
           type="button"
@@ -50,6 +56,16 @@ export default function App() {
         >
           <Icon name="pets" size={24} />
         </button>
+
+        <button
+          type="button"
+          className="fab"
+          onClick={() => setAdding(true)}
+          aria-label="log a moment"
+        >
+          <Icon name="add" size={30} />
+        </button>
+
         <button
           type="button"
           className={screen === 'day' ? 'on' : ''}
@@ -59,6 +75,16 @@ export default function App() {
           <Icon name="calendar_month" size={24} />
         </button>
       </nav>
+
+      {adding && (
+        <AddSheet
+          onClose={() => setAdding(false)}
+          onSaved={() => {
+            setAdding(false)
+            setSaved((n) => n + 1)
+          }}
+        />
+      )}
     </>
   )
 }
