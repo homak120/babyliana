@@ -1,4 +1,4 @@
-import type { DraftEntry, EventType, PoopColour, PoopConsistency, Source } from '../types'
+import type { DraftEntry, EventType, LogEvent, Moment, PoopColour, PoopConsistency, Source } from '../types'
 
 // What the sheet edits before ids and timestamps are attached. Kept out of the
 // component files so those export components only — and because the "does this
@@ -60,10 +60,18 @@ export const newOther = (): OtherDraft => ({ kind: null })
 /** Nothing picked yet says nothing. */
 export const otherIsEmpty = (d: OtherDraft) => d.kind === null
 
+/**
+ * `id` is set when the block came from an existing entry.
+ *
+ * Editing keeps it, so an unchanged entry keeps its identity instead of being
+ * deleted and reinserted under a new id. That keeps the sync small and, more
+ * importantly, means correcting a volume does not disturb the diaper logged at
+ * the same moment — the paper log's corrections strike a value, not a row.
+ */
 export type Block =
-  | { key: string; type: 'milk'; draft: MilkDraft }
-  | { key: string; type: 'diaper'; draft: DiaperDraft }
-  | { key: string; type: 'other'; draft: OtherDraft }
+  | { key: string; id?: string; type: 'milk'; draft: MilkDraft }
+  | { key: string; id?: string; type: 'diaper'; draft: DiaperDraft }
+  | { key: string; id?: string; type: 'other'; draft: OtherDraft }
 
 export const blockIsEmpty = (b: Block) =>
   b.type === 'milk'
@@ -97,4 +105,39 @@ export function toEntry(b: Block): DraftEntry {
   }
   // `other` carries nothing but its type — the moment's note holds the detail.
   return { type: b.draft.kind! }
+}
+
+/** The reverse of toEntry: an existing moment, opened for editing. */
+export function blocksFromMoment(m: Moment): Block[] {
+  return m.events.map((e: LogEvent): Block => {
+    const key = crypto.randomUUID()
+    if (e.type === 'feed') {
+      return {
+        key,
+        id: e.id,
+        type: 'milk',
+        draft: {
+          volume: e.volume_ml,
+          // A stored null volume is the paper's `?` — a feed of unknown volume,
+          // not an empty block. Reopening it must not silently lose that.
+          unknown: e.volume_ml === null,
+          source: e.source ?? 'unknown',
+        },
+      }
+    }
+    if (e.type === 'diaper') {
+      return {
+        key,
+        id: e.id,
+        type: 'diaper',
+        draft: {
+          pee: e.pee ?? false,
+          poop: e.poop ?? false,
+          colour: e.poop_colour,
+          consistency: e.poop_consistency,
+        },
+      }
+    }
+    return { key, id: e.id, type: 'other', draft: { kind: e.type } }
+  })
 }

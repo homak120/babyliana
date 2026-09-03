@@ -1,3 +1,7 @@
+// ⚠ This writes to the PRODUCTION database, which now holds real entries.
+// Every delete here names an exact id this run created. Never widen one to a
+// filter — `delete().eq('baby_id', …)` would take the real log with it.
+//
 // S2's done-when, against the REAL database — push, reconcile, and the two
 // failures that matter: a moment logged elsewhere while this client was not
 // listening, and unpushed local writes surviving a reconcile.
@@ -113,11 +117,12 @@ try {
   for (const id of made) await sb.from('timeslot').delete().eq('id', id)
   await sb.from('device').delete().eq('id', TEST_DEVICE)
   const [ts, dev] = await Promise.all([
-    sb.from('timeslot').select('id').eq('baby_id', BABY_ID),
+    sb.from('timeslot').select('id').in('id', made),
     sb.from('device').select('id').eq('updated_by', 'verify-s2'),
   ])
   console.log(
-    `\n  cleanup: ${ts.data?.length ?? '?'} timeslots, ${dev.data?.length ?? '?'} test devices left`,
+    `\n  cleanup: ${ts.data?.length ?? '?'} of this run's timeslots, ` +
+      `${dev.data?.length ?? '?'} test devices left`,
   )
 }
 

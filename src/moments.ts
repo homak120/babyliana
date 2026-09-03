@@ -91,6 +91,71 @@ export async function logMoment(input: NewMoment): Promise<Moment> {
   return moment
 }
 
+/**
+ * Apply an edit to an existing moment.
+ *
+ * Entries carrying an id are updated in place; new ones are inserted; ones that
+ * were removed from the sheet are deleted. Rows are mutable (D-003), so there
+ * are no correction events and no tombstones — an edit is an edit.
+ */
+export async function updateMoment(
+  timeslotId: string,
+  input: NewMoment & { entryIds: (string | undefined)[] },
+): Promise<Moment> {
+  const existing = (await db.getMoments()).find((m) => m.timeslot.id === timeslotId)
+  if (!existing) throw new Error('no such moment')
+
+  const t = now()
+  const timeslot: Timeslot = {
+    ...existing.timeslot,
+    occurred_at: (input.occurredAt ?? new Date(existing.timeslot.occurred_at)).toISOString(),
+    ended_at: input.endedAt ? input.endedAt.toISOString() : null,
+    note: input.note ?? null,
+    updated_at: t,
+  }
+
+  const events: LogEvent[] = input.entries.map((e, i) => {
+    const id = input.entryIds[i]
+    const prior = id ? existing.events.find((x) => x.id === id) : undefined
+    return {
+      // Keeping the id is what makes a correction land on the entry it belongs
+      // to, rather than replacing the whole moment.
+      id: prior?.id ?? crypto.randomUUID(),
+      timeslot_id: timeslotId,
+      type: e.type,
+      note: e.note ?? null,
+      recorded_at: prior?.recorded_at ?? t,
+      updated_at: t,
+      updated_by: null,
+      volume_ml: e.volume_ml ?? null,
+      source: e.source ?? null,
+      pee: e.pee ?? null,
+      poop: e.poop ?? null,
+      poop_colour: e.poop_colour ?? null,
+      poop_consistency: e.poop_consistency ?? null,
+      grams: e.grams ?? null,
+      celsius: e.celsius ?? null,
+      supplement_name: e.supplement_name ?? null,
+      amount: e.amount ?? null,
+      severity: e.severity ?? null,
+    }
+  })
+
+  const kept = new Set(events.map((e) => e.id))
+  const dropped = existing.events.filter((e) => !kept.has(e.id))
+
+  await db.putMoment({ timeslot, events })
+  for (const d of dropped) await db.deleteEvent(d.id)
+
+  await db.enqueue([
+    { table: 'timeslot', rowId: timeslot.id, op: 'put' },
+    ...events.map((e) => ({ table: 'event' as const, rowId: e.id, op: 'put' as const })),
+    ...dropped.map((e) => ({ table: 'event' as const, rowId: e.id, op: 'delete' as const })),
+  ])
+
+  return { timeslot, events }
+}
+
 export const getMoments = db.getMoments
 
 /** Deleting locally also has to reach the server — hard delete, no tombstone. */

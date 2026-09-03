@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { logMoment } from '../moments'
+import { logMoment, updateMoment } from '../moments'
+import type { Moment } from '../types'
 import {
+  blocksFromMoment,
   canSave,
   newDiaper,
   newMilk,
@@ -38,13 +40,28 @@ const AVAILABLE: { type: BlockType; label: string }[] = [
 const emptyDraft = (type: BlockType) =>
   type === 'milk' ? newMilk() : type === 'diaper' ? newDiaper() : newOther()
 
-export function AddSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-  const [blocks, setBlocks] = useState<Block[]>([])
+export function AddSheet({
+  onClose,
+  onSaved,
+  editing,
+}: {
+  onClose: () => void
+  onSaved: () => void
+  /** Set to reopen an existing moment pre-filled, rather than start a new one. */
+  editing?: Moment
+}) {
+  const [blocks, setBlocks] = useState<Block[]>(() =>
+    editing ? blocksFromMoment(editing) : [],
+  )
   const [saving, setSaving] = useState(false)
   // Defaults to now — the overwhelmingly common case, at zero taps.
-  const [start, setStart] = useState(() => new Date())
-  const [end, setEnd] = useState<Date | null>(null)
-  const [note, setNote] = useState('')
+  const [start, setStart] = useState(() =>
+    editing ? new Date(editing.timeslot.occurred_at) : new Date(),
+  )
+  const [end, setEnd] = useState<Date | null>(() =>
+    editing?.timeslot.ended_at ? new Date(editing.timeslot.ended_at) : null,
+  )
+  const [note, setNote] = useState(editing?.timeslot.note ?? '')
 
   function add(type: BlockType) {
     setBlocks((b) => [
@@ -62,12 +79,20 @@ export function AddSheet({ onClose, onSaved }: { onClose: () => void; onSaved: (
 
   async function save() {
     setSaving(true)
-    await logMoment({
+    const payload = {
       occurredAt: start,
       endedAt: end,
       note: note.trim() || null,
       entries: blocks.map(toEntry),
-    })
+    }
+    if (editing) {
+      await updateMoment(editing.timeslot.id, {
+        ...payload,
+        entryIds: blocks.map((b) => b.id),
+      })
+    } else {
+      await logMoment(payload)
+    }
     setSaving(false)
     onSaved()
   }
@@ -77,7 +102,7 @@ export function AddSheet({ onClose, onSaved }: { onClose: () => void; onSaved: (
   return (
     <div className="sheet">
       <header className="sheet-head">
-        <h2>log a moment</h2>
+        <h2>{editing ? 'edit this moment' : 'log a moment'}</h2>
         <button type="button" className="x" onClick={onClose} aria-label="close">
           <Icon name="close" size={20} />
         </button>

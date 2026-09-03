@@ -196,6 +196,10 @@ export async function replaceAll(rows: {
   ])
 }
 
+export async function deleteEvent(id: string) {
+  await (await db()).delete('event', id)
+}
+
 export async function getRow(table: 'device' | 'timeslot' | 'event', id: string) {
   return (await db()).get(table, id)
 }

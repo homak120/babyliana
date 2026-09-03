@@ -37,8 +37,8 @@ Derived directly from `paper-log-baseline.md`. Every item must be expressible:
       no `?` for time (D-018), so this must be fast rather than expressible
 - [x] An entry with an unknown volume — `?`
 - [x] An entry logged out of order, hours after it happened
-- [ ] An entry corrected after it was recorded
-- [ ] An entry deleted after it was recorded
+- [x] An entry corrected after it was recorded
+- [x] An entry deleted after it was recorded
 - [x] A row with a diaper and no feed
 - [x] A row with a feed and no diaper
 - [x] Something that took a stretch of time rather than happening at an instant
