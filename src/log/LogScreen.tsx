@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getMoments } from '../moments'
+import { subscribe, sync, syncState } from '../sync'
 import type { Moment } from '../types'
 import { AddSheet } from './AddSheet'
 
@@ -20,6 +21,7 @@ function describe(m: Moment) {
 export function LogScreen() {
   const [moments, setMoments] = useState<Moment[]>([])
   const [sheet, setSheet] = useState(false)
+  const [sync_, setSync] = useState(syncState())
 
   const refresh = useCallback(() => {
     getMoments().then(setMoments)
@@ -27,9 +29,22 @@ export function LogScreen() {
 
   useEffect(refresh, [refresh])
 
+  // A reconcile replaces local state, so the list has to re-read after one —
+  // otherwise a moment logged on the other phone never appears here.
+  useEffect(
+    () =>
+      subscribe(() => {
+        setSync(syncState())
+        refresh()
+      }),
+    [refresh],
+  )
+
   return (
     <main className="log">
-      <p className="label">logged, newest first</p>
+      <p className="label">
+        logged, newest first · <span className={`sync ${sync_.state}`}>{sync_.state}</span>
+      </p>
 
       {moments.length === 0 && <p className="empty">nothing logged yet.</p>}
 
@@ -56,6 +71,7 @@ export function LogScreen() {
           onSaved={() => {
             setSheet(false)
             refresh()
+            void sync()
           }}
         />
       )}

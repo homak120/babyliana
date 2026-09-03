@@ -17,13 +17,16 @@ const now = () => new Date().toISOString()
  */
 export async function ensureThisDevice() {
   const t = now()
-  await db.ensureDevice({
+  const created = await db.ensureDevice({
     id: deviceId(),
     name: null, // the welcome screen sets this in S9
     created_at: t,
     updated_at: t,
     updated_by: null, // only ever set by a manual script
   })
+  if (created) {
+    await db.enqueue([{ table: 'device', rowId: deviceId(), op: 'put' }])
+  }
 }
 
 export type NewMoment = {
@@ -81,8 +84,21 @@ export async function logMoment(input: NewMoment): Promise<Moment> {
 
   const moment = { timeslot, events }
   await db.putMoment(moment)
+  await db.enqueue([
+    { table: 'timeslot', rowId: timeslot.id, op: 'put' },
+    ...events.map((e) => ({ table: 'event' as const, rowId: e.id, op: 'put' as const })),
+  ])
   return moment
 }
 
 export const getMoments = db.getMoments
-export const deleteMoment = db.deleteMoment
+
+/** Deleting locally also has to reach the server — hard delete, no tombstone. */
+export async function removeMoment(timeslotId: string) {
+  const eventIds = await db.eventIdsFor(timeslotId)
+  await db.deleteMoment(timeslotId)
+  await db.enqueue([
+    { table: 'timeslot', rowId: timeslotId, op: 'delete' },
+    ...eventIds.map((id) => ({ table: 'event' as const, rowId: id, op: 'delete' as const })),
+  ])
+}

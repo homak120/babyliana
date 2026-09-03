@@ -180,3 +180,9 @@
   opacity: 0.35;
   cursor: not-allowed;
 }
+
+.sync { color: var(--dim); }
+.sync.syncing { color: var(--warn); }
+.sync.idle { color: var(--ok); }
+.sync.offline,
+.sync.error { color: var(--err); }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import SpikePage from './spike/SpikePage'
 import { LogScreen } from './log/LogScreen'
 import { ensureThisDevice } from './moments'
+import { startSync } from './sync'
 import './log/log.css'
 
 // No router. The design navigates with a two-tab bar rather than URLs, so a
@@ -13,7 +14,10 @@ export default function App() {
 
   useEffect(() => {
     // Upsert, never a first-run check — see db.ensureDevice.
-    ensureThisDevice().then(() => setReady(true))
+    ensureThisDevice().then(() => {
+      setReady(true)
+      startSync()
+    })
   }, [])
 
   if (window.location.pathname.startsWith('/spike')) return <SpikePage />

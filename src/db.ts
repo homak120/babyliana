@@ -10,10 +10,25 @@ import type { Baby, Device, LogEvent, Moment, Timeslot } from './types'
 // the transaction plumbing is unreadable by hand.
 
 const DB_NAME = 'babyliana'
-const DB_VERSION = 1
+const DB_VERSION = 2
+
+/**
+ * What has been written locally but not yet accepted by the server.
+ *
+ * Load-bearing: reconcile replaces local state wholesale, so anything not yet
+ * pushed would be erased by it. Reconcile is skipped while this is non-empty.
+ * Keyed `table:rowId` so rewriting a row twice queues it once.
+ */
+export type OutboxItem = {
+  key: string
+  table: 'device' | 'timeslot' | 'event'
+  rowId: string
+  op: 'put' | 'delete'
+}
 
 interface Schema extends DBSchema {
   baby: { key: string; value: Baby }
+  outbox: { key: string; value: OutboxItem }
   device: { key: string; value: Device }
   timeslot: { key: string; value: Timeslot; indexes: { occurred_at: string } }
   event: { key: string; value: LogEvent; indexes: { timeslot_id: string } }
@@ -23,17 +38,24 @@ let dbp: Promise<IDBPDatabase<Schema>> | null = null
 
 function db() {
   dbp ??= openDB<Schema>(DB_NAME, DB_VERSION, {
-    upgrade(d) {
-      d.createObjectStore('baby', { keyPath: 'id' })
-      d.createObjectStore('device', { keyPath: 'id' })
-      d.createObjectStore('timeslot', { keyPath: 'id' }).createIndex(
-        'occurred_at',
-        'occurred_at',
-      )
-      d.createObjectStore('event', { keyPath: 'id' }).createIndex(
-        'timeslot_id',
-        'timeslot_id',
-      )
+    upgrade(d, oldVersion) {
+      // Guarded per version so an existing browser upgrades rather than
+      // needing its data cleared.
+      if (oldVersion < 1) {
+        d.createObjectStore('baby', { keyPath: 'id' })
+        d.createObjectStore('device', { keyPath: 'id' })
+        d.createObjectStore('timeslot', { keyPath: 'id' }).createIndex(
+          'occurred_at',
+          'occurred_at',
+        )
+        d.createObjectStore('event', { keyPath: 'id' }).createIndex(
+          'timeslot_id',
+          'timeslot_id',
+        )
+      }
+      if (oldVersion < 2) {
+        d.createObjectStore('outbox', { keyPath: 'key' })
+      }
     },
   })
   return dbp
@@ -95,10 +117,17 @@ export async function deleteMoment(timeslotId: string) {
  * would then fail its foreign key. It is also wrong after a storage eviction,
  * which is what Q-004 is measuring.
  */
-export async function ensureDevice(device: Device) {
+export async function ensureDevice(device: Device): Promise<boolean> {
   const d = await db()
   const existing = await d.get('device', device.id)
-  if (!existing) await d.put('device', device)
+  if (existing) return false
+  await d.put('device', device)
+  return true
+}
+
+export async function eventIdsFor(timeslotId: string): Promise<string[]> {
+  const d = await db()
+  return d.getAllKeysFromIndex('event', 'timeslot_id', timeslotId)
 }
 
 export async function getDevices(): Promise<Device[]> {
@@ -111,4 +140,62 @@ export async function putBaby(baby: Baby) {
 
 export async function getBaby(id: string): Promise<Baby | undefined> {
   return (await db()).get('baby', id)
+}
+
+// --- outbox -----------------------------------------------------------------
+
+export async function enqueue(items: Omit<OutboxItem, 'key'>[]) {
+  const d = await db()
+  const tx = d.transaction('outbox', 'readwrite')
+  await Promise.all([
+    ...items.map((i) => tx.store.put({ ...i, key: `${i.table}:${i.rowId}` })),
+    tx.done,
+  ])
+}
+
+export async function outbox(): Promise<OutboxItem[]> {
+  return (await db()).getAll('outbox')
+}
+
+export async function dequeue(keys: string[]) {
+  const d = await db()
+  const tx = d.transaction('outbox', 'readwrite')
+  await Promise.all([...keys.map((k) => tx.store.delete(k)), tx.done])
+}
+
+// --- reconcile --------------------------------------------------------------
+
+/**
+ * Replace local state with what the server has.
+ *
+ * Wholesale rather than incremental, which is what makes a hard delete
+ * propagate: a row removed elsewhere is noticed by its absence, and there is no
+ * tombstone to carry the news (D-003). Only safe when the outbox is empty —
+ * see sync.ts.
+ */
+export async function replaceAll(rows: {
+  baby: Baby[]
+  device: Device[]
+  timeslot: Timeslot[]
+  event: LogEvent[]
+}) {
+  const d = await db()
+  const tx = d.transaction(['baby', 'device', 'timeslot', 'event'], 'readwrite')
+  await Promise.all([
+    tx.objectStore('baby').clear(),
+    tx.objectStore('device').clear(),
+    tx.objectStore('timeslot').clear(),
+    tx.objectStore('event').clear(),
+  ])
+  await Promise.all([
+    ...rows.baby.map((r) => tx.objectStore('baby').put(r)),
+    ...rows.device.map((r) => tx.objectStore('device').put(r)),
+    ...rows.timeslot.map((r) => tx.objectStore('timeslot').put(r)),
+    ...rows.event.map((r) => tx.objectStore('event').put(r)),
+    tx.done,
+  ])
+}
+
+export async function getRow(table: 'device' | 'timeslot' | 'event', id: string) {
+  return (await db()).get(table, id)
 }

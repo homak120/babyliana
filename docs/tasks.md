@@ -99,8 +99,8 @@ when". Read that first; this list is the checklist view of the same thing.
       hard-coded in `src/config.ts`, spike replaced by a read-only smoke test
 - [x] **S1** Log a moment locally — IndexedDB, the write path, the add sheet
       skeleton, the milk block. `npm run verify` covers the done-when
-- [ ] **S2** Make it shared — push, full-refresh reconcile on mount and resume,
-      realtime on top. The stale-after-backgrounding bug is the test
+- [x] **S2** Make it shared — push then reconcile, realtime on top. Verified
+      against the live database, including the stale-after-backgrounding bug
 - [ ] **S3** The home screen — elapsed hero, totals, recent list, mascot states
 - [ ] **S4** Diapers — pee/poop, optional colour and consistency
 - [ ] **S5** Time entry — steppers, offsets, numeric, optional end time. **The
