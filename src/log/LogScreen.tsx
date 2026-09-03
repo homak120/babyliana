@@ -1,64 +1,131 @@
 import { useCallback, useEffect, useState } from 'react'
+import {
+  formatElapsed,
+  lastFeedAt,
+  mascotState,
+  minutesSince,
+  sameDay,
+  themeFor,
+  totalsFor,
+  type MascotState,
+} from '../derive'
 import { getMoments } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
 import type { Moment } from '../types'
 import { AddSheet } from './AddSheet'
+import { Mascot } from './Mascot'
 
-// Deliberately plain. S3 builds the real home screen — elapsed hero, totals,
-// mascot — against the design's tokens. This is just enough to see that what
-// went in came back out.
+const WORD: Record<MascotState, string> = {
+  settled: 'settled',
+  awake: 'awake',
+  hungry: 'hungry',
+  sleeping: 'sleeping',
+  logged: 'logged',
+}
 
-function describe(m: Moment) {
-  return m.events
+function feedLabel(m: Moment) {
+  const feeds = m.events.filter((e) => e.type === 'feed')
+  if (feeds.length === 0) return null
+  return feeds
     .map((e) => {
-      const vol = e.volume_ml === null ? '?' : `${e.volume_ml}`
+      const vol = e.volume_ml === null ? '?' : String(e.volume_ml)
       const src = e.source === 'breast_milk' ? '(B)' : e.source === 'formula' ? '(F)' : ''
-      return `${vol}${src}`
+      return vol + src
     })
     .join(' + ')
 }
+
+function dayLabel(iso: string) {
+  const d = new Date(iso)
+  if (sameDay(iso, new Date())) return 'today'
+  const y = new Date()
+  y.setDate(y.getDate() - 1)
+  if (sameDay(iso, y)) return 'yesterday'
+  return d.toLocaleDateString([], { day: '2-digit', month: '2-digit' })
+}
+
+const time = (iso: string) =>
+  new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
 
 export function LogScreen() {
   const [moments, setMoments] = useState<Moment[]>([])
   const [sheet, setSheet] = useState(false)
   const [sync_, setSync] = useState(syncState())
+  const [justLogged, setJustLogged] = useState(false)
+  const [now, setNow] = useState(new Date())
 
   const refresh = useCallback(() => {
     getMoments().then(setMoments)
   }, [])
 
   useEffect(refresh, [refresh])
+  useEffect(() => subscribe(() => { setSync(syncState()); refresh() }), [refresh])
 
-  // A reconcile replaces local state, so the list has to re-read after one —
-  // otherwise a moment logged on the other phone never appears here.
-  useEffect(
-    () =>
-      subscribe(() => {
-        setSync(syncState())
-        refresh()
-      }),
-    [refresh],
-  )
+  // The hero is an elapsed time, so it has to move on its own — otherwise a
+  // screen left open quietly shows a number that was right when it loaded.
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30_000)
+    return () => clearInterval(t)
+  }, [])
+
+  const theme = themeFor(now)
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+  }, [theme])
+
+  const since = minutesSince(lastFeedAt(moments), now)
+  const totals = totalsFor(moments, now)
+  const state = mascotState(since, theme, justLogged)
 
   return (
     <main className="log">
-      <p className="label">
-        logged, newest first · <span className={`sync ${sync_.state}`}>{sync_.state}</span>
-      </p>
+      <div className="statusrow">
+        <span>{time(now.toISOString())}</span>
+        <span className={`sync ${sync_.state}`}>{sync_.state}</span>
+      </div>
 
-      {moments.length === 0 && <p className="empty">nothing logged yet.</p>}
+      <section className="hero">
+        <Mascot state={state} />
+        <div>
+          <p className="kicker">since last feed</p>
+          <p className="elapsed">{formatElapsed(since)}</p>
+          <span className={`statetag ${state}`}>{WORD[state]}</span>
+        </div>
+      </section>
+
+      <div className="totals">
+        <span className="tag rose">{totals.feeds} feeds</span>
+        <span className="tag lav">{totals.ml} mL</span>
+        <span className="tag yellow">{totals.pee} pee</span>
+        <span className="tag mint">{totals.poop} poop</span>
+        {totals.unknownVolumes > 0 && (
+          <span className="tag chip">unmarked {totals.unknownVolumes}</span>
+        )}
+      </div>
+
+      <p className="kicker recent-head">most recent first</p>
+
+      {moments.length === 0 && <p className="empty">nothing logged in this period.</p>}
 
       <ul className="moments">
-        {moments.map((m) => (
-          <li key={m.timeslot.id}>
-            <time>{new Date(m.timeslot.occurred_at).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}</time>
-            <span className="what">{describe(m)}</span>
-            <span className="count">{m.events.length} entr{m.events.length === 1 ? 'y' : 'ies'}</span>
-          </li>
-        ))}
+        {moments.map((m, i) => {
+          const prev = moments[i - 1]
+          const newDay = !prev || !sameDay(prev.timeslot.occurred_at, new Date(m.timeslot.occurred_at))
+          const feeds = feedLabel(m)
+          return (
+            <li key={m.timeslot.id}>
+              {newDay && <p className="day-sep">{dayLabel(m.timeslot.occurred_at)}</p>}
+              <div className="row">
+                <time>{time(m.timeslot.occurred_at)}</time>
+                <span className="chips">
+                  {feeds && <span className="chip-rose">{feeds}</span>}
+                  {m.events.some((e) => e.pee) && <span className="chip-yellow">pee</span>}
+                  {m.events.some((e) => e.poop) && <span className="chip-mint">poop</span>}
+                </span>
+              </div>
+            </li>
+          )
+        })}
       </ul>
 
       <button type="button" className="fab" onClick={() => setSheet(true)} aria-label="log">
@@ -72,6 +139,8 @@ export function LogScreen() {
             setSheet(false)
             refresh()
             void sync()
+            setJustLogged(true)
+            setTimeout(() => setJustLogged(false), 1500)
           }}
         />
       )}

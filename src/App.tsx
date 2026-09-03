@@ -3,6 +3,7 @@ import SpikePage from './spike/SpikePage'
 import { LogScreen } from './log/LogScreen'
 import { ensureThisDevice } from './moments'
 import { startSync } from './sync'
+import './tokens.css'
 import './log/log.css'
 
 // No router. The design navigates with a two-tab bar rather than URLs, so a

@@ -101,7 +101,8 @@ when". Read that first; this list is the checklist view of the same thing.
       skeleton, the milk block. `npm run verify` covers the done-when
 - [x] **S2** Make it shared — push then reconcile, realtime on top. Verified
       against the live database, including the stale-after-backgrounding bug
-- [ ] **S3** The home screen — elapsed hero, totals, recent list, mascot states
+- [x] **S3** The home screen — elapsed hero, totals, recent list, mascot,
+      day separators, theme by clock, tokens.css wired
 - [ ] **S4** Diapers — pee/poop, optional colour and consistency
 - [ ] **S5** Time entry — steppers, offsets, numeric, optional end time. **The
       slice that decides whether the app beats the pen.** Usable for real after
