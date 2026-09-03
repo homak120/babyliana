@@ -6,10 +6,8 @@ import { getMoments, removeMoment } from '../moments'
 import { getDevices } from '../db'
 import { subscribe, sync } from '../sync'
 import type { Device, Moment } from '../types'
-import {
-  chronological, dateCell, daysWithEntries, diaperCell, initialOf,
-  milkCell, otherCell, timeCell,
-} from './cells'
+import { chronological, daysWithEntries } from './cells'
+import { DayRow } from './DayRow'
 
 // The read-back. Its whole purpose is that you can hold the phone next to the
 // paper page and see the same thing, so the column order and the inherited date
@@ -20,23 +18,15 @@ const dayPill = (d: Date) =>
     ? `today ${d.getMonth() + 1}/${d.getDate()}`
     : `${d.getMonth() + 1}/${d.getDate()}`
 
-/** Two 88px actions, so a row opens to 176. */
-const ACTIONS_W = 176
-const SNAP_AT = 40
+/** How long a deleted moment is held before it actually goes (D-025). */
 const UNDO_MS = 5000
-
-/** Left only, and no further than the actions are wide. */
-const clampDx = (raw: number, alreadyOpen: boolean) =>
-  Math.max(-ACTIONS_W, Math.min(0, raw + (alreadyOpen ? -ACTIONS_W : 0)))
 
 export function DayScreen() {
   const [moments, setMoments] = useState<Moment[]>([])
   const [devices, setDevices] = useState<Device[]>([])
   const [day, setDay] = useState<Date | null>(null)
-  const [openRow, setOpenRow] = useState<string | null>(null)
-  /** An in-progress drag. Kept in state so the transform is a render output. */
-  const [drag, setDrag] = useState<{ id: string; from: number; dx: number } | null>(null)
   const [editing, setEditing] = useState<Moment | null>(null)
+  const [adding, setAdding] = useState(false)
 
   // The moment is hidden at once and actually deleted when the toast expires.
   // D-003 is a hard delete with no tombstone, so once it goes there is nothing
@@ -120,91 +110,20 @@ export function DayScreen() {
 
         {forDay.length === 0 && <p className="empty">nothing logged in this period.</p>}
 
-        {forDay.map((m, i) => {
-          const date = dateCell(m, forDay[i - 1])
-          const milk = milkCell(m.events)
-          const diaper = diaperCell(m.events)
-          const rest = otherCell(m.events)
-          const initial = initialOf(nameFor(m.timeslot.logged_by))
-          const open = openRow === m.timeslot.id
-          return (
-            <div key={m.timeslot.id} className="rowwrap">
-              <div className="rowactions">
-                <button
-                  type="button"
-                  className="act edit"
-                  onClick={() => {
-                    setEditing(m)
-                    setOpenRow(null)
-                  }}
-                >
-                  <Icon name="edit" size={20} />
-                  edit
-                </button>
-                <button
-                  type="button"
-                  className="act del"
-                  onClick={() => {
-                    setOpenRow(null)
-                    setUndo(m)
-                    if (undoTimer.current) clearTimeout(undoTimer.current)
-                    undoTimer.current = setTimeout(() => commitDelete(m.timeslot.id), UNDO_MS)
-                  }}
-                >
-                  <Icon name="delete" size={20} />
-                  delete
-                </button>
-              </div>
-              <div
-                className="trow"
-                style={{
-                  transform: `translateX(${
-                    drag?.id === m.timeslot.id ? drag.dx : open ? -ACTIONS_W : 0
-                  }px)`,
-                  transition: drag?.id === m.timeslot.id ? 'none' : undefined,
-                }}
-                onPointerDown={(e) => setDrag({ id: m.timeslot.id, from: e.clientX, dx: 0 })}
-                onPointerMove={(e) => {
-                  setDrag((d) =>
-                    d && d.id === m.timeslot.id
-                      ? { ...d, dx: clampDx(e.clientX - d.from, open) }
-                      : d,
-                  )
-                }}
-                onPointerUp={() => {
-                  // Past the snap point it stays open; short of it, it springs back.
-                  setOpenRow(drag && drag.dx < -SNAP_AT ? m.timeslot.id : null)
-                  setDrag(null)
-                }}
-                onPointerCancel={() => setDrag(null)}
-              >
-                <span className="tdate">{date}</span>
-                <span className="ttime">{timeCell(m)}</span>
-                <span className="tmilk">
-                  {milk === null ? (
-                    ''
-                  ) : milk.unknown ? (
-                    <b className="unknown">{milk.parts.join(' + ')}</b>
-                  ) : (
-                    milk.parts.join(' + ')
-                  )}
-                </span>
-                <span className="tdiaper">
-                  {diaper}
-                  {rest && <em className="trest">{rest}</em>}
-                </span>
-                <span className="twho">
-                  {initial && <i className="avatar">{initial}</i>}
-                </span>
-              </div>
-              {m.timeslot.note && (
-                <p className="tnote">
-                  <Icon name="edit_note" size={13} /> {m.timeslot.note}
-                </p>
-              )}
-            </div>
-          )
-        })}
+        {forDay.map((m, i) => (
+          <DayRow
+            key={m.timeslot.id}
+            moment={m}
+            previous={forDay[i - 1]}
+            name={nameFor(m.timeslot.logged_by)}
+            onEdit={() => setEditing(m)}
+            onDelete={() => {
+              setUndo(m)
+              if (undoTimer.current) clearTimeout(undoTimer.current)
+              undoTimer.current = setTimeout(() => commitDelete(m.timeslot.id), UNDO_MS)
+            }}
+          />
+        ))}
       </div>
 
       {undo && (
@@ -221,6 +140,21 @@ export function DayScreen() {
             undo
           </button>
         </div>
+      )}
+
+      <button type="button" className="fab" onClick={() => setAdding(true)} aria-label="log">
+        <Icon name="add" size={30} />
+      </button>
+
+      {adding && (
+        <AddSheet
+          onClose={() => setAdding(false)}
+          onSaved={() => {
+            setAdding(false)
+            refresh()
+            void sync()
+          }}
+        />
       )}
 
       {editing && (

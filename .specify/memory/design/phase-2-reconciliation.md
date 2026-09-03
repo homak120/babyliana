@@ -55,6 +55,15 @@ Deferred by slicing, not oversight — each lands where it has something to be:
 | Row swipe to edit / delete | S8 | |
 | Period picker, cards and timeline day views | post-MVP | Alternatives the handoff offers, not the default |
 
+## One interaction rule the model overrides
+
+The handoff says *"tap a type bubble → appends that block; bubble disappears
+from the dashed container"*. That was written when a split feed was one block
+with two halves. Under D-019 it is two milk blocks in one moment, so the milk
+bubble has to stay. Diaper does disappear — one change is one change, and pee
+and poop are flags on it rather than two entries. `other` stays, since a moment
+might carry a sleep and a weight.
+
 ## Delete is missing from the design
 
 The handoff specifies swipe-to-edit as a single 88px action and does not mention

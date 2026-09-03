@@ -32,10 +32,16 @@ import { TimeCard } from './TimeCard'
 
 type BlockType = Block['type']
 
-const AVAILABLE: { type: BlockType; label: string }[] = [
-  { type: 'milk', label: '+ milk' },
-  { type: 'diaper', label: '+ diaper' },
-  { type: 'other', label: '+ other' },
+const AVAILABLE: { type: BlockType; label: string; repeats: boolean }[] = [
+  // Milk repeats, and has to: under D-019 a split feed is two milk blocks in
+  // one moment. The handoff says a bubble disappears once added, but it was
+  // written when a split feed was one block with two halves — so that rule
+  // holds for the others and not for this one.
+  { type: 'milk', label: '+ milk', repeats: true },
+  // One change is one change; pee and poop are flags on it, not two entries.
+  { type: 'diaper', label: '+ diaper', repeats: false },
+  // A moment might carry a sleep and a weight, so this repeats too.
+  { type: 'other', label: '+ other', repeats: true },
 ]
 
 const emptyDraft = (type: BlockType) =>
@@ -151,7 +157,7 @@ export function AddSheet({
       )}
 
       <div className="bubbles">
-        {AVAILABLE.map((a) => (
+        {AVAILABLE.filter((a) => a.repeats || !blocks.some((b) => b.type === a.type)).map((a) => (
           <button type="button" key={a.type} onClick={() => add(a.type)}>
             {a.label}
           </button>
