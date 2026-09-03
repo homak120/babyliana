@@ -59,12 +59,16 @@ may deserve the primary surface.
 
 ---
 
-### Q-007 — Does the app need a "row" concept?
+### Q-007 — How does the timeslot appear in the entry flow?
 
-The paper log's unit is a moment, not an event: one line often carries both a
-feed and a diaper. Two separate events is the right storage model, but the
-*entry flow* may want a combined "log what happened just now" that creates both
-at once.
+**The storage half is settled** — D-019 makes a timeslot a first-class table, so
+a moment holding several events is the model, not a UI convenience. What remains
+is how that feels to use.
+
+Open: does the user tap once to open a moment and then add things to it, or pick
+an event type first and have the timeslot form around it? How is a second event
+added to a moment already saved? Does the moment ever need to be visible as a
+concept, or should it stay invisible plumbing?
 
 **Closed by:** Phase 2 prototype, then confirmed in Phase 8.
 
@@ -95,23 +99,3 @@ test cannot be run without a read-back view, and the comparison is the point.
 **Constraint it must satisfy:** in the Milk column, blank and `?` must stay
 visually distinct — see `.specify/memory/paper-log-baseline.md` § Blank is not
 unknown. This is about *volume* only. Times carry no `?`, by D-018.
-
----
-
-### Q-010 — What exactly do `corrects` and `deleted` mean?
-
-`.specify/memory/event-model.md` lists `deleted` as an envelope field *and* says
-a deletion is a tombstone event. Those are two different designs. If `deleted`
-is a flag set on the original, that mutates an event in place and breaks a
-non-negotiable. If a tombstone is a new event carrying `deleted` plus
-`corrects`, the field is fine but the envelope table reads as though it belongs
-on every event.
-
-Unresolved alongside it: if B corrects A and C corrects B, does `corrects` point
-at the immediate predecessor or at the head of the chain? Union-by-id merge
-means two devices can each produce a correction to the same event while offline.
-"There is no conflict to resolve" is true of storage and not true of the reader.
-
-**Closed by:** Phase 4, on ground the spike has proven.
-
-**Do not** write correction or deletion code before this closes.

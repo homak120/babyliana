@@ -80,12 +80,11 @@ latency optimisation over a reconcile, never as the sync mechanism itself.
 
 Sync must also tolerate **version skew**: two parents, two devices, one running
 older code. An installed PWA only picks up a new build on a fresh navigation, so
-this is the normal state after any deploy, not an edge case. Append-only and
-additive fields make most of it safe — an old client ignores what it does not
-know. The exception is anything that changes the *meaning* of existing events,
-which is precisely what Q-010 settles for corrections and tombstones. Decide
-those semantics so a stale device reads them the same way, or the two phones
-disagree about what has been deleted and neither shows an error.
+this is the normal state after any deploy, not an edge case. Additive fields
+make most of it safe — an old client ignores what it does not know. The risk is
+anything that changes the *meaning* of existing rows. With D-003 now on mutable
+rows and last-write-wins, the case to think through is an older client writing
+an `updated_at` that overwrites a newer edit it never understood.
 
 ## Phase 5 — MVP spec package
 

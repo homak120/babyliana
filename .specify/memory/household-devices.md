@@ -48,12 +48,10 @@ non-negotiable, and a paused Supabase project is eventually deleted. An export
 of events alone would be a wall of UUIDs — complete, and unreadable. Export both
 tables, or resolve names into the export as it is written.
 
-**3. It is the only mutable row in an append-only system.** A device name is
-genuinely editable, so it sits outside D-003's guarantee, and it carries a
-conflict story the event log does not have: two devices renaming the same row
-concurrently is last-write-wins. In practice each parent names their own phone
-once and this never fires. Recorded as a deliberate exception rather than left
-to be discovered later — see D-003.
+**3. Renames are last-write-wins**, like everything else now that D-003 has
+moved to mutable rows. Two devices renaming the same row concurrently is the
+only conflict here, and in practice each parent names their own phone once and
+it never fires.
 
 ## First run, and the QR join, are the same screen
 

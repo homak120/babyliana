@@ -58,8 +58,8 @@ Authority: `.specify/memory/technical-constraints.md` § Non-negotiables.
 
 - **Never block a write on the network.** Local write, immediate UI update,
   background sync.
-- **Never mutate an event.** Corrections are new events. Deletions are
-  tombstones.
+- **Corrections are edits.** Rows are updated in place and deleted outright —
+  D-003. No correction events, no tombstones, no revision history.
 - **Never require a login to log an event.** Shared household ID, no accounts.
 - **Never resolve a duplicate silently.** Surface it, let the user decide.
 - **Every event type carries a free-text note.** It is the escape hatch that

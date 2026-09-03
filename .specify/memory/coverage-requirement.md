@@ -41,7 +41,9 @@ Derived directly from `paper-log-baseline.md`. Every item must be expressible:
 - [ ] An entry deleted after it was recorded
 - [ ] A row with a diaper and no feed
 - [ ] A row with a feed and no diaper
-- [ ] Anything not anticipated above — free-text note on any event
+- [ ] Something that took a stretch of time rather than happening at an instant
+- [ ] Anything not anticipated above — the `other` type, plus a free-text note
+      on any event (D-020)
 
 The last item is the one that makes the list survive contact with reality. It is
 the app's equivalent of paper accepting a stray scribble.

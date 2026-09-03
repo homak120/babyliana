@@ -1,137 +1,162 @@
 # Event model
 
-Status: **draft.** Phase 1 shape, to be finalised in Phase 4 (technical design).
-The principles are settled; field names and types are not.
+Status: **Phase 4, in progress.** The shape below is settled — two tables,
+mutable rows, a timeslot as the unit. Column types and the secondary event
+types are still being pinned down.
 
 ## Principles
 
-**Append-only.** Events are immutable once written. An edit is a new event
-referencing the one it corrects. A deletion is a tombstone event. Nothing is
-ever mutated in place, and nothing is ever removed.
+**A timeslot is the unit, not an event.** The paper log's row is a moment:
+`21:09` might carry a diaper change *and* two bottles. `paper-log-baseline.md`
+states it directly — *"a row is a moment, not an event"* — and the schema
+mirrors that rather than flattening it. One timeslot, one or more events.
 
-This is not architectural purity. It is derived from the paper log, which
-already contains strikethroughs, retroactive insertions, and out-of-order rows.
-The correction case is real usage, not a hypothetical.
+**Rows are mutable.** Corrections are plain updates; deletes are real deletes.
+Last write wins on `updated_at`. See D-003, which reversed an earlier
+append-only design: a strikethrough on paper exists because ink cannot be
+erased, not because anyone wants a revision history.
 
-**Client-generated IDs.** Every event carries a UUID created on the device. This
-makes replay idempotent, makes offline creation safe, and makes merging two
-offline devices a concatenation rather than a conflict resolution.
+**Client-generated IDs.** Every row carries a UUID created on the device. Replay
+is idempotent, offline creation is safe, and merging is union by `id`.
 
-**Two timestamps, always distinct.**
+**Two timestamps, distinct.** `occurred_at` is when it happened and is editable.
+`recorded_at` is when it was first written and never changes.
 
-- `occurred_at` — when the thing happened. Editable. Defaults to now.
-- `recorded_at` — when it was written. Never editable. Set by the device.
+**No precision marker.** A time is a time — no exact/approximate/unknown, no
+`?`, no `~`. D-018 removed the notation and put the weight on making time entry
+and adjustment fast instead.
 
-The paper log proves these diverge: `4:10` inserted after `12:40`, logged hours
-after it happened. One timestamp is not enough.
+**Everything optional except the essentials.** A timeslot needs an id, a time,
+and who logged it. An event needs an id, a timeslot, and a type. Every other
+field may be absent — a feed with an unknown volume is a valid feed, and the
+paper log contains one.
 
-**`occurred_at` is editable and carries no precision marker.** There is no
-exact / approximate / unknown distinction — see `docs/decisions.md` D-018. The
-paper log's `04:?` is solved by making the time fast to set and fast to adjust,
-not by making imprecision storable. Backdating is a core flow; qualifying the
-result is not.
+## `timeslot`
 
-**Everything optional except the essentials.** An event needs an ID, a type, a
-timestamp, and a device. Every other field may be absent. A feed with an unknown
-volume is a valid feed — the paper log contains one. Note the asymmetry with
-time: a volume the user does not know cannot be inferred, so `volume_ml` may be
-null. A time can always be inferred, so `occurred_at` is always present.
+One row per moment someone sat down and logged something.
 
-## Envelope
-
-Every event, regardless of type:
-
-| Field | Notes |
+| Column | Notes |
 | --- | --- |
 | `id` | UUID, client-generated |
-| `household_id` | Container for the family |
-| `device_id` | Which device created it |
-| `type` | See registry below |
-| `occurred_at` | When it happened. Editable. Always present |
-| `recorded_at` | When it was written. Immutable |
-| `note` | Free text. Available on every type. The escape hatch |
-| `corrects` | Optional. ID of an event this supersedes |
-| `deleted` | Tombstone marker |
+| `household_id` | Which family |
+| `logged_by` | Device that recorded it — resolves to a name via the devices table |
+| `occurred_at` | When it happened, or when a period starts. Editable |
+| `ended_at` | Optional. Null means a point in time; set means a period |
+| `recorded_at` | When first written. Never edited |
+| `updated_at` | Bumped on every edit. The last-write-wins tiebreaker |
+| `note` | Free text about the moment |
 
-**`corrects` and `deleted` are not settled.** As written, `deleted` reads like a
-flag on the original event, which would mutate it in place. Chain semantics are
-undefined, and two offline devices can each correct the same event. See
-`docs/open-questions.md` Q-010, which closes in Phase 4. Do not write
-correction or deletion code against this table as it stands.
+A timeslot always has at least one event. The UI enforces this: if nothing was
+entered, nothing is written. Deleting a timeslot deletes its events with it.
 
-## Type registry
+### A point, or a period
 
-Open registry. Adding a type is configuration, not migration.
+`ended_at` is null for the overwhelmingly common case — a moment. Setting it
+makes the timeslot a period, and **every event in it shares that period.**
 
-### `feed` — required at launch
+Duration lives here rather than on individual events (D-020) so that any type
+can have one, including `other`. The consequence, stated plainly: an event
+cannot carry its own time inside a period. You cannot record "the diaper change
+happened at 21:05 within a 21:00–23:30 sleep" — if that distinction ever
+matters, it is two timeslots.
 
-Up to two components, each with a volume and an optional source. Covers `60`,
-`25(B) + 45(F)`, and `30 + 30` in one shape.
+Whether the UI lets a period be opened now and closed later, or requires both
+times at once, is an entry-flow question for Phase 2 (Q-007). The schema
+supports either.
 
-- `components[]` — each `{ volume_ml, source }` where source is
-  `breast_milk` | `formula` | `unknown`
-- Volume may be null (the log contains `?`)
+## `event`
 
-Unit is millilitres throughout. Display units are a presentation concern.
+One master table. `type` selects which columns are meaningful; the rest are
+null. Adding a type is a migration, not configuration — see *Adding a type*.
 
-### `diaper` — required at launch
+| Column | Applies to | Notes |
+| --- | --- | --- |
+| `id` | all | UUID, client-generated |
+| `timeslot_id` | all | Parent. An event belongs to exactly one |
+| `type` | all | See registry |
+| `note` | all | Free text. The escape hatch, on every type |
+| `recorded_at`, `updated_at` | all | |
+| `volume_ml` | feed | Integer. May be null — the log contains `?` |
+| `source` | feed | `breast_milk` \| `formula` \| `unknown` |
+| `pee` | diaper | Boolean |
+| `poop` | diaper | Boolean. Both may be true on one change |
+| `poop_colour` | diaper | yellow / green / brown / dark / other |
+| `poop_consistency` | diaper | liquid / soft / seedy / firm / other |
+| `grams` | weight | |
+| `celsius` | temperature | |
+| `supplement_name`, `amount` | supplement | |
+| `severity` | spit_up | Or just use `note` |
+| — | other | No columns of its own. `note` carries it |
 
-- `pee` — boolean
-- `poop` — boolean
-- `poop_colour` — yellow / green / brown / dark / other. Free text fallback
-- `poop_consistency` — liquid / soft / seedy / firm / other
-- Both `pee` and `poop` may be true on one event
+**A split feed is two events, not one event with two components.** `25(B) +
+45(F)` becomes two feed rows under one timeslot. This removes the nested
+`components[]` array and its arbitrary two-item cap, and `30 + 30` — the
+unlabelled split in the real log — falls out as two rows with `source` unknown.
 
-Colour and consistency are structured, not free text, because the log already
-records them by hand and the transition date is a question worth answering
-without reading rows.
+**A diaper change is one event**, with `pee` and `poop` as separate booleans,
+because one change may contain both.
 
-### Additional types — supported, not featured
+**Sleep has no `ended_at` of its own.** Its duration is the timeslot's period.
+Two places to express one fact is how a duration ends up correct in one view and
+wrong in another.
 
-Built into the registry, reachable behind a secondary affordance. Not on the
-primary logging surface at launch. See `docs/decisions.md` D-010.
+**`other` has no columns at all.** Type plus `note`, and a period if it needs
+one. It is the escape hatch that makes the app as accepting as paper: anything
+the schema never anticipated still has somewhere to go, which is the last item
+on the checklist in `coverage-requirement.md` and the one that makes the list
+survive contact with reality.
 
-| Type | Fields |
-| --- | --- |
-| `sleep` | `ended_at`, or open-ended |
-| `weight` | `grams`. Expect very few rows, entered from appointments |
-| `temperature` | `celsius`. Rare, but the rows you most want timestamped |
-| `supplement` | `name`, `amount`. Vitamin D drops and similar |
-| `spit_up` | severity, or just the note field |
+### Adding a type
 
-Promotion from secondary to primary is decided by observed use during Phase 8,
-not by design now.
+A migration: `ALTER TABLE`, a schema change, a redeploy. An earlier draft
+claimed adding a type was configuration rather than migration; with one wide
+table that is not true, and the claim is withdrawn rather than left standing.
+The cost is accepted — the type list is short and already known, and D-010 says
+most of these never reach the primary surface anyway.
+
+## Writing a timeslot
+
+The client generates **both** UUIDs up front, writes the timeslot and its events
+to local storage as one unit, and syncs them together. The naive
+insert-await-insert produces an orphan timeslot when the second call fails;
+generating ids first makes a retry idempotent, since union by `id` means writing
+the same row twice costs nothing.
 
 ## Derived views
 
-Computed from the log, never stored:
+Computed, never stored:
 
-- Time since last feed — the primary readout
+- Time since last feed — the primary readout. The most recent timeslot holding a
+  feed event, measured from its `ended_at` when it has one and `occurred_at`
+  otherwise. What a tired parent means by "since the last feed" is since she
+  finished, not since she started. Same rule everywhere else time-since is shown
 - Volume today, split by source
 - Pee and poop counts today
 - Time since last poop
 - Chronological day view, matching the paper log's shape
 
-Day boundary is midnight local, matching how the paper log groups dates.
+Day boundary is midnight local (D-015).
 
 ## Sync
 
-- Events are written to local storage first. The UI never waits on the network.
-- Sync to the server is background replication of an append-only stream.
-- Merge is union by `id`. Two devices offline simultaneously produce two sets of
-  events that concatenate. There is no conflict to resolve.
-- Duplicate detection is a read-time concern: two same-type events within a few
-  minutes are flagged as possible duplicates for the user to resolve. Never
-  merged silently, never resolved server-side.
-- **A split feed has the same signature as a duplicate.** Two parents logging
-  the two halves of `25(B) + 45(F)` produce exactly what the rule flags.
-  Surfacing it is still correct, but the resolution needs a third option beyond
-  keep and discard: *these are one feed, combine them into components*.
+- Writes land locally first. The UI never waits on the network.
+- **Reconcile is a full refresh.** On mount and on resume, re-fetch and replace
+  local state. At roughly thirty events a day the whole log is small enough that
+  this is cheap, and it is what makes hard deletes work — a removed row is
+  noticed by its absence.
+- **Realtime is a latency optimisation, not the sync mechanism.** It has no
+  replay, so anything written while a phone was backgrounded is missed
+  permanently. The spike demonstrated this: a phone sat at 20 while the database
+  held 23, subscription green. See `.specify/memory/spike-spec.md`.
+- Conflicts resolve last-write-wins on `updated_at`.
+- Duplicate detection is a read-time concern: two similar timeslots within a few
+  minutes are surfaced for the user to resolve. Never merged silently, never
+  resolved server-side.
 
 ## Export
 
-A full JSON export of the event stream, available from day one.
+A full JSON export of timeslots, events **and devices**, available from day one.
 
-The free Supabase tier has no backups. Both devices holding a full local copy
-plus a manual export is the entire disaster-recovery plan. It is also the
-migration path if the backend is ever replaced.
+The free Supabase tier keeps no backups, and a project left paused is eventually
+deleted. Both devices holding a local copy plus a manual export is the entire
+disaster-recovery plan. Without the devices table the export is a wall of UUIDs.

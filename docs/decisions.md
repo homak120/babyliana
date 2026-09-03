@@ -35,7 +35,7 @@ problem to fix in the PWA.
 ## D-002 — Supabase for sync, IndexedDB for local
 
 **Why.** The free tier covers this workload by three orders of magnitude.
-Postgres suits an append-only event log with row-level security. Realtime gives
+Postgres suits this event log with row-level security. Realtime gives
 live cross-device updates without building a socket layer.
 
 IndexedDB holds a complete local replica so writes never wait on the network.
@@ -45,30 +45,47 @@ entitlement requires the paid developer account, which D-001 rules out. Firebase
 — does not pause, better offline out of the box, but per-read/write billing and
 a worse fit for an event log.
 
-**Reversal condition.** The append-only design makes the backend swappable. A
-migration is an export and a replay, not a rewrite.
+**Reversal condition.** The event log is plain rows, so the backend stays
+swappable. A migration is an export and a replay, not a rewrite.
 
 ---
 
-## D-003 — Append-only event log
+## D-003 — Mutable rows, last write wins
 
-Immutable events. Edits are correction events. Deletes are tombstones.
+Timeslots and events are **updated in place and deleted outright.** No
+correction events, no tombstones, no revision history. This supersedes the
+earlier append-only decision, which is dead.
 
-**Why.** Not architectural taste — the paper log already contains strikethroughs
-and a retroactively inserted row. Corrections and out-of-order entry are real
-usage. It also makes offline merge a union rather than a conflict
-resolution, and makes the backend replaceable.
+**Why the reversal.** The append-only design was justified by the paper log's
+strikethroughs — but a strikethrough exists because *you cannot erase ink*. It
+is a limitation of the pen, not something the user wants, in exactly the way
+`04:?` was (D-018). The app has no such limitation, so reproducing the
+workaround was solving the pen's problem instead of the user's.
 
-**One deliberate exception, added after the fact.** D-003 was written before the
-devices table existed. That table — household members and their names — holds
-genuinely mutable rows: a name can be corrected, and correcting it should change
-how past events display. It is therefore *not* append-only, and it carries a
-conflict story events do not have (concurrent renames are last-write-wins).
-Everything in the event log remains immutable. See
-`.specify/memory/household-devices.md`.
+The one genuine benefit was conflict-free offline merge: append-only plus client
+UUIDs makes merging two devices a concatenation. That guards against both
+parents editing the same row while both are offline, before either syncs. For
+two people that is vanishingly rare, and last-write-wins on `updated_at` is an
+adequate answer when it happens. The realistic case is one person fixing their
+own typo seconds after making it.
 
-**Reversal condition.** None anticipated for the event log. This is
-load-bearing.
+**Cost accepted.** No audit trail. Nobody wants a revision history for a baby
+log at 4am, and `updated_at` leaves the door open to showing "edited" later if
+it ever matters.
+
+**Hard delete, not soft.** Deleting a timeslot removes it and its events. This
+works because reconcile is a full refresh — at roughly thirty events a day the
+whole log is small enough to re-fetch on resume, so a deleted row is noticed by
+its absence. A `deleted_at` column would be solving a problem this app does not
+have.
+
+**What this dissolves.** Q-010 existed entirely to settle `corrects` and
+`deleted` semantics under append-only. Those fields are gone, so the question is
+retired rather than answered, and Phase 6 is no longer blocked from writing
+correction and deletion code.
+
+**Reversal condition.** If the app is ever used beyond this one household
+(Phase 12), or genuinely concurrent editing becomes common, revisit.
 
 ---
 
@@ -250,6 +267,8 @@ change — it is a display concern, not a storage one.
 
 ---
 
+---
+
 ## D-016 — Vercel for hosting
 
 `technical-constraints.md` said "Vercel or Cloudflare Pages" and left it open.
@@ -319,3 +338,59 @@ so it is not later mistaken for a bug.
 **Reversal condition.** If the retroactive case turns out to be common in the
 solo run (Phase 8) and guessed times start polluting the derived arithmetic,
 revisit — but reintroduce it as a *word*, never a symbol.
+
+---
+
+## D-019 — A timeslot is the unit, not an event
+
+Two tables. A `timeslot` is one moment someone logged something; `event` rows
+hang off it. `21:09` might carry a diaper change and two bottles — one timeslot,
+three events.
+
+**Why.** It mirrors the source of truth. `paper-log-baseline.md` says it
+outright: *"a row is a moment, not an event."* The paper's unit is the line, and
+a schema that flattens everything into independent events throws that structure
+away and then has to reconstruct it for the day view.
+
+**Consequence for feeds.** A split feed is two events, not one event carrying a
+`components[]` array. `25(B) + 45(F)` is two rows under one timeslot. This drops
+the nested array and its arbitrary two-item cap, and `30 + 30` — the unlabelled
+split that appears in the real log — falls out naturally as two rows with an
+unknown source.
+
+**Consequence for diapers.** Still one event, with `pee` and `poop` as separate
+booleans, because a single change may contain both.
+
+**Invariant.** A timeslot always has at least one event; the UI writes nothing
+if nothing was entered. Deleting a timeslot deletes its events.
+
+**Reversal condition.** None anticipated. If it ever proved wrong, flattening
+timeslots into events is a mechanical migration.
+
+---
+
+## D-020 — A timeslot may be a period, and `other` is a real type
+
+`timeslot.ended_at` is optional. Null is a point in time — the overwhelmingly
+common case. Set, and the timeslot is a period that every event in it shares.
+
+**Why on the timeslot rather than the event.** Sleep was the driving case and
+already had an `ended_at` of its own, but putting duration one level up makes it
+generic: any type can have one, including `other`, and a single period can cover
+several events logged together. `ended_at` is therefore removed from the sleep
+event — two ways to express one fact is how a duration ends up correct in one
+view and wrong in another.
+
+**Cost accepted.** Events cannot carry their own time inside a period. "The
+diaper change happened at 21:05 within a 21:00–23:30 sleep" is not expressible;
+that would be two timeslots.
+
+**`other` as a first-class type.** No columns of its own — type plus `note`,
+plus a period if it needs one. Together with the note on every row and the
+optional period, this is what makes the app as accepting as a pen, which is the
+whole of `coverage-requirement.md`'s last item and the one that lets the list
+survive contact with reality.
+
+**Open, and deliberately not decided here.** Whether a period can be opened now
+and closed later, or must be entered complete, is an entry-flow question for
+Phase 2 (Q-007). The schema supports either.

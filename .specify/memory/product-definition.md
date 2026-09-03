@@ -44,7 +44,7 @@ early poop-colour progression.
 This deliberately expires. Feeds consolidate around 6 weeks; by 3 months the
 interesting variable becomes sleep rather than milk. Do not design for the
 12-month version now. Better information will exist in three months, and the
-append-only event model makes extending cheap.
+event model makes extending cheap.
 
 ## Single-user viability
 
@@ -85,5 +85,5 @@ keeps no backups; see `.specify/memory/technical-constraints.md`. Shelving means
 no database activity, which is exactly the condition that starts that clock.
 
 So: **export before shelving.** With a JSON export and the local replicas, the
-append-only log survives anything Supabase does and shelving costs nothing but
+log survives anything Supabase does and shelving costs nothing but
 time. Without one, shelving is data loss on a delay.

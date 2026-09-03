@@ -46,7 +46,7 @@ IndexedDB approach is settled, and that is Phase 4 work.
 
 ## The throwaway table
 
-Append-only, matching the project's instincts. The counter is a row count, so
+A row per tap, so
 one table exercises insert, select, realtime and RLS together.
 
 ```sql
@@ -200,8 +200,7 @@ case; it is what happens between every use.
 
 ### The model already handles this; the spike does not
 
-Append-only events, client-generated UUIDs, and merge-as-union-by-`id` make
-re-fetching idempotent — pulling the same event twice costs nothing and there is
+Client-generated UUIDs and merge-as-union-by-`id` make re-fetching idempotent — pulling the same event twice costs nothing and there is
 no conflict to resolve. The design is right. The spike is simply thin.
 
 **The rule for Phase 6:**
