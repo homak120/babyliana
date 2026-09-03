@@ -79,22 +79,39 @@ duration to capture.
 
 ## The data shape behind it
 
-Every entry carries: when it happened, and an optional **free-text note**. The
-note is on every type without exception — it is the escape hatch that makes the
-app as accepting as paper.
+**A moment holds several things.** This is the core of it. The paper log's unit
+is a row — `21:09` might carry a diaper change *and* two bottles — and the app
+works the same way. One **moment** has a time and holds one or more **entries**.
+
+A moment carries: a time, who logged it, an optional free-text note, and
+optionally an **end time**. Most moments are an instant; setting an end makes it
+a period, and everything in that moment shares the period. Sleep is the obvious
+case — `19:00–21:30` — but any moment can have one.
+
+Every entry inside a moment also carries its own optional **free-text note**,
+without exception. That note is the escape hatch that makes the app as accepting
+as paper.
 
 There is **no precision marker on the time** — no exact/approximate/unknown, no
 `?`, no `~`. A time is a time. The paper log writes `04:?` about once a day, and
 the app answers that with speed rather than notation; see below.
 
-**Feed** — up to two components, each a volume plus an optional source
-(breast milk / formula / unknown). Volume may be empty.
+**Feed** — one volume and one source (breast milk / formula / unknown). Volume
+may be empty. **A split feed is two feed entries in the same moment**, not one
+entry with two halves: `25(B) + 45(F)` is two bottles logged at 21:09. So the
+interaction is "add another bottle", not a form with two sets of fields. The
+unlabelled `30 + 30` is likewise two entries with the source left unknown.
 
 **Diaper** — pee yes/no, poop yes/no, both may be true at once; poop colour
 (yellow / green / brown / dark / other) and consistency (liquid / soft / seedy /
-firm / other).
+firm / other). Anything that does not fit those lists goes in the note.
 
-**Secondary types exist but are not featured**: sleep, weight, temperature,
+**Other** — a real entry type carrying nothing but a note, and a period if it
+needs one. It exists so that anything nobody anticipated still has somewhere to
+go. This is what lets the app fully replace the pen rather than *nearly* replace
+it, so it needs to be reachable without hunting.
+
+**Further types exist but are not featured**: sleep, weight, temperature,
 supplement, spit-up. They must be reachable, but a dropdown of ten types at 3am
 costs a tap, a scroll, a read and a selection — and the pen wins. Feed and
 diaper are the only two with evidence of constant use.
@@ -145,6 +162,8 @@ A **clickable prototype**, covering:
 - A **night surface** and a **day surface**. Both, not one.
 - A palette that has been checked **dimmed**, not only at full brightness.
 - Enough interaction that the layout can be judged by tapping it.
+- Some way to give a moment an **end time** as well as a start, without that
+  option cluttering the common case, which is an instant.
 
 ## Four decisions this has to settle
 
@@ -164,10 +183,12 @@ carefully.
 - A combined line — "3h 40m ago · 60 mL (F)"
 - A mascot state instead of a number
 
-**3. Does entry need a "row" concept?** The paper's unit is a moment: one line
-often carries both a feed and a diaper. Storage keeps them as two events, but
-the entry flow may want a single "log what just happened" that creates both at
-once. Show both flows.
+**3. How does a moment appear in the entry flow?** That a moment holds several
+entries is settled — it is the data model, not a UI convenience. What is open is
+how it *feels*. Does the user open a moment and add things to it, or pick an
+entry type first and have the moment form around it? How do you add a second
+bottle to a moment you already saved? Should the moment ever be visible as a
+concept at all, or stay invisible plumbing? Show more than one answer.
 
 **4. How faithful should the day view be to the paper page?** Reading back
 matters as much as writing. The paper page is genuinely good at this — four

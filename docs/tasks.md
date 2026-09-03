@@ -64,7 +64,8 @@ them is how Phase 0 quietly never happens.
 
 ## Phase 4 — Technical design
 
-- [ ] **CH** Finalise event schema and field types
+- [x] **CH** Finalise event schema and field types — three tables, full
+      Postgres DDL in `.specify/memory/event-model.md` § Schema (Postgres)
 - [ ] **CH** Sync, merge, and duplicate-detection behaviour — including
       reconcile-on-resume. Realtime is a latency optimisation, not a sync
       mechanism: it has no replay, so anything written while a phone was

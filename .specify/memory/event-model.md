@@ -1,8 +1,9 @@
 # Event model
 
-Status: **Phase 4, in progress.** The shape below is settled — two tables,
-mutable rows, a timeslot as the unit. Column types and the secondary event
-types are still being pinned down.
+Status: **Phase 4, column types finalised.** Two tables, mutable rows, a
+timeslot as the unit, and a concrete Postgres schema below. What remains in
+Phase 4 is the offline strategy (blocked on Q-004) and the owner's review pass —
+see `docs/tasks.md`.
 
 ## Principles
 
@@ -47,7 +48,9 @@ One row per moment someone sat down and logged something.
 | `note` | Free text about the moment |
 
 A timeslot always has at least one event. The UI enforces this: if nothing was
-entered, nothing is written. Deleting a timeslot deletes its events with it.
+entered, nothing is written. Deleting a timeslot deletes its events with it —
+enforced at the database level by `on delete cascade`, not left to application
+code to remember.
 
 ### A point, or a period
 
@@ -68,6 +71,8 @@ supports either.
 
 One master table. `type` selects which columns are meaningful; the rest are
 null. Adding a type is a migration, not configuration — see *Adding a type*.
+Types and constraints are pinned in *Schema (Postgres)* below; this table is the
+human-readable summary of the same thing.
 
 | Column | Applies to | Notes |
 | --- | --- | --- |
@@ -106,13 +111,142 @@ the schema never anticipated still has somewhere to go, which is the last item
 on the checklist in `coverage-requirement.md` and the one that makes the list
 survive contact with reality.
 
+**Annotations outside the fixed lists go in `note`.** The real log contains
+`2 (G→Y liquid)` — a colour in transition — and `2 (small Y)`, where "small" is
+a quantity with no column. Neither fits a single value from a fixed list, and
+neither is worth a column: one appears once in seven days, the other may simply
+be handwriting. They land in `note`, which is what `note` is for. The cost,
+stated so nobody rediscovers it: the transition date is answerable as "the first
+entry where colour is yellow", but an entry recording the change *as it happens*
+is prose rather than data.
+
+**For a `feed` row, `source` is never SQL null.** It is always one of the three
+values — `unknown` is a real answer for the unlabelled `30 + 30` split, distinct
+from the column being absent because the row is not a feed at all.
+
 ### Adding a type
 
 A migration: `ALTER TABLE`, a schema change, a redeploy. An earlier draft
 claimed adding a type was configuration rather than migration; with one wide
 table that is not true, and the claim is withdrawn rather than left standing.
 The cost is accepted — the type list is short and already known, and D-010 says
-most of these never reach the primary surface anyway.
+most of these never reach the primary surface anyway. `type` is plain text with
+a `CHECK` constraint rather than a Postgres enum: extending a text `CHECK` is a
+one-line edit, where growing an enum's value set is schema surgery. Given a
+migration is already accepted, it should at least be the easy kind.
+
+## Schema (Postgres)
+
+No `households` table. D-004 has no accounts — the household is a bare UUID
+minted by the first device and shared by QR code. There is nothing to store
+about a household beyond its id, so `household_id` is a plain column on every
+other table, not a foreign key to anything.
+
+```sql
+create table public.devices (
+  device_id    uuid primary key default gen_random_uuid(),
+  household_id uuid not null,
+  name         text,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+
+create table public.timeslot (
+  id           uuid primary key default gen_random_uuid(),
+  household_id uuid not null,
+  logged_by    uuid not null references public.devices(device_id) on delete restrict,
+  occurred_at  timestamptz not null,
+  ended_at     timestamptz,
+  recorded_at  timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  note         text,
+  constraint period_is_forward
+    check (ended_at is null or ended_at >= occurred_at)
+);
+
+create table public.event (
+  id            uuid primary key default gen_random_uuid(),
+  timeslot_id   uuid not null references public.timeslot(id) on delete cascade,
+  type          text not null check (type in (
+                  'feed', 'diaper', 'sleep', 'weight',
+                  'temperature', 'supplement', 'spit_up', 'other'
+                )),
+  note          text,
+  recorded_at   timestamptz not null default now(),
+  updated_at    timestamptz not null default now(),
+
+  -- feed
+  volume_ml     integer check (volume_ml is null or volume_ml >= 0),
+  source        text check (
+                  source is null or source in ('breast_milk', 'formula', 'unknown')
+                ),
+
+  -- diaper
+  pee               boolean,
+  poop              boolean,
+  poop_colour       text check (
+                      poop_colour is null or poop_colour in
+                      ('yellow', 'green', 'brown', 'dark', 'other')
+                    ),
+  poop_consistency  text check (
+                      poop_consistency is null or poop_consistency in
+                      ('liquid', 'soft', 'seedy', 'firm', 'other')
+                    ),
+
+  -- weight / temperature — no range CHECK. A bound tied to normal body-weight
+  -- or body-temperature values is a step away from the normal-range judgement
+  -- CLAUDE.md rules out; a typo-catching bound is not worth that risk.
+  grams         integer check (grams is null or grams > 0),
+  celsius       numeric(3,1),
+
+  -- supplement — amount is text, not a number-plus-unit: "1 drop" and "0.5ml"
+  -- are both real answers and do not share a unit.
+  supplement_name  text,
+  amount           text,
+
+  -- spit_up — deliberately unstructured; Q-006 has not confirmed this type
+  -- gets used at all
+  severity      text
+);
+
+create index event_timeslot_id_idx
+  on public.event (timeslot_id);
+create index timeslot_household_occurred_idx
+  on public.timeslot (household_id, occurred_at desc);
+create index devices_household_id_idx
+  on public.devices (household_id);
+```
+
+**`logged_by` is `on delete restrict`, deliberately.** A device that has logged
+anything cannot be deleted. History should not disappear because someone tidied
+up a device list, and with two devices there is no reason to remove one. The
+alternative — nullable `logged_by` with `on delete set null` — keeps the rows
+and loses the attribution, which is the thing the column exists for.
+
+**No per-type `CHECK` forcing irrelevant columns to stay null** — e.g. blocking
+`volume_ml` on a `diaper` row. Considered and declined: the only writer is this
+app's own client, so a malformed row would be a bug in code you control, not
+data from an untrusted source. Worth adding later if the API is ever opened up.
+
+**`updated_at` has no trigger.** The client sets it explicitly on every write,
+including the first — equal to `recorded_at` at creation. No `PLPGSQL` function
+to maintain on a free-tier project with no server side.
+
+### RLS cannot isolate households — a real, accepted gap
+
+Every device shares one public anon key, and D-008 made the repo (and therefore
+that key) genuinely public. Row-level security can restrict what the `anon`
+*role* is allowed to do — same pattern as `spike_taps` in
+`.specify/memory/spike-spec.md`, and the same Data API grant gotcha applies —
+but it cannot restrict rows to *one household*, because with no Supabase Auth
+there is no authenticated identity to check `household_id` against.
+
+**Today this is moot.** Exactly one household will ever exist on this
+deployment. It stops being moot the moment a second family shares the same
+deployment — Phase 12, and D-004 already names this as the reason identity
+needs revisiting if that phase opens. Real isolation at that point means
+Supabase Auth, a JWT claim, or separate projects per household — not a
+`household_id` filter that anyone holding the anon key could simply omit.
 
 ## Writing a timeslot
 
@@ -148,10 +282,21 @@ Day boundary is midnight local (D-015).
   replay, so anything written while a phone was backgrounded is missed
   permanently. The spike demonstrated this: a phone sat at 20 while the database
   held 23, subscription green. See `.specify/memory/spike-spec.md`.
-- Conflicts resolve last-write-wins on `updated_at`.
+- Conflicts resolve last-write-wins on `updated_at`, **which the client sets.**
+  Two phones with skewed clocks can therefore pick the wrong winner: an edit made
+  later can carry the earlier timestamp and lose. Server-side `now()` would fix
+  it and would break the local-first write path, so this is accepted rather than
+  solved. The realistic case is one person correcting their own entry seconds
+  after making it, where no second device is involved at all.
 - Duplicate detection is a read-time concern: two similar timeslots within a few
   minutes are surfaced for the user to resolve. Never merged silently, never
   resolved server-side.
+- **A shared feed still looks like a duplicate**, one level up from where it used
+  to. A genuine split feed logged by one person is two events in *one* timeslot
+  and raises nothing. But if both parents log the same feed — or each logs half
+  of it — that is two timeslots minutes apart, indistinguishable from one person
+  logging twice. Resolution needs a third option beyond keep and discard: *these
+  are one moment, merge them*.
 
 ## Export
 
