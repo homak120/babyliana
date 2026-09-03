@@ -129,7 +129,7 @@ body {
 .fab {
   position: fixed;
   right: 1.125rem;
-  bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  bottom: calc(5rem + env(safe-area-inset-bottom));
   width: 4.5rem;
   height: 4.5rem;
   border-radius: 50%;

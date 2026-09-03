@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "verify": "npm run typecheck && tsx scripts/verify-s1.mts && tsx scripts/verify-s2.mts && tsx scripts/verify-s3.mts && tsx scripts/verify-s4.mts && tsx scripts/verify-s5.mts && tsx scripts/verify-s6.mts",
+    "verify": "npm run typecheck && tsx scripts/verify-s1.mts && tsx scripts/verify-s2.mts && tsx scripts/verify-s3.mts && tsx scripts/verify-s4.mts && tsx scripts/verify-s5.mts && tsx scripts/verify-s6.mts && tsx scripts/verify-s7.mts",
     "typecheck": "tsc -b && tsc --noEmit -p tsconfig.scripts.json"
   },
   "dependencies": {

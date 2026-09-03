@@ -1,0 +1,122 @@
+/* The read-back. Column order and the inherited date reproduce the paper page,
+   so they are not styling choices. */
+
+.day {
+  max-width: 26rem;
+  margin: 0 auto;
+  padding: 1rem 0 calc(7rem + env(safe-area-inset-bottom));
+}
+
+.datestrip {
+  display: flex;
+  gap: 0.375rem;
+  overflow-x: auto;
+  padding: 0 1.125rem 0.75rem;
+  scrollbar-width: none;
+}
+.datestrip::-webkit-scrollbar { display: none; }
+
+.daypill {
+  flex: none;
+  height: 2.5rem;
+  padding: 0 0.875rem;
+  border: none;
+  border-radius: 1.25rem;
+  background: var(--chip);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.daypill.on { background: var(--lavFill); color: var(--lavInk); }
+
+.day .totals { padding: 0 1.125rem; }
+
+.table { margin-top: 0.5rem; }
+
+.thead,
+.trow {
+  display: grid;
+  grid-template-columns: 38px 84px 1fr 70px 16px;
+  align-items: baseline;
+  gap: 0.25rem;
+  padding: 9px 18px;
+}
+
+.thead {
+  background: var(--card);
+  color: var(--muted);
+  font-size: 0.625rem;
+}
+
+.trow {
+  background: var(--bg);
+  border-bottom: 1px solid var(--hair);
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Printed on the first row of a day only, and inherited below — exactly like
+   the paper page. */
+.tdate { font-size: 0.75rem; color: var(--muted); }
+.ttime { color: var(--ink); }
+.tmilk { font-weight: 700; }
+.unknown { color: var(--accent); font-weight: 900; }
+.tdiaper { font-size: 0.8125rem; color: var(--mintInk); }
+.trest { display: block; color: var(--lavInk); font-style: normal; font-size: 0.75rem; }
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--parentM);
+  color: var(--card);
+  font-size: 0.5625rem;
+  font-weight: 900;
+  font-style: normal;
+}
+
+.tnote {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0 18px 0.5rem 130px;
+  font-size: 0.75rem;
+  color: var(--periInk);
+}
+
+.day .empty { padding: 1.75rem 1.125rem; }
+
+/* --- tab bar --------------------------------------------------------------- */
+
+.tabs {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  gap: 2.5rem;
+  padding: 0.5rem 0 calc(0.5rem + env(safe-area-inset-bottom));
+  background: var(--card);
+  border-top: 1px solid var(--hair);
+}
+
+.tabs button {
+  width: 3.25rem;
+  height: 3rem;
+  border: none;
+  border-radius: 1rem;
+  background: none;
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.tabs button.on { color: var(--accent); background: var(--roseFill); }

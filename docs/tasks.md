@@ -108,7 +108,8 @@ when". Read that first; this list is the checklist view of the same thing.
 - [x] **S5** Time entry — steppers with hold-to-repeat, offset pills, direct
       numeric entry, optional end time. Backdating and periods both work
 - [x] **S6** Notes and the `other` type — the escape hatch
-- [ ] **S7** The day view — the paper-shaped table, date printed once per day
+- [x] **S7** The day view — the paper-shaped table, date printed once per day,
+      date strip, and the tab bar now that there are two screens
 - [ ] **S8** Edit and delete — swipe reveals both; delete takes the whole moment
       with an undo toast (D-025). Plain updates, real deletes (D-003)
 - [ ] **S9** Ready for the solo run — name entry, theme by clock, update
