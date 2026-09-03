@@ -12,7 +12,7 @@ replica, Supabase sync. Not native, not becoming native.
 
 - Never block a write on the network. Local first, background sync.
 - Corrections are plain updates; deletes are real deletes (D-003).
-- Never require a login. Shared household ID, no accounts.
+- Never require a login. Shared baby ID, no accounts.
 - Never resolve a duplicate silently.
 - Every event type has a free-text note field.
 - Setting a time by hand is a core flow. There is no precision marker and no

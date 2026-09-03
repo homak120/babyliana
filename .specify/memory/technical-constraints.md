@@ -67,7 +67,7 @@ Data API. Tutorials written before mid-2026 will not match.
 
 ## Identity
 
-Shared household ID, no accounts, no passwords, no email.
+Shared baby ID, no accounts, no passwords, no email.
 
 Generated once on the first device. A second device joins by scanning a QR code.
 Nothing to reset, no session to expire, no login to fail at 3am.

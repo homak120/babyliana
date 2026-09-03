@@ -74,7 +74,7 @@ alter publication supabase_realtime add table public.spike_taps;
 ```
 
 RLS is switched on deliberately rather than skipped. The real app's auth model
-is unusual — shared household ID, no accounts, anon key only (D-004) — and RLS
+is unusual — shared baby ID, no accounts, anon key only (D-004) — and RLS
 against an anon key is exactly where it could fail. Proving one policy works now
 is cheap; discovering it in Phase 6 is not.
 

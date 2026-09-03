@@ -89,20 +89,25 @@ correction and deletion code.
 
 ---
 
-## D-004 — Shared household ID, no accounts
+## D-004 — Shared baby ID, no accounts
 
-No email, no password, no login. An ID generated on the first device; a second
-device joins by QR code.
+No email, no password, no login. The baby's id is the only token: whoever has it
+logs to her. A second device joins by being given that id.
+
+**Supersedes the earlier "household ID" framing.** A household was an abstract
+container with nothing in it. A baby has a name, so the app can show "Liana"
+instead of hard-coding her name in the UI, and a sibling later is a second row
+rather than a second concept. See D-026.
 
 **Why.** Magic links require email and can expire, and a logged-out state at 3am
 is exactly the failure that sends someone back to the pen. Less "correct",
 dramatically better for the actual users.
 
-**Security property, stated plainly.** The household ID is a bearer token.
+**Security property, stated plainly.** The baby ID is a bearer token.
 Possession is full access, there is nothing to revoke, and no second factor.
 That is the right trade for two parents and one baby, but it has consequences:
 keep the ID out of URLs, where it would reach browser history, referrers, and
-any analytics. A QR code shown on a screen is fine.
+any analytics.
 
 **Reversal condition.** If the app is ever used by families beyond this one
 (Phase 12), identity needs revisiting — and this is the property that forces it.
@@ -451,29 +456,29 @@ settle.
 
 ---
 
-## D-022 — No pairing flow for MVP; one seeded household
+## D-022 — No pairing flow for MVP; one baby row
 
-The household id is created once, by hand, and hard-coded in the client. There
-is no join screen, no QR code, no invite. Both phones simply use the same id.
+One `baby` row is inserted for Liana and her id is hard-coded in the client.
+There is no join screen, no QR code, no invite. Both phones use the same id.
 
-**Why.** Two parents, one baby, one household. A join flow is infrastructure for
-a problem that does not exist yet, and the point of the MVP is the shortest path
-to something usable at 3am. `.specify/memory/household-devices.md` already
-describes the flow for when it is needed; it is not deleted, only deferred.
+**Why.** Two parents, one baby. A join flow is infrastructure for a problem that
+does not exist yet, and the point of the MVP is the shortest path to something
+usable at 3am. `.specify/memory/baby-and-devices.md` describes the flow for when
+it is needed; it is deferred, not deleted.
 
-**This supersedes D-004's QR code for now.** D-004 said a second device joins by
-scanning a QR. That still holds as the eventual design, and the Phase 2 handoff
-independently proposed a typed readable code instead — worth reconciling when
+**This supersedes D-004's QR code for now.** D-004 has a second device joining by
+being given the id. That still holds as the eventual design, and the Phase 2
+handoff independently proposed a typed readable code — worth reconciling when
 this comes back, since a readable code needs no camera and can be sent to
 someone who is not in the room.
 
-**Consequence, stated plainly.** With a hard-coded household id, a public anon
-key and no accounts, the log is readable by anyone who finds the repo. That
-follows from D-008 rather than from this decision, and the owner has already
-accepted publishing the paper-log photographs. The difference in kind is that
-this is live and continuous, and includes whatever goes in the free-text notes.
+**Consequence, stated plainly.** With a hard-coded baby id, a public anon key
+and no accounts, the log is readable by anyone who finds the repo. That follows
+from D-008 rather than from this decision, and the owner has already accepted
+publishing the paper-log photographs. The difference in kind is that this is
+live and continuous, and includes whatever goes in the free-text notes.
 
-**Trigger to revisit.** A third device, or anyone outside this household.
+**Trigger to revisit.** A third device, or anyone outside this family.
 
 ---
 
@@ -543,4 +548,38 @@ one tap and still survives a mis-swipe.
 
 **Consequence for the build.** The client holds a deleted moment briefly rather
 than deleting straight away, so S8 owns the undo window, not just the delete.
+
+---
+
+## D-026 — The baby is the root, not a household
+
+Four tables: `baby`, `device`, `timeslot`, `event`. A moment belongs to a baby.
+
+**Why the change.** The model previously carried a `household_id` with no table
+behind it — deliberately, because a household had nothing to store beyond its
+own id. That made it a concept you had to hold in your head without anything to
+point at, and it read as confusing rather than minimal.
+
+A baby has a name. That earns a table, and it pays for itself immediately: the
+app can display "Liana" instead of hard-coding her name in the UI, which the
+Phase 2 handoff already assumed when it said the baby's name "lives in
+settings".
+
+**A sibling is a second row, not a second concept.** More likely for this family
+than a second household ever was.
+
+**`device` does not reference the baby.** A phone belongs to a parent, not to a
+child; if a sibling arrives the same two phones log for both. The baby id lives
+on `timeslot`, which is the thing actually about her.
+
+**Table names are singular throughout** — `baby`, `device`, `timeslot`, `event`.
+The earlier schema mixed plural `devices` with singular `timeslot`, which is the
+kind of inconsistency that costs a moment every time a query is written.
+
+**No `id` default on the client-written tables.** `device`, `timeslot` and
+`event` have no `default gen_random_uuid()`. Those rows are always written by a
+client that generated its own UUID, which is what makes replay idempotent. A
+server-side default would quietly mint an id the client does not know, producing
+a row it cannot match on retry — a silent duplicate instead of a loud not-null
+error. `baby` keeps its default, since it is created once through the API.
 

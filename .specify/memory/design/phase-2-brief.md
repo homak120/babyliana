@@ -216,7 +216,7 @@ Used by parents of a newborn, often at 4am, often exhausted.
 - Dark room. The screen is the only light source and should not be a torch.
 - Cold start to logged entry should beat writing a row by hand.
 - Works fully offline; nothing waits on a network.
-- No login, no account. Shared household, joined by QR code.
+- No login, no account. Shared baby id, no pairing for MVP.
 
 ## What to hand back
 

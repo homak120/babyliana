@@ -2,15 +2,15 @@
 
 ## What it is
 
-A shared newborn activity log for a household of two parents, replacing a paper
-log kept at the bedside.
+A shared newborn activity log for two parents, replacing a paper log kept at
+the bedside.
 
 ## Users
 
 - **Both parents are primary users.** Neither is a proxy for the other. Both do
   night shifts, both feed, both change diapers.
-- The household model supports N devices from the start. Two today; a
-  grandparent or helper may join later without a schema change.
+- The model supports N devices from the start. Two today; a grandparent or
+  helper may join later without a schema change.
 - Every event records which device created it. Not for accountability — because
   "did I log that or did you" is a real 3am question.
 

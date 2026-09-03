@@ -1,7 +1,7 @@
 -- BabyLiana — initial schema
 --
--- Run this once in the Supabase SQL Editor. It is idempotent enough to re-run
--- safely: everything is IF NOT EXISTS / IF EXISTS.
+-- Run this once in the Supabase SQL Editor. Safe to re-run: everything is
+-- IF NOT EXISTS / IF EXISTS.
 --
 -- Keep this file. A paused free-tier project is eventually deleted and the free
 -- tier keeps no backups (see .specify/memory/technical-constraints.md), so
@@ -10,7 +10,7 @@
 --
 -- Model: .specify/memory/event-model.md § Schema (Postgres)
 -- Decisions: D-003 mutable rows · D-019 timeslot is the unit · D-020 optional
--- period and the `other` type · D-022 one seeded household, no pairing
+-- period and the `other` type · D-022 one baby, hard-coded id, no pairing
 
 
 -- ---------------------------------------------------------------------------
@@ -26,34 +26,49 @@ drop table if exists public.spike_taps;
 -- ---------------------------------------------------------------------------
 -- 2. Tables
 --
--- No `households` table. D-004 has no accounts, so a household is a bare UUID
--- minted once and shared. There is nothing to store about it beyond its id, so
--- household_id is a plain column and not a foreign key target.
+-- Four, all singular. The baby is the root: this is a log about her, and every
+-- moment belongs to one.
+--
+-- `device` deliberately does NOT reference a baby. A phone belongs to a parent,
+-- not to a child — if a sibling ever arrives the same two phones log for both.
+-- The baby lives on the moment, which is what is actually about her.
 -- ---------------------------------------------------------------------------
 
-create table if not exists public.devices (
-  device_id    uuid primary key default gen_random_uuid(),
-  household_id uuid not null,
-  name         text,
-  created_at   timestamptz not null default now(),
-  updated_at   timestamptz not null default now()
+create table if not exists public.baby (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- No default on id below this line, deliberately. These rows are always written
+-- by a client that generated its own UUID, which is what makes replay
+-- idempotent. A server-side default would quietly mint an id the client does
+-- not know, producing a row it cannot match on retry — a duplicate instead of a
+-- loud not-null error.
+
+create table if not exists public.device (
+  id         uuid primary key,
+  name       text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 create table if not exists public.timeslot (
-  id           uuid primary key default gen_random_uuid(),
-  household_id uuid not null,
-  logged_by    uuid not null references public.devices(device_id) on delete restrict,
-  occurred_at  timestamptz not null,
-  ended_at     timestamptz,
-  recorded_at  timestamptz not null default now(),
-  updated_at   timestamptz not null default now(),
-  note         text,
+  id          uuid primary key,
+  baby_id     uuid not null references public.baby(id)   on delete restrict,
+  logged_by   uuid not null references public.device(id) on delete restrict,
+  occurred_at timestamptz not null,
+  ended_at    timestamptz,
+  recorded_at timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  note        text,
   constraint period_is_forward
     check (ended_at is null or ended_at >= occurred_at)
 );
 
 create table if not exists public.event (
-  id            uuid primary key default gen_random_uuid(),
+  id            uuid primary key,
   timeslot_id   uuid not null references public.timeslot(id) on delete cascade,
   type          text not null check (type in (
                   'feed', 'diaper', 'sleep', 'weight',
@@ -114,37 +129,39 @@ create table if not exists public.event (
 
 create index if not exists event_timeslot_id_idx
   on public.event (timeslot_id);
-create index if not exists timeslot_household_occurred_idx
-  on public.timeslot (household_id, occurred_at desc);
-create index if not exists devices_household_id_idx
-  on public.devices (household_id);
+create index if not exists timeslot_baby_occurred_idx
+  on public.timeslot (baby_id, occurred_at desc);
 
 
 -- ---------------------------------------------------------------------------
 -- 4. Row-level security
 --
 -- These restrict what the `anon` ROLE may do. They cannot restrict rows to one
--- household: with no Supabase Auth there is no identity to check household_id
--- against, and the anon key is public (D-008 makes the repo public, so the key
--- in the bundle is genuinely public).
+-- baby: with no Supabase Auth there is no identity to check baby_id against,
+-- and the anon key is public (D-008 makes the repo public, so the key in the
+-- bundle is genuinely public).
 --
--- Today that is moot — exactly one household exists on this deployment. It
--- stops being moot if a second family ever shares it, which is Phase 12 and
--- which D-004 already names as the reason identity needs revisiting.
+-- Today that is moot — one baby, two phones, one deployment. It stops being
+-- moot if anyone outside this family ever uses it, which is Phase 12 and which
+-- D-004 already names as the reason identity needs revisiting.
+--
+-- One policy per table: `for all` already covers select, insert, update and
+-- delete.
 -- ---------------------------------------------------------------------------
 
-alter table public.devices  enable row level security;
+alter table public.baby     enable row level security;
+alter table public.device   enable row level security;
 alter table public.timeslot enable row level security;
 alter table public.event    enable row level security;
 
--- One policy per table. `for all` covers select, insert, update and delete;
--- a separate select policy would be redundant.
-
-drop policy if exists "anon full access" on public.devices;
+drop policy if exists "anon full access" on public.baby;
+drop policy if exists "anon full access" on public.device;
 drop policy if exists "anon full access" on public.timeslot;
 drop policy if exists "anon full access" on public.event;
 
-create policy "anon full access" on public.devices
+create policy "anon full access" on public.baby
+  for all to anon using (true) with check (true);
+create policy "anon full access" on public.device
   for all to anon using (true) with check (true);
 create policy "anon full access" on public.timeslot
   for all to anon using (true) with check (true);
@@ -162,7 +179,8 @@ create policy "anon full access" on public.event
 -- ---------------------------------------------------------------------------
 
 grant usage on schema public to anon;
-grant select, insert, update, delete on public.devices  to anon;
+grant select, insert, update, delete on public.baby     to anon;
+grant select, insert, update, delete on public.device   to anon;
 grant select, insert, update, delete on public.timeslot to anon;
 grant select, insert, update, delete on public.event    to anon;
 
@@ -179,17 +197,12 @@ grant select, insert, update, delete on public.event    to anon;
 -- ---------------------------------------------------------------------------
 
 do $$
+declare t text;
 begin
-  begin
-    alter publication supabase_realtime add table public.timeslot;
-  exception when duplicate_object then null;
-  end;
-  begin
-    alter publication supabase_realtime add table public.event;
-  exception when duplicate_object then null;
-  end;
-  begin
-    alter publication supabase_realtime add table public.devices;
-  exception when duplicate_object then null;
-  end;
+  foreach t in array array['baby', 'device', 'timeslot', 'event'] loop
+    begin
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    exception when duplicate_object then null;
+    end;
+  end loop;
 end $$;

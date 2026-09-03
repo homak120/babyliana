@@ -96,7 +96,7 @@ app still working and something new demonstrable, each with a concrete "done
 when". Read that first; this list is the checklist view of the same thing.
 
 - [ ] **S0** Clear the decks — delete spike app code (D-012), keep `/spike` as a
-      smoke test, run the DDL, RLS and grants, seed and hard-code one household
+      smoke test, run the migration, insert the baby row, hard-code her id
 - [ ] **S1** Log a moment locally — IndexedDB, the write path, the add sheet
       skeleton, the milk block. Split feeds work here for free
 - [ ] **S2** Make it shared — push, full-refresh reconcile on mount and resume,
@@ -117,7 +117,7 @@ when". Read that first; this list is the checklist view of the same thing.
 
 ### Before reveal, not before MVP
 
-- [ ] **CC** JSON export of timeslots, events and devices.
+- [ ] **CC** JSON export of the baby, timeslots, events and devices.
       `technical-constraints.md` requires it before a second person sees the
       app — that is Phase 9, not first use. Getting a file off an installed iOS
       PWA is the hard part, not the format
@@ -129,13 +129,13 @@ when". Read that first; this list is the checklist view of the same thing.
 Not "later" as in forgotten. Deferred because the fastest path to a usable
 first version does not go through them, and each has a named trigger.
 
-- [ ] **Pairing and the QR join flow.** D-022. Trigger: a third device, or
-      anyone outside this household. Design note already written at
-      `.specify/memory/household-devices.md`
+- [ ] **Pairing and the join flow.** D-022. Trigger: a third device, or anyone
+      outside this family. Design note already written at
+      `.specify/memory/baby-and-devices.md`
 - [ ] **Duplicate detection.** Cut from MVP — see D-023. Trigger: it actually
       happens during the solo run and is annoying
-- [ ] **Household isolation.** Today one household shares one public anon key
-      and RLS cannot separate tenants. Trigger: Phase 12, or a second family
+- [ ] **Data isolation.** One public anon key, and RLS cannot separate one
+      family's rows from another's. Trigger: Phase 12, or a second family
 
 ## Phase 7 — Visual identity & polish
 

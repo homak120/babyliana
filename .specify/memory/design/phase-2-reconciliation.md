@@ -24,7 +24,7 @@ dormant and unreachable and was left as delivered. Do not build it.
 | `parts: Array<{vol, src}>` — a two-part feed inside one record | Two separate `feed` events in one timeslot (D-019) |
 | Records that share a timestamp imply a moment | A real `timeslot` row; events carry `timeslot_id` |
 | `endH` / `endM` on each record | `ended_at` on the **timeslot**; every event in it shares the period (D-020) |
-| `by: string` — the user's name on the record | `logged_by` → `devices.device_id`; the name resolves through the devices table |
+| `by: string` — the user's name on the record | `logged_by` → `device.id`; the name resolves through the `device` table |
 | `qual: string` for poop | `poop_colour` and `poop_consistency`, separate constrained columns |
 | `date` plus `h` / `m` as separate fields | `occurred_at timestamptz` |
 | "last-write-wins per field" | Row-level last-write-wins on `updated_at` |
@@ -48,20 +48,18 @@ Build to D-025, not to the handoff, on this one point.
 ## Pairing needs rethinking against D-004
 
 The welcome screen shows a **device id** (`LNA-7QD4-8213`) and tells the user to
-share it so all phones log to the same baby. In the model the *household* id is
-the join token and the device id identifies a device — those are two different
-things, and the design conflates them.
+share it so all phones log to the same baby. In the model the *baby* id is the
+shared token and the device id identifies a device — two different things, which
+the design conflates.
 
-D-004 also specifies a **QR code**, which the design does not have. The handoff
-names this itself in its open questions: no copy affordance, and no pairing flow
-beyond the id. `.specify/memory/household-devices.md` has the intended shape —
-one screen, two paths, first device creates a household and names itself, second
-scans and joins.
+The handoff names this itself in its open questions: no copy affordance, and no
+pairing flow beyond the id. `.specify/memory/baby-and-devices.md` has the
+intended shape — one screen, two paths. All of it is post-MVP under D-022.
 
 The design's instinct is right and better than the model on one point: a short
 readable code like `LNA-7QD4-8213` beats a raw UUID on screen, which is exactly
 what D-018's readability rule would ask for. Worth keeping that idea and
-attaching it to the household id.
+attaching it to the baby id.
 
 ## Decisions the design made that are not Design's to make
 

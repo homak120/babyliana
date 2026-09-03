@@ -39,8 +39,8 @@ One row per moment someone sat down and logged something.
 | Column | Notes |
 | --- | --- |
 | `id` | UUID, client-generated |
-| `household_id` | Which family |
-| `logged_by` | Device that recorded it — resolves to a name via the devices table |
+| `baby_id` | Which baby this moment is about |
+| `logged_by` | Device that recorded it — resolves to a name via `device` |
 | `occurred_at` | When it happened, or when a period starts. Editable |
 | `ended_at` | Optional. Null means a point in time; set means a period |
 | `recorded_at` | When first written. Never edited |
@@ -137,35 +137,50 @@ migration is already accepted, it should at least be the easy kind.
 
 ## Schema (Postgres)
 
-No `households` table. D-004 has no accounts — the household is a bare UUID
-minted by the first device and shared by QR code. There is nothing to store
-about a household beyond its id, so `household_id` is a plain column on every
-other table, not a foreign key to anything.
+Four tables, all singular. **The baby is the root** (D-026): this is a log about
+her, and every moment belongs to one. An earlier draft carried a `household_id`
+with no table behind it, which was minimal but confusing — a household had
+nothing to store beyond its own id, where a baby has a name the app can display.
+
+`device` deliberately does not reference the baby. A phone belongs to a parent,
+not to a child; if a sibling arrives the same two phones log for both.
 
 ```sql
-create table public.devices (
-  device_id    uuid primary key default gen_random_uuid(),
-  household_id uuid not null,
-  name         text,
-  created_at   timestamptz not null default now(),
-  updated_at   timestamptz not null default now()
+create table if not exists public.baby (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
-create table public.timeslot (
-  id           uuid primary key default gen_random_uuid(),
-  household_id uuid not null,
-  logged_by    uuid not null references public.devices(device_id) on delete restrict,
-  occurred_at  timestamptz not null,
-  ended_at     timestamptz,
-  recorded_at  timestamptz not null default now(),
-  updated_at   timestamptz not null default now(),
-  note         text,
+-- No default on id below this line, deliberately. These rows are always written
+-- by a client that generated its own UUID, which is what makes replay
+-- idempotent. A server-side default would quietly mint an id the client does
+-- not know, producing a row it cannot match on retry — a duplicate instead of a
+-- loud not-null error.
+
+create table if not exists public.device (
+  id         uuid primary key,
+  name       text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.timeslot (
+  id          uuid primary key,
+  baby_id     uuid not null references public.baby(id)   on delete restrict,
+  logged_by   uuid not null references public.device(id) on delete restrict,
+  occurred_at timestamptz not null,
+  ended_at    timestamptz,
+  recorded_at timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  note        text,
   constraint period_is_forward
     check (ended_at is null or ended_at >= occurred_at)
 );
 
-create table public.event (
-  id            uuid primary key default gen_random_uuid(),
+create table if not exists public.event (
+  id            uuid primary key,
   timeslot_id   uuid not null references public.timeslot(id) on delete cascade,
   type          text not null check (type in (
                   'feed', 'diaper', 'sleep', 'weight',
@@ -175,13 +190,15 @@ create table public.event (
   recorded_at   timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
 
-  -- feed
+  -- feed. A split feed is two rows in one timeslot, not one row with two
+  -- halves (D-019). `source` is never null on a feed row — 'unknown' is a real
+  -- answer for the log's unlabelled `30 + 30`.
   volume_ml     integer check (volume_ml is null or volume_ml >= 0),
   source        text check (
                   source is null or source in ('breast_milk', 'formula', 'unknown')
                 ),
 
-  -- diaper
+  -- diaper. One row per change; both flags may be true at once.
   pee               boolean,
   poop              boolean,
   poop_colour       text check (
@@ -193,28 +210,34 @@ create table public.event (
                       ('liquid', 'soft', 'seedy', 'firm', 'other')
                     ),
 
-  -- weight / temperature — no range CHECK. A bound tied to normal body-weight
-  -- or body-temperature values is a step away from the normal-range judgement
-  -- CLAUDE.md rules out; a typo-catching bound is not worth that risk.
+  -- weight / temperature. Positivity only, deliberately no range check: a bound
+  -- shaped like a normal body-temperature range is a step toward the
+  -- normal-range judgement CLAUDE.md rules out, and catching typos is not worth
+  -- that.
   grams         integer check (grams is null or grams > 0),
   celsius       numeric(3,1),
 
-  -- supplement — amount is text, not a number-plus-unit: "1 drop" and "0.5ml"
-  -- are both real answers and do not share a unit.
+  -- supplement. `amount` is text: "1 drop" and "0.5ml" are both real answers
+  -- and share no unit.
   supplement_name  text,
   amount           text,
 
-  -- spit_up — deliberately unstructured; Q-006 has not confirmed this type
-  -- gets used at all
+  -- spit_up. Unstructured on purpose; Q-006 has not confirmed this type is
+  -- used at all.
   severity      text
+
+  -- Sleep has no ended_at of its own — the duration is the timeslot's period
+  -- (D-020). Two places to express one fact is how a duration ends up right in
+  -- one view and wrong in another.
+  --
+  -- `other` has no columns at all. Type plus note, plus a period if it needs
+  -- one. It is the escape hatch that makes the app as accepting as paper.
 );
 
-create index event_timeslot_id_idx
+create index if not exists event_timeslot_id_idx
   on public.event (timeslot_id);
-create index timeslot_household_occurred_idx
-  on public.timeslot (household_id, occurred_at desc);
-create index devices_household_id_idx
-  on public.devices (household_id);
+create index if not exists timeslot_baby_occurred_idx
+  on public.timeslot (baby_id, occurred_at desc);
 ```
 
 **`logged_by` is `on delete restrict`, deliberately.** A device that has logged
@@ -232,21 +255,20 @@ data from an untrusted source. Worth adding later if the API is ever opened up.
 including the first — equal to `recorded_at` at creation. No `PLPGSQL` function
 to maintain on a free-tier project with no server side.
 
-### RLS cannot isolate households — a real, accepted gap
+### RLS cannot isolate one baby's data — a real, accepted gap
 
 Every device shares one public anon key, and D-008 made the repo (and therefore
 that key) genuinely public. Row-level security can restrict what the `anon`
 *role* is allowed to do — same pattern as `spike_taps` in
 `.specify/memory/spike-spec.md`, and the same Data API grant gotcha applies —
-but it cannot restrict rows to *one household*, because with no Supabase Auth
-there is no authenticated identity to check `household_id` against.
+but it cannot restrict rows to *one baby*, because with no Supabase Auth
+there is no authenticated identity to check `baby_id` against.
 
-**Today this is moot.** Exactly one household will ever exist on this
-deployment. It stops being moot the moment a second family shares the same
-deployment — Phase 12, and D-004 already names this as the reason identity
+**Today this is moot.** One baby, two phones, one deployment. It stops being
+moot the moment anyone outside this family shares it — Phase 12, and D-004 already names this as the reason identity
 needs revisiting if that phase opens. Real isolation at that point means
-Supabase Auth, a JWT claim, or separate projects per household — not a
-`household_id` filter that anyone holding the anon key could simply omit.
+Supabase Auth, a JWT claim, or separate projects per family — not a
+`baby_id` filter that anyone holding the anon key could simply omit.
 
 ## Writing a timeslot
 
@@ -297,8 +319,8 @@ Day boundary is midnight local (D-015).
 
 ## Export
 
-A full JSON export of timeslots, events **and devices**, available from day one.
+A full JSON export of the baby, timeslots, events **and devices**, available from day one.
 
 The free Supabase tier keeps no backups, and a project left paused is eventually
 deleted. Both devices holding a local copy plus a manual export is the entire
-disaster-recovery plan. Without the devices table the export is a wall of UUIDs.
+disaster-recovery plan. Without `device` and `baby` the export is a wall of UUIDs.

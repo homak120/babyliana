@@ -1,12 +1,12 @@
-# Household and devices — Phase 4 design note
+# Baby, devices and joining — Phase 4 design note
 
 Status: **deferred to post-MVP** (D-022). Kept because the thinking is done and
 will be wanted; not to be built yet.
 
-For MVP the household id is created once by hand and hard-coded — two phones,
-one baby, one household, no join flow. The `devices` table still exists and is
-in the schema, because attribution ("did I log that, or did you") is wanted from
-day one; only the *pairing* is deferred.
+For MVP one `baby` row is inserted for Liana and her id is hard-coded — two
+phones, one baby, no join flow (D-022, D-026). The `device` table still exists
+and is in the schema, because attribution ("did I log that, or did you") is
+wanted from day one; only the *pairing* is deferred.
 
 Note that the Phase 2 handoff independently proposed a **typed readable code**
 (`LNA-7QD4-8213`) rather than the QR in D-004. That is worth reconciling when
@@ -26,18 +26,19 @@ local storage only would fix it on the one device that already knew the answer.
 
 ## The design
 
-A synced `devices` table — effectively the household's members. Events keep
-carrying `device_id`; clients fetch the table once and resolve ids to names for
-display.
+A synced `device` table. Timeslots carry `logged_by`; clients fetch the table
+once and resolve ids to names for display.
 
 Draft shape, to be typed properly in Phase 4:
 
 | Column | Notes |
 | --- | --- |
-| `device_id` | UUID, client-generated, primary key |
-| `household_id` | Which family this device belongs to |
+| `id` | UUID, generated on the device, primary key |
 | `name` | Free text, entered by the user. "Dad's iPhone", "Mum" |
-| `created_at` | |
+| `created_at`, `updated_at` | |
+
+A device does **not** reference a baby (D-026). A phone belongs to a parent, not
+to a child.
 
 **Why a table rather than carrying the name on each event.** Renaming works
 retroactively — fix a typo once and every past event displays correctly.
@@ -47,9 +48,9 @@ here: the table holds two or three rows, forever, and sits in memory.
 
 ## Three constraints
 
-**1. Creation requires a connection.** Naming a device happens when a device
-joins a household, which is already a connected moment — the QR scan. Owner's
-call, and the right one: with two devices this is not worth engineering around.
+**1. Creation requires a connection.** Naming a device happens on first run,
+which for MVP is already a connected moment. Owner's call, and the right one:
+with two devices this is not worth engineering around.
 Names are then available from whatever was last fetched, and the set is tiny and
 near-static, so keeping it is trivial rather than a sync problem.
 
@@ -65,11 +66,11 @@ it never fires.
 
 ## First run, and the QR join, are the same screen
 
-D-004 has the first device generate a household id and a second join by QR. That
-is the same moment as naming yourself, so it is one design with two paths:
+D-004 has the shared token be the baby's id. Receiving it is the same moment as
+naming yourself, so it is one design with two paths:
 
-- **First device** — create a household, name this device
-- **Second device** — scan the QR to get the household id, name this device
+- **First device** — create the baby, name this device
+- **Second device** — receive the baby id, name this device
 
 Do not gate logging on it. If storage is ever cleared, this screen would
 otherwise reappear at 3am in front of someone holding a baby, and a parent who
