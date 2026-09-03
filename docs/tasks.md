@@ -105,9 +105,8 @@ when". Read that first; this list is the checklist view of the same thing.
       day separators, theme by clock, tokens.css wired
 - [x] **S4** Diapers — pee/poop, optional colour and consistency revealed only
       when poop is on. New blocks default to pee, per the real log
-- [ ] **S5** Time entry — steppers, offsets, numeric, optional end time. **The
-      slice that decides whether the app beats the pen.** Usable for real after
-      this one
+- [x] **S5** Time entry — steppers with hold-to-repeat, offset pills, direct
+      numeric entry, optional end time. Backdating and periods both work
 - [ ] **S6** Notes and the `other` type — the escape hatch
 - [ ] **S7** The day view — the paper-shaped table, date printed once per day
 - [ ] **S8** Edit and delete — swipe reveals both; delete takes the whole moment

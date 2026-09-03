@@ -12,6 +12,7 @@ import {
 import { DiaperBlock } from './DiaperBlock'
 import { Icon } from './Icon'
 import { MilkBlock } from './MilkBlock'
+import { TimeCard } from './TimeCard'
 
 // The sheet is one moment (D-019, D-021). It opens with NO type selected and
 // save stays disabled until a block exists, which enforces "a moment always has
@@ -33,6 +34,9 @@ const AVAILABLE: { type: BlockType; label: string }[] = [
 export function AddSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const [blocks, setBlocks] = useState<Block[]>([])
   const [saving, setSaving] = useState(false)
+  // Defaults to now — the overwhelmingly common case, at zero taps.
+  const [start, setStart] = useState(() => new Date())
+  const [end, setEnd] = useState<Date | null>(null)
 
   function add(type: BlockType) {
     const key = crypto.randomUUID()
@@ -53,7 +57,7 @@ export function AddSheet({ onClose, onSaved }: { onClose: () => void; onSaved: (
 
   async function save() {
     setSaving(true)
-    await logMoment({ entries: blocks.map(toEntry) })
+    await logMoment({ occurredAt: start, endedAt: end, entries: blocks.map(toEntry) })
     setSaving(false)
     onSaved()
   }
@@ -69,7 +73,14 @@ export function AddSheet({ onClose, onSaved }: { onClose: () => void; onSaved: (
         </button>
       </header>
 
-      <p className="hint">time is now — S5 makes it adjustable</p>
+      <TimeCard
+        start={start}
+        end={end}
+        onChange={(s, e) => {
+          setStart(s)
+          setEnd(e)
+        }}
+      />
 
       {blocks.map((b, i) =>
         b.type === 'milk' ? (

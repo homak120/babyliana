@@ -35,15 +35,15 @@ Derived directly from `paper-log-baseline.md`. Every item must be expressible:
       consistency work (S4); the `G→Y` transition itself is prose and needs the
       note, which is S6
 - [x] A pee and a poop in the same change
-- [ ] An entry whose time is set by hand, long after it happened — the app has
+- [x] An entry whose time is set by hand, long after it happened — the app has
       no `?` for time (D-018), so this must be fast rather than expressible
 - [x] An entry with an unknown volume — `?`
-- [ ] An entry logged out of order, hours after it happened
+- [x] An entry logged out of order, hours after it happened
 - [ ] An entry corrected after it was recorded
 - [ ] An entry deleted after it was recorded
 - [x] A row with a diaper and no feed
 - [x] A row with a feed and no diaper
-- [ ] Something that took a stretch of time rather than happening at an instant
+- [x] Something that took a stretch of time rather than happening at an instant
 - [ ] Anything not anticipated above — the `other` type, plus a free-text note
       on any event (D-020)
 
