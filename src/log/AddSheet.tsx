@@ -4,14 +4,17 @@ import {
   canSave,
   newDiaper,
   newMilk,
+  newOther,
   toEntry,
   type Block,
   type DiaperDraft,
   type MilkDraft,
+  type OtherDraft,
 } from './drafts'
 import { DiaperBlock } from './DiaperBlock'
 import { Icon } from './Icon'
 import { MilkBlock } from './MilkBlock'
+import { OtherBlock } from './OtherBlock'
 import { TimeCard } from './TimeCard'
 
 // The sheet is one moment (D-019, D-021). It opens with NO type selected and
@@ -29,7 +32,11 @@ type BlockType = Block['type']
 const AVAILABLE: { type: BlockType; label: string }[] = [
   { type: 'milk', label: '+ milk' },
   { type: 'diaper', label: '+ diaper' },
+  { type: 'other', label: '+ other' },
 ]
+
+const emptyDraft = (type: BlockType) =>
+  type === 'milk' ? newMilk() : type === 'diaper' ? newDiaper() : newOther()
 
 export function AddSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const [blocks, setBlocks] = useState<Block[]>([])
@@ -37,18 +44,16 @@ export function AddSheet({ onClose, onSaved }: { onClose: () => void; onSaved: (
   // Defaults to now — the overwhelmingly common case, at zero taps.
   const [start, setStart] = useState(() => new Date())
   const [end, setEnd] = useState<Date | null>(null)
+  const [note, setNote] = useState('')
 
   function add(type: BlockType) {
-    const key = crypto.randomUUID()
     setBlocks((b) => [
       ...b,
-      type === 'milk'
-        ? { key, type, draft: newMilk() }
-        : { key, type, draft: newDiaper() },
+      { key: crypto.randomUUID(), type, draft: emptyDraft(type) } as Block,
     ])
   }
 
-  const update = (i: number, draft: MilkDraft | DiaperDraft) =>
+  const update = (i: number, draft: MilkDraft | DiaperDraft | OtherDraft) =>
     setBlocks((prev) =>
       prev.map((p, j) => (j === i ? ({ ...p, draft } as Block) : p)),
     )
@@ -57,7 +62,12 @@ export function AddSheet({ onClose, onSaved }: { onClose: () => void; onSaved: (
 
   async function save() {
     setSaving(true)
-    await logMoment({ occurredAt: start, endedAt: end, entries: blocks.map(toEntry) })
+    await logMoment({
+      occurredAt: start,
+      endedAt: end,
+      note: note.trim() || null,
+      entries: blocks.map(toEntry),
+    })
     setSaving(false)
     onSaved()
   }
@@ -90,8 +100,15 @@ export function AddSheet({ onClose, onSaved }: { onClose: () => void; onSaved: (
             onChange={(d) => update(i, d)}
             onRemove={() => remove(i)}
           />
-        ) : (
+        ) : b.type === 'diaper' ? (
           <DiaperBlock
+            key={b.key}
+            value={b.draft}
+            onChange={(d) => update(i, d)}
+            onRemove={() => remove(i)}
+          />
+        ) : (
+          <OtherBlock
             key={b.key}
             value={b.draft}
             onChange={(d) => update(i, d)}
@@ -107,6 +124,18 @@ export function AddSheet({ onClose, onSaved }: { onClose: () => void; onSaved: (
           </button>
         ))}
       </div>
+
+      <section className="notecard">
+        <label htmlFor="note">
+          <Icon name="edit_note" size={17} /> note
+        </label>
+        <input
+          id="note"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="spat some up / half asleep / …"
+        />
+      </section>
 
       <button type="button" className="save" disabled={!ready} onClick={save}>
         <Icon name="check_circle" size={24} />

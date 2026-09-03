@@ -128,8 +128,20 @@ export function LogScreen() {
                   {feeds && <span className="chip-rose">{feeds}</span>}
                   {m.events.some((e) => e.pee) && <span className="chip-yellow">pee</span>}
                   {m.events.some((e) => e.poop) && <span className="chip-mint">poop</span>}
+                  {m.events
+                    .filter((e) => e.type !== 'feed' && e.type !== 'diaper')
+                    .map((e) => (
+                      <span className="chip-lav" key={e.id}>
+                        {e.type.replace('_', ' ')}
+                      </span>
+                    ))}
                 </span>
               </div>
+              {m.timeslot.note && (
+                <p className="rownote">
+                  <Icon name="edit_note" size={14} /> {m.timeslot.note}
+                </p>
+              )}
             </li>
           )
         })}

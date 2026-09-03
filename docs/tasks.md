@@ -71,9 +71,9 @@ them is how Phase 0 quietly never happens.
       `.specify/memory/event-model.md`; confirm it and move on. Realtime is a
       latency optimisation, not a sync mechanism: no replay, so anything written
       while a phone was backgrounded is missed until the next reconcile
-- [ ] **CH** Confirm the `other` type list. The design calls it a placeholder
-      and the schema names five secondary types; they have to agree before the
-      build. Nothing else tracks this
+- [x] **CH** Confirm the `other` type list — settled in S6: the six schema types
+      exactly, none with fields of its own. The design's answer, "pick one, write
+      the rest in the note", is also the honest one while Q-006 is open
 - [ ] **CH** Offline strategy. **No longer blocked on Q-004** — reconcile is a
       full refresh, so eviction is survivable by design: lose the cache,
       re-fetch. Q-004 now confirms rather than gates
@@ -107,7 +107,7 @@ when". Read that first; this list is the checklist view of the same thing.
       when poop is on. New blocks default to pee, per the real log
 - [x] **S5** Time entry — steppers with hold-to-repeat, offset pills, direct
       numeric entry, optional end time. Backdating and periods both work
-- [ ] **S6** Notes and the `other` type — the escape hatch
+- [x] **S6** Notes and the `other` type — the escape hatch
 - [ ] **S7** The day view — the paper-shaped table, date printed once per day
 - [ ] **S8** Edit and delete — swipe reveals both; delete takes the whole moment
       with an undo toast (D-025). Plain updates, real deletes (D-003)

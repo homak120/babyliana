@@ -411,3 +411,64 @@ body {
   color: var(--periInk);
   font-variant-numeric: tabular-nums;
 }
+
+/* --- other block and note card --------------------------------------------- */
+
+.block.other header { color: var(--lavInk); }
+
+.otherlist { display: flex; flex-direction: column; gap: 0.375rem; margin-top: 0.5rem; }
+
+.otherrow {
+  width: 100%;
+  min-height: 3.5rem;
+  border: none;
+  border-radius: 1rem;
+  background: var(--chip);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  text-align: left;
+  padding: 0 1rem;
+  cursor: pointer;
+}
+
+.otherrow.on { background: var(--lavFill); color: var(--lavInk); }
+
+.notecard { margin: 1.25rem 0; }
+
+.notecard label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.6875rem;
+  color: var(--periInk);
+  margin-bottom: 0.375rem;
+}
+
+.notecard input {
+  width: 100%;
+  min-height: 2.875rem;
+  border: none;
+  border-radius: 1rem;
+  background: var(--periFill);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+  padding: 0 0.875rem;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.notecard input::placeholder { color: var(--muted); }
+
+.chip-lav { background: var(--lavFill); color: var(--lavInk); }
+
+.rownote {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--periInk);
+  margin: 0 0 0.5rem 4rem;
+}
