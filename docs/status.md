@@ -42,8 +42,15 @@ and Q-009 are closed; the decisions are recorded in D-021.
 brief predating D-019 and D-020, so its data shapes are Design's assumptions and
 need remapping. Its unknown-minute marker was struck as a D-018 conflict.
 
-**Phase 4 is the live thread.** Schema is finalised; sync, the QR join, export
-and the offline strategy remain — the last of those still waiting on Q-004.
+**Phase 4 is the live thread, and it was re-scoped on 2026-09-03** against what
+is now known rather than what was guessed when it was written. Pairing, export
+and duplicate detection are out of MVP (D-022, D-023, D-024). The offline
+strategy is no longer blocked on Q-004. What remains is confirming sync, settling
+the `other` type list, the offline strategy, and the owner's review of
+`event-model.md`.
+
+**The bias from here is the shortest path to something usable at 3am.** Anything
+deferred sits under *Post-MVP* in `tasks.md` with a named trigger, not dropped.
 
 **No duration estimates.** The owner works with LLM tooling and they have been
 wrong every time; see `plan.md` § Two kinds of phase.
@@ -111,6 +118,22 @@ represented*, which is the one real cost and is stated in
 `paper-log-baseline.md` § Unknown values was **not** rewritten — it records what
 the paper actually says, and editing evidence to match a decision would destroy
 the ability to re-derive later. It carries a pointer to D-018 instead.
+
+### 2026-09-03 — Phase 2 landed, Phase 4 re-scoped
+
+Claude Design's handoff arrived and is final (D-021), closing Q-001, Q-002,
+Q-007 and Q-009. Its unknown-minute marker was struck as a D-018 conflict, and
+`.specify/memory/design/phase-2-reconciliation.md` lists where its data shapes
+diverge from the model — remapping work for Phase 6, not design problems.
+
+Column types finalised: three tables with full DDL in `event-model.md`.
+
+Phase 4 was then re-scoped on the owner's point that the plan was written with
+less information than we now have, and following it unexamined wastes time.
+Pairing (D-022), duplicate detection (D-023) and export (D-024) are out of MVP,
+each with a named trigger. The offline strategy turned out not to be blocked on
+Q-004 after all. Phase 5 shrank to slicing, since the spec artifacts already
+exist.
 
 ### 2026-09-01 — analysis pass, no code
 

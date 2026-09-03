@@ -1,7 +1,17 @@
 # Household and devices — Phase 4 design note
 
-Status: **design note.** Feeds the Phase 4 tasks *Household ID and QR join flow*
-and *Finalise event schema*. Not final until `event-model.md` is.
+Status: **deferred to post-MVP** (D-022). Kept because the thinking is done and
+will be wanted; not to be built yet.
+
+For MVP the household id is created once by hand and hard-coded — two phones,
+one baby, one household, no join flow. The `devices` table still exists and is
+in the schema, because attribution ("did I log that, or did you") is wanted from
+day one; only the *pairing* is deferred.
+
+Note that the Phase 2 handoff independently proposed a **typed readable code**
+(`LNA-7QD4-8213`) rather than the QR in D-004. That is worth reconciling when
+this comes back: a readable code needs no camera permission and can be sent to
+someone who is not in the room.
 
 ## The problem it solves
 

@@ -449,3 +449,67 @@ implicitly — it calls Liana "the app's own character" while naming her after t
 baby, and puts "BabyLiana" in the icon and copy — but neither was Design's to
 settle.
 
+---
+
+## D-022 — No pairing flow for MVP; one seeded household
+
+The household id is created once, by hand, and hard-coded in the client. There
+is no join screen, no QR code, no invite. Both phones simply use the same id.
+
+**Why.** Two parents, one baby, one household. A join flow is infrastructure for
+a problem that does not exist yet, and the point of the MVP is the shortest path
+to something usable at 3am. `.specify/memory/household-devices.md` already
+describes the flow for when it is needed; it is not deleted, only deferred.
+
+**This supersedes D-004's QR code for now.** D-004 said a second device joins by
+scanning a QR. That still holds as the eventual design, and the Phase 2 handoff
+independently proposed a typed readable code instead — worth reconciling when
+this comes back, since a readable code needs no camera and can be sent to
+someone who is not in the room.
+
+**Consequence, stated plainly.** With a hard-coded household id, a public anon
+key and no accounts, the log is readable by anyone who finds the repo. That
+follows from D-008 rather than from this decision, and the owner has already
+accepted publishing the paper-log photographs. The difference in kind is that
+this is live and continuous, and includes whatever goes in the free-text notes.
+
+**Trigger to revisit.** A third device, or anyone outside this household.
+
+---
+
+## D-023 — No duplicate detection in MVP
+
+Two similar entries logged minutes apart are not flagged, surfaced, or merged.
+
+**Why.** It was designed for the append-only model, where merging two offline
+devices by union could produce near-identical events. That model is gone (D-003).
+Three things argue against building it now: the Phase 2 design — final under
+D-021 — has no duplicate-detection UI at all; the non-negotiable is *never
+resolve a duplicate silently*, which is satisfied for free by never merging; and
+with a paper-shaped day table and swipe-to-edit rows, a human sees two
+near-identical rows immediately and deletes one.
+
+Building it means inventing a merge interaction the design does not have, for a
+case two people will rarely hit.
+
+**Trigger to revisit.** It happens during the solo run and is actually annoying.
+
+---
+
+## D-024 — Export is a pre-reveal requirement, not an MVP one
+
+The JSON export ships before Phase 9, not before first use.
+
+**Why.** `technical-constraints.md` has always said *"export must work before the
+app is shown to a second person"* — which is the reveal, not the first usable
+version. It was moved early in the Phase 6 list on an agent's caution rather
+than because anything required it, and moved back.
+
+The risk it guards against is real but not yet live: the free tier has no
+backups and a paused project is eventually deleted. During the solo run the
+paper log still exists as a fallback. The window where export genuinely matters
+opens when the pen goes away, which is Phase 10.
+
+**Trigger.** Before Phase 9. Getting a file off an installed iOS PWA is the hard
+part, not the JSON shape.
+

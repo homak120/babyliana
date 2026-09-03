@@ -288,15 +288,12 @@ Day boundary is midnight local (D-015).
   it and would break the local-first write path, so this is accepted rather than
   solved. The realistic case is one person correcting their own entry seconds
   after making it, where no second device is involved at all.
-- Duplicate detection is a read-time concern: two similar timeslots within a few
-  minutes are surfaced for the user to resolve. Never merged silently, never
-  resolved server-side.
-- **A shared feed still looks like a duplicate**, one level up from where it used
-  to. A genuine split feed logged by one person is two events in *one* timeslot
-  and raises nothing. But if both parents log the same feed — or each logs half
-  of it — that is two timeslots minutes apart, indistinguishable from one person
-  logging twice. Resolution needs a third option beyond keep and discard: *these
-  are one moment, merge them*.
+- **No duplicate detection in MVP** (D-023). Nothing is flagged, surfaced or
+  merged. The non-negotiable is *never resolve a duplicate silently*, and never
+  merging satisfies it for free. If both parents log the same feed, that is two
+  timeslots minutes apart in the day view, and a human deletes one — which the
+  paper-shaped table and swipe-to-edit rows already make easy. Revisit if it
+  turns out to be annoying during the solo run.
 
 ## Export
 

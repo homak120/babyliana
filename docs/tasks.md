@@ -67,24 +67,26 @@ them is how Phase 0 quietly never happens.
 
 - [x] **CH** Finalise event schema and field types — three tables, full
       Postgres DDL in `.specify/memory/event-model.md` § Schema (Postgres)
-- [ ] **CH** Sync, merge, and duplicate-detection behaviour — including
-      reconcile-on-resume. Realtime is a latency optimisation, not a sync
-      mechanism: it has no replay, so anything written while a phone was
-      backgrounded is missed permanently. See spike-spec.md
-- [ ] **CH** Household ID and QR join flow — design note drafted at
-      `.specify/memory/household-devices.md`; devices table, naming, and the
-      join are one screen with two paths
-- [ ] **CH** Offline strategy, informed by the Safari findings from Phase 3
-- [ ] **CH** Export format
+- [ ] **CH** Sync and merge behaviour — mostly written already in
+      `.specify/memory/event-model.md`; confirm it and move on. Realtime is a
+      latency optimisation, not a sync mechanism: no replay, so anything written
+      while a phone was backgrounded is missed until the next reconcile
+- [ ] **CH** Confirm the `other` type list. The design calls it a placeholder
+      and the schema names five secondary types; they have to agree before the
+      build. Nothing else tracks this
+- [ ] **CH** Offline strategy. **No longer blocked on Q-004** — reconcile is a
+      full refresh, so eviction is survivable by design: lose the cache,
+      re-fetch. Q-004 now confirms rather than gates
 - [ ] **H** Review and edit `.specify/memory/event-model.md` to final
 
 ## Phase 5 — MVP spec package
 
-- [ ] **CH** Draft the Spec Kit artifacts
-- [ ] **H** Edit them. Do not accept wholesale — the spec is where your judgment
-      gets encoded
-- [ ] **H** Write `CLAUDE.md` and `.github/copilot-instructions.md` to final
+The artifacts already exist — `event-model.md`, `spike-spec.md`, the design
+handoff and its reconciliation note. D-011 made spec a track, not a phase, and
+the track has been running. What is left is the slicing.
+
 - [ ] **CH** Slice the build so each session has a closeable scope
+- [ ] **H** Skim the artifacts once as a set, for contradictions between them
 
 ## Phase 6 — Build
 
@@ -93,9 +95,8 @@ them is how Phase 0 quietly never happens.
       start of this phase, it is not a Phase 3 exit condition
 - [ ] **CC** Vertical slice: one event type, one device
 - [ ] **CC** Same event visible on a second device
-- [ ] **CC** JSON export. Early, not late — `technical-constraints.md` makes it
-      a non-negotiable before a second person sees the app, and the free tier
-      has no backups
+- [ ] **CC** Seed one household and hard-code its id. No pairing flow for MVP —
+      two phones, one baby, one household. See D-022
 - [ ] **CC** Feed events, including the two-component split
 - [ ] **CC** Diaper events, including colour and consistency
 - [ ] **CC** Time entry: defaults to now, quick offsets, picker, numeric entry
@@ -104,8 +105,6 @@ them is how Phase 0 quietly never happens.
 - [ ] **CC** Free-text note on every event
 - [ ] **CC** Secondary types behind a "more" affordance
 - [ ] **CC** Derived views — time since last feed, daily totals, day list
-- [ ] **CC** Household QR join flow
-- [ ] **CC** Duplicate detection at read time
 - [ ] **CC** Reconcile on resume — on `visibilitychange` to visible, re-fetch
       from the server and merge by id. Without it a backgrounded phone shows a
       confidently wrong count, which breaks "did she already feed her"
@@ -115,6 +114,28 @@ them is how Phase 0 quietly never happens.
       write has already landed in IndexedDB. Same `visibilitychange` hook as
       reconcile-on-resume, so build them together
 - [ ] **CC** Keep the spike page on a route as a smoke test
+
+### Before reveal, not before MVP
+
+- [ ] **CC** JSON export of timeslots, events and devices.
+      `technical-constraints.md` requires it before a second person sees the
+      app — that is Phase 9, not first use. Getting a file off an installed iOS
+      PWA is the hard part, not the format
+- [ ] **CD/CC** Settings screen — the design does not have one, and export needs
+      somewhere to live
+
+## Post-MVP — deliberately deferred
+
+Not "later" as in forgotten. Deferred because the fastest path to a usable
+first version does not go through them, and each has a named trigger.
+
+- [ ] **Pairing and the QR join flow.** D-022. Trigger: a third device, or
+      anyone outside this household. Design note already written at
+      `.specify/memory/household-devices.md`
+- [ ] **Duplicate detection.** Cut from MVP — see D-023. Trigger: it actually
+      happens during the solo run and is annoying
+- [ ] **Household isolation.** Today one household shares one public anon key
+      and RLS cannot separate tenants. Trigger: Phase 12, or a second family
 
 ## Phase 7 — Visual identity & polish
 

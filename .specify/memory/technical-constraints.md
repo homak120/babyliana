@@ -80,4 +80,5 @@ Rationale in `docs/decisions.md` D-004.
 - Corrections are updates and deletes are deletes (D-003). Last write wins.
 - Never resolve a duplicate silently.
 - Never require a login to log an event.
-- Export must work before the app is shown to a second person.
+- Export must work before the app is shown to a second person — the reveal, not
+  the first usable version. See D-024.
