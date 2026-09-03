@@ -1,0 +1,82 @@
+# Phase 2 handoff — reconciliation with the data model
+
+The Claude Design handoff in `.specify/memory/design/handoff/` was
+produced from a brief that predates D-019 and D-020. The **visual and
+interaction design is the deliverable and stands**; the data shapes in its
+README are Design's own assumptions and do not.
+
+The handoff says this itself: the HTML is *"design references… not production
+code to port line by line"*, to be recreated in the target codebase. `tokens.css`
+is the exception and is authoritative.
+
+This note lists what to remap when Phase 6 builds from it.
+
+## Struck outright
+
+**The unknown-minute marker.** D-018 rules out any time-precision marker. The
+handoff README has been amended; the prototype's `minUnknown` scaffolding is
+dormant and unreachable and was left as delivered. Do not build it.
+
+## Remap, do not rebuild
+
+| Handoff shape | Actual model |
+| --- | --- |
+| `parts: Array<{vol, src}>` — a two-part feed inside one record | Two separate `feed` events in one timeslot (D-019) |
+| Records that share a timestamp imply a moment | A real `timeslot` row; events carry `timeslot_id` |
+| `endH` / `endM` on each record | `ended_at` on the **timeslot**; every event in it shares the period (D-020) |
+| `by: string` — the user's name on the record | `logged_by` → `devices.device_id`; the name resolves through the devices table |
+| `qual: string` for poop | `poop_colour` and `poop_consistency`, separate constrained columns |
+| `date` plus `h` / `m` as separate fields | `occurred_at timestamptz` |
+| "last-write-wins per field" | Row-level last-write-wins on `updated_at` |
+
+**The one place this reaches the interaction, not just storage.** The milk block
+lets you select between two parts of one feed, so the row reads `30 + 30`. Under
+D-019 that is two feed entries in the same moment, so the affordance is closer to
+*add another bottle* than *edit the second half*. Everything else is invisible to
+the user.
+
+## Pairing needs rethinking against D-004
+
+The welcome screen shows a **device id** (`LNA-7QD4-8213`) and tells the user to
+share it so all phones log to the same baby. In the model the *household* id is
+the join token and the device id identifies a device — those are two different
+things, and the design conflates them.
+
+D-004 also specifies a **QR code**, which the design does not have. The handoff
+names this itself in its open questions: no copy affordance, and no pairing flow
+beyond the id. `.specify/memory/household-devices.md` has the intended shape —
+one screen, two paths, first device creates a household and names itself, second
+scans and joins.
+
+The design's instinct is right and better than the model on one point: a short
+readable code like `LNA-7QD4-8213` beats a raw UUID on screen, which is exactly
+what D-018's readability rule would ask for. Worth keeping that idea and
+attaching it to the household id.
+
+## Decisions the design made that are not Design's to make
+
+Neither is a problem. Both need the owner to confirm rather than inherit.
+
+**Q-003 — is the mascot the baby, or a separate creature?** The handoff calls
+Liana "the app's own character", a creature with a vine sprout — but names her
+after the baby. That is both answers at once. Q-003 is a Phase 7 owner decision.
+
+**Q-008 — the name.** "BabyLiana" is now in the app icon, the mascot's name and
+the copy throughout. Q-008 defers naming precisely to keep it out of anything
+expensive to change; this made a rename more expensive. Not fatal — the icon is
+a placeholder until Phase 7 anyway — but the cost went up.
+
+## What the handoff settles well
+
+Recorded so it is not relitigated:
+
+- **Q-002** — three lead variants built for comparison, not one asserted answer,
+  which is what D-007 asked for
+- **Q-009** — the day table prints the date only on the first row of a day,
+  matching the paper page; two alternative read-backs offered
+- **Q-001** — sheet opens with no type selected; milk, diaper and other as three
+  equal bubbles; secondary types behind "other". Matches D-010
+- **Q-007** — the sheet *is* a moment, even though the brief never described one
+- Volumes are arbitrary integers via keypad, not presets — which the non-round
+  volumes in the real log require
+- `?` for unknown volume is first-class, matching a nullable `volume_ml`

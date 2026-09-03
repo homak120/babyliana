@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,1,0&display=block">
+<style>
+.msr { font-family: 'Material Symbols Rounded'; font-weight: normal; font-style: normal; line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr; -webkit-font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; }
+.liana-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+.liana-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
+@keyframes lianaBlink { 0%, 92%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.12); } }
+@keyframes lianaBreathe { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-3px) scale(1.015); } }
+@keyframes lianaPop { 0% { transform: scale(1); } 35% { transform: scale(1.13) rotate(-4deg); } 100% { transform: scale(1); } }
+@keyframes lianaSparkle { 0% { opacity: 0; transform: scale(0.4) rotate(-20deg); } 30% { opacity: 1; transform: scale(1) rotate(0deg); } 100% { opacity: 0; transform: scale(1.35) rotate(15deg); } }
+@keyframes lianaZ { 0% { opacity: 0; transform: translate(0,0) scale(0.7); } 40% { opacity: 1; } 100% { opacity: 0; transform: translate(10px,-16px) scale(1.1); } }
+@keyframes lianaLeaf { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(8deg); } }
+</style>
+</helmet>
+<div style="position:relative;width:390px;height:844px;overflow:hidden;font-family:'Zen Maru Gothic',system-ui,sans-serif;background:var(--bg,#fdf7f2);color:var(--ink,#4b403a);border-radius:38px;box-shadow:0 18px 44px rgba(80,60,70,0.18);display:flex;flex-direction:column;{{ themeCss }}">
+
+  <div style="position:absolute;left:0;right:0;top:0;height:190px;background:var(--sky,linear-gradient(160deg,#ffe3ec 0%,#f6e6ff 45%,#fdf7f2 100%));pointer-events:none"></div>
+
+  <div style="position:relative;display:flex;justify-content:space-between;align-items:center;padding:16px 22px 6px;font-size:12px;color:var(--muted,#a89890)">
+    <span style="font-variant-numeric:tabular-nums;font-weight:700;color:var(--ink,#4b403a);display:flex;align-items:center;gap:5px">
+      <span class="msr" style="font-size:15px;color:var(--clock,#c9a7e8)">{{ clockIcon }}</span>{{ nowText }}
+    </span>
+    <span style="display:flex;align-items:center;gap:6px">
+      <span style="display:flex;align-items:center;gap:-4px">
+        <span style="width:19px;height:19px;border-radius:50%;background:var(--parentM,#f2a65a);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center">M</span>
+        <span style="width:19px;height:19px;border-radius:50%;background:var(--parentA,#8fa8e0);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-left:-5px;border:2px solid var(--bg,#fdf7f2)">A</span>
+      </span>
+      <span class="msr" style="font-size:14px;color:var(--mint,#7cc4a4)">cloud_done</span>
+      <span>2m</span>
+    </span>
+  </div>
+
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+    <div style="position:relative;flex:1;display:flex;flex-direction:column;min-height:0">
+
+      <div style="padding:8px 18px 14px">
+        <div style="background:var(--card,#ffffff);border-radius:30px;padding:18px;box-shadow:0 8px 22px var(--soft,rgba(140,100,110,0.1))">
+          <div style="display:flex;align-items:center;gap:16px">
+
+            <div style="position:relative;width:100px;height:96px;flex:none;animation:{{ mascotAnim }}">
+              <div style="position:absolute;left:44px;top:-8px;width:9px;height:16px;border-radius:5px;background:var(--vine,#7cc4a4);transform-origin:bottom center;animation:lianaLeaf 4s ease-in-out infinite"></div>
+              <div style="position:absolute;left:52px;top:-4px;width:16px;height:9px;border-radius:9px 2px 9px 2px;background:var(--vine,#7cc4a4);transform-origin:left center;animation:lianaLeaf 4s ease-in-out infinite"></div>
+              <div style="position:absolute;left:12px;top:6px;width:27px;height:27px;border-radius:50%;background:var(--furDark,#f9c3d1)"></div>
+              <div style="position:absolute;right:12px;top:6px;width:27px;height:27px;border-radius:50%;background:var(--furDark,#f9c3d1)"></div>
+              <div style="position:absolute;left:6px;top:18px;width:88px;height:78px;border-radius:46%;background:var(--fur,#ffd9e0);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;box-shadow:inset 0 -8px 14px var(--furDark,#f9c3d1)">
+                <div style="display:flex;gap:20px;align-items:center">
+                  <sc-if value="{{ eyesOpen }}" hint-placeholder-val="{{ true }}">
+                    <div style="width:10px;height:12px;border-radius:50%;background:var(--face,#6b4b52);animation:lianaBlink 5.5s infinite"></div>
+                    <div style="width:10px;height:12px;border-radius:50%;background:var(--face,#6b4b52);animation:lianaBlink 5.5s infinite"></div>
+                  </sc-if>
+                  <sc-if value="{{ eyesClosed }}" hint-placeholder-val="{{ false }}">
+                    <div style="width:15px;height:7px;border-radius:15px 15px 0 0;background:var(--face,#6b4b52)"></div>
+                    <div style="width:15px;height:7px;border-radius:15px 15px 0 0;background:var(--face,#6b4b52)"></div>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ mouthOpen }}" hint-placeholder-val="{{ false }}">
+                  <div style="width:13px;height:11px;border-radius:0 0 13px 13px;background:var(--mouth,#d96a83)"></div>
+                </sc-if>
+                <sc-if value="{{ mouthSmall }}" hint-placeholder-val="{{ true }}">
+                  <div style="width:17px;height:7px;border-radius:0 0 17px 17px;background:var(--mouth,#d96a83)"></div>
+                </sc-if>
+                <div style="position:absolute;left:8px;top:44px;width:15px;height:9px;border-radius:50%;background:var(--blush,#ff9db1);opacity:0.7"></div>
+                <div style="position:absolute;right:8px;top:44px;width:15px;height:9px;border-radius:50%;background:var(--blush,#ff9db1);opacity:0.7"></div>
+              </div>
+              <div style="position:absolute;left:26px;bottom:-2px;width:48px;height:16px;border-radius:0 0 18px 18px;background:var(--bib,#a7d8ee)"></div>
+              <sc-if value="{{ showZ }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;right:-4px;top:-2px;font-size:15px;font-weight:700;color:var(--srcBInk2,#8f6bbd);animation:lianaZ 3.2s infinite">z</div>
+              </sc-if>
+              <sc-if value="{{ showSparkle }}" hint-placeholder-val="{{ false }}">
+                <span class="msr" style="position:absolute;right:-8px;top:-2px;font-size:22px;color:var(--amber,#f2a65a);animation:lianaSparkle 1.2s ease-out forwards">auto_awesome</span>
+              </sc-if>
+            </div>
+
+            <div style="min-width:0">
+              <div style="font-size:12px;color:var(--muted,#a89890);display:flex;align-items:center;gap:4px">
+                <span class="msr" style="font-size:14px;color:var(--accent,#ef7f96)">{{ leadIcon }}</span>{{ leadLabel }}
+              </div>
+              <sc-if value="{{ leadElapsed }}" hint-placeholder-val="{{ true }}">
+                <div style="font-size:44px;line-height:1.05;font-weight:900;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">{{ elapsed }}</div>
+                <div style="display:inline-flex;align-items:center;gap:5px;margin-top:5px;background:var(--stateFill,#f0e5fb);color:var(--stateInk,#7a5aa8);border-radius:999px;padding:3px 11px;font-size:12px;font-weight:700">
+                  <span class="msr" style="font-size:14px">{{ stateIcon }}</span>{{ mascotWord }}
+                </div>
+              </sc-if>
+              <sc-if value="{{ leadCombined }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:29px;line-height:1.12;font-weight:900;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">{{ combinedLine }}</div>
+                <div style="font-size:13px;color:var(--muted,#a89890);margin-top:4px">{{ lastFeedTime }}</div>
+              </sc-if>
+              <sc-if value="{{ leadMascot }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:33px;line-height:1.05;font-weight:900;color:var(--stateInk,#7a5aa8)">{{ mascotWord }}</div>
+                <div style="font-size:20px;margin-top:4px;font-variant-numeric:tabular-nums;font-weight:700">{{ elapsed }}</div>
+                <div style="font-size:12px;color:var(--muted,#a89890);margin-top:2px">{{ lastVolLine }}</div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:0 18px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div style="background:var(--roseFill,#ffe1e8);border-radius:22px;padding:10px 12px">
+          <div style="font-size:10px;color:var(--roseInk,#c2506c);display:flex;align-items:center;gap:3px"><span class="msr" style="font-size:13px">local_drink</span>feeds</div>
+          <div style="font-size:21px;font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--roseInk,#c2506c)">{{ tFeeds }}</div>
+        </div>
+        <div style="background:var(--lavFill,#f0e5fb);border-radius:22px;padding:10px 12px">
+          <div style="font-size:10px;color:var(--lavInk,#7a5aa8);display:flex;align-items:center;gap:3px"><span class="msr" style="font-size:13px">water_full</span>mL</div>
+          <div style="font-size:21px;font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--lavInk,#7a5aa8)">{{ tMilk }}</div>
+        </div>
+        <div style="background:var(--mintFill,#dff2e8);border-radius:22px;padding:10px 12px">
+          <div style="font-size:10px;color:var(--mintInk,#3f8a6b);display:flex;align-items:center;gap:3px"><span class="msr" style="font-size:13px">water_drop</span>pee / poop</div>
+          <div style="font-size:21px;font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--mintInk,#3f8a6b)">{{ tDiaper }}</div>
+        </div>
+      </div>
+
+      <div style="padding:0 18px 10px;display:flex;gap:6px;flex-wrap:wrap">
+        <span style="display:inline-flex;align-items:center;gap:4px;background:var(--lilacFill,#efe7fb);color:var(--lilacInk,#7a5aa8);border-radius:999px;padding:4px 11px;font-size:11px;font-weight:700">
+          <span class="msr" style="font-size:13px">favorite</span>B {{ srcB }}
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:4px;background:var(--amberFill,#ffeeda);color:var(--amberInk,#b06a1e);border-radius:999px;padding:4px 11px;font-size:11px;font-weight:700">
+          <span class="msr" style="font-size:13px">local_drink</span>F {{ srcF }}
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:4px;background:var(--chip,#f6ece6);color:var(--muted,#a89890);border-radius:999px;padding:4px 11px;font-size:11px;font-weight:700">
+          unmarked {{ srcU }}
+        </span>
+      </div>
+
+      <div style="padding:0 22px 4px;font-size:11px;color:var(--muted,#a89890)">most recent first</div>
+      <div class="liana-scroll" style="flex:1;overflow:auto;min-height:0;padding:0 18px">
+        <sc-for list="{{ recent }}" as="r" hint-placeholder-count="6">
+          <sc-if value="{{ r.showDay }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:8px;padding:16px 4px 6px;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--periInk,#5d72b8)"><span>{{ r.dayLabel }}</span><span style="flex:1;height:1px;background:var(--periInk,#5d72b8);opacity:0.28"></span></div>
+          </sc-if>
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--hair,#f0e2d9);font-size:15px;font-variant-numeric:tabular-nums">
+            <span style="color:var(--muted,#a89890);width:82px;flex:none;font-size:13px">{{ r.time }}</span>
+            <sc-if value="{{ r.hasFeed }}" hint-placeholder-val="{{ true }}">
+              <span style="display:inline-flex;align-items:center;gap:5px;background:var(--roseFill,#ffe1e8);color:var(--roseInk,#c2506c);border-radius:999px;padding:3px 10px;font-weight:700;font-size:13px">
+                <span class="msr" style="font-size:14px">local_drink</span>{{ r.milkChip }}
+              </span>
+            </sc-if>
+            <sc-if value="{{ r.hasPee }}" hint-placeholder-val="{{ false }}">
+              <span style="display:inline-flex;align-items:center;gap:4px;background:var(--yellowFill,#fff3d6);color:var(--yellowInk,#a97f16);border-radius:999px;padding:3px 9px;font-weight:700;font-size:13px">
+                <span class="msr" style="font-size:14px">water_drop</span>pee
+              </span>
+            </sc-if>
+            <sc-if value="{{ r.hasPoop }}" hint-placeholder-val="{{ false }}">
+              <span style="display:inline-flex;align-items:center;gap:4px;background:var(--mintFill,#dff2e8);color:var(--mintInk,#3f8a6b);border-radius:999px;padding:3px 9px;font-weight:700;font-size:13px">
+                <span class="msr" style="font-size:14px">cookie</span>{{ r.poopChip }}
+              </span>
+            </sc-if>
+            <span style="margin-left:auto;width:18px;height:18px;border-radius:50%;background:{{ r.byColor }};color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">{{ r.by }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isDay }}" hint-placeholder-val="{{ false }}">
+    <div style="position:relative;flex:1;display:flex;flex-direction:column;min-height:0">
+      <div style="padding:4px 0 12px">
+        <div class="liana-scroll" style="display:flex;gap:6px;overflow:auto;padding:0 22px 10px">
+          <sc-for list="{{ dayTabs }}" as="dt" hint-placeholder-count="4">
+            <button type="button" onClick="{{ dt.onTap }}" style="flex:none;height:40px;padding:0 15px;border:0;border-radius:20px;background:{{ dt.bg }};color:{{ dt.fg }};font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;cursor:pointer">{{ dt.label }}</button>
+          </sc-for>
+          <button type="button" onClick="{{ openPicker }}" style="flex:none;height:40px;padding:0 14px 0 11px;border:0;border-radius:20px;background:{{ moreBg }};color:{{ moreFg }};font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:18px">calendar_month</span>{{ moreLabel }}</button>
+        </div>
+        <div style="padding:0 22px">
+        <div style="font-size:12px;color:var(--muted,#a89890)">{{ dayHeadLabel }}</div>
+        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+          <span style="display:inline-flex;align-items:center;gap:4px;background:var(--roseFill,#ffe1e8);color:var(--roseInk,#c2506c);border-radius:999px;padding:4px 11px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums"><span class="msr" style="font-size:14px">local_drink</span>{{ tFeedsDay }}</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:var(--lavFill,#f0e5fb);color:var(--lavInk,#7a5aa8);border-radius:999px;padding:4px 11px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums"><span class="msr" style="font-size:14px">water_full</span>{{ tMilkDay }} mL</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:var(--yellowFill,#fff3d6);color:var(--yellowInk,#a97f16);border-radius:999px;padding:4px 11px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums"><span class="msr" style="font-size:14px">water_drop</span>{{ tPee }}</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:var(--mintFill,#dff2e8);color:var(--mintInk,#3f8a6b);border-radius:999px;padding:4px 11px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums"><span class="msr" style="font-size:14px">cookie</span>{{ tPoop }}</span>
+        </div>
+        </div>
+      </div>
+
+      <sc-if value="{{ viewTable }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:38px 84px 1fr 70px 16px;gap:4px;padding:8px 18px;font-size:10px;color:var(--muted,#a89890);background:var(--card,#ffffff)">
+          <span>date</span><span>time</span><span>milk</span><span>pee/poop</span><span></span>
+        </div>
+        <div class="liana-scroll" style="flex:1;overflow:auto;min-height:0;padding:0 0 20px">
+          <sc-if value="{{ noRows }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:28px 22px;font-size:14px;color:var(--muted,#a89890)">nothing logged in this period.</div>
+          </sc-if>
+          <sc-for list="{{ days }}" as="d" hint-placeholder-count="2">
+            <div style="margin-bottom:14px">
+              <sc-for list="{{ d.rows }}" as="r" hint-placeholder-count="6">
+                <div style="position:relative;overflow:hidden">
+                  <button type="button" onClick="{{ r.onEdit }}" style="position:absolute;right:0;top:0;bottom:0;width:88px;border:0;background:var(--accent,#ef7f96);color:var(--onAccent,#fff8fa);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;text-align:left;padding-left:14px;cursor:pointer;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:16px">edit</span>edit</button>
+                  <div onPointerDown="{{ r.onDown }}" onPointerMove="{{ r.onMove }}" onPointerUp="{{ r.onUp }}" style="position:relative;background:var(--bg,#fdf7f2);border-bottom:1px solid var(--hair,#f0e2d9);padding:9px 18px;touch-action:pan-y;transform:{{ r.tx }}">
+                    <div style="display:grid;grid-template-columns:38px 84px 1fr 70px 16px;gap:4px;font-size:15px;font-variant-numeric:tabular-nums">
+                      <span style="color:var(--muted,#a89890);font-size:12px">{{ r.dateCell }}</span>
+                      <span>{{ r.time }}</span>
+                      <span style="color:{{ r.milkColor }};font-weight:{{ r.milkWeight }}">{{ r.milkCell }}</span>
+                      <span style="color:{{ r.diapColor }}">{{ r.diap }}</span>
+                      <span style="width:16px;height:16px;border-radius:50%;background:{{ r.byColor }};color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ r.by }}</span>
+                    </div>
+                    <sc-if value="{{ r.hasNote }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex;align-items:center;gap:5px;margin:3px 0 0 130px;font-size:12px;color:var(--periInk,#5d72b8)">
+                        <span class="msr" style="font-size:14px">edit_note</span>{{ r.note }}
+                      </div>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ viewCards }}" hint-placeholder-val="{{ false }}">
+        <div class="liana-scroll" style="flex:1;overflow:auto;min-height:0;padding:4px 16px 16px">
+          <sc-for list="{{ days }}" as="d" hint-placeholder-count="2">
+            <div style="background:var(--card,#ffffff);border-radius:26px;margin-bottom:14px;overflow:hidden;box-shadow:0 6px 16px var(--soft,rgba(140,100,110,0.09))">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 16px;font-size:12px;color:var(--muted,#a89890);background:var(--dayHead,#fbeef4)">
+                <span style="font-weight:900;color:var(--roseInk,#c2506c)">{{ d.date }}</span>
+                <span>{{ d.summary }}</span>
+              </div>
+              <sc-for list="{{ d.rows }}" as="r" hint-placeholder-count="5">
+                <div style="position:relative;overflow:hidden">
+                  <button type="button" onClick="{{ r.onEdit }}" style="position:absolute;right:0;top:0;bottom:0;width:88px;border:0;background:var(--accent,#ef7f96);color:var(--onAccent,#fff8fa);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;text-align:left;padding-left:14px;cursor:pointer;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:16px">edit</span>edit</button>
+                  <div onPointerDown="{{ r.onDown }}" onPointerMove="{{ r.onMove }}" onPointerUp="{{ r.onUp }}" style="position:relative;background:var(--card,#ffffff);border-top:1px solid var(--hair,#f0e2d9);padding:11px 16px;touch-action:pan-y;transform:{{ r.tx }}">
+                    <div style="display:flex;gap:8px;align-items:center;font-size:15px;font-variant-numeric:tabular-nums;flex-wrap:wrap">
+                      <span style="color:var(--muted,#a89890);width:82px;flex:none;font-size:13px">{{ r.time }}</span>
+                      <sc-if value="{{ r.hasFeed }}" hint-placeholder-val="{{ true }}">
+                        <span style="display:inline-flex;align-items:center;gap:5px;background:var(--roseFill,#ffe1e8);color:var(--roseInk,#c2506c);border-radius:999px;padding:3px 10px;font-weight:700;font-size:13px"><span class="msr" style="font-size:14px">local_drink</span>{{ r.milkChip }}</span>
+                      </sc-if>
+                      <sc-if value="{{ r.hasPee }}" hint-placeholder-val="{{ false }}">
+                        <span style="display:inline-flex;align-items:center;gap:4px;background:var(--yellowFill,#fff3d6);color:var(--yellowInk,#a97f16);border-radius:999px;padding:3px 9px;font-weight:700;font-size:13px"><span class="msr" style="font-size:14px">water_drop</span>pee</span>
+                      </sc-if>
+                      <sc-if value="{{ r.hasPoop }}" hint-placeholder-val="{{ false }}">
+                        <span style="display:inline-flex;align-items:center;gap:4px;background:var(--mintFill,#dff2e8);color:var(--mintInk,#3f8a6b);border-radius:999px;padding:3px 9px;font-weight:700;font-size:13px"><span class="msr" style="font-size:14px">cookie</span>{{ r.poopChip }}</span>
+                      </sc-if>
+                      <span style="margin-left:auto;width:18px;height:18px;border-radius:50%;background:{{ r.byColor }};color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ r.by }}</span>
+                    </div>
+                    <sc-if value="{{ r.hasNote }}" hint-placeholder-val="{{ false }}">
+                      <div style="font-size:12px;color:var(--periInk,#5d72b8);margin-top:6px;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:14px">edit_note</span>{{ r.note }}</div>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ viewTimeline }}" hint-placeholder-val="{{ false }}">
+        <div class="liana-scroll" style="flex:1;overflow:auto;min-height:0;padding:4px 18px 24px">
+          <sc-for list="{{ days }}" as="d" hint-placeholder-count="2">
+            <div style="margin-bottom:16px">
+              <div style="font-size:12px;font-weight:900;padding-bottom:6px;color:var(--roseInk,#c2506c)">{{ d.date }}</div>
+              <sc-for list="{{ d.rows }}" as="r" hint-placeholder-count="5">
+                <div style="position:relative;overflow:hidden">
+                  <button type="button" onClick="{{ r.onEdit }}" style="position:absolute;right:0;top:0;bottom:0;width:88px;border:0;background:var(--accent,#ef7f96);color:var(--onAccent,#fff8fa);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;text-align:left;padding-left:14px;cursor:pointer;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:16px">edit</span>edit</button>
+                  <div onPointerDown="{{ r.onDown }}" onPointerMove="{{ r.onMove }}" onPointerUp="{{ r.onUp }}" style="position:relative;background:var(--bg,#fdf7f2);display:grid;grid-template-columns:54px 26px 1fr;touch-action:pan-y;transform:{{ r.tx }}">
+                    <div style="padding:12px 8px 12px 0;text-align:right;font-size:14px;font-variant-numeric:tabular-nums;color:var(--muted,#a89890)">{{ r.time }}</div>
+                    <div style="position:relative;display:flex;justify-content:center">
+                      <div style="position:absolute;top:0;bottom:0;width:2px;background:var(--hair,#f0e2d9)"></div>
+                      <div style="position:relative;margin-top:12px;width:22px;height:22px;border-radius:50%;background:{{ r.dotFill }};color:{{ r.dotInk }};display:flex;align-items:center;justify-content:center">
+                        <span class="msr" style="font-size:14px">{{ r.dotIcon }}</span>
+                      </div>
+                    </div>
+                    <div style="padding:11px 0 16px 12px">
+                      <div style="font-size:17px;font-variant-numeric:tabular-nums;color:{{ r.milkColor }};font-weight:{{ r.milkWeight }}">{{ r.milkLine }}</div>
+                      <div style="font-size:13px;color:var(--muted,#a89890);margin-top:2px">{{ r.diapWords }}</div>
+                      <sc-if value="{{ r.hasNote }}" hint-placeholder-val="{{ false }}">
+                        <div style="font-size:12px;color:var(--periInk,#5d72b8);margin-top:4px;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:14px">edit_note</span>{{ r.note }}</div>
+                      </sc-if>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <div style="position:relative;display:flex;align-items:center;gap:10px;padding:10px 18px 22px;flex:none">
+    <button type="button" onClick="{{ goHome }}" style="width:56px;height:56px;flex:none;border:0;border-radius:28px;background:var(--tabLog,transparent);color:var(--tabLogInk,#a89890);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:24px">pets</span></button>
+    <div style="flex:1"></div>
+    <button type="button" onClick="{{ openMoment }}" aria-label="add" style="flex:none;width:72px;height:72px;margin:0 auto;border:0;border-radius:36px;background:var(--accent,#ef7f96);color:var(--onAccent,#fff8fa);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px var(--roseShadow,rgba(239,127,150,0.35))">
+      <span class="msr" style="font-size:40px">add</span>
+    </button>
+    <div style="flex:1"></div>
+    <button type="button" onClick="{{ goDay }}" style="width:56px;height:56px;flex:none;border:0;border-radius:28px;background:var(--tabDay,transparent);color:var(--tabDayInk,#a89890);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:24px">calendar_month</span></button>
+  </div>
+
+  <sc-if value="{{ pickerOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;background:var(--bg,#fdf7f2);border-radius:38px;display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:22px 22px 12px">
+        <span style="font-weight:900;font-size:21px;display:flex;align-items:center;gap:8px"><span class="msr" style="font-size:24px;color:var(--lavInk,#7a5aa8)">calendar_month</span>pick a period</span>
+        <button type="button" onClick="{{ closePicker }}" aria-label="close" style="width:44px;height:44px;border:0;border-radius:22px;background:var(--chip,#f6ece6);color:var(--ink,#4b403a);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:22px">close</span></button>
+      </div>
+      <div class="liana-scroll" style="flex:1;overflow:auto;min-height:0;padding:0 18px 10px">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+          <sc-for list="{{ presets }}" as="ps" hint-placeholder-count="4">
+            <button type="button" onClick="{{ ps.onTap }}" style="height:44px;padding:0 15px;border:0;border-radius:22px;background:{{ ps.bg }};color:{{ ps.fg }};font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:14px;cursor:pointer">{{ ps.label }}</button>
+          </sc-for>
+        </div>
+        <div style="background:var(--card,#ffffff);border-radius:28px;padding:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <button type="button" onClick="{{ prevMonth }}" aria-label="previous month" style="width:40px;height:40px;border:0;border-radius:20px;background:var(--chip,#f6ece6);color:var(--ink,#4b403a);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:20px">chevron_left</span></button>
+            <span style="font-weight:900;font-size:16px">{{ monthLabel }}</span>
+            <button type="button" onClick="{{ nextMonth }}" aria-label="next month" style="width:40px;height:40px;border:0;border-radius:20px;background:var(--chip,#f6ece6);color:var(--ink,#4b403a);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:20px">chevron_right</span></button>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;font-size:10px;color:var(--muted,#a89890);text-align:center;margin-bottom:4px">
+            <sc-for list="{{ weekdays }}" as="w" hint-placeholder-count="7"><span>{{ w.label }}</span></sc-for>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">
+            <sc-for list="{{ calCells }}" as="c" hint-placeholder-count="35">
+              <button type="button" onClick="{{ c.onTap }}" disabled="{{ c.disabled }}" style="height:44px;border:0;border-radius:{{ c.radius }};background:{{ c.bg }};color:{{ c.fg }};font-family:'Zen Maru Gothic',sans-serif;font-weight:{{ c.weight }};font-size:14px;font-variant-numeric:tabular-nums;cursor:{{ c.cursor }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+                <span>{{ c.label }}</span>
+                <span style="width:4px;height:4px;border-radius:50%;background:{{ c.dot }}"></span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="font-size:11px;color:var(--muted,#a89890);margin-top:10px">{{ pickHint }}</div>
+        </div>
+      </div>
+      <div style="padding:10px 18px 22px">
+        <button type="button" onClick="{{ applyRange }}" disabled="{{ applyDisabled }}" style="opacity:{{ applyOpacity }};width:100%;height:60px;border:0;border-radius:26px;background:var(--accent,#ef7f96);color:var(--onAccent,#fff8fa);font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:19px;text-align:left;padding:0 18px;cursor:pointer;display:flex;align-items:center;gap:10px"><span class="msr" style="font-size:24px">check_circle</span>{{ applyLabel }}</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;background:var(--bg,#fdf7f2);border-radius:38px;display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:22px 22px 12px">
+        <span style="font-weight:900;font-size:21px;display:flex;align-items:center;gap:8px">
+          <span class="msr" style="font-size:24px;color:var(--sheetIconColor,#ef7f96)">{{ sheetIcon }}</span>{{ sheetTitle }}
+        </span>
+        <button type="button" onClick="{{ closeSheet }}" style="width:36px;height:36px;border:0;border-radius:18px;background:var(--chip,#f6ece6);color:var(--muted,#a89890);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:20px">close</span></button>
+      </div>
+
+      <div class="liana-scroll" style="flex:1;overflow:auto;min-height:0;padding:0 18px">
+        <div style="background:var(--card,#ffffff);border-radius:24px;padding:12px 14px;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span class="msr" style="font-size:20px;color:var(--clock,#c9a7e8)">schedule</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <button type="button" onPointerDown="{{ hMinusDown }}" onPointerUp="{{ tUp }}" onPointerLeave="{{ tUp }}" aria-label="hour earlier" style="width:42px;height:42px;flex:none;border:0;border-radius:21px;background:var(--chip,#f6ece6);color:var(--ink,#4b403a);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:20px">remove</span></button>
+              <input type="text" inputMode="numeric" maxLength="2" value="{{ draftHour }}" onFocus="{{ pickHour }}" onChange="{{ setHourVal }}" style="width:2.1ch;background:none;border:0;border-bottom:3px solid {{ hourLine }};padding:0 2px 3px;font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:32px;font-variant-numeric:tabular-nums;line-height:1;color:var(--ink,#4b403a);text-align:center;cursor:pointer" />
+              <button type="button" onPointerDown="{{ hPlusDown }}" onPointerUp="{{ tUp }}" onPointerLeave="{{ tUp }}" aria-label="hour later" style="width:42px;height:42px;flex:none;border:0;border-radius:21px;background:var(--chip,#f6ece6);color:var(--ink,#4b403a);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:20px">add</span></button>
+            </div>
+            <span style="font-size:26px;font-weight:900">:</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <button type="button" onPointerDown="{{ mMinusDown }}" onPointerUp="{{ tUp }}" onPointerLeave="{{ tUp }}" aria-label="minute earlier" style="width:42px;height:42px;flex:none;border:0;border-radius:21px;background:var(--chip,#f6ece6);color:var(--ink,#4b403a);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:20px">remove</span></button>
+              <input type="text" inputMode="numeric" maxLength="2" value="{{ draftMin }}" onFocus="{{ pickMin }}" onChange="{{ setMinVal }}" style="width:2.1ch;background:none;border:0;border-bottom:3px solid {{ minLine }};padding:0 2px 3px;font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:32px;font-variant-numeric:tabular-nums;line-height:1;color:var(--ink,#4b403a);text-align:center;cursor:pointer" />
+              <button type="button" onPointerDown="{{ mPlusDown }}" onPointerUp="{{ tUp }}" onPointerLeave="{{ tUp }}" aria-label="minute later" style="width:42px;height:42px;flex:none;border:0;border-radius:21px;background:var(--chip,#f6ece6);color:var(--ink,#4b403a);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:20px">add</span></button>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--muted,#a89890);margin:9px 0 9px">{{ timeHint }}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <sc-for list="{{ backChips }}" as="c" hint-placeholder-count="3">
+              <button type="button" onClick="{{ c.onTap }}" style="height:40px;padding:0 13px;border:0;border-radius:20px;background:{{ c.bg }};color:{{ c.fg }};font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;cursor:pointer;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:4px">
+                <sc-if value="{{ c.isIcon }}" hint-placeholder-val="{{ false }}"><span class="msr" style="font-size:16px">{{ c.icon }}</span></sc-if>{{ c.label }}
+              </button>
+            </sc-for>
+            <button type="button" onClick="{{ toggleChips }}" aria-label="{{ chipsToggleLabel }}" style="width:40px;height:40px;border:0;border-radius:20px;background:var(--chip,#f6ece6);color:var(--muted,#a89890);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:20px">{{ chipsToggleIcon }}</span></button>
+          </div>
+          <sc-if value="{{ hasEnd }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--hair,#f0e2d9)">
+              <span class="msr" style="font-size:20px;color:var(--clock,#c9a7e8)">line_end_arrow</span>
+              <div style="display:flex;align-items:center;gap:5px">
+                <button type="button" onPointerDown="{{ ehMinusDown }}" onPointerUp="{{ tUp }}" onPointerLeave="{{ tUp }}" aria-label="end hour earlier" style="width:32px;height:32px;flex:none;border:0;border-radius:16px;background:var(--chip,#f6ece6);color:var(--ink,#4b403a);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:18px">remove</span></button>
+                <input type="text" inputMode="numeric" maxLength="2" value="{{ draftEndHour }}" onFocus="{{ pickEndHour }}" onChange="{{ setEndHourVal }}" style="width:2.1ch;background:none;border:0;border-bottom:3px solid {{ endHourLine }};padding:0 2px 3px;font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:24px;font-variant-numeric:tabular-nums;line-height:1;color:var(--ink,#4b403a);text-align:center;cursor:pointer" />
+                <button type="button" onPointerDown="{{ ehPlusDown }}" onPointerUp="{{ tUp }}" onPointerLeave="{{ tUp }}" aria-label="end hour later" style="width:32px;height:32px;flex:none;border:0;border-radius:16px;background:var(--chip,#f6ece6);color:var(--ink,#4b403a);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:18px">add</span></button>
+              </div>
+              <span style="font-size:20px;font-weight:900">:</span>
+              <div style="display:flex;align-items:center;gap:5px">
+                <button type="button" onPointerDown="{{ emMinusDown }}" onPointerUp="{{ tUp }}" onPointerLeave="{{ tUp }}" aria-label="end minute earlier" style="width:32px;height:32px;flex:none;border:0;border-radius:16px;background:var(--chip,#f6ece6);color:var(--ink,#4b403a);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:18px">remove</span></button>
+                <input type="text" inputMode="numeric" maxLength="2" value="{{ draftEndMin }}" onFocus="{{ pickEndMin }}" onChange="{{ setEndMinVal }}" style="width:2.1ch;background:none;border:0;border-bottom:3px solid {{ endMinLine }};padding:0 2px 3px;font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:24px;font-variant-numeric:tabular-nums;line-height:1;color:var(--ink,#4b403a);text-align:center;cursor:pointer" />
+                <button type="button" onPointerDown="{{ emPlusDown }}" onPointerUp="{{ tUp }}" onPointerLeave="{{ tUp }}" aria-label="end minute later" style="width:32px;height:32px;flex:none;border:0;border-radius:16px;background:var(--chip,#f6ece6);color:var(--ink,#4b403a);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:18px">add</span></button>
+              </div>
+              <button type="button" onClick="{{ dropEnd }}" aria-label="remove end time" style="margin-left:auto;flex:none;width:36px;height:36px;border:0;border-radius:18px;background:var(--chip,#f6ece6);color:var(--muted,#a89890);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:19px">close</span></button>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:9px">
+              <span style="font-size:12px;color:var(--muted,#a89890);white-space:nowrap;margin-right:2px">{{ durationLabel }}</span>
+              <sc-for list="{{ endChips }}" as="c" hint-placeholder-count="6">
+                <button type="button" onClick="{{ c.onTap }}" style="height:38px;padding:0 12px;border:0;border-radius:19px;background:{{ c.bg }};color:{{ c.fg }};font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;cursor:pointer;font-variant-numeric:tabular-nums">{{ c.label }}</button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noEnd }}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{ addEnd }}" style="height:40px;padding:0 14px 0 11px;margin-top:10px;border:0;border-radius:20px;background:var(--chip,#f6ece6);color:var(--muted,#a89890);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:18px">add</span>end time — optional</button>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{ hasFeedBlock }}" hint-placeholder-val="{{ true }}">
+          <div style="background:var(--card,#ffffff);border-radius:28px;padding:16px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <span style="font-size:12px;font-weight:900;letter-spacing:0.02em;color:var(--roseInk,#c2506c);display:flex;align-items:center;gap:6px"><span class="msr" style="font-size:17px">local_drink</span>milk</span>
+              <sc-if value="{{ canDropFeed }}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{ dropFeed }}" aria-label="remove milk" style="width:30px;height:30px;border:0;border-radius:15px;background:var(--chip,#f6ece6);color:var(--muted,#a89890);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:17px">close</span></button>
+              </sc-if>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:18px">
+              <sc-for list="{{ parts }}" as="p" hint-placeholder-count="1">
+                <button type="button" onClick="{{ p.onSelect }}" style="background:none;border:0;border-bottom:3px solid {{ p.underline }};padding:0 2px 4px;text-align:left;cursor:pointer;color:var(--ink,#4b403a)">
+                  <div style="font-size:47px;line-height:1;font-weight:900;font-variant-numeric:tabular-nums;color:{{ p.color }}">{{ p.display }}</div>
+                  <div style="font-size:11px;color:{{ p.labelColor }};margin-top:5px;display:flex;align-items:center;gap:4px">
+                    <span class="msr" style="font-size:13px">{{ p.icon }}</span>{{ p.label }}
+                  </div>
+                </button>
+              </sc-for>
+            </div>
+            <div style="font-size:11px;color:var(--muted,#a89890);margin-top:10px">{{ volHint }}</div>
+
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <button type="button" onClick="{{ srcBtap }}" style="flex:1;height:46px;border:0;border-radius:23px;background:var(--srcB,#f6ece6);color:var(--srcBInk,#4b403a);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px"><span class="msr" style="font-size:17px">favorite</span>breast</button>
+              <button type="button" onClick="{{ srcFtap }}" style="flex:1;height:46px;border:0;border-radius:23px;background:var(--srcF,#f6ece6);color:var(--srcFInk,#4b403a);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px"><span class="msr" style="font-size:17px">local_drink</span>formula</button>
+            </div>
+
+            <div onPointerDown="{{ scrubDown }}" onPointerMove="{{ scrubMove }}" onPointerUp="{{ scrubUp }}" style="margin-top:10px;height:40px;border-radius:20px;background:var(--chip,#f6ece6);position:relative;overflow:hidden;touch-action:none;cursor:ew-resize;display:flex;align-items:center">
+              <div style="position:absolute;left:0;top:0;bottom:0;background:var(--scrubFill,linear-gradient(90deg,#ffd9e0,#ef7f96));width:{{ scrubPct }}"></div>
+              <span style="position:relative;font-size:11px;color:var(--scrubInk,#a89890);padding-left:14px;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:15px">drag_indicator</span>drag to adjust</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px">
+              <sc-for list="{{ keys }}" as="k" hint-placeholder-count="12">
+                <button type="button" onClick="{{ k.onTap }}" style="height:58px;border:0;border-radius:22px;background:{{ k.bg }};color:{{ k.fg }};font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center">
+                  <sc-if value="{{ k.isIcon }}" hint-placeholder-val="{{ false }}"><span class="msr" style="font-size:24px">{{ k.label }}</span></sc-if>
+                  <sc-if value="{{ k.isText }}" hint-placeholder-val="{{ true }}"><span>{{ k.label }}</span></sc-if>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ hasDiaperBlock }}" hint-placeholder-val="{{ false }}">
+          <div style="background:var(--card,#ffffff);border-radius:28px;padding:16px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <span style="font-size:12px;font-weight:900;letter-spacing:0.02em;color:var(--mintInk,#3f8f6c);display:flex;align-items:center;gap:6px"><span class="msr" style="font-size:17px">water_drop</span>diaper</span>
+              <sc-if value="{{ canDropDiaper }}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{ dropDiaper }}" aria-label="remove diaper" style="width:30px;height:30px;border:0;border-radius:15px;background:var(--chip,#f6ece6);color:var(--muted,#a89890);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:17px">close</span></button>
+              </sc-if>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button type="button" onClick="{{ togglePee }}" style="flex:1;height:78px;border:0;border-radius:24px;background:var(--pee,#f6ece6);color:var(--peeInk,#4b403a);font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:19px;text-align:left;padding:12px 14px;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start">
+                <span class="msr" style="font-size:24px">water_drop</span><span>pee</span>
+              </button>
+              <button type="button" onClick="{{ togglePoop }}" style="flex:1;height:78px;border:0;border-radius:24px;background:var(--poop,#f6ece6);color:var(--poopInk,#4b403a);font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:19px;text-align:left;padding:12px 14px;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start">
+                <span class="msr" style="font-size:24px">cookie</span><span>poop</span>
+              </button>
+            </div>
+            <sc-if value="{{ draftPoop }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:14px">
+                <div style="font-size:11px;color:var(--muted,#a89890);margin-bottom:8px">colour — optional</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <sc-for list="{{ colors }}" as="c" hint-placeholder-count="4">
+                    <button type="button" onClick="{{ c.onTap }}" style="height:42px;padding:0 14px;border:0;border-radius:21px;background:{{ c.bg }};color:{{ c.fg }};font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:7px">
+                      <span style="width:14px;height:14px;border-radius:50%;background:{{ c.swatch }}"></span>{{ c.label }}
+                    </button>
+                  </sc-for>
+                </div>
+                <div style="font-size:11px;color:var(--muted,#a89890);margin:14px 0 8px">consistency — optional</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <sc-for list="{{ conss }}" as="c" hint-placeholder-count="4">
+                    <button type="button" onClick="{{ c.onTap }}" style="height:42px;padding:0 15px;border:0;border-radius:21px;background:{{ c.bg }};color:{{ c.fg }};font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;cursor:pointer">{{ c.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ hasOtherBlock }}" hint-placeholder-val="{{ false }}">
+          <div style="background:var(--card,#ffffff);border-radius:28px;padding:16px 10px 10px;margin-bottom:10px">
+            <div style="padding:0 6px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <span style="font-size:12px;font-weight:900;letter-spacing:0.02em;color:var(--lavInk,#7a5aa8);display:flex;align-items:center;gap:6px"><span class="msr" style="font-size:17px">more_horiz</span>other</span>
+              <sc-if value="{{ canDropOther }}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{ dropOther }}" aria-label="remove other" style="width:30px;height:30px;border:0;border-radius:15px;background:var(--chip,#f6ece6);color:var(--muted,#a89890);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:17px">close</span></button>
+              </sc-if>
+            </div>
+            </div>
+            <sc-for list="{{ otherTypes }}" as="o" hint-placeholder-count="4">
+              <button type="button" onClick="{{ o.onTap }}" style="width:100%;height:56px;border:0;border-radius:22px;background:{{ o.bg }};color:{{ o.fg }};font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:17px;text-align:left;padding:0 16px;cursor:pointer;margin-bottom:4px;display:flex;align-items:center;gap:10px">
+                <span class="msr" style="font-size:21px">{{ o.icon }}</span>{{ o.label }}
+              </button>
+            </sc-for>
+            <div style="padding:8px 16px 6px;font-size:12px;color:var(--muted,#a89890)">kept off the main screen on purpose. pick one, write the rest in the note.</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showAddType }}" hint-placeholder-val="{{ true }}">
+          <div style="border:2px dashed var(--chip,#f6ece6);border-radius:24px;padding:12px 14px;margin-bottom:10px">
+            <div style="font-size:11px;color:var(--muted,#a89890);margin-bottom:9px">{{ addTypeHint }}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <sc-for list="{{ addTypes }}" as="a" hint-placeholder-count="2">
+                <button type="button" onClick="{{ a.onTap }}" style="height:44px;padding:0 16px 0 12px;border:0;border-radius:22px;background:{{ a.bg }};color:{{ a.fg }};font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:6px">
+                  <span class="msr" style="font-size:19px">add</span><span class="msr" style="font-size:18px">{{ a.icon }}</span>{{ a.label }}
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <div style="background:var(--card,#ffffff);border-radius:24px;padding:14px 16px;margin-bottom:14px">
+          <div style="font-size:11px;color:var(--periInk,#5d72b8);margin-bottom:8px;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:15px">edit_note</span>note — anything at all</div>
+          <input type="text" value="{{ draftNote }}" onChange="{{ setNote }}" placeholder="spat some up / half asleep / …" style="width:100%;height:46px;border:0;border-radius:18px;background:var(--periFill,#e9edfa);color:var(--ink,#4b403a);font-family:'Zen Maru Gothic',sans-serif;font-size:16px;padding:0 14px;box-sizing:border-box" />
+        </div>
+      </div>
+
+      <div style="padding:10px 18px 22px">
+        <button type="button" onClick="{{ save }}" disabled="{{ saveDisabled }}" style="opacity:{{ saveOpacity }};width:100%;height:64px;border:0;border-radius:26px;background:var(--accent,#ef7f96);color:var(--onAccent,#fff8fa);font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:22px;text-align:left;padding:0 18px;cursor:pointer;box-shadow:0 8px 18px var(--roseShadow,rgba(239,127,150,0.35));display:flex;align-items:center;gap:10px">
+          <span class="msr" style="font-size:26px">check_circle</span>{{ saveLabel }}
+        </button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ setupOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:60;background:var(--bg,#fdf7f2);display:flex;flex-direction:column">
+      <div style="position:absolute;left:0;right:0;top:0;height:260px;background:var(--sky,linear-gradient(160deg,#ffe3ec 0%,#f6e6ff 45%,#fdf7f2 100%));pointer-events:none"></div>
+
+      <div style="position:relative;flex:1;display:flex;flex-direction:column;padding:64px 26px 26px">
+        <div style="position:relative;width:76px;height:74px;margin-bottom:22px;animation:lianaBreathe 7s ease-in-out infinite">
+          <div style="position:absolute;left:33px;top:-6px;width:7px;height:13px;border-radius:4px;background:var(--vine,#7cc4a4);transform-origin:bottom center;animation:lianaLeaf 4s ease-in-out infinite"></div>
+          <div style="position:absolute;left:8px;top:5px;width:21px;height:21px;border-radius:50%;background:var(--furDark,#f9c3d1)"></div>
+          <div style="position:absolute;right:8px;top:5px;width:21px;height:21px;border-radius:50%;background:var(--furDark,#f9c3d1)"></div>
+          <div style="position:absolute;left:6px;top:12px;right:6px;bottom:4px;border-radius:50% 50% 46% 46%;background:var(--fur,#fddde6);display:flex;align-items:center;justify-content:center">
+            <div style="display:flex;gap:15px;align-items:center;margin-top:-4px">
+              <div style="width:8px;height:10px;border-radius:50%;background:var(--face,#6b4b52);animation:lianaBlink 5.5s infinite"></div>
+              <div style="width:8px;height:10px;border-radius:50%;background:var(--face,#6b4b52);animation:lianaBlink 5.5s infinite"></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:13px;color:var(--muted,#a89890);letter-spacing:0.14em;text-transform:uppercase;font-weight:700">welcome</div>
+        <div style="font-size:30px;font-weight:900;line-height:1.2;margin:6px 0 8px">what should we<br />call you?</div>
+        <div style="font-size:14px;color:var(--muted,#a89890);margin-bottom:26px;text-wrap:pretty">your name marks every entry you log, so liana's other grown-ups know who did what.</div>
+
+        <div style="font-size:11px;color:var(--periInk,#5d72b8);margin-bottom:8px">your name</div>
+        <input type="text" value="{{ setupName }}" onChange="{{ setSetupName }}" placeholder="mona" style="width:100%;height:60px;border:2px solid var(--chip,#f6ece6);border-radius:22px;background:var(--card,#ffffff);color:var(--ink,#4b403a);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:22px;padding:0 18px;box-sizing:border-box;outline:none" />
+
+        <div style="display:flex;align-items:center;gap:9px;margin-top:14px;padding:12px 14px;border-radius:18px;background:var(--chip,#f6ece6)">
+          <span class="msr" style="font-size:19px;color:var(--muted,#a89890)">smartphone</span>
+          <div style="min-width:0">
+            <div style="font-size:10px;color:var(--muted,#a89890);letter-spacing:0.1em;text-transform:uppercase">device id</div>
+            <div style="font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:0.06em">{{ deviceId }}</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--muted,#a89890);margin-top:10px;text-wrap:pretty">share this id with the other grown-ups so all your phones log to the same baby.</div>
+
+        <div style="flex:1"></div>
+
+        <button type="button" onClick="{{ finishSetup }}" disabled="{{ setupDisabled }}" style="opacity:{{ setupOpacity }};width:100%;height:64px;border:0;border-radius:26px;background:var(--accent,#ef7f96);color:var(--onAccent,#fff8fa);font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:22px;text-align:left;padding:0 18px;cursor:pointer;box-shadow:0 8px 18px var(--roseShadow,rgba(239,127,150,0.35));display:flex;align-items:center;gap:10px">
+          <span class="msr" style="font-size:26px">arrow_forward</span>start logging
+        </button>
+      </div>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;firstRun&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;night&quot;,&quot;day&quot;],&quot;default&quot;:&quot;night&quot;,&quot;tsType&quot;:&quot;'night'|'day'&quot;},&quot;lead&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;elapsed&quot;,&quot;combined&quot;,&quot;mascot&quot;],&quot;default&quot;:&quot;elapsed&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;entryFlow&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;two&quot;,&quot;moment&quot;],&quot;default&quot;:&quot;two&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;dayView&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;table&quot;,&quot;cards&quot;,&quot;timeline&quot;],&quot;default&quot;:&quot;table&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const pad = n => String(n).padStart(2, '0');
+
+class Component extends DCLogic {
+  state = { screen: 'home', sheet: null, draft: null, swipeId: null, dx: 0, entries: this.seed(), justSaved: false, setupDone: false, setupName: '', userName: '' };
+  deviceId = 'LNA-7QD4-8213';
+
+  seed() {
+    let i = 0; const E = [];
+    const add = (day, h, m, o) => { E.push(Object.assign({ id: ++i, day, h, m, seed: true, minUnknown: false, note: '', by: 'M', kind: 'feed', parts: [], pee: false, poop: false, qual: '', endH: null, endM: null }, o)); };
+    add('29.08', 3, 20, { parts: [{ vol: 60, src: null }], by: 'A' });
+    add('29.08', 7, 40, { kind: 'diaper', poop: true, qual: 'Y soft' });
+    add('29.08', 12, 0, { parts: [{ vol: 38, src: 'B' }] });
+    add('29.08', 19, 0, { parts: [{ vol: 55, src: null }], by: 'A' });
+    add('30.08', 2, 15, { parts: [{ vol: 43, src: null }], by: 'A' });
+    add('30.08', 4, 5, { parts: [{ vol: 60, src: null }], by: 'A' });
+    add('30.08', 6, 50, { kind: 'diaper', pee: true });
+    add('30.08', 8, 0, { parts: [{ vol: 46, src: null }], note: 'took it slowly' });
+    add('30.08', 11, 20, { parts: [{ vol: 30, src: null }, { vol: 30, src: null }] });
+    add('30.08', 14, 5, { kind: 'diaper', poop: true, qual: 'olive' });
+    add('30.08', 17, 30, { parts: [{ vol: 60, src: 'F' }], by: 'A' });
+    add('30.08', 20, 10, { parts: [{ vol: 41, src: null }] });
+    add('30.08', 22, 45, { kind: 'diaper', pee: true, poop: true, qual: 'Dark', by: 'A' });
+    add('31.08', 0, 20, { kind: 'diaper', pee: true, by: 'A' });
+    add('31.08', 1, 10, { parts: [{ vol: 45, src: 'F' }], by: 'A' });
+    add('31.08', 2, 10, { parts: [{ vol: 30, src: null }, { vol: 30, src: null }], note: 'half asleep', by: 'A' });
+    add('31.08', 5, 30, { parts: [{ vol: 31, src: null }] });
+    add('31.08', 5, 30, { kind: 'diaper', poop: true, qual: 'G→Y liquid' });
+    add('31.08', 7, 0, { parts: [{ vol: 25, src: 'B' }, { vol: 45, src: 'F' }], endH: 7, endM: 25 });
+    add('31.08', 9, 15, { kind: 'diaper', pee: true, by: 'A' });
+    add('31.08', 10, 40, { parts: [{ vol: 57, src: null }] });
+    add('31.08', 12, 40, { parts: [{ vol: null, src: null }], note: 'spat some up', by: 'A' });
+    add('31.08', 13, 30, { kind: 'diaper', poop: true, qual: 'small Y' });
+    return E;
+  }
+
+  themes() {
+    return {
+      day: {
+        bg: '#fdf7f2', card: '#ffffff', ink: '#4b403a', muted: '#a89890', hair: '#f2e5dc',
+        sky: 'linear-gradient(160deg,#ffe3ec 0%,#f3e6ff 40%,#fdf7f2 100%)',
+        accent: '#ef7f96', onAccent: '#fff8fa', chip: '#f6ece6',
+        roseFill: '#ffe1e8', roseInk: '#c2506c', roseShadow: 'rgba(239,127,150,0.35)',
+        lavFill: '#f0e5fb', lavInk: '#7a5aa8',
+        lilacFill: '#efe7fb', lilacInk: '#7a5aa8',
+        amberFill: '#ffeeda', amberInk: '#b06a1e', amber: '#f2a65a',
+        yellowFill: '#fff3d6', yellowInk: '#a97f16', yellow: '#f5c451',
+        mint: '#7cc4a4', onMint: '#f3fbf7', mintFill: '#dff2e8', mintInk: '#3f8a6b', mintShadow: 'rgba(124,196,164,0.35)',
+        periFill: '#e9edfa', periInk: '#5d72b8',
+        dayHead: '#fbeef4',
+        fur: '#ffd9e0', furDark: '#f9c3d1', face: '#6b4b52', mouth: '#d96a83', blush: '#ff9db1',
+        vine: '#7cc4a4', bib: '#a7d8ee', clock: '#c9a7e8',
+        parentM: '#f2a65a', parentA: '#8fa8e0',
+        scrubFill: 'linear-gradient(90deg,#ffd9e0,#ef7f96)', scrubInk: '#a89890',
+        soft: 'rgba(140,100,110,0.10)'
+      },
+      night: {
+        bg: '#171426', card: '#221e33', ink: '#cbbedb', muted: '#7a6f92', hair: '#2d2743',
+        sky: 'linear-gradient(160deg,#2a1f3d 0%,#231d38 45%,#171426 100%)',
+        accent: '#c07690', onAccent: '#fdeef4', chip: '#282240',
+        roseFill: '#3a2338', roseInk: '#e5a6bd', roseShadow: 'rgba(0,0,0,0.4)',
+        lavFill: '#2e2549', lavInk: '#b9a3e0',
+        lilacFill: '#2e2549', lilacInk: '#b9a3e0',
+        amberFill: '#3a2c1e', amberInk: '#e0ac6e', amber: '#d1934f',
+        yellowFill: '#3a3320', yellowInk: '#dcc373', yellow: '#c9ab55',
+        mint: '#5f9e84', onMint: '#eaf7f1', mintFill: '#1f3a30', mintInk: '#8fd0b3', mintShadow: 'rgba(0,0,0,0.4)',
+        periFill: '#232a45', periInk: '#94a6dd',
+        dayHead: '#2a2038',
+        fur: '#5a4568', furDark: '#4a3757', face: '#e7dcf0', mouth: '#c98fa8', blush: '#8f5a76',
+        vine: '#5f9e84', bib: '#4a6a80', clock: '#a086c9',
+        parentM: '#b07a45', parentA: '#6a7cb0',
+        scrubFill: 'linear-gradient(90deg,#3a2338,#c07690)', scrubInk: '#7a6f92',
+        soft: 'rgba(0,0,0,0.38)'
+      }
+    };
+  }
+  th() { return this.themes()[this.props.theme === 'night' ? 'night' : 'day']; }
+  now() { return this.props.theme === 'night' ? { h: 3, m: 12 } : { h: 14, m: 20 }; }
+  mins(e) { return e.h * 60 + (e.minUnknown ? 0 : e.m); }
+
+  visible() {
+    const n = this.now(), nm = n.h * 60 + n.m;
+    return this.state.entries.filter(e => e.day !== '31.08' || e.seed !== true || this.mins(e) <= nm);
+  }
+
+  fmtTime(e) {
+    const s = e.minUnknown ? pad(e.h) + ':?' : pad(e.h) + ':' + pad(e.m);
+    return e.endH == null ? s : s + '–' + pad(e.endH) + ':' + pad(e.endM);
+  }
+  durTxt(a, b) {
+    const mins = (b - a + 1440) % 1440;
+    return mins >= 60 ? Math.floor(mins / 60) + 'h ' + pad(mins % 60) + 'm' : mins + ' min';
+  }
+  isoOf(day) { const [d, m] = String(day).split('.'); return '2026-' + m + '-' + d; }
+  usIso(s) { const a = String(s).split('-'); return a[1] + '/' + a[2]; }
+  shiftIso(s, n) { const d = new Date(s + 'T00:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+  usDay(day) { const [d, m] = String(day).split('.'); return m + '/' + d; }
+  fmtMilk(e) { return e.parts.map(p => (p.vol == null ? '?' : String(p.vol)) + (p.src ? '(' + p.src + ')' : '')).join(' + '); }
+  fmtDiap(e) {
+    if (!e || e.kind !== 'diaper') return '';
+    let s = [e.pee ? 'pee' : '', e.poop ? 'poop' : ''].filter(Boolean).join(' + ');
+    if (e.poop && e.qual) s += ' (' + e.qual + ')';
+    return s;
+  }
+  diapWords(e) {
+    if (!e || e.kind !== 'diaper') return '';
+    const a = []; if (e.pee) a.push('pee'); if (e.poop) a.push('poop' + (e.qual ? ', ' + e.qual : ''));
+    return a.join(' + ');
+  }
+
+  rowsForDay(day) {
+    const list = this.visible().filter(e => e.day === day).sort((a, b) => this.mins(a) - this.mins(b));
+    const map = new Map();
+    list.forEach(e => {
+      const k = e.h + ':' + (e.minUnknown ? 'u' : e.m);
+      if (!map.has(k)) map.set(k, { key: day + k, time: this.fmtTime(e), feed: null, diaper: null, peeE: null, other: null, by: e.by, notes: [] });
+      const r = map.get(k);
+      if (e.kind === 'feed') r.feed = e;
+      else if (e.kind === 'diaper') { if (e.poop) r.diaper = e; else r.peeE = e; }
+      else r.other = e;
+      if (e.note) r.notes.push(e.note);
+    });
+    return Array.from(map.values());
+  }
+
+  swipeHandlers(key, editId) {
+    return {
+      onDown: ev => { this._sx = ev.clientX; this._sk = key; },
+      onMove: ev => {
+        if (this._sk !== key || this._sx == null) return;
+        const d = Math.max(-88, Math.min(0, ev.clientX - this._sx));
+        if (Math.abs(d) > 4) this.setState({ swipeId: key, dx: d });
+      },
+      onUp: () => {
+        if (this._sk !== key) return;
+        this._sx = null; this._sk = null;
+        this.setState(s => ({ swipeId: key, dx: s.dx < -40 ? -88 : 0 }));
+      },
+      onEdit: () => this.openEdit(editId)
+    };
+  }
+
+  holdStart(dir, field) {
+    if (field) this.patch({ tfield: field });
+    this.stepField(field, dir);
+    let n = 0;
+    clearInterval(this.holdT);
+    this.holdT = setInterval(() => { n++; this.stepField(field, dir * (n > 14 ? 5 : 1)); }, 110);
+  }
+  stepField(field, dir) {
+    const d = this.state.draft;
+    if (!d) return;
+    const f = field || d.tfield || 'm';
+    if (f === 'h') return this.patch({ h: (d.h + 24 + dir * 1) % 24 });
+    if (f === 'm') return this.shift(dir);
+    if (f === 'eh') return this.patch({ endH: (d.endH + 24 + dir) % 24 });
+    const tot = (d.endH * 60 + d.endM + dir + 1440) % 1440;
+    this.patch({ endH: Math.floor(tot / 60), endM: tot % 60 });
+  }
+  holdEnd() { clearInterval(this.holdT); }
+  componentWillUnmount() { clearInterval(this.holdT); }
+  shift(mins) {
+    const d = this.state.draft;
+    if (!d) return;
+    const tot = (d.h * 60 + d.m + mins + 1440) % 1440;
+    this.patch({ h: Math.floor(tot / 60), m: tot % 60, minUnknown: false });
+  }
+  ago(mins) {
+    const n = this.now();
+    const tot = (n.h * 60 + n.m - mins + 1440) % 1440;
+    this.patch({ h: Math.floor(tot / 60), m: tot % 60, minUnknown: false });
+  }
+  newDraft(kind, over) {
+    const n = this.now();
+    return Object.assign({ kind, id: null, tfield: 'm', endH: null, endM: null, added: kind === 'moment' ? [] : [kind], parts: [{ vol: '', src: null }], active: 0, pee: false, poop: false, color: null, cons: null, note: '', h: n.h, m: n.m, minUnknown: false, other: null }, over || {});
+  }
+  openEdit(id) {
+    const e = this.state.entries.find(x => x.id === id);
+    if (!e) return;
+    const d = this.newDraft(e.kind === 'diaper' ? 'diaper' : 'feed', {
+      id: e.id, h: e.h, m: e.m, endH: e.endH == null ? null : e.endH, endM: e.endM, minUnknown: e.minUnknown, note: e.note,
+      parts: e.kind === 'feed' ? e.parts.map(p => ({ vol: p.vol == null ? '' : String(p.vol), src: p.src })) : [{ vol: '', src: null }],
+      pee: e.pee, poop: e.poop, color: null, cons: null
+    });
+    if (e.kind === 'diaper' && e.qual) d.freeQual = e.qual;
+    this.setState({ sheet: 'edit', draft: d, swipeId: null, dx: 0 });
+  }
+  patch(o) { this.setState(s => ({ draft: Object.assign({}, s.draft, o) })); }
+  patchPart(o) {
+    this.setState(s => {
+      const parts = s.draft.parts.map((p, i) => i === s.draft.active ? Object.assign({}, p, o) : p);
+      return { draft: Object.assign({}, s.draft, { parts }) };
+    });
+  }
+
+  qualOf(d) {
+    if (d.color == null && d.cons == null) return d.freeQual || '';
+    return [d.color, d.cons].filter(Boolean).join(' ');
+  }
+
+  save() {
+    const d = this.state.draft; if (!d) return;
+    this.setState(s => {
+      let entries = s.entries.slice();
+      let maxId = entries.reduce((a, e) => Math.max(a, e.id), 0);
+      const base = { day: '31.08', h: d.h, m: d.m, endH: d.endH, endM: d.endM, minUnknown: d.minUnknown, note: d.note, by: 'M' };
+      const volParts = d.parts.filter(p => String(p.vol).length || p.src).map(p => ({ vol: String(p.vol).length ? parseInt(p.vol, 10) : null, src: p.src }));
+      const has = k => (d.added || []).indexOf(k) > -1;
+      const wantsFeed = d.kind === 'feed' || (d.kind === 'moment' && has('feed'));
+      const wantsDiaper = (d.kind === 'diaper' || (d.kind === 'moment' && has('diaper'))) && (d.pee || d.poop);
+      if (d.id != null) {
+        entries = entries.map(e => {
+          if (e.id !== d.id) return e;
+          if (e.kind === 'feed') return Object.assign({}, e, base, { by: e.by, kind: 'feed', parts: volParts.length ? volParts : [{ vol: null, src: null }] });
+          return Object.assign({}, e, base, { by: e.by, kind: 'diaper', pee: d.pee, poop: d.poop, qual: this.qualOf(d) });
+        });
+      } else {
+        if ((d.kind === 'other' || (d.kind === 'moment' && has('other'))) && d.other) entries.push(Object.assign({ id: ++maxId, kind: 'other', parts: [], pee: false, poop: false, qual: '' }, base, { note: d.other + (d.note ? ' — ' + d.note : '') }));
+        if (wantsFeed) entries.push(Object.assign({ id: ++maxId, kind: 'feed', parts: volParts.length ? volParts : [{ vol: null, src: null }], pee: false, poop: false, qual: '' }, base));
+        if (wantsDiaper) {
+          let noted = wantsFeed;
+          if (d.pee) { entries.push(Object.assign({ id: ++maxId, kind: 'diaper', parts: [], pee: true, poop: false, qual: '', note: noted ? '' : d.note }, base)); noted = true; }
+          if (d.poop) entries.push(Object.assign({ id: ++maxId, kind: 'diaper', parts: [], pee: false, poop: true, qual: this.qualOf(d), note: noted ? '' : d.note }, base));
+        }
+      }
+      return { entries, sheet: null, draft: null, screen: 'home', justSaved: true };
+    });
+    clearTimeout(this._flash);
+    this._flash = setTimeout(() => this.setState({ justSaved: false }), 1500);
+  }
+  componentWillUnmount() { clearTimeout(this._flash); }
+
+  renderVals() {
+    const t = this.th(), p = this.props;
+    const lead = p.lead || 'elapsed', flow = 'moment', view = p.dayView || 'table';
+    const screen = this.state.screen, d = this.state.draft, sheet = this.state.sheet;
+    const n = this.now(), nm = n.h * 60 + n.m, night = p.theme === 'night';
+    const vis = this.visible();
+    const today = vis.filter(e => e.day === '31.08');
+    const feeds = today.filter(e => e.kind === 'feed');
+    const known = feeds.reduce((a, e) => a + e.parts.reduce((x, q) => x + (q.vol || 0), 0), 0);
+    const anyUnknown = feeds.some(e => e.parts.some(q => q.vol == null));
+    const bySrc = src => feeds.reduce((a, e) => a + e.parts.filter(q => q.src === src).reduce((x, q) => x + (q.vol || 0), 0), 0);
+    const unsourced = feeds.reduce((a, e) => a + e.parts.filter(q => !q.src).reduce((x, q) => x + (q.vol || 0), 0), 0);
+    const pees = today.filter(e => e.kind === 'diaper' && e.pee).length;
+    const poops = today.filter(e => e.kind === 'diaper' && e.poop).length;
+    const feedsByTime = feeds.slice().sort((a, b) => this.mins(a) - this.mins(b));
+    const lastFeed = feedsByTime.filter(e => this.mins(e) <= nm).pop() || null;
+    const gap = lastFeed ? Math.max(0, nm - this.mins(lastFeed)) : -1;
+    const elapsed = lastFeed ? Math.floor(gap / 60) + 'h ' + pad(gap % 60) + 'm' : '—';
+    const lastVol = lastFeed ? this.fmtMilk(lastFeed) : '—';
+
+    let mstate;
+    if (this.state.justSaved) mstate = 'flash';
+    else if (gap < 0) mstate = 'awake';
+    else if (night && gap > 60) mstate = 'sleeping';
+    else if (gap >= 240) mstate = 'hungry';
+    else if (gap < 120) mstate = 'settled';
+    else mstate = 'awake';
+    const stateMeta = {
+      settled: { word: 'settled', icon: 'spa', fill: t.mintFill, ink: t.mintInk },
+      awake: { word: 'awake', icon: 'visibility', fill: t.lavFill, ink: t.lavInk },
+      hungry: { word: 'hungry', icon: 'local_drink', fill: t.roseFill, ink: t.roseInk },
+      sleeping: { word: 'sleeping', icon: 'bedtime', fill: t.lavFill, ink: t.lavInk },
+      flash: { word: 'logged', icon: 'auto_awesome', fill: t.amberFill, ink: t.amberInk }
+    }[mstate];
+
+    const cssVars = o => Object.keys(o).map(k => '--' + k + ':' + o[k]).join(';');
+    const sel = (on, fill) => on ? (fill || t.roseFill) : t.chip;
+    const selInk = (on, ink) => on ? (ink || t.roseInk) : t.ink;
+    const parentColor = by => by === 'A' ? t.parentA : t.parentM;
+
+    const themeCss = cssVars({
+      bg: t.bg, card: t.card, ink: t.ink, muted: t.muted, hair: t.hair, accent: t.accent, onAccent: t.onAccent,
+      chip: t.chip, sky: t.sky, soft: t.soft, clock: t.clock, mouth: t.mouth,
+      roseFill: t.roseFill, roseInk: t.roseInk, roseShadow: t.roseShadow,
+      lavFill: t.lavFill, lavInk: t.lavInk, lilacFill: t.lilacFill, lilacInk: t.lilacInk,
+      amberFill: t.amberFill, amberInk: t.amberInk, amber: t.amber,
+      yellowFill: t.yellowFill, yellowInk: t.yellowInk,
+      mint: t.mint, onMint: t.onMint, mintFill: t.mintFill, mintInk: t.mintInk, mintShadow: t.mintShadow,
+      periFill: t.periFill, periInk: t.periInk, dayHead: t.dayHead,
+      fur: t.fur, furDark: t.furDark, face: t.face, blush: t.blush, vine: t.vine, bib: t.bib,
+      parentM: t.parentM, parentA: t.parentA, scrubFill: t.scrubFill, scrubInk: t.scrubInk,
+      stateFill: stateMeta.fill, stateInk: stateMeta.ink,
+      srcBInk2: t.lavInk,
+      sheetIconColor: sheet === 'diaper' ? t.mint : sheet === 'other' ? t.lavInk : t.accent,
+      tabLog: screen === 'home' ? t.roseFill : 'transparent', tabLogInk: screen === 'home' ? t.roseInk : t.muted,
+      tabDay: screen === 'day' ? t.lavFill : 'transparent', tabDayInk: screen === 'day' ? t.lavInk : t.muted
+    }) + (d ? ';' + cssVars({
+      minU: sel(d.minUnknown, t.lavFill), minUInk: selInk(d.minUnknown, t.lavInk),
+      srcB: sel(d.parts[d.active] && d.parts[d.active].src === 'B', t.lilacFill), srcBInk: selInk(d.parts[d.active] && d.parts[d.active].src === 'B', t.lilacInk),
+      srcF: sel(d.parts[d.active] && d.parts[d.active].src === 'F', t.amberFill), srcFInk: selInk(d.parts[d.active] && d.parts[d.active].src === 'F', t.amberInk),
+      pee: sel(d.pee, t.yellowFill), peeInk: selInk(d.pee, t.yellowInk),
+      poop: sel(d.poop, t.mintFill), poopInk: selInk(d.poop, t.mintInk)
+    }) : '');
+
+    const mkRow = (r, i, day) => {
+      const editId = r.feed ? r.feed.id : (r.diaper ? r.diaper.id : (r.peeE ? r.peeE.id : (r.other ? r.other.id : null)));
+      const h = this.swipeHandlers(r.key, editId);
+      const milkUnknown = !!(r.feed && r.feed.parts.length === 1 && r.feed.parts[0].vol == null);
+      const milkTxt = r.feed ? this.fmtMilk(r.feed) : '';
+      return {
+        key: r.key, dateCell: i === 0 ? this.usDay(day) : '', time: r.time, by: r.by, byColor: parentColor(r.by),
+        hasFeed: !!r.feed, hasPee: !!(r.peeE || (r.diaper && r.diaper.pee)), hasPoop: !!(r.diaper && r.diaper.poop),
+        milkChip: milkUnknown ? '?' : milkTxt,
+        milkCell: milkTxt, milkLine: r.feed ? (milkUnknown ? '? mL' : milkTxt + ' mL') : '',
+        milkColor: milkUnknown ? t.accent : t.ink, milkWeight: milkUnknown ? '900' : '400',
+        poopChip: (r.diaper && r.diaper.qual) ? r.diaper.qual : 'poop',
+        diap: [this.fmtDiap(r.peeE), this.fmtDiap(r.diaper)].filter(Boolean).join(' · '),
+        diapWords: [this.diapWords(r.peeE), this.diapWords(r.diaper)].filter(Boolean).join(' · '),
+        diapColor: (r.diaper && r.diaper.poop) ? t.mintInk : t.yellowInk,
+        dotIcon: r.feed ? 'local_drink' : (r.diaper && r.diaper.poop) ? 'cookie' : 'water_drop',
+        dotFill: r.feed ? t.roseFill : (r.diaper && r.diaper.poop) ? t.mintFill : t.yellowFill,
+        dotInk: r.feed ? t.roseInk : (r.diaper && r.diaper.poop) ? t.mintInk : t.yellowInk,
+        note: r.notes.join(' · '), hasNote: r.notes.length > 0,
+        tx: this.state.swipeId === r.key ? 'translateX(' + this.state.dx + 'px)' : 'translateX(0px)',
+        onDown: h.onDown, onMove: h.onMove, onUp: h.onUp, onEdit: h.onEdit
+      };
+    };
+
+    const dayList = ['31.08', '30.08', '29.08'].map(day => {
+      const rows = this.rowsForDay(day);
+      const dv = rows.reduce((a, r) => a + (r.feed ? r.feed.parts.reduce((x, q) => x + (q.vol || 0), 0) : 0), 0);
+      return {
+        key: day, date: this.usDay(day), summary: rows.filter(r => r.feed).length + ' feeds · ' + dv + ' mL',
+        rows: rows.map((r, i) => mkRow(r, i, day))
+      };
+    });
+
+    const TODAY_ISO = '2026-08-31';
+    const range = this.state.range || null;
+    const selDay = range ? 'range' : (this.state.selDay || '31.08');
+    const inRange = day => { const i = this.isoOf(day); return i >= range.from && i <= range.to; };
+    const shownDays = range ? dayList.filter(x => inRange(x.key)) : selDay === 'all' ? dayList : dayList.filter(x => x.key === selDay);
+    const dayTabs = [['all days', 'all'], ['today 08/31', '31.08'], ['08/30', '30.08'], ['08/29', '29.08']].map(([label, val]) => ({
+      label, bg: selDay === val ? t.roseFill : t.chip, fg: selDay === val ? t.roseInk : t.muted,
+      onTap: () => this.setState({ selDay: val, range: null, swipeId: null, dx: 0 })
+    }));
+
+    const pickFrom = this.state.pickFrom || null, pickTo = this.state.pickTo || null;
+    const ym = this.state.pickYM || '2026-08';
+    const [cy, cm] = ym.split('-').map(Number);
+    const leadBlanks = new Date(cy, cm - 1, 1).getDay();
+    const monthLen = new Date(cy, cm, 0).getDate();
+    const dataDays = { '2026-08-29': 1, '2026-08-30': 1, '2026-08-31': 1 };
+    const weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label, i) => ({ label, key: 'w' + i }));
+    const calCells = [];
+    for (let i = 0; i < leadBlanks; i++) calCells.push({ key: 'b' + i, label: '', disabled: true, cursor: 'default', bg: 'transparent', fg: t.muted, weight: '400', dot: 'transparent', radius: '18px', onTap: () => {} });
+    for (let dd = 1; dd <= monthLen; dd++) {
+      const iso = cy + '-' + pad(cm) + '-' + pad(dd);
+      const isStart = pickFrom === iso, isEnd = pickTo === iso;
+      const between = pickFrom && pickTo && iso > pickFrom && iso < pickTo;
+      const future = iso > TODAY_ISO;
+      calCells.push({
+        key: iso, label: String(dd), disabled: future, cursor: future ? 'default' : 'pointer',
+        bg: isStart || isEnd ? t.accent : between ? t.roseFill : iso === TODAY_ISO ? t.chip : 'transparent',
+        fg: isStart || isEnd ? t.onAccent : future ? t.hair : between ? t.roseInk : t.ink,
+        weight: isStart || isEnd || iso === TODAY_ISO ? '900' : '400',
+        dot: dataDays[iso] && !(isStart || isEnd) ? t.mint : 'transparent',
+        radius: '18px',
+        onTap: () => {
+          if (!pickFrom || (pickFrom && pickTo)) this.setState({ pickFrom: iso, pickTo: null });
+          else if (iso < pickFrom) this.setState({ pickFrom: iso, pickTo: pickFrom });
+          else this.setState({ pickTo: iso });
+        }
+      });
+    }
+    const presetDefs = [
+      ['last 7 days', this.shiftIso(TODAY_ISO, -6), TODAY_ISO],
+      ['last 14 days', this.shiftIso(TODAY_ISO, -13), TODAY_ISO],
+      ['this month', '2026-08-01', TODAY_ISO]
+    ];
+    const presets = presetDefs.map(([label, from, to]) => ({
+      label, bg: pickFrom === from && pickTo === to ? t.lavFill : t.chip, fg: pickFrom === from && pickTo === to ? t.lavInk : t.muted,
+      onTap: () => this.setState({ pickFrom: from, pickTo: to, pickYM: from.slice(0, 7) })
+    }));
+    const pickLabel = pickFrom ? (pickTo && pickTo !== pickFrom ? this.usIso(pickFrom) + ' – ' + this.usIso(pickTo) : this.usIso(pickFrom)) : '';
+    const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const dayScope = range ? vis.filter(e => inRange(e.day)) : selDay === 'all' ? vis : vis.filter(e => e.day === selDay);
+    const dFeeds = dayScope.filter(e => e.kind === 'feed');
+    const dKnown = dFeeds.reduce((a, e) => a + e.parts.reduce((x, q) => x + (q.vol || 0), 0), 0);
+    const dUnknown = dFeeds.some(e => e.parts.some(q => q.vol == null));
+    const dPees = dayScope.filter(e => e.kind === 'diaper' && e.pee).length;
+    const dPoops = dayScope.filter(e => e.kind === 'diaper' && e.poop).length;
+
+    const recent = [];
+    for (const dl of dayList) {
+      const rev = dl.rows.slice().reverse();
+      for (let k = 0; k < rev.length && recent.length < 8; k++) {
+        recent.push(Object.assign({}, rev[k], { key: 'r' + dl.date + k, showDay: k === 0, dayLabel: dl.date }));
+      }
+      if (recent.length >= 8) break;
+    }
+
+    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'add', '0', 'backspace'].map(label => {
+      const isIcon = label === 'add' || label === 'backspace';
+      return {
+        label, isIcon, isText: !isIcon,
+        bg: label === 'add' ? t.lavFill : label === 'backspace' ? t.chip : t.chip,
+        fg: label === 'add' ? t.lavInk : t.ink,
+        onTap: () => {
+          if (!this.state.draft) return;
+          if (label === 'backspace') return this.patchPart({ vol: String(this.state.draft.parts[this.state.draft.active].vol).slice(0, -1) });
+          if (label === 'add') return this.setState(s => {
+            if (s.draft.parts.length > 1) return {};
+            return { draft: Object.assign({}, s.draft, { parts: s.draft.parts.concat([{ vol: '', src: null }]), active: 1 }) };
+          });
+          const cur = String(this.state.draft.parts[this.state.draft.active].vol);
+          if (cur.length >= 3) return;
+          this.patchPart({ vol: cur + label });
+        }
+      };
+    });
+
+    const parts = (d ? d.parts : [{ vol: '', src: null }]).map((q, i) => ({
+      display: String(q.vol).length ? String(q.vol) : '—',
+      color: String(q.vol).length ? (q.src === 'B' ? t.lilacInk : q.src === 'F' ? t.amberInk : t.ink) : t.muted,
+      icon: q.src === 'B' ? 'favorite' : q.src === 'F' ? 'local_drink' : 'water_full',
+      labelColor: q.src === 'B' ? t.lilacInk : q.src === 'F' ? t.amberInk : t.muted,
+      label: (q.src ? (q.src === 'B' ? 'breast' : 'formula') : 'mL') + (d && d.parts.length > 1 ? ' · part ' + (i + 1) : ''),
+      underline: d && d.active === i && d.parts.length > 1 ? t.accent : 'transparent',
+      onSelect: () => this.patch({ active: i })
+    }));
+
+    const swatches = { Y: '#f2c94c', G: '#7cc4a4', BR: '#b08055', Dark: '#6b5a4e' };
+    const colors = [['yellow', 'Y'], ['green', 'G'], ['brown', 'BR'], ['dark', 'Dark']].map(([label, val]) => ({
+      label, swatch: swatches[val],
+      bg: d && d.color === val ? t.mintFill : t.chip, fg: d && d.color === val ? t.mintInk : t.ink,
+      onTap: () => this.patch({ color: d && d.color === val ? null : val })
+    }));
+    const conss = [['liquid', 'liquid'], ['soft', 'soft'], ['seedy', 'seedy'], ['firm', 'firm']].map(([label, val]) => ({
+      label, bg: d && d.cons === val ? t.mintFill : t.chip, fg: d && d.cons === val ? t.mintInk : t.ink,
+      onTap: () => this.patch({ cons: d && d.cons === val ? null : val })
+    }));
+
+    const added = d && d.added ? d.added : [];
+    const tfield = d && d.tfield ? d.tfield : 'm';
+    const chipsOpen = !!this.state.chipsOpen;
+    const inMoment = sheet === 'moment';
+    const addDefs = [['milk', 'feed', 'local_drink', t.roseFill, t.roseInk], ['diaper', 'diaper', 'water_drop', t.mintFill, t.mintInk], ['other', 'other', 'more_horiz', t.lavFill, t.lavInk]];
+    const addTypes = inMoment ? addDefs.filter(a => added.indexOf(a[1]) < 0).map(([label, val, icon, bg, fg]) => ({
+      label, icon, bg, fg, onTap: () => this.patch({ added: added.concat([val]) })
+    })) : [];
+    const dropType = val => () => this.patch({ added: added.filter(x => x !== val) });
+    const activeVol = d && String(d.parts[d.active].vol).length ? parseInt(d.parts[d.active].vol, 10) : 0;
+    const scrubTo = ev => {
+      const r = ev.currentTarget.getBoundingClientRect();
+      const v = Math.max(1, Math.min(75, Math.round(((ev.clientX - r.left) / r.width) * 75)));
+      this.patchPart({ vol: String(v) });
+    };
+
+    return {
+      themeCss, nowText: pad(n.h) + ':' + pad(n.m), clockIcon: night ? 'bedtime' : 'wb_sunny',
+      isHome: screen === 'home', isDay: screen === 'day',
+      leadElapsed: lead === 'elapsed', leadCombined: lead === 'combined', leadMascot: lead === 'mascot',
+      leadIcon: lead === 'mascot' ? 'pets' : 'schedule',
+      leadLabel: lead === 'mascot' ? 'liana is' : lead === 'combined' ? 'last feed' : 'since last feed',
+      elapsed, combinedLine: elapsed + ' ago · ' + lastVol + ' mL',
+      lastVolLine: lastVol + ' mL · ' + (lastFeed ? lastFeed.by : ''),
+      lastFeedTime: lastFeed ? 'at ' + this.fmtTime(lastFeed) + ' · logged by ' + lastFeed.by : '',
+      mascotWord: stateMeta.word, stateIcon: stateMeta.icon,
+      mascotAnim: mstate === 'flash' ? 'lianaPop 0.6s ease-out' : mstate === 'sleeping' ? 'lianaBreathe 5s ease-in-out infinite' : 'lianaBreathe 7s ease-in-out infinite',
+      eyesOpen: mstate === 'awake' || mstate === 'hungry' || mstate === 'flash',
+      eyesClosed: mstate === 'settled' || mstate === 'sleeping',
+      mouthOpen: mstate === 'hungry', mouthSmall: mstate !== 'hungry',
+      showZ: mstate === 'sleeping', showSparkle: mstate === 'flash',
+      tFeeds: String(feeds.length), tMilk: known + (anyUnknown ? ' + ?' : ''),
+      tDiaper: pees + ' / ' + poops,
+      tFeedsDay: String(dFeeds.length), tMilkDay: dKnown + (dUnknown ? ' + ?' : ''),
+      tPee: String(dPees), tPoop: String(dPoops),
+      pickerOpen: !!this.state.pickerOpen,
+      openPicker: () => this.setState({ pickerOpen: true, pickFrom: range ? range.from : null, pickTo: range ? range.to : null, pickYM: (range ? range.from : TODAY_ISO).slice(0, 7) }),
+      closePicker: () => this.setState({ pickerOpen: false }),
+      moreLabel: range ? this.usIso(range.from) + (range.to !== range.from ? ' – ' + this.usIso(range.to) : '') : 'more',
+      moreBg: range ? t.roseFill : t.chip, moreFg: range ? t.roseInk : t.muted,
+      presets, weekdays, calCells,
+      monthLabel: MONTHS[cm - 1] + ' ' + cy,
+      prevMonth: () => { const d = new Date(cy, cm - 2, 1); this.setState({ pickYM: d.getFullYear() + '-' + pad(d.getMonth() + 1) }); },
+      nextMonth: () => { const d = new Date(cy, cm, 1); this.setState({ pickYM: d.getFullYear() + '-' + pad(d.getMonth() + 1) }); },
+      pickHint: !pickFrom ? 'tap a day to start — tap a second day for a range' : !pickTo ? 'tap another day to end the range, or apply for the single day' : 'tap any day to start over',
+      applyDisabled: !pickFrom,
+      applyOpacity: pickFrom ? '1' : '0.4',
+      applyLabel: pickFrom ? 'show ' + pickLabel : 'pick a day',
+      applyRange: () => { if (!pickFrom) return; this.setState({ range: { from: pickFrom, to: pickTo || pickFrom }, selDay: 'range', pickerOpen: false, swipeId: null, dx: 0 }); },
+      dayTabs, dayHeadLabel: range ? (range.from === range.to ? this.usIso(range.from) : this.usIso(range.from) + ' – ' + this.usIso(range.to)) : selDay === 'all' ? 'all three days' : (selDay === '31.08' ? 'today ' : '') + this.usDay(selDay),
+      srcB: String(bySrc('B')), srcF: String(bySrc('F')), srcU: String(unsourced),
+      noRows: shownDays.reduce((a, x) => a + x.rows.length, 0) === 0,
+      recent, days: shownDays, today: '31.08',
+      viewTable: view === 'table', viewCards: view === 'cards', viewTimeline: view === 'timeline',
+      flowTwo: flow === 'two', flowMoment: flow === 'moment',
+      setupOpen: (this.props.firstRun ?? false) && !this.state.setupDone,
+      setupName: this.state.setupName,
+      deviceId: this.deviceId,
+      setSetupName: (e) => this.setState({ setupName: e.target.value }),
+      setupDisabled: !this.state.setupName.trim(),
+      setupOpacity: this.state.setupName.trim() ? 1 : 0.45,
+      finishSetup: () => this.setState(s => ({ setupDone: true, userName: s.setupName.trim() })),
+      goHome: () => this.setState({ screen: 'home', swipeId: null, dx: 0 }),
+      goDay: () => this.setState({ screen: 'day' }),
+      openFeed: () => this.setState({ sheet: 'feed', draft: this.newDraft('feed') }),
+      openDiaper: () => this.setState({ sheet: 'diaper', draft: this.newDraft('diaper') }),
+      openMoment: () => this.setState({ sheet: 'moment', draft: this.newDraft('moment') }),
+      openOther: () => this.setState({ sheet: 'other', draft: this.newDraft('other') }),
+      closeSheet: () => this.setState({ sheet: null, draft: null }),
+      sheetOpen: !!sheet,
+      sheetIcon: sheet === 'edit' ? 'edit' : sheet === 'moment' ? 'auto_awesome' : sheet === 'other' ? 'more_horiz' : sheet === 'diaper' ? 'water_drop' : 'local_drink',
+      sheetTitle: sheet === 'edit' ? 'correct entry' : sheet === 'moment' ? 'what just happened' : sheet === 'other' ? 'other' : sheet === 'diaper' ? 'diaper' : 'feed',
+      showOtherLink: flow !== 'moment',
+      showAddType: inMoment && addTypes.length > 0,
+      addTypeHint: added.length ? 'also happened at this time' : 'what happened at this time',
+      saveDisabled: inMoment && added.length === 0,
+      saveOpacity: inMoment && added.length === 0 ? '0.4' : '1',
+      addTypes,
+      canDropFeed: inMoment && added.indexOf('feed') > -1,
+      canDropDiaper: inMoment && added.indexOf('diaper') > -1,
+      canDropOther: inMoment && added.indexOf('other') > -1,
+      dropFeed: dropType('feed'), dropDiaper: dropType('diaper'), dropOther: dropType('other'),
+      hasFeedBlock: sheet === 'feed' || (inMoment && added.indexOf('feed') > -1) || (sheet === 'edit' && d && d.kind === 'feed'),
+      hasDiaperBlock: sheet === 'diaper' || (inMoment && added.indexOf('diaper') > -1) || (sheet === 'edit' && d && d.kind === 'diaper'),
+      hasOtherBlock: sheet === 'other' || (inMoment && added.indexOf('other') > -1),
+      draftTime: d ? (d.minUnknown ? pad(d.h) + ':?' : pad(d.h) + ':' + pad(d.m)) : '',
+      setHourVal: ev => { const v = String(ev.target.value).replace(/\D/g, ''); if (v.length) this.patch({ h: Math.min(23, parseInt(v, 10)), tfield: 'h' }); },
+      setMinVal: ev => { const v = String(ev.target.value).replace(/\D/g, ''); if (v.length) this.patch({ m: Math.min(59, parseInt(v, 10)), tfield: 'm' }); },
+      setEndHourVal: ev => { const v = String(ev.target.value).replace(/\D/g, ''); if (v.length) this.patch({ endH: Math.min(23, parseInt(v, 10)), tfield: 'eh' }); },
+      setEndMinVal: ev => { const v = String(ev.target.value).replace(/\D/g, ''); if (v.length) this.patch({ endM: Math.min(59, parseInt(v, 10)), tfield: 'em' }); },
+      endChips: (() => {
+        const setEnd = tot => () => { const x = (tot + 1440) % 1440; this.patch({ endH: Math.floor(x / 60), endM: x % 60 }); };
+        const startTot = d ? d.h * 60 + d.m : 0;
+        const cur = d && d.endH != null ? d.endH * 60 + d.endM : -1;
+        const nn = this.now();
+        return [
+          { label: 'now', tot: nn.h * 60 + nn.m },
+          { label: '+30 min', tot: startTot + 30 },
+          { label: '+1 h', tot: startTot + 60 },
+          { label: '+2 h', tot: startTot + 120 },
+          { label: '+3 h', tot: startTot + 180 },
+          { label: '+4 h', tot: startTot + 240 }
+        ].map(c => ({
+          label: c.label, onTap: setEnd(c.tot),
+          bg: cur === ((c.tot + 1440) % 1440) ? t.lavFill : t.chip,
+          fg: cur === ((c.tot + 1440) % 1440) ? t.lavInk : t.muted
+        }));
+      })(),
+      hasEnd: !!(d && d.endH != null), noEnd: !!(d && d.endH == null),
+      draftEndHour: d && d.endH != null ? pad(d.endH) : '--',
+      draftEndMin: d && d.endH != null ? pad(d.endM) : '--',
+      endHourLine: tfield === 'eh' ? t.accent : 'transparent',
+      endMinLine: tfield === 'em' ? t.accent : 'transparent',
+      pickEndHour: () => this.patch({ tfield: 'eh' }),
+      pickEndMin: () => this.patch({ tfield: 'em' }),
+      durationLabel: d && d.endH != null ? this.durTxt(d.h * 60 + d.m, d.endH * 60 + d.endM) : '',
+      addEnd: () => { const tot = (d.h * 60 + d.m + 20) % 1440; this.patch({ endH: Math.floor(tot / 60), endM: tot % 60, tfield: 'em' }); },
+      dropEnd: () => this.patch({ endH: null, endM: null, tfield: 'm' }),
+      draftHour: d ? pad(d.h) : '--',
+      draftMin: d ? (d.minUnknown ? '?' : pad(d.m)) : '--',
+      hourLine: tfield === 'h' ? t.accent : 'transparent',
+      minLine: tfield === 'm' ? t.accent : 'transparent',
+      pickHour: () => this.patch({ tfield: 'h' }),
+      pickMin: () => this.patch({ tfield: 'm', minUnknown: false }),
+      hMinusDown: () => this.holdStart(-1, 'h'), hPlusDown: () => this.holdStart(1, 'h'),
+      mMinusDown: () => this.holdStart(-1, 'm'), mPlusDown: () => this.holdStart(1, 'm'),
+      ehMinusDown: () => this.holdStart(-1, 'eh'), ehPlusDown: () => this.holdStart(1, 'eh'),
+      emMinusDown: () => this.holdStart(-1, 'em'), emPlusDown: () => this.holdStart(1, 'em'),
+      tUp: () => this.holdEnd(),
+      timeHint: 'hold − or + to run, or type over any number',
+      backChips: [
+        { label: 'now', icon: 'schedule', isIcon: true, onTap: () => { const n = this.now(); this.patch({ h: n.h, m: n.m, minUnknown: false }); } },
+        { label: '5 min ago', onTap: () => this.ago(5) },
+        { label: '10 min ago', onTap: () => this.ago(10) },
+        { label: '15 min ago', onTap: () => this.ago(15) },
+        { label: '20 min ago', onTap: () => this.ago(20) },
+        { label: '30 min ago', onTap: () => this.ago(30) },
+        { label: '45 min ago', onTap: () => this.ago(45) },
+        { label: '1 hour ago', onTap: () => this.ago(60) }
+      ].map(c => Object.assign({ isIcon: !!c.isIcon, bg: t.chip, fg: t.muted }, c)).filter((c, i) => chipsOpen || i < 3),
+      toggleChips: () => this.setState({ chipsOpen: !chipsOpen }),
+      chipsToggleIcon: chipsOpen ? 'expand_less' : 'more_horiz',
+      chipsToggleLabel: chipsOpen ? 'fewer time shortcuts' : 'more time shortcuts',
+      draftNote: d ? d.note : '', draftPoop: !!(d && d.poop),
+      volHint: 'leave it blank and it saves as ? — a feed happened, volume unknown.',
+      parts, keys, colors, conss,
+      otherTypes: [['sleep', 'Sleep', 'bedtime'], ['weight', 'Weight', 'monitor_weight'], ['temperature', 'Temperature', 'thermostat'], ['medication', 'Medication', 'medication']].map(([label, val, icon]) => ({
+        label, icon, bg: d && d.other === val ? t.lavFill : t.chip, fg: d && d.other === val ? t.lavInk : t.ink,
+        onTap: () => this.patch({ other: val })
+      })),
+      scrubPct: Math.max(0, Math.min(100, (activeVol / 75) * 100)) + '%',
+      scrubDown: ev => { this._sc = true; ev.currentTarget.setPointerCapture(ev.pointerId); scrubTo(ev); },
+      scrubMove: ev => { if (this._sc) scrubTo(ev); },
+      scrubUp: () => { this._sc = false; },
+      srcBtap: () => this.patchPart({ src: d && d.parts[d.active].src === 'B' ? null : 'B' }),
+      srcFtap: () => this.patchPart({ src: d && d.parts[d.active].src === 'F' ? null : 'F' }),
+      togglePee: () => this.patch({ pee: !d.pee }),
+      togglePoop: () => this.patch({ poop: !d.poop }),
+
+      setNote: ev => this.patch({ note: ev.target.value }),
+      save: () => this.save(),
+      saveLabel: sheet === 'edit' ? 'save correction' : inMoment && added.length === 0 ? 'pick what happened' : 'save'
+    };
+  }
+}
+
+</script>
+</body>
+</html>

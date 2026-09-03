@@ -31,13 +31,13 @@ them is how Phase 0 quietly never happens.
 
 ## Phase 2 — Structural design & prototype
 
-- [ ] **CD** Clickable prototype from the paper log photo + event model
-- [ ] **CD** Night surface and day surface variants
-- [ ] **CD** Palette tested at reduced brightness
+- [x] **CD** Clickable prototype from the paper log photo + event model
+- [x] **CD** Night surface and day surface variants
+- [x] **CD** Palette tested at reduced brightness — night theme in tokens.css
 - [ ] **H** Try the prototype. Ideally at night, not at a desk
 - [ ] **H** Decide button hierarchy and primary readout → closes Q-001, Q-002
 - [ ] **CH** Record the resolved decisions in `decisions.md`
-- [ ] **H** Commit mockups to `.specify/memory/`
+- [x] **H** Commit mockups to `.specify/memory/design/handoff/`
 
 ## Phase 3 — Infrastructure spike
 

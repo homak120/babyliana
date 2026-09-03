@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,1,0&display=block">
+<script src="./image-slot.js"></script>
+<style>
+body { margin: 0; background: #fbf3ec; }
+.msr { font-family: 'Material Symbols Rounded'; font-weight: normal; font-style: normal; line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; direction: ltr; -webkit-font-smoothing: antialiased; }
+a { color: #c9536e; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { color: #ef7f96; }
+</style>
+</helmet>
+
+<section style="padding:56px 56px 40px;font-family:'Zen Maru Gothic',system-ui,sans-serif;color:#4b403a;background:#fbf3ec">
+  <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:6px">
+    <h1 style="font-size:40px;font-weight:900;letter-spacing:-0.02em;margin:0">First run</h1>
+    <span style="font-size:13px;color:#a89890">turn 4 · your name + device id before the app opens</span>
+  </div>
+  <p style="max-width:740px;font-size:15px;line-height:1.6;color:#6d5f58;margin:10px 0 32px">The very first launch asks for one thing only — who you are — because that name marks every entry. The device id sits underneath it, so the other grown-ups have something to pair with. <b>start logging</b> is dimmed until a name is typed.</p>
+  <div id="4a" style="flex:none;width:460px">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px">
+      <span style="background:#ef7f96;color:#fff8fa;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px">4a</span>
+      <span style="font-size:17px;font-weight:900">welcome screen</span>
+    </div>
+    <p style="width:460px;font-size:13px;line-height:1.55;color:#7d6f68;margin:0 0 14px">Type a name and tap <b>start logging</b> to fall through to the app.</p>
+    <dc-import name="Phone" first-run="{{ true }}" theme="day" lead="elapsed" day-view="table" hint-size="390px,844px"></dc-import>
+  </div>
+</section>
+
+<section style="padding:40px 56px 96px;font-family:'Zen Maru Gothic',system-ui,sans-serif;color:#4b403a;background:#fbf3ec;border-top:1px solid #ecdfd6">
+  <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:6px">
+    <h1 style="font-size:40px;font-weight:900;letter-spacing:-0.02em;margin:0">BabyLiana</h1>
+    <span style="font-size:13px;color:#a89890">turn 3 · colour-coded by data type · icons throughout · mascot central</span>
+  </div>
+  <p style="max-width:740px;font-size:15px;line-height:1.6;color:#6d5f58;margin:10px 0 40px">Every data type now carries its own colour and icon, so a row is legible before it is read: rose for milk, lilac for breast, amber for formula, yellow for pee, mint for poop, periwinkle for notes. Icons are Material Symbols Rounded. Liana sits beside the big number rather than replacing it; her states are descriptive only — <b>settled · awake · hungry · sleeping</b>, plus a one-off <b>logged</b> flash after a save. The four-column table still stays plain enough to read against a photo of the paper page.</p>
+
+  <div style="display:flex;gap:64px;flex-wrap:wrap;align-items:flex-start">
+
+    <div id="3z" style="flex:none;width:460px">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">
+        <span style="background:#7cc4a4;color:#fff;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px">key</span>
+        <span style="font-size:17px;font-weight:900">colour system</span>
+      </div>
+      <div style="background:#fff;border-radius:26px;padding:16px;box-shadow:0 6px 20px rgba(140,100,110,0.08);display:grid;gap:8px">
+        <sc-for list="{{ legend }}" as="l" hint-placeholder-count="6">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="width:34px;height:34px;border-radius:12px;background:{{ l.fill }};color:{{ l.ink }};display:flex;align-items:center;justify-content:center">
+              <span class="msr" style="font-size:19px">{{ l.icon }}</span>
+            </span>
+            <span style="font-size:14px;font-weight:700;color:{{ l.ink }};width:96px">{{ l.name }}</span>
+            <span style="font-size:12px;color:#7d6f68">{{ l.note }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="margin-top:18px">
+        <div style="font-size:12px;color:#a89890;margin-bottom:8px">drop a photo of the paper page here to compare against 2c</div>
+        <image-slot id="paper-page" style="width:460px;height:300px" shape="rounded" radius="24" placeholder="photo of the paper log"></image-slot>
+      </div>
+    </div>
+
+    <div id="2a" style="flex:none">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px">
+        <span style="background:#ef7f96;color:#fff8fa;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px">2a</span>
+        <span style="font-size:17px;font-weight:900">live prototype</span>
+      </div>
+      <p style="width:460px;font-size:13px;line-height:1.55;color:#7d6f68;margin:0 0 14px">Fully interactive. Save a feed and watch Liana flash <i>logged</i>, then settle.</p>
+
+      <div style="width:460px;background:#ffffff;border-radius:26px;padding:16px;margin-bottom:18px;display:grid;gap:12px;box-shadow:0 6px 20px rgba(140,100,110,0.08)">
+        <div>
+          <div style="font-size:11px;color:#a89890;margin-bottom:7px">surface — automatic by clock, shown manually here</div>
+          <div style="display:flex;gap:6px">
+            <button type="button" onClick="{{ setNight }}" style="flex:1;height:40px;border:0;border-radius:20px;background:{{ bgNight }};color:{{ fgNight }};font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;cursor:pointer">night 03:12</button>
+            <button type="button" onClick="{{ setDay }}" style="flex:1;height:40px;border:0;border-radius:20px;background:{{ bgDay }};color:{{ fgDay }};font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;cursor:pointer">day 14:20</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#a89890;margin-bottom:7px">2 — what the screen leads with</div>
+          <div style="display:flex;gap:6px">
+            <sc-for list="{{ leadOpts }}" as="o" hint-placeholder-count="3">
+              <button type="button" onClick="{{ o.onTap }}" style="flex:1;height:40px;border:0;border-radius:20px;background:{{ o.bg }};color:{{ o.fg }};font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;cursor:pointer">{{ o.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#a89890;margin-bottom:7px">3 — day view read-back</div>
+          <div style="display:flex;gap:6px">
+            <sc-for list="{{ viewOpts }}" as="o" hint-placeholder-count="3">
+              <button type="button" onClick="{{ o.onTap }}" style="flex:1;height:40px;border:0;border-radius:20px;background:{{ o.bg }};color:{{ o.fg }};font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;cursor:pointer">{{ o.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <dc-import name="Phone" theme="{{ theme }}" lead="{{ lead }}" day-view="{{ view }}" hint-size="390px,844px"></dc-import>
+
+      <div style="width:460px;font-size:12px;line-height:1.65;color:#7d6f68;margin-top:16px;background:#fff;border-radius:20px;padding:14px 16px">
+        try: tap <b>+</b>, key <span style="font-variant-numeric:tabular-nums">4 6</span>, hit <b>+</b> and key <span style="font-variant-numeric:tabular-nums">2 5</span>, mark part 2 <b>breast</b>, save. then <b>day</b>, and drag any row left to correct one value.
+      </div>
+    </div>
+
+    <div id="2b" style="flex:none">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px">
+        <span style="background:#ef7f96;color:#fff8fa;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px">2b</span>
+        <span style="font-size:17px;font-weight:900">night palette — cute, but not a torch</span>
+      </div>
+      <p style="width:1280px;font-size:13px;line-height:1.55;color:#7d6f68;margin:0 0 14px">Plum ground, muted rose, Liana's fur drops to a dusty violet and she sleeps. Decision 2 across the three leads.</p>
+      <div style="display:flex;gap:26px">
+        <div>
+          <div style="font-size:12px;color:#a89890;margin-bottom:8px">time since last feed</div>
+          <dc-import name="Phone" theme="night" lead="elapsed" entry-flow="two" day-view="table" hint-size="390px,844px"></dc-import>
+        </div>
+        <div>
+          <div style="font-size:12px;color:#a89890;margin-bottom:8px">combined line</div>
+          <dc-import name="Phone" theme="night" lead="combined" entry-flow="two" day-view="table" hint-size="390px,844px"></dc-import>
+        </div>
+        <div>
+          <div style="font-size:12px;color:#a89890;margin-bottom:8px">mascot leads · one-moment entry</div>
+          <dc-import name="Phone" theme="night" lead="mascot" entry-flow="moment" day-view="table" hint-size="390px,844px"></dc-import>
+        </div>
+      </div>
+    </div>
+
+    <div id="2c" style="flex:none">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px">
+        <span style="background:#ef7f96;color:#fff8fa;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px">2c</span>
+        <span style="font-size:17px;font-weight:900">day read-back — three forms</span>
+      </div>
+      <p style="width:1280px;font-size:13px;line-height:1.55;color:#7d6f68;margin:0 0 14px">Tap <b>day</b> on each. The acceptance test is holding these next to a photograph of the page.</p>
+      <div style="display:flex;gap:26px">
+        <div>
+          <div style="font-size:12px;color:#a89890;margin-bottom:8px">four columns, date inherited</div>
+          <dc-import name="Phone" theme="day" lead="elapsed" entry-flow="two" day-view="table" hint-size="390px,844px"></dc-import>
+        </div>
+        <div>
+          <div style="font-size:12px;color:#a89890;margin-bottom:8px">cards per day, one row per moment</div>
+          <dc-import name="Phone" theme="day" lead="elapsed" entry-flow="two" day-view="cards" hint-size="390px,844px"></dc-import>
+        </div>
+        <div>
+          <div style="font-size:12px;color:#a89890;margin-bottom:8px">timeline rail</div>
+          <dc-import name="Phone" theme="day" lead="elapsed" entry-flow="two" day-view="timeline" hint-size="390px,844px"></dc-import>
+        </div>
+      </div>
+    </div>
+
+    <div id="2d" style="flex:none">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px">
+        <span style="background:#ef7f96;color:#fff8fa;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px">2d</span>
+        <span style="font-size:17px;font-weight:900">mascot art slot</span>
+      </div>
+      <p style="width:620px;font-size:13px;line-height:1.6;color:#7d6f68;margin:0 0 16px">Liana in the prototype is built from plain shapes — a stand-in, not final art. Real illustration drops into a 96×92 box at this position, one file per state. I can't draw these; they need an illustrator or an image tool.</p>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;width:620px">
+        <sc-for list="{{ slots }}" as="s" hint-placeholder-count="5">
+          <div>
+            <image-slot id="{{ s.id }}" style="width:100%;height:112px" shape="rounded" radius="20" placeholder="{{ s.file }}"></image-slot>
+            <div style="font-size:12px;font-weight:700;margin-top:6px">{{ s.label }}</div>
+            <div style="font-size:11px;color:#a89890;line-height:1.4">{{ s.trigger }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <p style="width:620px;font-size:12px;line-height:1.6;color:#a89890;margin:16px 0 0">no evaluative states by design — nothing sad, worried or disappointed, and no state that reads as a comment on a late feed.</p>
+    </div>
+
+  </div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { theme: 'night', lead: 'elapsed', flow: 'moment', view: 'table' };
+
+  opts(field, list) {
+    return list.map(([label, val]) => ({
+      label, onTap: () => this.setState({ [field]: val }),
+      bg: this.state[field] === val ? '#ef7f96' : '#f6ece6',
+      fg: this.state[field] === val ? '#fff8fa' : '#7d6f68'
+    }));
+  }
+
+  renderVals() {
+    const s = this.state;
+    return {
+      theme: s.theme, lead: s.lead, flow: s.flow, view: s.view,
+      setNight: () => this.setState({ theme: 'night' }),
+      setDay: () => this.setState({ theme: 'day' }),
+      bgNight: s.theme === 'night' ? '#ef7f96' : '#f6ece6',
+      fgNight: s.theme === 'night' ? '#fff8fa' : '#7d6f68',
+      bgDay: s.theme === 'day' ? '#ef7f96' : '#f6ece6',
+      fgDay: s.theme === 'day' ? '#fff8fa' : '#7d6f68',
+      leadOpts: this.opts('lead', [['elapsed', 'elapsed'], ['combined', 'combined'], ['mascot', 'mascot']]),
+      flowOpts: this.opts('flow', [['single add', 'moment'], ['feed / diaper', 'two']]),
+      viewOpts: this.opts('view', [['table', 'table'], ['cards', 'cards'], ['timeline', 'timeline']]),
+      legend: [
+        { name: 'milk', icon: 'local_drink', fill: '#ffe1e8', ink: '#c2506c', note: 'feeds, volumes, the primary action' },
+        { name: 'breast (B)', icon: 'favorite', fill: '#efe7fb', ink: '#7a5aa8', note: 'source of a feed component' },
+        { name: 'formula (F)', icon: 'local_drink', fill: '#ffeeda', ink: '#b06a1e', note: 'source of a feed component' },
+        { name: 'pee', icon: 'water_drop', fill: '#fff3d6', ink: '#a97f16', note: 'diaper' },
+        { name: 'poop', icon: 'cookie', fill: '#dff2e8', ink: '#3f8a6b', note: 'diaper, with colour + consistency' },
+        { name: 'note', icon: 'edit_note', fill: '#e9edfa', ink: '#5d72b8', note: 'the escape hatch, on every entry' }
+      ],
+      slots: [
+        { id: 'liana-settled', label: 'settled', trigger: 'fed under 2h ago', file: 'liana-settled.png' },
+        { id: 'liana-awake', label: 'awake', trigger: '2–4h since feed', file: 'liana-awake.png' },
+        { id: 'liana-hungry', label: 'hungry', trigger: 'over 4h since feed', file: 'liana-hungry.png' },
+        { id: 'liana-sleeping', label: 'sleeping', trigger: 'night, quiet stretch', file: 'liana-sleeping.png' },
+        { id: 'liana-logged', label: 'logged', trigger: 'flash after a save', file: 'liana-logged.png' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

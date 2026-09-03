@@ -1,0 +1,302 @@
+/* BabyLiana — design tokens
+   Two themes, chosen by clock (night surface between roughly 20:00 and 07:00).
+   Every colour in the design comes from this file. Type is Zen Maru Gothic
+   (400/500/700/900); icons are Material Symbols Rounded (opsz 24, wght 500, FILL 1).
+*/
+
+:root {
+  --font-body: 'Zen Maru Gothic', system-ui, sans-serif;
+
+  /* type scale actually used, px */
+  --fs-10: 10px;   /* column heads, device-id label */
+  --fs-11: 11px;   /* field labels, hints */
+  --fs-12: 12px;   /* meta, totals chips */
+  --fs-13: 13px;   /* chips, shortcut buttons */
+  --fs-14: 14px;   /* calendar cells, add-type bubbles */
+  --fs-15: 15px;   /* table rows, recent rows */
+  --fs-16: 16px;   /* note input */
+  --fs-17: 17px;   /* other-type rows */
+  --fs-19: 19px;   /* pee/poop buttons */
+  --fs-21: 21px;   /* sheet titles */
+  --fs-22: 22px;   /* primary button label, name input */
+  --fs-24: 24px;   /* keypad digits, end-time steppers */
+  --fs-30: 30px;   /* welcome headline */
+  --fs-32: 32px;   /* start-time steppers */
+  --fs-47: 47px;   /* milk volume */
+  --fs-64: 64px;   /* home hero number */
+
+  /* radii */
+  --r-phone: 38px;
+  --r-card-lg: 28px;
+  --r-card: 26px;
+  --r-card-sm: 24px;
+  --r-input: 18px;
+  --r-pill: 999px;
+
+  /* spacing rhythm — screen gutter 18–22px, card padding 12–16px */
+  --gutter: 18px;
+  --gutter-wide: 22px;
+
+  /* elevation */
+  --shadow-card: 0 6px 16px var(--soft);
+  --shadow-cta: 0 8px 18px var(--roseShadow);
+  --shadow-fab: 0 8px 20px var(--roseShadow);
+
+  /* motion */
+  --dur-flash: 600ms;      /* mascot pop after a save */
+  --dur-breathe: 7000ms;   /* idle breathe, 5000ms when sleeping */
+  --dur-blink: 5500ms;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ---------- day theme (default) ---------- */
+:root, [data-theme="day"] {
+  --bg: #fdf7f2;
+  --card: #ffffff;
+  --ink: #4b403a;
+  --muted: #a89890;
+  --hair: #f2e5dc;
+  --sky: linear-gradient(160deg, #ffe3ec 0%, #f3e6ff 40%, #fdf7f2 100%);
+  --accent: #ef7f96;
+  --onAccent: #fff8fa;
+  --chip: #f6ece6;
+  --soft: rgba(140, 100, 110, 0.10);
+
+  --roseFill: #ffe1e8;  --roseInk: #c2506c;  --roseShadow: rgba(239,127,150,0.35);
+  --lavFill:  #f0e5fb;  --lavInk:  #7a5aa8;
+  --lilacFill:#efe7fb;  --lilacInk:#7a5aa8;
+  --amberFill:#ffeeda;  --amberInk:#b06a1e;  --amber: #f2a65a;
+  --yellowFill:#fff3d6; --yellowInk:#a97f16; --yellow: #f5c451;
+  --mintFill: #dff2e8;  --mintInk: #3f8a6b;  --mint: #7cc4a4;
+  --onMint: #f3fbf7;    --mintShadow: rgba(124,196,164,0.35);
+  --periFill: #e9edfa;  --periInk: #5d72b8;
+  --dayHead: #fbeef4;
+
+  /* mascot */
+  --fur: #ffd9e0;  --furDark: #f9c3d1;  --face: #6b4b52;
+  --mouth: #d96a83; --blush: #ff9db1;   --vine: #7cc4a4;
+  --bib: #a7d8ee;   --clock: #c9a7e8;
+
+  /* who logged it */
+  --parentM: #f2a65a; --parentA: #8fa8e0;
+
+  --scrubFill: linear-gradient(90deg, #ffd9e0, #ef7f96);
+  --scrubInk: #a89890;
+}
+
+/* ---------- night theme ---------- */
+[data-theme="night"] {
+  --bg: #171426;
+  --card: #221e33;
+  --ink: #cbbedb;
+  --muted: #7a6f92;
+  --hair: #2d2743;
+  --sky: linear-gradient(160deg, #2a1f3d 0%, #231d38 45%, #171426 100%);
+  --accent: #c07690;
+  --onAccent: #fdeef4;
+  --chip: #282240;
+  --soft: rgba(0, 0, 0, 0.38);
+
+  --roseFill: #3a2338;  --roseInk: #e5a6bd;  --roseShadow: rgba(0,0,0,0.4);
+  --lavFill:  #2e2549;  --lavInk:  #b9a3e0;
+  --lilacFill:#2e2549;  --lilacInk:#b9a3e0;
+  --amberFill:#3a2c1e;  --amberInk:#e0ac6e;  --amber: #d1934f;
+  --yellowFill:#3a3320; --yellowInk:#dcc373; --yellow: #c9ab55;
+  --mintFill: #1f3a30;  --mintInk: #8fd0b3;  --mint: #5f9e84;
+  --onMint: #eaf7f1;    --mintShadow: rgba(0,0,0,0.4);
+  --periFill: #232a45;  --periInk: #94a6dd;
+  --dayHead: #2a2038;
+
+  --fur: #5a4568;  --furDark: #4a3757;  --face: #e7dcf0;
+  --mouth: #c98fa8; --blush: #8f5a76;   --vine: #5f9e84;
+  --bib: #4a6a80;   --clock: #a086c9;
+
+  --parentM: #b07a45; --parentA: #6a7cb0;
+
+  --scrubFill: linear-gradient(90deg, #3a2338, #c07690);
+  --scrubInk: #7a6f92;
+}
+
+/* ---------- primitives ---------- */
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+.msr {
+  font-family: 'Material Symbols Rounded';
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* card — every content group on every screen */
+.card {
+  background: var(--card);
+  border-radius: var(--r-card-sm);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-card);
+}
+.card-lg { border-radius: var(--r-card-lg); padding: 16px; }
+
+/* chip / pill — shortcuts, totals, type tags. 40px tall when tappable,
+   auto when it is a read-only tag. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--chip);
+  color: var(--ink);
+  font: 700 var(--fs-13) / 1 var(--font-body);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.chip:hover { filter: brightness(0.97); }
+.chip:active { filter: brightness(0.93); }
+.chip[aria-pressed="true"] { background: var(--roseFill); color: var(--roseInk); }
+.chip-tag { height: auto; padding: 4px 11px; font-size: var(--fs-12); cursor: default; }
+
+/* per-type tag colours */
+.tag-milk   { background: var(--roseFill);   color: var(--roseInk); }
+.tag-breast { background: var(--lilacFill);  color: var(--lilacInk); }
+.tag-formula{ background: var(--amberFill);  color: var(--amberInk); }
+.tag-pee    { background: var(--yellowFill); color: var(--yellowInk); }
+.tag-poop   { background: var(--mintFill);   color: var(--mintInk); }
+.tag-note   { background: var(--periFill);   color: var(--periInk); }
+.tag-volume { background: var(--lavFill);    color: var(--lavInk); }
+
+/* primary action — label and icon flush left, never centred */
+.btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 64px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--accent);
+  color: var(--onAccent);
+  font: 900 var(--fs-22) / 1 var(--font-body);
+  text-align: left;
+  box-shadow: var(--shadow-cta);
+  cursor: pointer;
+}
+.btn-primary:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
+
+/* the add button in the tab bar */
+.fab {
+  width: 72px;
+  height: 72px;
+  border: 0;
+  border-radius: 36px;
+  background: var(--accent);
+  color: var(--onAccent);
+  box-shadow: var(--shadow-fab);
+  cursor: pointer;
+}
+
+/* stepper button — 42px for start time, 32px for end time */
+.stepper {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 21px;
+  background: var(--chip);
+  color: var(--ink);
+  cursor: pointer;
+}
+.stepper-sm { width: 32px; height: 32px; border-radius: 16px; }
+
+/* the typed number in a time field: no box, one 3px underline */
+.time-input {
+  width: 2.1ch;
+  padding: 0 2px 3px;
+  border: 0;
+  border-bottom: 3px solid var(--chip);
+  background: none;
+  color: var(--ink);
+  font: 900 var(--fs-32) / 1 var(--font-body);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.time-input[data-active="true"] { border-bottom-color: var(--accent); }
+
+/* text input — note field, name field */
+.input {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--r-input);
+  background: var(--periFill);
+  color: var(--ink);
+  font: 400 var(--fs-16) / 1 var(--font-body);
+  box-sizing: border-box;
+}
+
+/* day table */
+.log-grid {
+  display: grid;
+  grid-template-columns: 38px 84px 1fr 70px 16px; /* date · time · milk · pee/poop · who */
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.log-row { padding: 9px 18px; background: var(--bg); border-bottom: 1px solid var(--hair); }
+.log-head { padding: 8px 18px; background: var(--card); font-size: var(--fs-10); color: var(--muted); }
+.log-date { font-size: var(--fs-12); color: var(--muted); }   /* only on the first row of a day */
+.log-time { font-size: var(--fs-15); }
+
+/* day separator in the recent list — deliberately unlike the time value */
+.day-sep {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 4px 6px;
+  font: 700 var(--fs-11) / 1 var(--font-body);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--periInk);
+}
+.day-sep-rule { flex: 1; height: 1px; background: var(--periInk); opacity: 0.28; }
+
+/* who logged it */
+.avatar {
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  color: #fff;
+  font: 700 var(--fs-10) / 1 var(--font-body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.avatar-m { background: var(--parentM); }
+.avatar-a { background: var(--parentA); }
+
+/* focus — never the browser default */
+:where(button, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* hide scrollbars on the horizontal strips and vertical lists */
+.scroll-hidden { scrollbar-width: none; -ms-overflow-style: none; }
+.scroll-hidden::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+/* ---------- mascot animation ---------- */
+@keyframes lianaBlink   { 0%,92%,100% { transform: scaleY(1); } 96% { transform: scaleY(0.12); } }
+@keyframes lianaBreathe { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-3px) scale(1.015); } }
+@keyframes lianaPop     { 0% { transform: scale(1); } 35% { transform: scale(1.13) rotate(-4deg); } 100% { transform: scale(1); } }
+@keyframes lianaSparkle { 0% { opacity: 0; transform: scale(0.4) rotate(-20deg); } 30% { opacity: 1; transform: scale(1) rotate(0); } 100% { opacity: 0; transform: scale(1.35) rotate(15deg); } }
+@keyframes lianaZ       { 0% { opacity: 0; transform: translate(0,0) scale(0.7); } 40% { opacity: 1; } 100% { opacity: 0; transform: translate(10px,-16px) scale(1.1); } }
+@keyframes lianaLeaf    { 0%,100% { transform: rotate(-6deg); } 50% { transform: rotate(8deg); } }

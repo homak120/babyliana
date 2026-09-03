@@ -32,16 +32,15 @@ the SQL in that file, fill `.env.local` from `.env.example`, import into Vercel,
 then install the PWA on your phone and leave it alone. That last step is the
 Q-004 test and it runs itself.
 
-**Phase 2 is running, in Claude Design.** The brief is committed at
-`.specify/memory/design/phase-2-brief.md` — self-contained, paste-ready, and the
-place to edit if the design pass needs re-running.
+**Phase 2 has come back.** The handoff is at
+`.specify/memory/design/handoff/` — prototype, tokens, icons and a full spec.
+**Read `.specify/memory/design/phase-2-reconciliation.md` first**: it was built
+from a brief predating D-019 and D-020, so its data shapes need remapping, and
+its unknown-minute marker was struck as a D-018 conflict.
 
-It has to come back with a clickable prototype, night and day surfaces, a
-palette checked dimmed, and comparable *alternatives* rather than one answer —
-D-007 says these get decided by tapping. It closes Q-001, Q-002, Q-007, Q-009.
-When it lands: screenshots into `.specify/memory/design/`, resolved decisions
-into `decisions.md` as a new D-entry, those four questions deleted from
-`open-questions.md`.
+Q-001, Q-002, Q-007 and Q-009 are answered *as proposals*. D-007 says they close
+by tapping the prototype at night on a phone, not by reading it. Until then they
+stay open.
 
 **No duration estimates.** The owner works with LLM tooling and they have been
 wrong every time; see `plan.md` § Two kinds of phase.
