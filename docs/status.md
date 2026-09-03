@@ -52,6 +52,12 @@ the `other` type list, the offline strategy, and the owner's review of
 **The bias from here is the shortest path to something usable at 3am.** Anything
 deferred sits under *Post-MVP* in `tasks.md` with a named trigger, not dropped.
 
+**The build is sliced** — `.specify/memory/build-slices.md`, ten slices, each
+ending with the app still working and a concrete "done when". The app is usable
+for real after S5; everything after that is breadth and read-back. S0 can start
+whenever Phase 4's remaining confirmations are out of the way, and honestly
+would not be harmed by starting first.
+
 **No duration estimates.** The owner works with LLM tooling and they have been
 wrong every time; see `plan.md` § Two kinds of phase.
 

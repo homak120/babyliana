@@ -1,0 +1,169 @@
+# Phase 6 build slices
+
+Sessions here are short and scattered — often twenty minutes, often late. These
+slices are sized and ordered so that **each one ends with the app still working**
+and something new demonstrable. None leaves a half-built thing that has to be
+held in your head until next time.
+
+Each slice names what it delivers and, more importantly, **how you know it is
+done** — a concrete test, not a feeling.
+
+Ordering principle: reach *"I could actually use this tonight"* as early as
+possible, then add breadth until the coverage checklist passes.
+
+---
+
+## S0 — Clear the decks
+
+D-012: the spike's application code goes before the build starts, so an
+evening's hacking cannot become the foundation.
+
+- Delete `src/App.tsx` and `src/App.css`
+- Keep the tap page on a `/spike` route as a smoke test — the one exception,
+  already in `tasks.md`
+- Run the three-table DDL from `event-model.md` § Schema (Postgres) in Supabase
+- RLS policies and the **Data API grant** on all three tables. Skipping the
+  grant returns empty results or a 401 with no useful error — see
+  `spike-spec.md`
+- Create one household id by hand, hard-code it in the client (D-022)
+- Insert one `devices` row for each phone
+
+**Done when:** `npm run build` passes, `/spike` still works, and `curl` against
+each of the three tables returns `[]` rather than an error.
+
+## S1 — Log a moment, locally
+
+No network. This is the whole write path, proven on one device.
+
+- IndexedDB store; TypeScript types matching the schema
+- The write path from `event-model.md` § Writing a timeslot: **generate both
+  UUIDs up front**, write the timeslot and its events as one local unit. The
+  naive insert-await-insert is what produces orphan timeslots
+- The add sheet's skeleton: opens with **no type selected**, the three-bubble
+  container, save disabled until a block exists (D-021)
+- The milk block: volume keypad, arbitrary integers, `?` for unknown, breast /
+  formula toggle
+- A plain unstyled list of what has been logged
+
+Because the sheet holds *N* blocks from the start, **a split feed works here for
+free** — `25(B) + 45(F)` is two milk blocks in one moment, which is exactly what
+D-019 says it is.
+
+**Done when:** log three feeds including one split and one with an unknown
+volume, reload the page, all three are still there and correct.
+
+## S2 — Make it shared
+
+- Push local writes to Supabase
+- **Full-refresh reconcile** on mount and on `visibilitychange` → visible
+- Realtime subscription as a latency optimisation on top
+
+**Done when:** log on the laptop and it appears on the phone within a second or
+two. Then the specific bug the spike found: background the phone, log twice on
+the laptop, foreground the phone — **the count must be right.** A green realtime
+light and a stale number is the failure this slice exists to prevent.
+
+## S3 — The home screen
+
+- Elapsed hero: time since the last feed, measured from `ended_at` when present
+  and `occurred_at` otherwise
+- Today's totals — feeds, mL, pee, poop
+- Recent list, newest first, with day separators
+- The mascot and its derived states (settled / awake / hungry / sleeping, plus
+  the *logged* flash). CSS as delivered in the handoff; Phase 7 refines it
+
+**Done when:** the screen matches `handoff/README.md` § Log, and the elapsed
+figure is correct against a known set of entries.
+
+## S4 — Diapers
+
+Drops into the block pattern S1 established.
+
+- Diaper block: `pee` and `poop` toggles, both allowed at once
+- Optional colour and consistency, revealed only when poop is on
+
+**Done when:** a pee, a poop, and both-in-one-change are all expressible, and
+skipping colour and consistency entirely is one tap fewer, not an error.
+
+## S5 — Time entry
+
+D-018 removed the `?`, which puts the whole weight here. **This is the slice
+that decides whether the app beats the pen**, so it is worth doing properly.
+
+- Steppers with hold-to-repeat (110ms, accelerating after ~1.5s)
+- Offset pills — `now`, then minutes back
+- Direct numeric entry
+- Optional end time, making the moment a period (D-020)
+- No natural-language parsing. It fails silently and the person using it is tired
+
+**Done when:** you can log a feed you gave at 04:10 while standing in the kitchen
+at 08:00, faster than writing it on paper. And log a sleep of 19:00–21:30.
+
+> **From here the app is usable for real.** Feeds, diapers, backdating, and the
+> recent list to check yourself. Everything after this is breadth and read-back.
+
+## S6 — Notes, and the `other` type
+
+The escape hatch. Without it the app is narrower than paper and the pen stays.
+
+- Free-text note on the moment and on each entry
+- The `other` block, with the secondary types behind it (D-010)
+
+**Done when:** the last item on the coverage checklist passes — something nobody
+anticipated has somewhere to go.
+
+## S7 — The day view
+
+- The table: date, time, milk, pee/poop, who — with **the date printed only on
+  the first row of a day** and inherited below, as the paper page does
+- The date strip
+
+**Done when:** you enter one full day from the photographed log and hold the
+phone next to the photo. Anything you cannot represent is a bug in the model,
+not in the view.
+
+## S8 — Edit and delete
+
+Mutable rows (D-003) — plain updates, real deletes, no correction events.
+
+- Swipe a row to reveal edit; the sheet reopens pre-filled
+- Editing a value leaves the rest of the moment intact — the paper log's
+  corrections strike a *value*, not a row
+- Deleting a moment takes its entries with it (`on delete cascade`)
+
+**Done when:** correct a volume without disturbing the diaper logged at the same
+moment, and delete a moment entirely.
+
+## S9 — Ready for the solo run
+
+- Name entry on first run — simplified, no pairing (D-022). Do not gate logging
+  on it: an unnamed device logging events is fine, a blocked parent is not
+- Theme by clock, not by a setting
+- Update strategy: check for a new service worker on `visibilitychange`, reload
+  silently only when no entry is in progress, never a modal
+- Offline check on the installed PWA
+
+**Done when:** installed on your phone, it opens and logs in airplane mode, and
+a deploy reaches it without reinstalling.
+
+---
+
+## Then: run the coverage checklist
+
+`coverage-requirement.md` is the acceptance test, and it is a real one: enter all
+seven photographed days. If any entry cannot be represented faithfully, the app
+is not ready — regardless of how good the parts that do work are.
+
+That is the gate into Phase 7, not a formality.
+
+## What is deliberately not here
+
+Pairing (D-022), duplicate detection (D-023), export and settings (D-024). Each
+has a trigger recorded in `docs/tasks.md` under *Post-MVP*.
+
+## Before building from the design
+
+Read `.specify/memory/design/phase-2-reconciliation.md`. The handoff is final on
+look and interaction, but its data shapes predate D-019 and D-020 and need
+remapping. The one place it reaches the interaction is the milk block: selecting
+between two halves of one feed becomes *add another bottle*.

@@ -85,35 +85,35 @@ The artifacts already exist — `event-model.md`, `spike-spec.md`, the design
 handoff and its reconciliation note. D-011 made spec a track, not a phase, and
 the track has been running. What is left is the slicing.
 
-- [ ] **CH** Slice the build so each session has a closeable scope
+- [x] **CH** Slice the build so each session has a closeable scope —
+      `.specify/memory/build-slices.md`
 - [ ] **H** Skim the artifacts once as a set, for contradictions between them
 
 ## Phase 6 — Build
 
-- [ ] **H** Delete the spike application code first — src/App.tsx, src/App.css,
-      and the spike_taps table (D-012). Moved here from Phase 3: it gates the
-      start of this phase, it is not a Phase 3 exit condition
-- [ ] **CC** Vertical slice: one event type, one device
-- [ ] **CC** Same event visible on a second device
-- [ ] **CC** Seed one household and hard-code its id. No pairing flow for MVP —
-      two phones, one baby, one household. See D-022
-- [ ] **CC** Feed events, including the two-component split
-- [ ] **CC** Diaper events, including colour and consistency
-- [ ] **CC** Time entry: defaults to now, quick offsets, picker, numeric entry
-      (D-018 — no precision marker, so this has to be fast instead)
-- [ ] **CC** Edit, correct, and delete via correction events
-- [ ] **CC** Free-text note on every event
-- [ ] **CC** Secondary types behind a "more" affordance
-- [ ] **CC** Derived views — time since last feed, daily totals, day list
-- [ ] **CC** Reconcile on resume — on `visibilitychange` to visible, re-fetch
-      from the server and merge by id. Without it a backgrounded phone shows a
-      confidently wrong count, which breaks "did she already feed her"
-- [ ] **CC** Update strategy — check for a new service worker when the app
-      becomes visible, and reload silently only when no entry is in progress.
-      Never a modal. Depends on the local layer: a reload is only free once the
-      write has already landed in IndexedDB. Same `visibilitychange` hook as
-      reconcile-on-resume, so build them together
-- [ ] **CC** Keep the spike page on a route as a smoke test
+Sliced in `.specify/memory/build-slices.md` — ten slices, each ending with the
+app still working and something new demonstrable, each with a concrete "done
+when". Read that first; this list is the checklist view of the same thing.
+
+- [ ] **S0** Clear the decks — delete spike app code (D-012), keep `/spike` as a
+      smoke test, run the DDL, RLS and grants, seed and hard-code one household
+- [ ] **S1** Log a moment locally — IndexedDB, the write path, the add sheet
+      skeleton, the milk block. Split feeds work here for free
+- [ ] **S2** Make it shared — push, full-refresh reconcile on mount and resume,
+      realtime on top. The stale-after-backgrounding bug is the test
+- [ ] **S3** The home screen — elapsed hero, totals, recent list, mascot states
+- [ ] **S4** Diapers — pee/poop, optional colour and consistency
+- [ ] **S5** Time entry — steppers, offsets, numeric, optional end time. **The
+      slice that decides whether the app beats the pen.** Usable for real after
+      this one
+- [ ] **S6** Notes and the `other` type — the escape hatch
+- [ ] **S7** The day view — the paper-shaped table, date printed once per day
+- [ ] **S8** Edit and delete — plain updates and real deletes (D-003), not
+      correction events
+- [ ] **S9** Ready for the solo run — name entry, theme by clock, update
+      strategy, offline check
+- [ ] **H** Run the coverage checklist: enter all seven photographed days. This
+      is the gate into Phase 7, not a formality
 
 ### Before reveal, not before MVP
 
