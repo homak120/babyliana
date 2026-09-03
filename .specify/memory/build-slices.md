@@ -18,15 +18,21 @@ possible, then add breadth until the coverage checklist passes.
 D-012: the spike's application code goes before the build starts, so an
 evening's hacking cannot become the foundation.
 
+**Owner, in the Supabase dashboard** — this is the only part of Phase 6 that
+cannot be delegated. The anon key cannot run DDL, and the database password is
+not something an agent should hold.
+
+1. Run `supabase/migrations/0001_initial_schema.sql` — drops the spike table,
+   creates the three tables, RLS, grants, realtime
+2. Edit the two device names in `0002_seed_household.sql`, then run it
+3. Hand back the `household_id` it returns
+
+**Then, agent side:**
+
 - Delete `src/App.tsx` and `src/App.css`
 - Keep the tap page on a `/spike` route as a smoke test — the one exception,
   already in `tasks.md`
-- Run the three-table DDL from `event-model.md` § Schema (Postgres) in Supabase
-- RLS policies and the **Data API grant** on all three tables. Skipping the
-  grant returns empty results or a 401 with no useful error — see
-  `spike-spec.md`
-- Create one household id by hand, hard-code it in the client (D-022)
-- Insert one `devices` row for each phone
+- Hard-code the household id (D-022)
 
 **Done when:** `npm run build` passes, `/spike` still works, and `curl` against
 each of the three tables returns `[]` rather than an error.
