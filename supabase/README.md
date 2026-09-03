@@ -26,8 +26,9 @@ One row in `baby` for Liana. It can go in through the REST API with the anon key
 rather than by hand — the app's own credentials are enough, since the policies
 allow it.
 
-Her id is then hard-coded in the client (D-022 — no pairing flow for MVP), so
-keep it somewhere you can find it.
+**Done, 2026-09-03.** Liana is `94c55231-e3dd-46d0-8567-fa8d0b90d809`, and that
+id is hard-coded in `src/config.ts` (D-022 — no pairing flow for MVP). The repo
+is where it is kept; there is nowhere else it needs to be.
 
 ## Device rows are not seeded
 
