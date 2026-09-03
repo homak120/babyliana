@@ -11,7 +11,13 @@ for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
   if (m) process.env[m[1]] = m[2]
 }
 
-const store = new Map<string, string>()
+// A FIXED id, not a random one. Every run previously minted a fresh UUID and
+// pushed a device row that cleanup never removed, so the production table
+// slowly filled with test devices — which is exactly what the owner then found.
+// Reusing one id makes re-runs idempotent, and updated_by marks it as script
+// litter rather than a real phone, which is what that column is for.
+const TEST_DEVICE = '00000000-0000-4000-8000-0000000d0d0d'
+const store = new Map<string, string>([['babyliana.device_id', TEST_DEVICE]])
 ;(globalThis as unknown as { localStorage: Storage }).localStorage = {
   getItem: (k: string) => store.get(k) ?? null,
   setItem: (k: string, v: string) => void store.set(k, v),
@@ -40,7 +46,9 @@ const made: string[] = [] // timeslot ids to clean up
 try {
   await ensureThisDevice()
   await sync()
-  check('device reached the server', !!(await sb.from('device').select('id').eq('id', localStorage.getItem('babyliana.device_id')!)).data?.length)
+  await sb.from('device').update({ updated_by: 'verify-s2' }).eq('id', TEST_DEVICE)
+  check('device reached the server',
+    !!(await sb.from('device').select('id').eq('id', TEST_DEVICE)).data?.length)
 
   // 1. push
   const m = await logMoment({
@@ -63,7 +71,7 @@ try {
   await sb.from('timeslot').insert({
     id: otherTs,
     baby_id: BABY_ID,
-    logged_by: localStorage.getItem('babyliana.device_id'),
+    logged_by: TEST_DEVICE,
     occurred_at: new Date().toISOString(),
   })
   await sb.from('event').insert({
@@ -100,9 +108,17 @@ try {
   const gone = await sb.from('timeslot').select('id').eq('id', pending.timeslot.id)
   check('a local delete reaches the server', gone.data?.length === 0)
 } finally {
+  // Timeslots first — device is `on delete restrict` and will refuse while any
+  // moment still points at it.
   for (const id of made) await sb.from('timeslot').delete().eq('id', id)
-  const left = await sb.from('timeslot').select('id').eq('baby_id', BABY_ID)
-  console.log(`\n  cleanup: ${left.data?.length ?? '?'} timeslots left on the server`)
+  await sb.from('device').delete().eq('id', TEST_DEVICE)
+  const [ts, dev] = await Promise.all([
+    sb.from('timeslot').select('id').eq('baby_id', BABY_ID),
+    sb.from('device').select('id').eq('updated_by', 'verify-s2'),
+  ])
+  console.log(
+    `\n  cleanup: ${ts.data?.length ?? '?'} timeslots, ${dev.data?.length ?? '?'} test devices left`,
+  )
 }
 
 console.log(failures === 0 ? '  all checks passed' : `  ${failures} FAILED`)
