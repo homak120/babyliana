@@ -281,6 +281,36 @@ needs revisiting if that phase opens. Real isolation at that point means
 Supabase Auth, a JWT claim, or separate projects per family — not a
 `baby_id` filter that anyone holding the anon key could simply omit.
 
+## Where each fact lives
+
+Three places, and the boundary between them matters more than it looks.
+
+| | Holds | Why there |
+| --- | --- | --- |
+| **`localStorage`** | The device id. Nothing else | The one fact that is genuinely per-device and must *not* sync — it is what distinguishes this phone from the other |
+| **IndexedDB** | A full replica: baby, devices, timeslots, events | Everything the UI reads, available offline |
+| **Postgres** | The same rows, shared | What makes the other phone able to see them |
+
+**The baby id is hard-coded in the bundle** for MVP (D-022), not stored. A copy
+in `localStorage` could disagree with the constant. When pairing arrives
+post-MVP, `localStorage` becomes its right home — it will come from a join
+rather than a constant.
+
+**Names are not in `localStorage`.** The baby's name and each device's name live
+in their tables, because they have to reach the *other* phone and `localStorage`
+cannot sync. That is the whole reason `device` is a table rather than local
+state — see `.specify/memory/baby-and-devices.md`. They are readable offline via
+the IndexedDB replica, like everything else; one mechanism, not two.
+
+**Do not use `localStorage` to decide whether a row needs inserting.** It is the
+same trap as first-run detection: if it claims a row exists and the row does
+not — wrong project, a reset, eviction — the insert is skipped and the failure
+is silent. The app makes exactly one write-or-not decision, its own `device`
+row, and it answers that by upserting rather than asking.
+
+**The app never inserts the `baby` row.** It is created once through the API and
+only ever read. If it is missing that is a setup error and should fail loudly.
+
 ## Writing a timeslot
 
 The client generates **both** UUIDs up front, writes the timeslot and its events
