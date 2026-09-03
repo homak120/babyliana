@@ -11,7 +11,13 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt', not 'autoUpdate' — despite there being no prompt.
+      //
+      // autoUpdate activates a new worker the moment it lands, which can swap
+      // the code under a half-filled sheet. We want the same silent update, but
+      // on our terms: applied when the app becomes visible and nothing is being
+      // entered. See src/updates.ts.
+      registerType: 'prompt',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'BabyLiana',

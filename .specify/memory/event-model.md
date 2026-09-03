@@ -287,7 +287,7 @@ Three places, and the boundary between them matters more than it looks.
 
 | | Holds | Why there |
 | --- | --- | --- |
-| **`localStorage`** | The device id. Nothing else | The one fact that is genuinely per-device and must *not* sync — it is what distinguishes this phone from the other |
+| **`localStorage`** | The device id, and whether the welcome has been shown | The two facts that are genuinely per-device and must *not* sync |
 | **IndexedDB** | A full replica: baby, devices, timeslots, events | Everything the UI reads, available offline |
 | **Postgres** | The same rows, shared | What makes the other phone able to see them |
 
@@ -295,6 +295,13 @@ Three places, and the boundary between them matters more than it looks.
 in `localStorage` could disagree with the constant. When pairing arrives
 post-MVP, `localStorage` becomes its right home — it will come from a join
 rather than a constant.
+
+**One amendment, made in S9.** The rule was "the device id and nothing else".
+Dismissing the welcome had to join it: naming your phone should not dismiss the
+welcome on the other one, and a null name alone cannot distinguish *not asked
+yet* from *asked and declined*. The difference is a form reappearing at 3am.
+The rule is therefore "facts that are per-device and must not sync", which the
+device id was only ever an instance of.
 
 **Names are not in `localStorage`.** The baby's name and each device's name live
 in their tables, because they have to reach the *other* phone and `localStorage`

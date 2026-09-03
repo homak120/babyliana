@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
+import { hasBeenWelcomed } from './device-id'
 import { DayScreen } from './day/DayScreen'
 import { Icon } from './log/Icon'
 import { LogScreen } from './log/LogScreen'
+import { Welcome } from './log/Welcome'
 import { ensureThisDevice } from './moments'
 import SpikePage from './spike/SpikePage'
 import { startSync } from './sync'
+import { registerUpdates } from './updates'
 import './tokens.css'
 import './log/log.css'
 import './day/day.css'
@@ -18,17 +21,21 @@ type Screen = 'log' | 'day'
 export default function App() {
   const [ready, setReady] = useState(false)
   const [screen, setScreen] = useState<Screen>('log')
+  const [welcomed, setWelcomed] = useState(true)
 
   useEffect(() => {
     // Upsert, never a first-run check — see db.ensureDevice.
     ensureThisDevice().then(() => {
+      setWelcomed(hasBeenWelcomed())
       setReady(true)
       startSync()
+      registerUpdates()
     })
   }, [])
 
   if (window.location.pathname.startsWith('/spike')) return <SpikePage />
   if (!ready) return null
+  if (!welcomed) return <Welcome onDone={() => setWelcomed(true)} />
 
   return (
     <>

@@ -15,3 +15,16 @@ export function deviceId(): string {
   }
   return id
 }
+
+// --- welcome dismissal ------------------------------------------------------
+//
+// The second and last thing in localStorage. It is not data: it is a per-device
+// UI fact that must NOT sync — naming your phone should not dismiss the welcome
+// on your wife's. Recorded separately from the device name so that *skipping*
+// is remembered too; a null name alone cannot tell "not asked yet" from "asked
+// and declined", and the difference is a form reappearing at 3am.
+
+const WELCOMED_KEY = 'babyliana.welcomed'
+
+export const hasBeenWelcomed = () => localStorage.getItem(WELCOMED_KEY) === '1'
+export const markWelcomed = () => localStorage.setItem(WELCOMED_KEY, '1')

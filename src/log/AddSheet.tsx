@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { logMoment, updateMoment } from '../moments'
 import type { Moment } from '../types'
+import { setEntryInProgress } from '../updates'
 import {
   blocksFromMoment,
   canSave,
@@ -62,6 +63,13 @@ export function AddSheet({
     editing?.timeslot.ended_at ? new Date(editing.timeslot.ended_at) : null,
   )
   const [note, setNote] = useState(editing?.timeslot.note ?? '')
+
+  // While this sheet is open a service-worker update must not reload the page
+  // and discard what is being typed.
+  useEffect(() => {
+    setEntryInProgress(true)
+    return () => setEntryInProgress(false)
+  }, [])
 
   function add(type: BlockType) {
     setBlocks((b) => [

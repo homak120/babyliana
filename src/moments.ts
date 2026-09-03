@@ -29,6 +29,15 @@ export async function ensureThisDevice() {
   }
 }
 
+/** Sets this device's name. Explicit — the startup upsert never touches it. */
+export async function renameThisDevice(name: string) {
+  const id = deviceId()
+  const existing = (await db.getDevices()).find((d) => d.id === id)
+  if (!existing) return
+  await db.putDevice({ ...existing, name: name.trim() || null, updated_at: now() })
+  await db.enqueue([{ table: 'device', rowId: id, op: 'put' }])
+}
+
 export type NewMoment = {
   occurredAt?: Date
   endedAt?: Date | null

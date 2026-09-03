@@ -112,8 +112,8 @@ when". Read that first; this list is the checklist view of the same thing.
       date strip, and the tab bar now that there are two screens
 - [x] **S8** Edit and delete — swipe reveals both; delete takes the whole moment
       with an undo toast (D-025). Plain updates, real deletes (D-003)
-- [ ] **S9** Ready for the solo run — name entry, theme by clock, update
-      strategy, offline check
+- [x] **S9** Ready for the solo run — name entry (skippable), theme by clock,
+      update strategy. **Offline and deploy checks are yours, on the phone**
 - [ ] **H** Run the coverage checklist: enter all seven photographed days. This
       is the gate into Phase 7, not a formality
 

@@ -130,6 +130,10 @@ export async function eventIdsFor(timeslotId: string): Promise<string[]> {
   return d.getAllKeysFromIndex('event', 'timeslot_id', timeslotId)
 }
 
+export async function putDevice(device: Device) {
+  await (await db()).put('device', device)
+}
+
 export async function getDevices(): Promise<Device[]> {
   return (await db()).getAll('device')
 }
