@@ -10,6 +10,7 @@ import {
   type MilkDraft,
 } from './drafts'
 import { DiaperBlock } from './DiaperBlock'
+import { Icon } from './Icon'
 import { MilkBlock } from './MilkBlock'
 
 // The sheet is one moment (D-019, D-021). It opens with NO type selected and
@@ -64,7 +65,7 @@ export function AddSheet({ onClose, onSaved }: { onClose: () => void; onSaved: (
       <header className="sheet-head">
         <h2>log a moment</h2>
         <button type="button" className="x" onClick={onClose} aria-label="close">
-          ×
+          <Icon name="close" size={20} />
         </button>
       </header>
 
@@ -97,6 +98,7 @@ export function AddSheet({ onClose, onSaved }: { onClose: () => void; onSaved: (
       </div>
 
       <button type="button" className="save" disabled={!ready} onClick={save}>
+        <Icon name="check_circle" size={24} />
         save
       </button>
     </div>

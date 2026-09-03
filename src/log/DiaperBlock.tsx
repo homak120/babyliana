@@ -1,4 +1,5 @@
 import type { PoopColour, PoopConsistency } from '../types'
+import { Icon } from './Icon'
 import type { DiaperDraft } from './drafts'
 
 // One change. Both flags may be true at once — the paper log's row carries a
@@ -24,9 +25,12 @@ export function DiaperBlock({
   return (
     <section className="block diaper">
       <header>
-        <span>diaper</span>
+        <span>
+          <Icon name="water_drop" size={17} />
+          diaper
+        </span>
         <button type="button" className="x" onClick={onRemove} aria-label="remove diaper">
-          ×
+          <Icon name="close" size={18} />
         </button>
       </header>
 

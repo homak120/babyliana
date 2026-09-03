@@ -1,4 +1,5 @@
 import type { MilkDraft } from './drafts'
+import { Icon } from './Icon'
 
 // One bottle. A split feed is two of these in one moment (D-019) — the sheet
 // adds another block rather than this one growing a second half.
@@ -35,9 +36,12 @@ export function MilkBlock({
   return (
     <section className="block">
       <header>
-        <span>milk</span>
+        <span>
+          <Icon name="local_drink" size={17} />
+          milk
+        </span>
         <button type="button" className="x" onClick={onRemove} aria-label="remove milk">
-          ×
+          <Icon name="close" size={18} />
         </button>
       </header>
 

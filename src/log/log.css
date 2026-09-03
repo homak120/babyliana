@@ -40,7 +40,7 @@ body {
 }
 
 .elapsed {
-  font-size: 3.5rem;
+  font-size: 4rem;
   font-weight: 900;
   line-height: 1;
   margin: 0.125rem 0 0.5rem;
@@ -92,12 +92,25 @@ body {
 
 /* Deliberately unlike the time values, so the eye can find day boundaries. */
 .day-sep {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 0.6875rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--periInk);
   margin: 1rem 0 0.25rem;
+}
+
+/* The rule fills the remaining width, so the eye finds day boundaries without
+   reading them — deliberately unlike the time values. */
+.day-sep::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.28;
 }
 
 .row {
@@ -302,3 +315,15 @@ body {
 .pill.c-green.on { background: var(--mintFill); color: var(--mintInk); }
 .pill.c-brown.on { background: var(--amberFill); color: var(--amberInk); }
 .pill.c-dark.on { background: var(--ink); color: var(--bg); }
+
+.icon {
+  font-family: 'Material Symbols Rounded';
+  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+  line-height: 1;
+  vertical-align: -0.15em;
+}
+
+.statetag { display: inline-flex; align-items: center; gap: 0.25rem; }
+.block header span:first-child { display: inline-flex; align-items: center; gap: 0.375rem; }
+.save { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
+.fab { display: grid; place-items: center; }

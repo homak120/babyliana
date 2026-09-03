@@ -13,14 +13,16 @@ import { getMoments } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
 import type { Moment } from '../types'
 import { AddSheet } from './AddSheet'
+import { Icon } from './Icon'
 import { Mascot } from './Mascot'
 
-const WORD: Record<MascotState, string> = {
-  settled: 'settled',
-  awake: 'awake',
-  hungry: 'hungry',
-  sleeping: 'sleeping',
-  logged: 'logged',
+// Icon per state, exactly as the handoff pairs them.
+const STATE: Record<MascotState, { word: string; icon: string }> = {
+  settled: { word: 'settled', icon: 'spa' },
+  awake: { word: 'awake', icon: 'visibility' },
+  hungry: { word: 'hungry', icon: 'local_drink' },
+  sleeping: { word: 'sleeping', icon: 'bedtime' },
+  logged: { word: 'logged', icon: 'auto_awesome' },
 }
 
 function feedLabel(m: Moment) {
@@ -80,7 +82,9 @@ export function LogScreen() {
   return (
     <main className="log">
       <div className="statusrow">
-        <span>{time(now.toISOString())}</span>
+        <span>
+          <Icon name="schedule" size={14} /> {time(now.toISOString())}
+        </span>
         <span className={`sync ${sync_.state}`}>{sync_.state}</span>
       </div>
 
@@ -89,7 +93,10 @@ export function LogScreen() {
         <div>
           <p className="kicker">since last feed</p>
           <p className="elapsed">{formatElapsed(since)}</p>
-          <span className={`statetag ${state}`}>{WORD[state]}</span>
+          <span className={`statetag ${state}`}>
+            <Icon name={STATE[state].icon} size={16} />
+            {STATE[state].word}
+          </span>
         </div>
       </section>
 
@@ -129,7 +136,7 @@ export function LogScreen() {
       </ul>
 
       <button type="button" className="fab" onClick={() => setSheet(true)} aria-label="log">
-        +
+        <Icon name="add" size={30} />
       </button>
 
       {sheet && (

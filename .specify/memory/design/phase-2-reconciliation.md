@@ -35,6 +35,26 @@ D-019 that is two feed entries in the same moment, so the affordance is closer t
 *add another bottle* than *edit the second half*. Everything else is invisible to
 the user.
 
+## What is built vs what is still deferred
+
+The handoff says colours, type sizes, radii, spacing and copy are final and
+should be matched closely, so gaps are worth naming rather than leaving to be
+noticed.
+
+Built and matched: tokens, both themes by clock, the mascot as the handoff's own
+CSS composition, the elapsed hero, totals tags, the recent list with day
+separators, Material Symbols throughout, the FAB and the add sheet's blocks.
+
+Deferred by slicing, not oversight — each lands where it has something to be:
+
+| Missing | Lands in | Why not sooner |
+| --- | --- | --- |
+| Tab bar (log / day) | S7 | Nothing to navigate to until the day view exists |
+| `who` on each row, parent avatars | S9 | Needs device names, which the welcome screen sets |
+| The time card in the sheet | S5 | Its own slice, and the one that decides whether this beats the pen |
+| Row swipe to edit / delete | S8 | |
+| Period picker, cards and timeline day views | post-MVP | Alternatives the handoff offers, not the default |
+
 ## Delete is missing from the design
 
 The handoff specifies swipe-to-edit as a single 88px action and does not mention
