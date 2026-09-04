@@ -20,11 +20,13 @@ const dayPill = (d: Date) =>
 
 /** How long a deleted moment is held before it actually goes (D-025). */
 const UNDO_MS = 5000
+const ALL = 'all' as const
 
 export function DayScreen() {
   const [moments, setMoments] = useState<Moment[]>([])
   const [devices, setDevices] = useState<Device[]>([])
-  const [day, setDay] = useState<Date | null>(null)
+  // null means "the most recent day with anything in it"; ALL means every day.
+  const [day, setDay] = useState<Date | null | typeof ALL>(null)
   const [editing, setEditing] = useState<Moment | null>(null)
 
   // The moment is hidden at once and actually deleted when the toast expires.
@@ -64,10 +66,11 @@ export function DayScreen() {
   useEffect(() => subscribe(refresh), [refresh])
 
   const days = daysWithEntries(moments)
-  const selected = day ?? days[0] ?? new Date()
+  const showingAll = day === ALL
+  const selected = showingAll ? new Date() : (day ?? days[0] ?? new Date())
   const forDay = chronological(
     moments
-      .filter((m) => sameDay(m.timeslot.occurred_at, selected))
+      .filter((m) => showingAll || sameDay(m.timeslot.occurred_at, selected))
       .filter((m) => m.timeslot.id !== undo?.timeslot.id),
   )
   const totals = totalsFor(moments, selected)
@@ -76,11 +79,18 @@ export function DayScreen() {
   return (
     <main className="day">
       <div className="datestrip">
+        <button
+          type="button"
+          className={`daypill ${day === ALL ? 'on' : ''}`}
+          onClick={() => setDay(ALL)}
+        >
+          all days
+        </button>
         {(days.length ? days : [new Date()]).map((d) => (
           <button
             type="button"
             key={+d}
-            className={`daypill ${+d === +selected ? 'on' : ''}`}
+            className={`daypill ${!showingAll && +d === +selected ? 'on' : ''}`}
             onClick={() => setDay(d)}
           >
             {dayPill(d)}
@@ -88,7 +98,7 @@ export function DayScreen() {
         ))}
       </div>
 
-      <p className="daylabel">{dayPill(selected)}</p>
+      <p className="daylabel">{showingAll ? 'all days' : dayPill(selected)}</p>
 
       <div className="totals">
         <span className="tag rose"><Icon name="local_drink" size={14} /> {totals.feeds}</span>
@@ -117,6 +127,7 @@ export function DayScreen() {
             moment={m}
             previous={forDay[i - 1]}
             name={nameFor(m.timeslot.logged_by)}
+            allDeviceIds={devices.map((d) => d.id)}
             onEdit={() => setEditing(m)}
             onDelete={() => {
               setUndo(m)

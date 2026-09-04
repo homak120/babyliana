@@ -10,6 +10,7 @@ import {
   type MascotState,
 } from '../derive'
 import { getDevices } from '../db'
+import { avatarClass } from '../day/cells'
 import { getDeviceId } from '../device-id'
 import { getMoments, renameThisDevice } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
@@ -133,8 +134,8 @@ export function LogScreen() {
           {time(now.toISOString())}
         </span>
         <span className="whos">
-          {devices.filter((d) => d.name).map((d, i) => (
-            <i key={d.id} className={`avatar ${i % 2 ? 'b' : 'a'}`}>
+          {devices.filter((d) => d.name).map((d) => (
+            <i key={d.id} className={avatarClass(d.id, devices.map((x) => x.id))}>
               {d.name!.charAt(0).toUpperCase()}
             </i>
           ))}
@@ -228,7 +229,11 @@ export function LogScreen() {
                 </span>
                 {(() => {
                   const who = devices.find((d) => d.id === m.timeslot.logged_by)?.name
-                  return who ? <i className="avatar a">{who.charAt(0).toUpperCase()}</i> : null
+                  return who ? (
+                    <i className={avatarClass(m.timeslot.logged_by, devices.map((d) => d.id))}>
+                      {who.charAt(0).toUpperCase()}
+                    </i>
+                  ) : null
                 })()}
               </div>
               {m.timeslot.note && (

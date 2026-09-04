@@ -106,7 +106,7 @@ check('day at 09:00', themeFor(new Date(2026, 8, 3, 9)) === 'day')
     ...classesIn('src/log/log.css'),
     ...classesIn('src/day/day.css'),
   ])
-  const ALLOWED = new Set(['avatar', 'day-sep']) // extended deliberately, not redefined
+  const ALLOWED = new Set(['day-sep']) // extended deliberately, not redefined
   const clash = [...mine].filter((c) => design.has(c) && !ALLOWED.has(c))
   check('no class redefines one from tokens.css', clash.length === 0, clash.join(', '))
 }

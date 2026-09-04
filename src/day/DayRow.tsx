@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Icon } from '../log/Icon'
 import type { Moment } from '../types'
-import { dateCell, diaperParts, initialOf, milkCell, otherCell, timeCell } from './cells'
+import { avatarClass, dateCell, diaperParts, initialOf, milkCell, otherCell, timeCell } from './cells'
 
 /** Two 88px actions, so an open row sits at 176. */
 const ACTIONS_W = 176
@@ -17,11 +17,12 @@ const SNAP_AT = 40
 const ENGAGE_AT = 8
 
 export function DayRow({
-  moment, previous, name, onEdit, onDelete,
+  moment, previous, name, allDeviceIds, onEdit, onDelete,
 }: {
   moment: Moment
   previous: Moment | undefined
   name: string | null
+  allDeviceIds: string[]
   onEdit: () => void
   onDelete: () => void
 }) {
@@ -91,7 +92,11 @@ export function DayRow({
           {diaper.poop && <em className="tpoop">{diaper.poop}</em>}
           {rest && <em className="trest">{rest}</em>}
         </span>
-        <span className="twho">{initial && <i className="avatar">{initial}</i>}</span>
+        <span className="twho">
+          {initial && (
+            <i className={avatarClass(moment.timeslot.logged_by, allDeviceIds)}>{initial}</i>
+          )}
+        </span>
       </div>
 
       {moment.timeslot.note && (
