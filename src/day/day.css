@@ -105,7 +105,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 10px 18px calc(22px + env(safe-area-inset-bottom));
+  /* max(), not calc(). The design's 22px is the gap it wants above the screen
+     edge; the home indicator already claims 34pt of that. Adding them stacked
+     two paddings and pushed the icons ~22pt further up than intended. */
+  padding: 10px 18px max(22px, env(safe-area-inset-bottom));
   background: var(--bg);
 }
 

@@ -15,6 +15,75 @@ const SNAP_AT = 40
 
 type Line = { t: string; detail: string; bad?: boolean }
 
+/**
+ * What the tab bar actually has to work with on this device.
+ *
+ * The owner's day screen shows ~104pt below the FAB where 56 is expected, and
+ * it is not reproducible in any desktop browser — safe-area insets are 0 there.
+ * Rather than guess at iOS a fifth time, this reads the numbers off the phone.
+ */
+function Viewport() {
+  const probe = useRef<HTMLDivElement>(null)
+  const [v, setV] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    const read = () => {
+      const cs = probe.current ? getComputedStyle(probe.current) : null
+      const nav = document.querySelector('nav.tabs')
+      setV({
+        'screen': `${screen.width} x ${screen.height}`,
+        'window.inner': `${innerWidth} x ${innerHeight}`,
+        'visualViewport': visualViewport ? `${Math.round(visualViewport.width)} x ${Math.round(visualViewport.height)}` : 'n/a',
+        'documentElement': `${document.documentElement.clientWidth} x ${document.documentElement.clientHeight}`,
+        'inset top': cs?.paddingTop ?? '?',
+        'inset right': cs?.paddingRight ?? '?',
+        'inset bottom': cs?.paddingBottom ?? '?',
+        'inset left': cs?.paddingLeft ?? '?',
+        'devicePixelRatio': String(devicePixelRatio),
+        'nav bottom vs viewport': nav
+          ? `${Math.round(nav.getBoundingClientRect().bottom)} / ${innerHeight}`
+          : 'nav not on this page',
+      })
+    }
+    read()
+    addEventListener('resize', read)
+    visualViewport?.addEventListener('resize', read)
+    return () => {
+      removeEventListener('resize', read)
+      visualViewport?.removeEventListener('resize', read)
+    }
+  }, [])
+
+  return (
+    <>
+      {/* Its padding *is* the four insets; reading it back is the only way to
+          see what env() actually resolves to on the device. */}
+      <div
+        ref={probe}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: 0,
+          height: 0,
+          paddingTop: 'env(safe-area-inset-top)',
+          paddingRight: 'env(safe-area-inset-right)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+          paddingLeft: 'env(safe-area-inset-left)',
+          pointerEvents: 'none',
+          visibility: 'hidden',
+        }}
+      />
+      <h2 style={{ font: '700 17px/1.3 system-ui', margin: '1.5rem 0 0.5rem' }}>viewport</h2>
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        {Object.entries(v).map(([k, val]) => (
+          <li key={k}><b>{k}</b> {val}</li>
+        ))}
+      </ul>
+    </>
+  )
+}
+
 export default function TouchProbe() {
   const [lines, setLines] = useState<Line[]>([])
   const [verdict, setVerdict] = useState<string | null>(null)
@@ -147,6 +216,8 @@ export default function TouchProbe() {
           </li>
         ))}
       </ul>
+
+      <Viewport />
 
       <p style={{ marginTop: '1.5rem', color: '#666' }}>
         build {__BUILD_TIME__} · standalone {String(

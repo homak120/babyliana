@@ -44,39 +44,32 @@ them before the coverage run reports back — it may move what they contain.
 
 ## In flight
 
-**Uncommitted: the second design handoff, the mascot artwork, and the delete
-confirm sheet.**
+**Uncommitted: a partial fix and a diagnostic for the tab bar's bottom gap.**
 
-**Docs.** `.specify/memory/design/handoff/` replaced wholesale; `tokens.css` is
-byte-identical, so no colour, type, radius or motion moved. Four changes, listed
-in `phase-2-reconciliation.md`, which also carries a fidelity-gap table — most of
-it now struck through, since the gaps were closed in this pass.
+The owner reports the day screen sitting further off the bottom edge than the
+home screen. Measured from his own screenshot with
+`scripts/ios/measure-screenshot.mts`:
 
-**Images.** The mascot is supplied artwork now; `Mascot.tsx` no longer draws her
-in CSS. Four states plus a welcome image, WebP with a PNG fallback, from
-`src/assets/mascot/`. The z marks are painted into the sleeping art, so the CSS
-overlay was removed rather than doubled. App icons rebuilt from the handoff's
-1024 — note the icon is the **plush**, not the character.
+- FAB diameter **71pt**, so he is on the current build.
+- FAB centre 704.8pt, paw centre 705.5pt — **same line**, so the earlier
+  raised-FAB fix did land.
+- **103.7pt below the FAB**, where 56 is expected (22px padding + a 34pt home
+  indicator). Roughly 48pt unaccounted for.
 
-The precache went **down**: 1266 KiB before any of this, 874 KiB now, despite
-adding five images. WebP is 84 KB for all five; the PNG fallbacks and the 1024
-icon are deployed but excluded from the offline bundle via `globIgnores`, since
-every browser this runs on takes the WebP and install happens online.
+Driven in Chromium at 390×844 the two screens are **byte-identical and flush** —
+same nav rect, same padding, no horizontal overflow — so the cause is
+environmental and only exists on the device. Do not chase it in a desktop
+browser.
 
-**Q-012 closed, in the design's favour.** The undo toast is gone; delete now
-opens a confirm sheet naming the row back ("9/4 · 03:31 · 61(F)"). D-025 records
-why the original reasoning lost: D-003 is a hard delete with no tombstone that
-syncs to the other phone, so the check belongs before the action. `keep it` is
-the wider button.
+Half of it is now fixed: the nav used `calc(22px + env(safe-area-inset-bottom))`,
+which stacks the design's intended edge gap on top of the home indicator that
+already occupies it. That is `max(22px, …)` now, worth ~22pt.
 
-**Fidelity gaps closed in the same pass:** snap threshold 40 → 60, home note
-indent 4rem → 130px, a `today` preset, the apply button reads "apply · 7 days",
-and the picked range squares its inner edges to read as one bar. The day table's
-pee/poop column was deliberately **not** changed to the spec's 70px — it cannot
-hold "poop (brown soft)".
-
-179 checks pass, including new browser coverage for the confirm sheet. Verified
-on the Simulator against real iOS.
+**The rest is unexplained and needs a reading from the phone.** `/touch` now
+prints `screen`, `window.inner`, `visualViewport`, `documentElement`, the four
+resolved `env(safe-area-inset-*)` values and the nav's own bottom against
+`innerHeight`. One screenshot of that page settles it. Do not guess a fifth iOS
+fix without it — the last four cost a round trip each.
 
 ## Open threads
 
