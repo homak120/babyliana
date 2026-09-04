@@ -44,7 +44,7 @@ export function Welcome({ onDone }: { onDone: () => void }) {
         call you?
       </h1>
       <p className="sub">
-        your name marks every entry you log, so liana&rsquo;s other grown-ups know who did
+        your name marks every entry you log, so Liana&rsquo;s other grown-ups know who did
         what.
       </p>
 

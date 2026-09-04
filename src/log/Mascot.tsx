@@ -24,7 +24,7 @@ export function Mascot({ state, size = 100 }: { state: MascotState; size?: numbe
     <div
       className="mascot"
       style={{ width: px(100), height: px(96), animation }}
-      aria-label={`liana is ${state}`}
+      aria-label={`Liana is ${state}`}
       role="img"
     >
       <i className="vine" style={{ left: px(44), top: px(-8), width: px(9), height: px(16) }} />
