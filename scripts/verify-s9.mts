@@ -12,8 +12,8 @@ const store = new Map<string, string>()
   clear: () => store.clear(), key: () => null, length: 0,
 } as Storage
 
-const { deviceId, hasBeenWelcomed, markWelcomed } = await import('../src/device-id.ts')
-const { ensureThisDevice, renameThisDevice } = await import('../src/moments.ts')
+const { getDeviceId } = await import('../src/device-id.ts')
+const { createThisDevice, renameThisDevice } = await import('../src/moments.ts')
 const db = await import('../src/db.ts')
 
 let failures = 0
@@ -22,38 +22,24 @@ const check = (label: string, ok: boolean, detail = '') => {
   if (!ok) failures++
 }
 
-// --- the welcome ------------------------------------------------------------
-check('a fresh install has not been welcomed', !hasBeenWelcomed())
+// --- nothing exists until a name is submitted -----------------------------
+// Merely opening the app used to mint a device id and insert a row, so anyone
+// who looked at the URL left a phantom identity behind.
+check('a fresh install has no device id', getDeviceId() === null)
+check('and no device row', (await db.getDevices()).length === 0)
 
-await ensureThisDevice()
-const fresh = (await db.getDevices())[0]
-check('the device row exists before any name is given', !!fresh && fresh.name === null)
-
-// skipping is a first-class outcome, not a non-answer
-markWelcomed()
-check('skipping is remembered, so the form does not reappear', hasBeenWelcomed())
-check('and the device is still unnamed, which is allowed',
-  (await db.getDevices())[0].name === null)
-
-// a null name alone could not have told these apart
-check('"asked and declined" is distinguishable from "not asked yet"',
-  hasBeenWelcomed() && (await db.getDevices())[0].name === null)
-
-await renameThisDevice('  Mona  ')
-const named = (await db.getDevices())[0]
-check('a name is trimmed when set', named.name === 'Mona', String(named.name))
-check('naming queues a push, so the other phone can resolve the initial',
-  (await db.outbox()).some((i) => i.table === 'device' && i.rowId === deviceId()))
-
-await renameThisDevice('   ')
-check('clearing the name stores null rather than blank',
-  (await db.getDevices())[0].name === null)
+await createThisDevice('  Mona  ')
+check('submitting a name creates the id', getDeviceId() !== null)
+check('and exactly one row', (await db.getDevices()).length === 1)
+check('the name is trimmed', (await db.getDevices())[0].name === 'Mona')
+check('the id is what says setup is done — no separate flag to drift',
+  getDeviceId() === (await db.getDevices())[0].id)
+check('creating queues a push', (await db.outbox()).some((i) => i.table === 'device'))
 
 // --- a name has to be changeable after first run ---------------------------
 // Without this, the name set (or skipped) on first run was permanent unless
 // storage was cleared by hand — the settings screen that would hold it is
 // deferred, and this is the one thing in it that is not optional.
-await renameThisDevice('Mona')
 await renameThisDevice('Ada')
 check('a name can be changed after it is first set',
   (await db.getDevices())[0].name === 'Ada')

@@ -14,7 +14,7 @@ import type { Block } from '../src/log/drafts.ts'
 const { canSave, newDiaper, newMilk, toEntry, blockIsEmpty } = await import(
   '../src/log/drafts.ts'
 )
-const { ensureThisDevice, logMoment, getMoments } = await import('../src/moments.ts')
+const { createThisDevice, logMoment, getMoments } = await import('../src/moments.ts')
 
 let failures = 0
 const check = (label: string, ok: boolean, detail = '') => {
@@ -59,7 +59,7 @@ check('skipping colour and consistency is valid, not an error',
   bare.poop === true && bare.poop_colour === null && bare.poop_consistency === null)
 
 // --- a moment is a moment ---------------------------------------------------
-await ensureThisDevice()
+await createThisDevice('Test')
 const m = await logMoment({
   entries: [toEntry(milk({ volume: 60, source: 'formula' })), toEntry(diaper({ poop: true }))],
 })

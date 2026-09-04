@@ -14,7 +14,7 @@ const store = new Map<string, string>()
   length: 0,
 } as Storage
 
-const { ensureThisDevice, logMoment, getMoments, removeMoment } = await import('../src/moments.ts')
+const { createThisDevice, logMoment, getMoments, removeMoment } = await import('../src/moments.ts')
 const { getDevices } = await import('../src/db.ts')
 
 let failures = 0
@@ -23,9 +23,9 @@ const check = (label: string, ok: boolean, detail = '') => {
   if (!ok) failures++
 }
 
-await ensureThisDevice()
-await ensureThisDevice() // twice: must not make a second row
-check('device row created once, not per startup', (await getDevices()).length === 1)
+check('nothing exists before a name is submitted', (await getDevices()).length === 0)
+await createThisDevice('Test')
+check('submitting creates exactly one device', (await getDevices()).length === 1)
 
 await logMoment({ entries: [{ type: 'feed', volume_ml: 60, source: 'formula' }] })
 await logMoment({

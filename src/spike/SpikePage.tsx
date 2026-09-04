@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, isConfigured } from '../supabase'
-import { deviceId } from '../device-id'
+import { getDeviceId } from '../device-id'
 import { BABY_ID } from '../config'
 import './spike.css'
 
@@ -95,7 +95,7 @@ export default function SpikePage() {
       <p className="device">
         built {__BUILD_TIME__}
         <br />
-        device {deviceId().slice(0, 8)}
+        device {getDeviceId()?.slice(0, 8) ?? 'none yet'}
       </p>
 
       <button
@@ -103,11 +103,13 @@ export default function SpikePage() {
         onClick={() => {
           // Only the welcome flag. Clearing the device id would mint a new one
           // and orphan this device's row, taking its name with it.
-          localStorage.removeItem('babyliana.welcomed')
+          // Removes this device's identity entirely, so the welcome runs
+          // again. The row it already created stays, with whatever it logged.
+          localStorage.removeItem('babyliana.device_id')
           window.location.href = '/'
         }}
       >
-        show the welcome again
+        forget this device and start over
       </button>
     </main>
   )

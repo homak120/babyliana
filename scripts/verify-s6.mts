@@ -15,7 +15,7 @@ import type { Block } from '../src/log/drafts.ts'
 const { canSave, newDiaper, newMilk, newOther, toEntry, OTHER_TYPES } = await import(
   '../src/log/drafts.ts'
 )
-const { ensureThisDevice, logMoment, getMoments } = await import('../src/moments.ts')
+const { createThisDevice, logMoment, getMoments } = await import('../src/moments.ts')
 
 let failures = 0
 const check = (label: string, ok: boolean, detail = '') => {
@@ -25,7 +25,7 @@ const check = (label: string, ok: boolean, detail = '') => {
 const other = (kind: string | null): Block =>
   ({ key: 'o', type: 'other', draft: { ...newOther(), kind: kind as never } })
 
-await ensureThisDevice()
+await createThisDevice('Test')
 
 // --- the other block --------------------------------------------------------
 check('every secondary type in the schema is reachable',

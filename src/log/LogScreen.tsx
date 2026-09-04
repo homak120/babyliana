@@ -10,7 +10,7 @@ import {
   type MascotState,
 } from '../derive'
 import { getDevices } from '../db'
-import { deviceId } from '../device-id'
+import { getDeviceId } from '../device-id'
 import { getMoments, renameThisDevice } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
 import type { Device, Moment } from '../types'
@@ -142,7 +142,7 @@ export function LogScreen() {
               the design's settings screen is deferred, and this is the one
               thing in it that is not optional. */}
           <button type="button" className="namebtn" onClick={() => setNaming(true)}>
-            {devices.find((d) => d.id === deviceId())?.name ? 'edit' : 'name this phone'}
+            {devices.find((d) => d.id === getDeviceId())?.name ? 'edit' : 'name this phone'}
           </button>
           <span className={`sync ${sync_.state}`}>
             <Icon name="cloud_done" size={15} />
@@ -243,7 +243,7 @@ export function LogScreen() {
 
       {naming && (
         <NamePrompt
-          current={devices.find((d) => d.id === deviceId())?.name ?? ''}
+          current={devices.find((d) => d.id === getDeviceId())?.name ?? ''}
           onDone={(name) => {
             setNaming(false)
             if (name !== null) void renameThisDevice(name).then(refresh)

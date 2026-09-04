@@ -20,8 +20,10 @@ for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
 // slowly filled with test devices — which is exactly what the owner then found.
 // Reusing one id makes re-runs idempotent, and updated_by marks it as script
 // litter rather than a real phone, which is what that column is for.
-const TEST_DEVICE = '00000000-0000-4000-8000-0000000d0d0d'
-const store = new Map<string, string>([['babyliana.device_id', TEST_DEVICE]])
+// Not pre-seeded any more: createThisDevice mints the id, because opening the
+// app must not. The id it returns is what gets used and cleaned up.
+let TEST_DEVICE = ''
+const store = new Map<string, string>()
 ;(globalThis as unknown as { localStorage: Storage }).localStorage = {
   getItem: (k: string) => store.get(k) ?? null,
   setItem: (k: string, v: string) => void store.set(k, v),
@@ -34,7 +36,7 @@ const store = new Map<string, string>([['babyliana.device_id', TEST_DEVICE]])
 Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true })
 
 const { BABY_ID } = await import('../src/config.ts')
-const { ensureThisDevice, logMoment, getMoments, removeMoment } = await import('../src/moments.ts')
+const { createThisDevice, logMoment, getMoments, removeMoment } = await import('../src/moments.ts')
 const { sync } = await import('../src/sync.ts')
 const { supabase } = await import('../src/supabase.ts')
 const dbmod = await import('../src/db.ts')
@@ -48,7 +50,7 @@ const sb = supabase!
 const made: string[] = [] // timeslot ids to clean up
 
 try {
-  await ensureThisDevice()
+  TEST_DEVICE = await createThisDevice('verify')
   await sync()
   await sb.from('device').update({ updated_by: 'verify-s2' }).eq('id', TEST_DEVICE)
   check('device reached the server',

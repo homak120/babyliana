@@ -72,8 +72,8 @@ check('hours wrap rather than stick', wrapHour(-1) === 23 && wrapHour(24) === 0)
 check('minutes wrap too', wrapMinute(-1) === 59 && wrapMinute(60) === 0)
 
 // --- does a period actually survive being stored? --------------------------
-const { ensureThisDevice, logMoment, getMoments } = await import('../src/moments.ts')
-await ensureThisDevice()
+const { createThisDevice, logMoment, getMoments } = await import('../src/moments.ts')
+await createThisDevice('Test')
 
 const sleep = await logMoment({
   occurredAt: t(19, 0),

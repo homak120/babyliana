@@ -10,8 +10,10 @@ import { readFileSync } from 'node:fs'
 for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
   const m = line.match(/^([A-Z_]+)=(.*)$/); if (m) process.env[m[1]] = m[2]
 }
-const TEST_DEVICE = '00000000-0000-4000-8000-0000000d0d0d'
-const store = new Map<string, string>([['babyliana.device_id', TEST_DEVICE]])
+// Not pre-seeded any more: createThisDevice mints the id, because opening the
+// app must not. The id it returns is what gets used and cleaned up.
+let TEST_DEVICE = ''
+const store = new Map<string, string>()
 ;(globalThis as unknown as { localStorage: Storage }).localStorage = {
   getItem: (k: string) => store.get(k) ?? null,
   setItem: (k: string, v: string) => void store.set(k, v),
@@ -22,7 +24,7 @@ Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurabl
 
 import type { Block } from '../src/log/drafts.ts'
 const { blocksFromMoment, newDiaper, newMilk, toEntry } = await import('../src/log/drafts.ts')
-const { ensureThisDevice, logMoment, updateMoment, getMoments, removeMoment } = await import(
+const { createThisDevice, logMoment, updateMoment, getMoments, removeMoment } = await import(
   '../src/moments.ts'
 )
 const { sync } = await import('../src/sync.ts')
@@ -37,7 +39,7 @@ const sb = supabase!
 const made: string[] = []
 
 try {
-  await ensureThisDevice()
+  TEST_DEVICE = await createThisDevice('verify')
 
   // --- correcting a value, without disturbing the rest ----------------------
   const m = await logMoment({

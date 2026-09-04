@@ -1,6 +1,6 @@
 import { BABY_ID } from './config'
 import * as db from './db'
-import { deviceId } from './device-id'
+import { createDeviceId, requireDeviceId } from './device-id'
 import type { DraftEntry, LogEvent, Moment, Timeslot } from './types'
 
 // Everything above IndexedDB that the UI touches. Kept apart from db.ts so the
@@ -10,28 +10,29 @@ import type { DraftEntry, LogEvent, Moment, Timeslot } from './types'
 const now = () => new Date().toISOString()
 
 /**
- * Make this device's own row if it is not already there.
+ * Create this device, once, when its name is submitted.
  *
- * Runs on every startup. See db.ensureDevice for why this is an upsert rather
- * than a first-run check.
+ * Deliberately not an upsert on startup: opening the app must not create an
+ * identity. Nothing exists until someone commits to a name, which is also why
+ * the id's presence is what says setup is done.
  */
-export async function ensureThisDevice() {
+export async function createThisDevice(name: string): Promise<string> {
+  const id = createDeviceId()
   const t = now()
-  const created = await db.ensureDevice({
-    id: deviceId(),
-    name: null, // the welcome screen sets this in S9
+  await db.putDevice({
+    id,
+    name: name.trim() || null,
     created_at: t,
     updated_at: t,
     updated_by: null, // only ever set by a manual script
   })
-  if (created) {
-    await db.enqueue([{ table: 'device', rowId: deviceId(), op: 'put' }])
-  }
+  await db.enqueue([{ table: 'device', rowId: id, op: 'put' }])
+  return id
 }
 
 /** Sets this device's name. Explicit — the startup upsert never touches it. */
 export async function renameThisDevice(name: string) {
-  const id = deviceId()
+  const id = requireDeviceId()
   const existing = (await db.getDevices()).find((d) => d.id === id)
   if (!existing) return
   await db.putDevice({ ...existing, name: name.trim() || null, updated_at: now() })
@@ -61,7 +62,7 @@ export async function logMoment(input: NewMoment): Promise<Moment> {
   const timeslot: Timeslot = {
     id: crypto.randomUUID(),
     baby_id: BABY_ID,
-    logged_by: deviceId(),
+    logged_by: requireDeviceId(),
     occurred_at: (input.occurredAt ?? new Date()).toISOString(),
     ended_at: input.endedAt ? input.endedAt.toISOString() : null,
     recorded_at: t,
