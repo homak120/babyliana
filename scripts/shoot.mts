@@ -16,7 +16,13 @@ const PROTO =
   'file://' + resolve('.specify/memory/design/handoff/prototype/Phone.dc.html')
 
 // iPhone 14/15 logical size — what the design is specified at.
-const iphone = { ...devices['iPhone 13'], viewport: { width: 390, height: 844 } }
+// hasTouch matters. A mouse-driven run exercised pointer events that a real
+// phone never sends, which is how a swipe that worked here did nothing on iOS.
+const iphone = {
+  ...devices['iPhone 13'],
+  viewport: { width: 390, height: 844 },
+  hasTouch: true,
+}
 
 const browser = await chromium.launch()
 const ctx = await browser.newContext(iphone)

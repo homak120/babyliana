@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Icon } from '../log/Icon'
 import type { Moment } from '../types'
 import { avatarClass, dateCell, diaperParts, initialOf, milkCell, otherCell, timeCell } from './cells'
@@ -28,7 +28,68 @@ export function DayRow({
 }) {
   const [open, setOpen] = useState(false)
   const [dx, setDx] = useState<number | null>(null)
-  const start = useRef<{ x: number; y: number } | null>(null)
+  const rowRef = useRef<HTMLDivElement>(null)
+
+  // Native listeners, not React's.
+  //
+  // React attaches touchmove passively, so a handler there cannot call
+  // preventDefault — and without that iOS arbitrates the gesture as a scroll and
+  // cancels the pointer before a horizontal swipe engages. That is why this
+  // worked with a mouse and did nothing on a phone.
+  //
+  // The drag value lives in the closure rather than a ref, so nothing is read
+  // or written during render.
+  useEffect(() => {
+    const el = rowRef.current
+    if (!el) return
+    let from: { x: number; y: number } | null = null
+    let engaged = false
+    let travelled = 0
+
+    const down = (e: TouchEvent) => {
+      const t = e.touches[0]
+      from = { x: t.clientX, y: t.clientY }
+      engaged = false
+      travelled = open ? -ACTIONS_W : 0
+    }
+
+    const move = (e: TouchEvent) => {
+      if (!from) return
+      const t = e.touches[0]
+      const mx = t.clientX - from.x
+      const my = t.clientY - from.y
+      if (!engaged) {
+        // Only take over once the movement is clearly horizontal; anything else
+        // is the user scrolling, and stealing that is worse than no swipe.
+        if (Math.abs(mx) < ENGAGE_AT || Math.abs(mx) <= Math.abs(my)) return
+        engaged = true
+      }
+      e.preventDefault()
+      travelled = Math.max(-ACTIONS_W, Math.min(0, mx + (open ? -ACTIONS_W : 0)))
+      setDx(travelled)
+    }
+
+    const up = () => {
+      if (engaged) setOpen(travelled < -SNAP_AT)
+      from = null
+      engaged = false
+      setDx(null)
+    }
+
+    el.addEventListener('touchstart', down, { passive: true })
+    el.addEventListener('touchmove', move, { passive: false })
+    el.addEventListener('touchend', up)
+    el.addEventListener('touchcancel', up)
+    return () => {
+      el.removeEventListener('touchstart', down)
+      el.removeEventListener('touchmove', move)
+      el.removeEventListener('touchend', up)
+      el.removeEventListener('touchcancel', up)
+    }
+  }, [open])
+
+  // Mouse only — touch is handled natively above, so the two never fight.
+  const mouseFrom = useRef<{ x: number; y: number } | null>(null)
 
   const date = dateCell(moment, previous)
   const milk = milkCell(moment.events)
@@ -52,29 +113,29 @@ export function DayRow({
       </div>
 
       <div
+        ref={rowRef}
         className="trow"
         style={{ transform: `translateX(${offset}px)`, transition: dx === null ? undefined : 'none' }}
         onPointerDown={(e) => {
-          start.current = { x: e.clientX, y: e.clientY }
+          if (e.pointerType === 'touch') return
+          mouseFrom.current = { x: e.clientX, y: e.clientY }
         }}
         onPointerMove={(e) => {
-          if (!start.current) return
-          const mx = e.clientX - start.current.x
-          const my = e.clientY - start.current.y
-          // Only take over once the movement is clearly horizontal. Anything
-          // else is the user scrolling, and stealing it would be worse than
-          // having no swipe at all.
+          if (e.pointerType === 'touch' || !mouseFrom.current) return
+          const mx = e.clientX - mouseFrom.current.x
+          const my = e.clientY - mouseFrom.current.y
           if (dx === null && (Math.abs(mx) < ENGAGE_AT || Math.abs(mx) <= Math.abs(my))) return
           if (dx === null) e.currentTarget.setPointerCapture(e.pointerId)
           setDx(Math.max(-ACTIONS_W, Math.min(0, mx + (open ? -ACTIONS_W : 0))))
         }}
-        onPointerUp={() => {
+        onPointerUp={(e) => {
+          if (e.pointerType === 'touch') return
           if (dx !== null) setOpen(dx < -SNAP_AT)
-          start.current = null
+          mouseFrom.current = null
           setDx(null)
         }}
         onPointerCancel={() => {
-          start.current = null
+          mouseFrom.current = null
           setDx(null)
         }}
       >
