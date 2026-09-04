@@ -133,56 +133,10 @@
 
 .tabs button.on { color: var(--accent); background: var(--roseFill); }
 
-/* --- row actions ----------------------------------------------------------- */
+/* Row actions (swipe to reveal edit and delete) live in src/swipe/swipe.css,
+   shared with the home list. */
 
-.rowwrap { position: relative; overflow: hidden; }
-
-.rowactions {
-  position: absolute;
-  inset: 0 0 0 auto;
-  display: flex;
-  width: 176px;
-}
-
-.act {
-  flex: 1;
-  border: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.125rem;
-  font: inherit;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: var(--onAccent, #fff8fa);
-  cursor: pointer;
-}
-
-.act.edit { background: var(--accent); }
-.act.del { background: var(--roseInk); }
-
-.rowwrap .trow {
-  position: relative;
-  background: var(--bg);
-  transition: transform 0.18s ease;
-  touch-action: pan-y;
-
-  /* iOS steals the gesture the moment it decides a drag is a text selection,
-     and a row is nothing but text. Once selection starts, the swipe handler
-     gets touchcancel and the page scrolls instead — which is exactly what a
-     dragged finger looked like on the owner's phone: the whole section
-     highlighted, and only up-and-down movement.
-
-     There is nothing here worth selecting, so nothing is lost by refusing.
-     -webkit-touch-callout stops the long-press menu for the same reason. */
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* The note sits outside the row and is real content, so it stays selectable. */
+/* The note sits outside the swiping element and is real content. */
 .tnote {
   -webkit-user-select: text;
   user-select: text;

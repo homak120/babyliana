@@ -5,6 +5,7 @@ import { Icon } from './log/Icon'
 import { LogScreen } from './log/LogScreen'
 import { Welcome } from './log/Welcome'
 import SpikePage from './spike/SpikePage'
+import TouchProbe from './probe/TouchProbe'
 import { getDevices } from './db'
 import { startSync, subscribe, syncState } from './sync'
 import { registerUpdates } from './updates'
@@ -55,6 +56,7 @@ export default function App() {
   )
 
   if (window.location.pathname.startsWith('/spike')) return <SpikePage />
+  if (window.location.pathname.startsWith('/touch')) return <TouchProbe />
   if (!hasDevice) {
     return (
       <Welcome

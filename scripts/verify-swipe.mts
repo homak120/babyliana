@@ -49,18 +49,21 @@ for (const vol of [['6', '0'], ['4', '5'], ['3', '1'], ['7', '5'], ['5', '0']]) 
   await p.getByRole('button', { name: 'save', exact: true }).click()
   await p.waitForTimeout(350)
 }
-await p.getByRole('navigation').getByLabel('day').click()
-await p.waitForTimeout(500)
 
 const cdp = await ctx.newCDPSession(p)
+// Which list is under test. The home screen is here because it never had the
+// gesture at all — D-025 only specified the day view — and four fixes were shipped
+// against the day view while the owner was swiping this one.
+let SEL = '.row.swipeable'
+
 const offset = () =>
-  p.evaluate(() => {
-    const m = new DOMMatrix(getComputedStyle(document.querySelector('.trow')!).transform)
+  p.evaluate((sel) => {
+    const m = new DOMMatrix(getComputedStyle(document.querySelector(sel)!).transform)
     return Math.round(m.m41)
-  })
+  }, SEL)
 
 async function drag(dx: number, dy: number, steps = 14) {
-  const box = (await p.locator('.trow').first().boundingBox())!
+  const box = (await p.locator(SEL).first().boundingBox())!
   const x0 = box.x + box.width - 30
   const y0 = box.y + box.height / 2
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y: y0 }] })
@@ -80,34 +83,42 @@ const check = (label: string, ok: boolean, detail: string) => {
   console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${label} — ${detail}`)
 }
 
-await drag(-150, 0)
-check('horizontal swipe opens', (await offset()) === -176, `offset ${await offset()}`)
-check('edit visible', await p.getByRole('button', { name: 'edit' }).first().isVisible(), 'rendered')
-check('delete visible', await p.getByRole('button', { name: 'delete' }).first().isVisible(), 'rendered')
+async function suite(label: string) {
+  await drag(-150, 0)
+  check(`${label}: horizontal swipe opens`, (await offset()) === -176, `offset ${await offset()}`)
+  check(`${label}: edit visible`, await p.getByRole('button', { name: 'edit' }).first().isVisible(), 'rendered')
+  check(`${label}: delete visible`, await p.getByRole('button', { name: 'delete' }).first().isVisible(), 'rendered')
 
-await drag(150, 0)
-check('swiping back closes', (await offset()) === 0, `offset ${await offset()}`)
+  await drag(150, 0)
+  check(`${label}: swiping back closes`, (await offset()) === 0, `offset ${await offset()}`)
 
-// A short horizontal move must spring back, not stick open.
-await drag(-25, 0)
-check('short swipe springs back', (await offset()) === 0, `offset ${await offset()}`)
+  // A short horizontal move must spring back, not stick open.
+  await drag(-25, 0)
+  check(`${label}: short swipe springs back`, (await offset()) === 0, `offset ${await offset()}`)
 
-// The one the axis lock is there to protect.
-// Five rows fit an iPhone 13 screen, so the page has nowhere to scroll and the
-// check below would pass vacuously. Shrink the viewport instead of logging
-// another twenty feeds.
-await p.setViewportSize({ width: 390, height: 420 })
-await p.waitForTimeout(200)
-const page = await p.evaluate(() => ({
-  scrollable: document.documentElement.scrollHeight - window.innerHeight,
-  rows: document.querySelectorAll('.trow').length,
-}))
-console.log(`  (page scrollable by ${page.scrollable}px, ${page.rows} rows)`)
-const before = await p.evaluate(() => window.scrollY)
-await drag(-30, -260)
-const after = await p.evaluate(() => window.scrollY)
-check('vertical drag does not open', (await offset()) === 0, `offset ${await offset()}`)
-check('vertical drag still scrolls', after > before, `scrollY ${before} -> ${after}`)
+  // A thumb arcs. This is the shape that a first-pixel axis lock got wrong.
+  await drag(-150, -40)
+  check(`${label}: arcing swipe still opens`, (await offset()) === -176, `offset ${await offset()}`)
+  await drag(150, 0)
+
+  // The one the axis lock is there to protect.
+  await p.setViewportSize({ width: 390, height: 420 })
+  await p.waitForTimeout(200)
+  const before = await p.evaluate(() => window.scrollY)
+  await drag(-30, -260)
+  const after = await p.evaluate(() => window.scrollY)
+  check(`${label}: vertical drag does not open`, (await offset()) === 0, `offset ${await offset()}`)
+  check(`${label}: vertical drag still scrolls`, after > before, `scrollY ${before} -> ${after}`)
+  await p.setViewportSize({ width: 390, height: 844 })
+  await p.waitForTimeout(200)
+}
+
+await suite('home')
+
+SEL = '.trow.swipeable'
+await p.getByRole('navigation').getByLabel('day').click()
+await p.waitForTimeout(600)
+await suite('day')
 
 await p.screenshot({ path: 'scripts/shots/swipe-check.png' })
 await b.close()

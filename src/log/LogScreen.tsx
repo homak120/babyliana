@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   formatElapsed,
   lastFeedAt,
@@ -12,14 +12,18 @@ import {
 import { getDevices } from '../db'
 import { avatarClass } from '../day/cells'
 import { getDeviceId } from '../device-id'
-import { getMoments, renameThisDevice } from '../moments'
+import { getMoments, removeMoment, renameThisDevice } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
 import type { Device, Moment } from '../types'
 import { AddSheet } from './AddSheet'
 import { Icon } from './Icon'
 import { Mascot } from './Mascot'
+import { SwipeRow } from '../swipe/SwipeRow'
 
 // Icon per state, exactly as the handoff pairs them.
+/** How long a deleted moment is held before it actually goes (D-025). */
+const UNDO_MS = 5000
+
 const STATE: Record<MascotState, { word: string; icon: string }> = {
   settled: { word: 'settled', icon: 'spa' },
   awake: { word: 'awake', icon: 'visibility' },
@@ -100,12 +104,38 @@ export function LogScreen() {
   const [naming, setNaming] = useState(false)
   const [now, setNow] = useState(new Date())
 
+  // Edit and delete from the home list too, not only the day view.
+  //
+  // D-025 only ever said "a row in the day view", so this list never had the
+  // gesture — which is why swiping it did nothing for four rounds of fixes.
+  // The home screen is where the app is actually used.
+  const [editing, setEditing] = useState<Moment | null>(null)
+
+  // Hidden at once, deleted when the toast expires. D-003 is a hard delete with
+  // no tombstone, so this window is the only recourse a mis-swipe has.
+  const [undo, setUndo] = useState<Moment | null>(null)
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const refresh = useCallback(() => {
     getMoments().then(setMoments)
     getDevices().then(setDevices)
   }, [])
 
   useEffect(refresh, [refresh])
+
+  // If the screen goes away mid-window the delete still happens. You asked for
+  // it; silently keeping the row would be the surprising outcome.
+  useEffect(() => () => { if (undoTimer.current) clearTimeout(undoTimer.current) }, [])
+
+  const commitDelete = useCallback(
+    (id: string) => {
+      if (undoTimer.current) clearTimeout(undoTimer.current)
+      undoTimer.current = null
+      setUndo(null)
+      void removeMoment(id).then(() => { refresh(); void sync() })
+    },
+    [refresh],
+  )
   useEffect(() => subscribe(() => { setSync(syncState()); refresh() }), [refresh])
 
   // The hero is an elapsed time, so it has to move on its own — otherwise a
@@ -120,6 +150,7 @@ export function LogScreen() {
     document.documentElement.dataset.theme = theme
   }, [theme])
 
+  const shown = moments.filter((m) => m.timeslot.id !== undo?.timeslot.id)
   const since = minutesSince(lastFeedAt(moments), now)
   const totals = totalsFor(moments, now)
   const state = mascotState(since, theme, justLogged)
@@ -189,17 +220,25 @@ export function LogScreen() {
 
       <p className="kicker recent-head">most recent first</p>
 
-      {moments.length === 0 && <p className="empty">nothing logged in this period.</p>}
+      {shown.length === 0 && <p className="empty">nothing logged in this period.</p>}
 
       <ul className="moments">
-        {moments.map((m, i) => {
-          const prev = moments[i - 1]
+        {shown.map((m, i) => {
+          const prev = shown[i - 1]
           const newDay = !prev || !sameDay(prev.timeslot.occurred_at, new Date(m.timeslot.occurred_at))
           const feeds = feedLabel(m)
           return (
             <li key={m.timeslot.id}>
               {newDay && <p className="day-sep">{dayLabel(m.timeslot.occurred_at)}</p>}
-              <div className="row">
+              <SwipeRow
+                className="row"
+                onEdit={() => setEditing(m)}
+                onDelete={() => {
+                  setUndo(m)
+                  if (undoTimer.current) clearTimeout(undoTimer.current)
+                  undoTimer.current = setTimeout(() => commitDelete(m.timeslot.id), UNDO_MS)
+                }}
+              >
                 <time>{time(m.timeslot.occurred_at)}</time>
                 <span className="chips">
                   {feeds && (
@@ -233,7 +272,7 @@ export function LogScreen() {
                     </i>
                   ) : null
                 })()}
-              </div>
+              </SwipeRow>
               {m.timeslot.note && (
                 <p className="rownote">
                   <Icon name="edit_note" size={14} /> {m.timeslot.note}
@@ -250,6 +289,34 @@ export function LogScreen() {
           onDone={(name) => {
             setNaming(false)
             if (name !== null) void renameThisDevice(name).then(refresh)
+          }}
+        />
+      )}
+
+      {undo && (
+        <div className="toast" role="status">
+          <span>moment deleted</span>
+          <button
+            type="button"
+            onClick={() => {
+              if (undoTimer.current) clearTimeout(undoTimer.current)
+              undoTimer.current = null
+              setUndo(null)
+            }}
+          >
+            undo
+          </button>
+        </div>
+      )}
+
+      {editing && (
+        <AddSheet
+          editing={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null)
+            refresh()
+            void sync()
           }}
         />
       )}

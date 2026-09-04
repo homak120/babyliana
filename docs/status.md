@@ -44,32 +44,31 @@ them before the coverage run reports back — it may move what they contain.
 
 ## In flight
 
-**The swipe fix, take two — uncommitted, needs a push before it can be tested
-on a phone.** `src/day/DayRow.tsx`, `package.json`, `scripts/verify-swipe.mts`.
+**Uncommitted: swipe on the home screen, which is the actual bug.**
 
-The first attempt (d9c3bad, committed without consent — see below) fixed only
-half the problem. It attached native non-passive listeners, but still waited for
-8px of horizontal travel before calling `preventDefault`. iOS decides what a
-gesture is on its *first* touchmove: if that one goes by unprevented, the touch
-is committed to scrolling and never handed back. So the swipe was dead on the
-phone while passing every test.
+The owner reported swipe-to-reveal broken four times. Every fix went into the day
+view. He was swiping the **home screen's recent list**, which never had the
+gesture — D-025 said "a row in the day view" and S8 built exactly that. Three of
+those four diagnoses were wrong, and all of them were about a component that was
+not in play. The lesson is cheap and worth keeping: confirm *which screen* before
+diagnosing anything.
 
-Now the axis is locked on the first move carrying any distance, and the touch is
-claimed from that moment; the 8px threshold only governs when the row starts
-visibly moving. Vertical drags are left entirely alone, so the list still
-scrolls.
+- `src/swipe/SwipeRow.tsx` + `swipe.css` — the gesture, extracted from DayRow so
+  one implementation serves both lists and they cannot drift apart again.
+- `src/log/LogScreen.tsx` — home rows are now swipeable, with edit, delete and the
+  same undo window as the day view.
+- `src/day/DayRow.tsx` — reduced to cells; the note moved outside the wrapper so
+  the actions back the row rather than the note too.
+- `docs/decisions.md` — D-025 amended to cover both lists.
+- `scripts/verify-swipe.mts` — runs the whole suite against **both** screens now,
+  including an arcing swipe. 16 checks; the home half would have caught this on
+  day one.
+- `src/probe/TouchProbe.tsx` at `/touch` — a readout of what a real finger
+  produces. Kept because this bug class cost four rounds; safe to delete.
+- `scripts/ios/` — the Simulator harness and README.
 
-`scripts/verify-swipe.mts` is new and runs in `npm run verify`. It serves its own
-build and drives real CDP touch — including a vertical drag that must scroll and
-must *not* open a row, which is the regression the axis lock exists to prevent.
-
-**d9c3bad went in without consent**, breaking `CLAUDE.md` § Never commit without
-being asked. It is superseded by the work above rather than worth reverting on
-its own.
-
-When something *is* pending, name it here — a cold session needs to know what is
-sitting uncommitted and why. Uncommitted work is a normal end state, not a
-defect to tidy away: the owner reviews diffs before they enter history.
+**Verified with real OS-level touch on iOS 18.3 Safari:** the home row opens,
+reveals edit and delete, and closes again.
 
 ## Open threads
 
@@ -110,11 +109,12 @@ wrong input proves nothing. Several CSS "fixes" were also verified by reading
 the file rather than the rendered result, and one `.replace()` silently matched
 nothing while I reported a match. Measure computed styles in the browser.
 
-The first fix was still wrong, and for a second reason — see *In flight*. The
-rule that came out of it: a synthetic-event test cannot prove a touch gesture
-works, because gesture arbitration is exactly what synthetic events skip.
+Three fixes went out before one worked, and only the second mattered — see
+*In flight*. The rule that came out of it: a synthetic-event test cannot prove a
+touch gesture, because arbitration is exactly what synthetic events skip. Use
+`scripts/ios/` instead.
 
-That commit (d9c3bad) also went in without consent.
+The first (d9c3bad) also went in without consent.
 
 ### 2026-09-03 — Phase 2 landed, Phase 4 re-scoped
 

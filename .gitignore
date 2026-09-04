@@ -11,3 +11,6 @@ dev-dist/
 .idea/
 .vscode/
 scripts/shots/
+
+# Built by scripts/ios/mouse.swift; rebuild with swiftc.
+scripts/ios/mouse

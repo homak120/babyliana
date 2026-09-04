@@ -522,7 +522,8 @@ part, not the JSON shape.
 
 ## D-025 — Row actions: swipe reveals edit *and* delete
 
-Dragging a row in the day view reveals two actions. **Edit** reopens the add
+Dragging a row **in either list — the home screen's recent list or the day
+table** — reveals two actions. **Edit** reopens the add
 sheet pre-filled. **Delete** removes the moment.
 
 **Why this is recorded separately.** The Phase 2 handoff — final under D-021 —
@@ -545,6 +546,14 @@ from, and the deletion syncs to the other phone. A confirmation dialog would be
 safer but puts a modal in front of someone holding a baby at 4am, which is the
 friction that sends people back to the pen. Immediate-with-undo keeps the action
 one tap and still survives a mis-swipe.
+
+**Amended 2026-09-03: both lists, not just the day view.** As first written this
+said "the day view", and S8 built exactly that. The owner then reported the swipe
+as broken four times running — he was swiping the home screen, which is where the
+app is actually used and which had no gesture at all. Four fixes were shipped
+against the day view, three of them on wrong diagnoses, before anyone noticed the
+screens differed. The gesture now lives in one shared component
+(`src/swipe/SwipeRow.tsx`) used by both, so the two cannot drift again.
 
 **Consequence for the build.** The client holds a deleted moment briefly rather
 than deleting straight away, so S8 owns the undo window, not just the delete.
