@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { getDeviceId } from './device-id'
+import { forgetDevice, getDeviceId } from './device-id'
 import { DayScreen } from './day/DayScreen'
 import { Icon } from './log/Icon'
 import { LogScreen } from './log/LogScreen'
 import { Welcome } from './log/Welcome'
 import SpikePage from './spike/SpikePage'
-import { startSync } from './sync'
+import { getDevices } from './db'
+import { startSync, subscribe, syncState } from './sync'
 import { registerUpdates } from './updates'
 import './tokens.css'
 import './log/log.css'
@@ -20,33 +21,44 @@ import { AddSheet } from './log/AddSheet'
 type Screen = 'log' | 'day'
 
 export default function App() {
-  const [ready, setReady] = useState(false)
   const [screen, setScreen] = useState<Screen>('log')
-  const [hasDevice, setHasDevice] = useState(true)
+  // Read at initialisation, not in an effect: nothing async happens here, and
+  // opening the app must not create an identity.
+  const [hasDevice, setHasDevice] = useState(() => getDeviceId() !== null)
   const [adding, setAdding] = useState(false)
   const [saved, setSaved] = useState(0)
 
   useEffect(() => {
-    // Upsert, never a first-run check — see db.ensureDevice.
-    // Nothing is created here. Opening the app must not mint an identity.
-    setHasDevice(getDeviceId() !== null)
-    setReady(true)
-    if (getDeviceId()) {
-      startSync()
-      registerUpdates()
-    }
-  }, [])
+    if (!hasDevice) return
+    startSync()
+    registerUpdates()
+  }, [hasDevice])
+
+  // The id in localStorage and the row on the server can fall out of step — a
+  // row deleted elsewhere leaves this phone holding an id that references
+  // nothing, and every write then fails its foreign key silently. Checked only
+  // after a *successful* sync, so being offline never wipes a good id.
+  useEffect(
+    () =>
+      subscribe(() => {
+        if (syncState().state !== 'idle') return
+        const id = getDeviceId()
+        if (!id) return
+        void getDevices().then((all) => {
+          if (all.length > 0 && !all.some((d) => d.id === id)) {
+            forgetDevice()
+            setHasDevice(false)
+          }
+        })
+      }),
+    [],
+  )
 
   if (window.location.pathname.startsWith('/spike')) return <SpikePage />
-  if (!ready) return null
   if (!hasDevice) {
     return (
       <Welcome
-        onDone={() => {
-          setHasDevice(true)
-          startSync()
-          registerUpdates()
-        }}
+        onDone={() => setHasDevice(true)}
       />
     )
   }

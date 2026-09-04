@@ -32,3 +32,15 @@ export function requireDeviceId(): string {
   if (!id) throw new Error('no device yet — the welcome should have run first')
   return id
 }
+
+/**
+ * Forget this device, so the welcome runs again.
+ *
+ * Needed because the id living in localStorage and the row living on the server
+ * can get out of step — a row deleted elsewhere leaves this phone holding an id
+ * that references nothing, and every write then fails its foreign key with
+ * nothing on screen to say why.
+ */
+export function forgetDevice() {
+  localStorage.removeItem(DEVICE_KEY)
+}
