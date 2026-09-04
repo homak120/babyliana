@@ -18,20 +18,25 @@ export default defineConfig({
       // on our terms: applied when the app becomes visible and nothing is being
       // entered. See src/updates.ts.
       registerType: 'prompt',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon-32.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'BabyLiana',
         short_name: 'BabyLiana',
         description: 'Newborn activity log',
-        // Dark: the screen is often the only light source in the room.
-        theme_color: '#11131a',
-        background_color: '#11131a',
+        // The design's day ground, matching the icon's own pink-lilac. These
+        // colour the splash and the browser chrome, not the app — which still
+        // switches to the night surface by clock once it is running.
+        theme_color: '#fdf7f2',
+        background_color: '#fdf7f2',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
+        // Liana as the design drew her, resized from the 1024 as the handoff
+        // instructs. These replaced a placeholder that was shipping instead.
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'pwa-1024x1024.png', sizes: '1024x1024', type: 'image/png' },
           {
             src: 'pwa-512x512.png',
             sizes: '512x512',

@@ -144,7 +144,8 @@ first version does not go through them, and each has a named trigger.
 - [ ] **H** Mascot decision: the baby as a character, or a separate creature
 - [ ] **CD** Character state exploration — descriptive only, never evaluative
 - [ ] **H/CD** Asset production. Consistency across the set is the hard part
-- [ ] **CD** App icon and launch experience
+- [x] **CD** App icon — delivered with the Phase 2 handoff and shipped;
+      launch experience still open
 - [ ] **CC** Implement the visual identity
 - [ ] **H** Naming decision. Replace "BabyLiana" if it isn't the keeper
 
