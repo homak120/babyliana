@@ -82,7 +82,7 @@ function NamePrompt({
         className="nameinput"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="mona"
+        placeholder="Anya"
         autoFocus
       />
       <button type="button" className="save" onClick={() => onDone(value)}>

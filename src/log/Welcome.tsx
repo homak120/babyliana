@@ -53,7 +53,7 @@ export function Welcome({ onDone }: { onDone: () => void }) {
         id="yourname"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="mona"
+        placeholder="Anya"
         autoComplete="given-name"
       />
 
