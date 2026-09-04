@@ -8,11 +8,11 @@ const ACTIONS_W = 176
 /** Past this, the row stays open; short of it, it springs back. */
 const SNAP_AT = 40
 /**
- * Horizontal travel before the gesture is treated as a swipe at all.
+ * Horizontal travel before the row actually starts moving.
  *
- * Without it, any touch on a row starts a drag and scrolling the day list feels
- * broken — which is the whole reason this lives in the row rather than in a
- * shared bit of state.
+ * Without it, any touch on a row twitches it and scrolling the day list feels
+ * broken. Note this is only about *drawing* the drag — which gesture owns the
+ * touch is decided earlier and separately. See the axis lock below.
  */
 const ENGAGE_AT = 8
 
@@ -30,26 +30,36 @@ export function DayRow({
   const [dx, setDx] = useState<number | null>(null)
   const rowRef = useRef<HTMLDivElement>(null)
 
-  // Native listeners, not React's.
+  // Native listeners, not React's, and the axis is locked on the first move.
   //
-  // React attaches touchmove passively, so a handler there cannot call
-  // preventDefault — and without that iOS arbitrates the gesture as a scroll and
-  // cancels the pointer before a horizontal swipe engages. That is why this
-  // worked with a mouse and did nothing on a phone.
+  // Two separate iOS problems live here, and only fixing both makes the swipe
+  // work on a phone.
   //
-  // The drag value lives in the closure rather than a ref, so nothing is read
-  // or written during render.
+  // 1. React attaches touchmove passively, so a handler there cannot call
+  //    preventDefault at all.
+  //
+  // 2. iOS decides what a gesture is on its *first* touchmove. If that move
+  //    goes by without preventDefault, the touch is committed to scrolling and
+  //    is never handed back, no matter what later moves do. The previous
+  //    version waited for 8px of horizontal travel before calling
+  //    preventDefault — by which point iOS had already made up its mind. That
+  //    is the bug: it looked correct, and passed a synthetic test, because
+  //    synthetic events have no such arbitration.
+  //
+  // So the axis is locked on the first move that carries any distance, and the
+  // touch is claimed from that moment. ENGAGE_AT then only governs when the row
+  // starts visibly moving, which is a cosmetic threshold and safe to wait for.
   useEffect(() => {
     const el = rowRef.current
     if (!el) return
     let from: { x: number; y: number } | null = null
-    let engaged = false
+    let axis: 'x' | 'y' | null = null
     let travelled = 0
 
     const down = (e: TouchEvent) => {
       const t = e.touches[0]
       from = { x: t.clientX, y: t.clientY }
-      engaged = false
+      axis = null
       travelled = open ? -ACTIONS_W : 0
     }
 
@@ -58,21 +68,26 @@ export function DayRow({
       const t = e.touches[0]
       const mx = t.clientX - from.x
       const my = t.clientY - from.y
-      if (!engaged) {
-        // Only take over once the movement is clearly horizontal; anything else
-        // is the user scrolling, and stealing that is worse than no swipe.
-        if (Math.abs(mx) < ENGAGE_AT || Math.abs(mx) <= Math.abs(my)) return
-        engaged = true
+
+      if (axis === null) {
+        // Anything smaller than this is noise from a resting finger, not a
+        // direction. Deliberately tiny: waiting is what loses the gesture.
+        if (Math.abs(mx) < 1 && Math.abs(my) < 1) return
+        axis = Math.abs(mx) > Math.abs(my) ? 'x' : 'y'
       }
+      // Vertical: the user is scrolling the day list. Leave it entirely alone.
+      if (axis === 'y') return
+
       e.preventDefault()
+      if (Math.abs(mx) < ENGAGE_AT && travelled === 0) return
       travelled = Math.max(-ACTIONS_W, Math.min(0, mx + (open ? -ACTIONS_W : 0)))
       setDx(travelled)
     }
 
     const up = () => {
-      if (engaged) setOpen(travelled < -SNAP_AT)
+      if (axis === 'x') setOpen(travelled < -SNAP_AT)
       from = null
-      engaged = false
+      axis = null
       setDx(null)
     }
 

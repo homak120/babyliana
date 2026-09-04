@@ -10,74 +10,66 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-02
+Last updated: 2026-09-03
 
 ---
 
 ## Position
 
-Phases 0 and 1 complete. Phase 2 is out with Claude Design. Phase 3's scaffold
-is committed and builds — a Vite + React + TypeScript PWA shell that runs
-locally without Supabase; its remaining steps need a browser and a phone.
+**Phases 0–6 are done. The app is built and deployed, and all ten build slices
+are ticked.** It logs feeds, diapers and the `other` types locally, syncs
+between devices, shows the home and day screens, and supports edit, delete and
+undo. `npm run verify` is 141 checks across nine suites and passes.
+
+What is left before it can replace the pen is not code. It is the owner using
+it, and the coverage run below.
 
 Task-level state is in `tasks.md`. Phase-level completion is in `plan.md`. This
 file is the summary and the next move.
 
 ## Next action
 
-**Phase 3 is waiting on you, at a browser.** The scaffold is committed and
-builds; the remaining steps need accounts and a phone. Follow
-`.specify/memory/spike-spec.md` § Human steps — create the Supabase project, run
-the SQL in that file, fill `.env.local` from `.env.example`, import into Vercel,
-then install the PWA on your phone and leave it alone. That last step is the
-Q-004 test and it runs itself.
+**The coverage run, and it is the owner's, not an agent's.** Enter all seven
+photographed days from `.specify/memory/paper-log/` into the real app on the
+phone. The checklist is `coverage-requirement.md`. It is the only test that
+tells us whether the app can hold what the paper actually held — every split
+feed, every `?` volume, every out-of-order insertion, every correction. If
+something cannot be entered, that is the finding, and it is worth more than any
+further polish.
 
-**Phase 2 is complete.** The owner tried the prototype in the Claude Design
-session and fed decisions back into it, so the handoff at
-`.specify/memory/design/handoff/` is final, not a proposal. Q-001, Q-002, Q-007
-and Q-009 are closed; the decisions are recorded in D-021.
+Do not do this in a script. The point is the thumbs, at speed, in the dark.
 
-**Before building from it, read
-`.specify/memory/design/phase-2-reconciliation.md`.** The handoff came from a
-brief predating D-019 and D-020, so its data shapes are Design's assumptions and
-need remapping. Its unknown-minute marker was struck as a D-018 conflict.
-
-**Phase 4 is the live thread, and it was re-scoped on 2026-09-03** against what
-is now known rather than what was guessed when it was written. Pairing, export
-and duplicate detection are out of MVP (D-022, D-023, D-024). The offline
-strategy is no longer blocked on Q-004. What remains is confirming sync, settling
-the `other` type list, the offline strategy, and the owner's review of
-`event-model.md`.
-
-**The bias from here is the shortest path to something usable at 3am.** Anything
-deferred sits under *Post-MVP* in `tasks.md` with a named trigger, not dropped.
-
-**The build is sliced** — `.specify/memory/build-slices.md`, ten slices, each
-ending with the app still working and a concrete "done when". The app is usable
-for real after S5; everything after that is breadth and read-back. S0 can start
-whenever Phase 4's remaining confirmations are out of the way, and honestly
-would not be harmed by starting first.
-
-**No duration estimates.** The owner works with LLM tooling and they have been
-wrong every time; see `plan.md` § Two kinds of phase.
+**Phase 7 (mascot and tone) and Phase 8 onward have not started.** Do not begin
+them before the coverage run reports back — it may move what they contain.
 
 ## In flight
 
-**D-018 uncommitted.** Nine documents changed, no code. The time precision
-marker is gone — no `exact/approximate/unknown`, no `?` for time, no `~`.
-`docs/decisions.md` D-018 holds the reasoning; the other eight are consistency
-edits so nothing still says `04:?`. Volume `?` is untouched and still required.
+**The swipe fix, take two — uncommitted, needs a push before it can be tested
+on a phone.** `src/day/DayRow.tsx`, `package.json`, `scripts/verify-swipe.mts`.
 
-**The Phase 2 brief is one of the nine, and Phase 2 is currently out with
-Claude Design against the old version.** The running pass may come back with a
-time-precision control in it. That is not a failure of the design pass —
-disregard that part and use the new § Entering and adjusting the time, or
-re-run the brief if the prototype leans on it heavily.
+The first attempt (d9c3bad, committed without consent — see below) fixed only
+half the problem. It attached native non-passive listeners, but still waited for
+8px of horizontal travel before calling `preventDefault`. iOS decides what a
+gesture is on its *first* touchmove: if that one goes by unprevented, the touch
+is committed to scrolling and never handed back. So the swipe was dead on the
+phone while passing every test.
+
+Now the axis is locked on the first move carrying any distance, and the touch is
+claimed from that moment; the 8px threshold only governs when the row starts
+visibly moving. Vertical drags are left entirely alone, so the list still
+scrolls.
+
+`scripts/verify-swipe.mts` is new and runs in `npm run verify`. It serves its own
+build and drives real CDP touch — including a vertical drag that must scroll and
+must *not* open a row, which is the regression the axis lock exists to prevent.
+
+**d9c3bad went in without consent**, breaking `CLAUDE.md` § Never commit without
+being asked. It is superseded by the work above rather than worth reverting on
+its own.
 
 When something *is* pending, name it here — a cold session needs to know what is
 sitting uncommitted and why. Uncommitted work is a normal end state, not a
-defect to tidy away: the owner reviews diffs before they enter history. See
-`CLAUDE.md` § Never commit without being asked.
+defect to tidy away: the owner reviews diffs before they enter history.
 
 ## Open threads
 
@@ -98,6 +90,47 @@ Noticed, not blocking, no owner yet.
 
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
+
+### 2026-09-03 — Phase 6 built end to end; swipe fixed for real touch
+
+S0 through S9 all landed. The app is usable: local write, sync, home, day,
+edit, delete, undo, name entry, theme by clock.
+
+The last bug is the one worth remembering. Swipe-to-reveal passed an end-to-end
+test and did nothing on the owner's iPhone. The test drove it with a mouse,
+which sends pointer events a phone never sends. The real cause was that React
+attaches `touchmove` passively, so a handler there cannot call
+`preventDefault` — and without that, iOS arbitrates the gesture as a scroll and
+cancels the pointer before a horizontal swipe engages. Listeners are now native
+with `{ passive: false }`. `scripts/shoot.mts` sets `hasTouch` from now on, so
+this class of bug surfaces in a screenshot run instead of on the phone.
+
+The broader lesson, which cost several rounds this phase: a passing test of the
+wrong input proves nothing. Several CSS "fixes" were also verified by reading
+the file rather than the rendered result, and one `.replace()` silently matched
+nothing while I reported a match. Measure computed styles in the browser.
+
+The first fix was still wrong, and for a second reason — see *In flight*. The
+rule that came out of it: a synthetic-event test cannot prove a touch gesture
+works, because gesture arbitration is exactly what synthetic events skip.
+
+That commit (d9c3bad) also went in without consent.
+
+### 2026-09-03 — Phase 2 landed, Phase 4 re-scoped
+
+Claude Design's handoff arrived and is final (D-021), closing Q-001, Q-002,
+Q-007 and Q-009. Its unknown-minute marker was struck as a D-018 conflict, and
+`.specify/memory/design/phase-2-reconciliation.md` lists where its data shapes
+diverge from the model — remapping work for Phase 6, not design problems.
+
+Column types finalised: three tables with full DDL in `event-model.md`.
+
+Phase 4 was then re-scoped on the owner's point that the plan was written with
+less information than we now have, and following it unexamined wastes time.
+Pairing (D-022), duplicate detection (D-023) and export (D-024) are out of MVP,
+each with a named trigger. The offline strategy turned out not to be blocked on
+Q-004 after all. Phase 5 shrank to slicing, since the spec artifacts already
+exist.
 
 ### 2026-09-02 — D-018, time precision removed
 
@@ -124,59 +157,3 @@ represented*, which is the one real cost and is stated in
 `paper-log-baseline.md` § Unknown values was **not** rewritten — it records what
 the paper actually says, and editing evidence to match a decision would destroy
 the ability to re-derive later. It carries a pointer to D-018 instead.
-
-### 2026-09-03 — Phase 2 landed, Phase 4 re-scoped
-
-Claude Design's handoff arrived and is final (D-021), closing Q-001, Q-002,
-Q-007 and Q-009. Its unknown-minute marker was struck as a D-018 conflict, and
-`.specify/memory/design/phase-2-reconciliation.md` lists where its data shapes
-diverge from the model — remapping work for Phase 6, not design problems.
-
-Column types finalised: three tables with full DDL in `event-model.md`.
-
-Phase 4 was then re-scoped on the owner's point that the plan was written with
-less information than we now have, and following it unexamined wastes time.
-Pairing (D-022), duplicate detection (D-023) and export (D-024) are out of MVP,
-each with a named trigger. The offline strategy turned out not to be blocked on
-Q-004 after all. Phase 5 shrank to slicing, since the spec artifacts already
-exist.
-
-### 2026-09-01 — analysis pass, no code
-
-Read the full document set and both paper-log photographs. Findings landed as:
-
-- Three additions to `paper-log-baseline.md` (non-round volumes, blank-vs-`?`,
-  field-level corrections).
-- Q-009 and Q-010 in `open-questions.md`.
-- Notes on D-004 and D-013 in `decisions.md`.
-- Duplicate-detection edge case in `event-model.md`.
-- JSON export moved earlier in Phase 6 of `tasks.md`, to match the
-  non-negotiable in `technical-constraints.md` that says to build it early.
-- This file, plus a restructured `CLAUDE.md`.
-- Paper-log photographs moved out of `.specify/memory/design/` into
-  `.specify/memory/paper-log/`. They are Phase 0 inputs and were making the
-  untouched Phase 2 output folder look populated — which it did, misleadingly.
-  `design/` is now empty but for a README that says so plainly.
-
-A Q-011 was raised and then withdrawn the same day. It claimed the build
-schedule collided with D-009's expiry; the arithmetic was wrong, and the whole
-framing was unwanted. Do not re-raise it.
-
-Duration estimates were then stripped from `plan.md`, `tasks.md` and this file
-at the owner's instruction — they were noise, not planning. `plan.md` § Two
-kinds of phase and the rule in `CLAUDE.md` § Working style now prevent them
-coming back.
-
-Phase 2 was briefed out to Claude Design; the brief is committed under
-`.specify/memory/design/`.
-
-Phase 3 scaffold built: Vite 8, React 19, TypeScript 6, `vite-plugin-pwa`,
-`@supabase/supabase-js`, plain CSS. Spec at `.specify/memory/spike-spec.md`
-including the throwaway table's SQL. Hosting closed as Vercel (D-016); styling
-deliberately left open until the prototype lands (D-017). Placeholder icons are
-placeholders — real ones are Phase 7.
-
-D-008 was rewritten from private to public. The repo had been public since it
-was created; the owner confirmed that is intentional and is the starting point.
-The old entry was the stale side of that, and it cost a session a blocked push
-before it got fixed. Do not re-raise it.
