@@ -10,7 +10,8 @@ import {
   type MascotState,
 } from '../derive'
 import { getDevices } from '../db'
-import { getMoments } from '../moments'
+import { deviceId } from '../device-id'
+import { getMoments, renameThisDevice } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
 import type { Device, Moment } from '../types'
 import { AddSheet } from './AddSheet'
@@ -58,12 +59,46 @@ function dayLabel(iso: string) {
 const time = (iso: string) =>
   new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
 
+function NamePrompt({
+  current,
+  onDone,
+}: {
+  current: string
+  onDone: (name: string | null) => void
+}) {
+  const [value, setValue] = useState(current)
+  return (
+    <div className="sheet nameSheet">
+      <header className="sheet-head">
+        <h2>who is logging?</h2>
+        <button type="button" className="x" onClick={() => onDone(null)} aria-label="close">
+          <Icon name="close" size={20} />
+        </button>
+      </header>
+      <p className="sub">
+        your name marks every entry you log, so liana&rsquo;s other grown-ups know who did what.
+      </p>
+      <input
+        className="nameinput"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="mona"
+        autoFocus
+      />
+      <button type="button" className="save" onClick={() => onDone(value)}>
+        <Icon name="check_circle" size={24} /> save
+      </button>
+    </div>
+  )
+}
+
 export function LogScreen() {
   const [moments, setMoments] = useState<Moment[]>([])
   const [devices, setDevices] = useState<Device[]>([])
   const [sheet, setSheet] = useState(false)
   const [sync_, setSync] = useState(syncState())
   const [justLogged, setJustLogged] = useState(false)
+  const [naming, setNaming] = useState(false)
   const [now, setNow] = useState(new Date())
 
   const refresh = useCallback(() => {
@@ -98,13 +133,17 @@ export function LogScreen() {
           {time(now.toISOString())}
         </span>
         <span className="whos">
-          {devices
-            .filter((d) => d.name)
-            .map((d, i) => (
-              <i key={d.id} className={`avatar ${i % 2 ? 'b' : 'a'}`}>
-                {d.name!.charAt(0).toUpperCase()}
-              </i>
-            ))}
+          {devices.filter((d) => d.name).map((d, i) => (
+            <i key={d.id} className={`avatar ${i % 2 ? 'b' : 'a'}`}>
+              {d.name!.charAt(0).toUpperCase()}
+            </i>
+          ))}
+          {/* Without this the name set on first run could never be changed —
+              the design's settings screen is deferred, and this is the one
+              thing in it that is not optional. */}
+          <button type="button" className="namebtn" onClick={() => setNaming(true)}>
+            {devices.find((d) => d.id === deviceId())?.name ? 'edit' : 'name this phone'}
+          </button>
           <span className={`sync ${sync_.state}`}>
             <Icon name="cloud_done" size={15} />
           </span>
@@ -201,6 +240,16 @@ export function LogScreen() {
           )
         })}
       </ul>
+
+      {naming && (
+        <NamePrompt
+          current={devices.find((d) => d.id === deviceId())?.name ?? ''}
+          onDone={(name) => {
+            setNaming(false)
+            if (name !== null) void renameThisDevice(name).then(refresh)
+          }}
+        />
+      )}
 
       {sheet && (
         <AddSheet

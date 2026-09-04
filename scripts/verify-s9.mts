@@ -49,6 +49,17 @@ await renameThisDevice('   ')
 check('clearing the name stores null rather than blank',
   (await db.getDevices())[0].name === null)
 
+// --- a name has to be changeable after first run ---------------------------
+// Without this, the name set (or skipped) on first run was permanent unless
+// storage was cleared by hand — the settings screen that would hold it is
+// deferred, and this is the one thing in it that is not optional.
+await renameThisDevice('Mona')
+await renameThisDevice('Ada')
+check('a name can be changed after it is first set',
+  (await db.getDevices())[0].name === 'Ada')
+check('changing it queues a push so the other phone sees the new initial',
+  (await db.outbox()).some((i) => i.table === 'device'))
+
 // --- the update rule --------------------------------------------------------
 // Modelled rather than imported: updates.ts talks to a real service worker.
 // The rule is what matters, and it is the one that would silently lose typing.

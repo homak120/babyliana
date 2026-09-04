@@ -97,6 +97,18 @@ export default function SpikePage() {
         <br />
         device {deviceId().slice(0, 8)}
       </p>
+
+      <button
+        type="button"
+        onClick={() => {
+          // Only the welcome flag. Clearing the device id would mint a new one
+          // and orphan this device's row, taking its name with it.
+          localStorage.removeItem('babyliana.welcomed')
+          window.location.href = '/'
+        }}
+      >
+        show the welcome again
+      </button>
     </main>
   )
 }
