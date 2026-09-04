@@ -99,12 +99,12 @@ try {
     remote.data?.length === 1 && remote.data[0].volume_ml === 60,
     JSON.stringify(remote.data?.map((r) => r.volume_ml)))
 
-  // --- delete, and undo ----------------------------------------------------
+  // --- delete, and back out of the confirm sheet ----------------------------
   const doomed = await logMoment({ entries: [one({ key: 'x', type: 'milk', draft: { parts: [{ volume: 31, source: 'unknown' }], active: 0 } })] })
   made.push(doomed.timeslot.id)
   await sync()
-  // undo is "the timer never fired", so nothing was called — the row stands
-  check('an undone delete leaves the moment exactly where it was',
+  // Backing out is "removeMoment was never called" (Q-012), so the row stands
+  check('a delete backed out of leaves the moment exactly where it was',
     (await getMoments()).some((x) => x.timeslot.id === doomed.timeslot.id))
 
   // --- delete, and let it go -----------------------------------------------

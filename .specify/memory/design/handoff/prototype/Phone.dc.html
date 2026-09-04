@@ -50,34 +50,7 @@
           <div style="display:flex;align-items:center;gap:16px">
 
             <div style="position:relative;width:100px;height:96px;flex:none;animation:{{ mascotAnim }}">
-              <div style="position:absolute;left:44px;top:-8px;width:9px;height:16px;border-radius:5px;background:var(--vine,#7cc4a4);transform-origin:bottom center;animation:lianaLeaf 4s ease-in-out infinite"></div>
-              <div style="position:absolute;left:52px;top:-4px;width:16px;height:9px;border-radius:9px 2px 9px 2px;background:var(--vine,#7cc4a4);transform-origin:left center;animation:lianaLeaf 4s ease-in-out infinite"></div>
-              <div style="position:absolute;left:12px;top:6px;width:27px;height:27px;border-radius:50%;background:var(--furDark,#f9c3d1)"></div>
-              <div style="position:absolute;right:12px;top:6px;width:27px;height:27px;border-radius:50%;background:var(--furDark,#f9c3d1)"></div>
-              <div style="position:absolute;left:6px;top:18px;width:88px;height:78px;border-radius:46%;background:var(--fur,#ffd9e0);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;box-shadow:inset 0 -8px 14px var(--furDark,#f9c3d1)">
-                <div style="display:flex;gap:20px;align-items:center">
-                  <sc-if value="{{ eyesOpen }}" hint-placeholder-val="{{ true }}">
-                    <div style="width:10px;height:12px;border-radius:50%;background:var(--face,#6b4b52);animation:lianaBlink 5.5s infinite"></div>
-                    <div style="width:10px;height:12px;border-radius:50%;background:var(--face,#6b4b52);animation:lianaBlink 5.5s infinite"></div>
-                  </sc-if>
-                  <sc-if value="{{ eyesClosed }}" hint-placeholder-val="{{ false }}">
-                    <div style="width:15px;height:7px;border-radius:15px 15px 0 0;background:var(--face,#6b4b52)"></div>
-                    <div style="width:15px;height:7px;border-radius:15px 15px 0 0;background:var(--face,#6b4b52)"></div>
-                  </sc-if>
-                </div>
-                <sc-if value="{{ mouthOpen }}" hint-placeholder-val="{{ false }}">
-                  <div style="width:13px;height:11px;border-radius:0 0 13px 13px;background:var(--mouth,#d96a83)"></div>
-                </sc-if>
-                <sc-if value="{{ mouthSmall }}" hint-placeholder-val="{{ true }}">
-                  <div style="width:17px;height:7px;border-radius:0 0 17px 17px;background:var(--mouth,#d96a83)"></div>
-                </sc-if>
-                <div style="position:absolute;left:8px;top:44px;width:15px;height:9px;border-radius:50%;background:var(--blush,#ff9db1);opacity:0.7"></div>
-                <div style="position:absolute;right:8px;top:44px;width:15px;height:9px;border-radius:50%;background:var(--blush,#ff9db1);opacity:0.7"></div>
-              </div>
-              <div style="position:absolute;left:26px;bottom:-2px;width:48px;height:16px;border-radius:0 0 18px 18px;background:var(--bib,#a7d8ee)"></div>
-              <sc-if value="{{ showZ }}" hint-placeholder-val="{{ false }}">
-                <div style="position:absolute;right:-4px;top:-2px;font-size:15px;font-weight:700;color:var(--srcBInk2,#8f6bbd);animation:lianaZ 3.2s infinite">z</div>
-              </sc-if>
+              <img src="{{ mascotImg }}" alt="liana" style="position:absolute;left:-4px;top:-8px;width:108px;height:108px;object-fit:contain" />
               <sc-if value="{{ showSparkle }}" hint-placeholder-val="{{ false }}">
                 <span class="msr" style="position:absolute;right:-8px;top:-2px;font-size:22px;color:var(--amber,#f2a65a);animation:lianaSparkle 1.2s ease-out forwards">auto_awesome</span>
               </sc-if>
@@ -140,7 +113,10 @@
           <sc-if value="{{ r.showDay }}" hint-placeholder-val="{{ false }}">
             <div style="display:flex;align-items:center;gap:8px;padding:16px 4px 6px;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--periInk,#5d72b8)"><span>{{ r.dayLabel }}</span><span style="flex:1;height:1px;background:var(--periInk,#5d72b8);opacity:0.28"></span></div>
           </sc-if>
-          <div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--hair,#f0e2d9);font-size:15px;font-variant-numeric:tabular-nums">
+          <div style="position:relative;overflow:hidden">
+          <button type="button" onClick="{{ r.onEdit }}" style="position:absolute;right:88px;top:0;bottom:0;width:88px;border:0;background:var(--accent,#ef7f96);color:var(--onAccent,#fff8fa);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;text-align:left;padding-left:14px;cursor:pointer;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:16px">edit</span>edit</button>
+          <button type="button" onClick="{{ r.onDelete }}" style="position:absolute;right:0;top:0;bottom:0;width:88px;border:0;background:var(--delBg,#b8465f);color:var(--onDel,#fff1f5);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;text-align:left;padding-left:14px;cursor:pointer;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:16px">delete</span>delete</button>
+          <div onPointerDown="{{ r.onDown }}" onPointerMove="{{ r.onMove }}" onPointerUp="{{ r.onUp }}" style="position:relative;background:var(--bg,#fdf7f2);display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--hair,#f0e2d9);font-size:15px;font-variant-numeric:tabular-nums;touch-action:pan-y;transform:{{ r.tx }}">
             <span style="color:var(--muted,#a89890);width:82px;flex:none;font-size:13px">{{ r.time }}</span>
             <sc-if value="{{ r.hasFeed }}" hint-placeholder-val="{{ true }}">
               <span style="display:inline-flex;align-items:center;gap:5px;background:var(--roseFill,#ffe1e8);color:var(--roseInk,#c2506c);border-radius:999px;padding:3px 10px;font-weight:700;font-size:13px">
@@ -158,6 +134,7 @@
               </span>
             </sc-if>
             <span style="margin-left:auto;width:18px;height:18px;border-radius:50%;background:{{ r.byColor }};color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">{{ r.by }}</span>
+          </div>
           </div>
         </sc-for>
       </div>
@@ -197,7 +174,8 @@
             <div style="margin-bottom:14px">
               <sc-for list="{{ d.rows }}" as="r" hint-placeholder-count="6">
                 <div style="position:relative;overflow:hidden">
-                  <button type="button" onClick="{{ r.onEdit }}" style="position:absolute;right:0;top:0;bottom:0;width:88px;border:0;background:var(--accent,#ef7f96);color:var(--onAccent,#fff8fa);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;text-align:left;padding-left:14px;cursor:pointer;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:16px">edit</span>edit</button>
+                  <button type="button" onClick="{{ r.onEdit }}" style="position:absolute;right:88px;top:0;bottom:0;width:88px;border:0;background:var(--accent,#ef7f96);color:var(--onAccent,#fff8fa);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;text-align:left;padding-left:14px;cursor:pointer;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:16px">edit</span>edit</button>
+                  <button type="button" onClick="{{ r.onDelete }}" style="position:absolute;right:0;top:0;bottom:0;width:88px;border:0;background:var(--delBg,#b8465f);color:var(--onDel,#fff1f5);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;text-align:left;padding-left:14px;cursor:pointer;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:16px">delete</span>delete</button>
                   <div onPointerDown="{{ r.onDown }}" onPointerMove="{{ r.onMove }}" onPointerUp="{{ r.onUp }}" style="position:relative;background:var(--bg,#fdf7f2);border-bottom:1px solid var(--hair,#f0e2d9);padding:9px 18px;touch-action:pan-y;transform:{{ r.tx }}">
                     <div style="display:grid;grid-template-columns:38px 84px 1fr 70px 16px;gap:4px;font-size:15px;font-variant-numeric:tabular-nums">
                       <span style="color:var(--muted,#a89890);font-size:12px">{{ r.dateCell }}</span>
@@ -229,7 +207,8 @@
               </div>
               <sc-for list="{{ d.rows }}" as="r" hint-placeholder-count="5">
                 <div style="position:relative;overflow:hidden">
-                  <button type="button" onClick="{{ r.onEdit }}" style="position:absolute;right:0;top:0;bottom:0;width:88px;border:0;background:var(--accent,#ef7f96);color:var(--onAccent,#fff8fa);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;text-align:left;padding-left:14px;cursor:pointer;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:16px">edit</span>edit</button>
+                  <button type="button" onClick="{{ r.onEdit }}" style="position:absolute;right:88px;top:0;bottom:0;width:88px;border:0;background:var(--accent,#ef7f96);color:var(--onAccent,#fff8fa);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;text-align:left;padding-left:14px;cursor:pointer;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:16px">edit</span>edit</button>
+                  <button type="button" onClick="{{ r.onDelete }}" style="position:absolute;right:0;top:0;bottom:0;width:88px;border:0;background:var(--delBg,#b8465f);color:var(--onDel,#fff1f5);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;text-align:left;padding-left:14px;cursor:pointer;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:16px">delete</span>delete</button>
                   <div onPointerDown="{{ r.onDown }}" onPointerMove="{{ r.onMove }}" onPointerUp="{{ r.onUp }}" style="position:relative;background:var(--card,#ffffff);border-top:1px solid var(--hair,#f0e2d9);padding:11px 16px;touch-action:pan-y;transform:{{ r.tx }}">
                     <div style="display:flex;gap:8px;align-items:center;font-size:15px;font-variant-numeric:tabular-nums;flex-wrap:wrap">
                       <span style="color:var(--muted,#a89890);width:82px;flex:none;font-size:13px">{{ r.time }}</span>
@@ -262,7 +241,8 @@
               <div style="font-size:12px;font-weight:900;padding-bottom:6px;color:var(--roseInk,#c2506c)">{{ d.date }}</div>
               <sc-for list="{{ d.rows }}" as="r" hint-placeholder-count="5">
                 <div style="position:relative;overflow:hidden">
-                  <button type="button" onClick="{{ r.onEdit }}" style="position:absolute;right:0;top:0;bottom:0;width:88px;border:0;background:var(--accent,#ef7f96);color:var(--onAccent,#fff8fa);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;text-align:left;padding-left:14px;cursor:pointer;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:16px">edit</span>edit</button>
+                  <button type="button" onClick="{{ r.onEdit }}" style="position:absolute;right:88px;top:0;bottom:0;width:88px;border:0;background:var(--accent,#ef7f96);color:var(--onAccent,#fff8fa);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;text-align:left;padding-left:14px;cursor:pointer;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:16px">edit</span>edit</button>
+                  <button type="button" onClick="{{ r.onDelete }}" style="position:absolute;right:0;top:0;bottom:0;width:88px;border:0;background:var(--delBg,#b8465f);color:var(--onDel,#fff1f5);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;text-align:left;padding-left:14px;cursor:pointer;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:16px">delete</span>delete</button>
                   <div onPointerDown="{{ r.onDown }}" onPointerMove="{{ r.onMove }}" onPointerUp="{{ r.onUp }}" style="position:relative;background:var(--bg,#fdf7f2);display:grid;grid-template-columns:54px 26px 1fr;touch-action:pan-y;transform:{{ r.tx }}">
                     <div style="padding:12px 8px 12px 0;text-align:right;font-size:14px;font-variant-numeric:tabular-nums;color:var(--muted,#a89890)">{{ r.time }}</div>
                     <div style="position:relative;display:flex;justify-content:center">
@@ -297,6 +277,19 @@
     <div style="flex:1"></div>
     <button type="button" onClick="{{ goDay }}" style="width:56px;height:56px;flex:none;border:0;border-radius:28px;background:var(--tabDay,transparent);color:var(--tabDayInk,#a89890);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:24px">calendar_month</span></button>
   </div>
+
+  <sc-if value="{{ confirmOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;background:rgba(40,25,35,0.42);border-radius:38px;display:flex;align-items:flex-end">
+      <div style="width:100%;background:var(--card,#ffffff);border-radius:32px 32px 38px 38px;padding:24px 22px 26px">
+        <div style="display:flex;align-items:center;gap:9px;font-weight:900;font-size:21px;color:var(--delInk,#b8465f)"><span class="msr" style="font-size:24px">delete</span>delete this entry?</div>
+        <div style="font-size:14px;color:var(--muted,#a89890);margin:8px 0 20px;text-wrap:pretty">{{ confirmLabel }} — this removes it for everyone logging liana.</div>
+        <div style="display:flex;gap:10px">
+          <button type="button" onClick="{{ cancelDelete }}" style="flex:1;height:52px;border:0;border-radius:26px;background:var(--chip,#f6ece6);color:var(--ink,#4b403a);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:16px;cursor:pointer">keep it</button>
+          <button type="button" onClick="{{ doDelete }}" style="flex:1;height:52px;border:0;border-radius:26px;background:var(--delBg,#b8465f);color:var(--onDel,#fff1f5);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:16px;cursor:pointer">delete</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
 
   <sc-if value="{{ pickerOpen }}" hint-placeholder-val="{{ false }}">
     <div style="position:absolute;inset:0;background:var(--bg,#fdf7f2);border-radius:38px;display:flex;flex-direction:column">
@@ -528,15 +521,7 @@
 
       <div style="position:relative;flex:1;display:flex;flex-direction:column;padding:64px 26px 26px">
         <div style="position:relative;width:76px;height:74px;margin-bottom:22px;animation:lianaBreathe 7s ease-in-out infinite">
-          <div style="position:absolute;left:33px;top:-6px;width:7px;height:13px;border-radius:4px;background:var(--vine,#7cc4a4);transform-origin:bottom center;animation:lianaLeaf 4s ease-in-out infinite"></div>
-          <div style="position:absolute;left:8px;top:5px;width:21px;height:21px;border-radius:50%;background:var(--furDark,#f9c3d1)"></div>
-          <div style="position:absolute;right:8px;top:5px;width:21px;height:21px;border-radius:50%;background:var(--furDark,#f9c3d1)"></div>
-          <div style="position:absolute;left:6px;top:12px;right:6px;bottom:4px;border-radius:50% 50% 46% 46%;background:var(--fur,#fddde6);display:flex;align-items:center;justify-content:center">
-            <div style="display:flex;gap:15px;align-items:center;margin-top:-4px">
-              <div style="width:8px;height:10px;border-radius:50%;background:var(--face,#6b4b52);animation:lianaBlink 5.5s infinite"></div>
-              <div style="width:8px;height:10px;border-radius:50%;background:var(--face,#6b4b52);animation:lianaBlink 5.5s infinite"></div>
-            </div>
-          </div>
+          <img src="assets/liana-home.png" alt="liana" style="position:absolute;left:-4px;top:-8px;width:88px;height:88px;object-fit:contain" />
         </div>
 
         <div style="font-size:13px;color:var(--muted,#a89890);letter-spacing:0.14em;text-transform:uppercase;font-weight:700">welcome</div>
@@ -570,7 +555,7 @@
 const pad = n => String(n).padStart(2, '0');
 
 class Component extends DCLogic {
-  state = { screen: 'home', sheet: null, draft: null, swipeId: null, dx: 0, entries: this.seed(), justSaved: false, setupDone: false, setupName: '', userName: '' };
+  state = { screen: 'home', sheet: null, draft: null, swipeId: null, dx: 0, confirmDel: null, entries: this.seed(), justSaved: false, setupDone: false, setupName: '', userName: '' };
   deviceId = 'LNA-7QD4-8213';
 
   seed() {
@@ -691,20 +676,21 @@ class Component extends DCLogic {
     return Array.from(map.values());
   }
 
-  swipeHandlers(key, editId) {
+  swipeHandlers(key, editId, delIds, delLabel) {
     return {
       onDown: ev => { this._sx = ev.clientX; this._sk = key; },
       onMove: ev => {
         if (this._sk !== key || this._sx == null) return;
-        const d = Math.max(-88, Math.min(0, ev.clientX - this._sx));
+        const d = Math.max(-176, Math.min(0, ev.clientX - this._sx));
         if (Math.abs(d) > 4) this.setState({ swipeId: key, dx: d });
       },
       onUp: () => {
         if (this._sk !== key) return;
         this._sx = null; this._sk = null;
-        this.setState(s => ({ swipeId: key, dx: s.dx < -40 ? -88 : 0 }));
+        this.setState(s => ({ swipeId: key, dx: s.dx < -60 ? -176 : 0 }));
       },
-      onEdit: () => this.openEdit(editId)
+      onEdit: () => this.openEdit(editId),
+      onDelete: () => this.setState({ confirmDel: { ids: delIds, label: delLabel } })
     };
   }
 
@@ -853,7 +839,9 @@ class Component extends DCLogic {
       srcBInk2: t.lavInk,
       sheetIconColor: sheet === 'diaper' ? t.mint : sheet === 'other' ? t.lavInk : t.accent,
       tabLog: screen === 'home' ? t.roseFill : 'transparent', tabLogInk: screen === 'home' ? t.roseInk : t.muted,
-      tabDay: screen === 'day' ? t.lavFill : 'transparent', tabDayInk: screen === 'day' ? t.lavInk : t.muted
+      tabDay: screen === 'day' ? t.lavFill : 'transparent', tabDayInk: screen === 'day' ? t.lavInk : t.muted,
+      delBg: night ? '#8c3a52' : '#b8465f', onDel: night ? '#fbe6ee' : '#fff1f5',
+      delInk: night ? '#e5a6bd' : '#b8465f'
     }) + (d ? ';' + cssVars({
       minU: sel(d.minUnknown, t.lavFill), minUInk: selInk(d.minUnknown, t.lavInk),
       srcB: sel(d.parts[d.active] && d.parts[d.active].src === 'B', t.lilacFill), srcBInk: selInk(d.parts[d.active] && d.parts[d.active].src === 'B', t.lilacInk),
@@ -864,7 +852,9 @@ class Component extends DCLogic {
 
     const mkRow = (r, i, day) => {
       const editId = r.feed ? r.feed.id : (r.diaper ? r.diaper.id : (r.peeE ? r.peeE.id : (r.other ? r.other.id : null)));
-      const h = this.swipeHandlers(r.key, editId);
+      const delIds = [r.feed, r.diaper, r.peeE, r.other].filter(Boolean).map(e => e.id);
+      const delWhat = [r.feed ? this.fmtMilk(r.feed) + ' mL feed' : '', r.peeE ? 'pee' : '', (r.diaper && r.diaper.poop) ? 'poop' : (r.diaper && r.diaper.pee ? 'pee' : ''), r.other ? 'note' : ''].filter(Boolean).join(' + ');
+      const h = this.swipeHandlers(r.key, editId, delIds, this.usDay(day) + ' ' + r.time + (delWhat ? ' · ' + delWhat : ''));
       const milkUnknown = !!(r.feed && r.feed.parts.length === 1 && r.feed.parts[0].vol == null);
       const milkTxt = r.feed ? this.fmtMilk(r.feed) : '';
       return {
@@ -882,7 +872,7 @@ class Component extends DCLogic {
         dotInk: r.feed ? t.roseInk : (r.diaper && r.diaper.poop) ? t.mintInk : t.yellowInk,
         note: r.notes.join(' · '), hasNote: r.notes.length > 0,
         tx: this.state.swipeId === r.key ? 'translateX(' + this.state.dx + 'px)' : 'translateX(0px)',
-        onDown: h.onDown, onMove: h.onMove, onUp: h.onUp, onEdit: h.onEdit
+        onDown: h.onDown, onMove: h.onMove, onUp: h.onUp, onEdit: h.onEdit, onDelete: h.onDelete
       };
     };
 
@@ -1027,8 +1017,9 @@ class Component extends DCLogic {
       lastVolLine: lastVol + ' mL · ' + (lastFeed ? lastFeed.by : ''),
       lastFeedTime: lastFeed ? 'at ' + this.fmtTime(lastFeed) + ' · logged by ' + lastFeed.by : '',
       mascotWord: stateMeta.word, stateIcon: stateMeta.icon,
+      mascotImg: 'assets/liana-' + (mstate === 'flash' ? 'awake' : mstate) + '.png',
       mascotAnim: mstate === 'flash' ? 'lianaPop 0.6s ease-out' : mstate === 'sleeping' ? 'lianaBreathe 5s ease-in-out infinite' : 'lianaBreathe 7s ease-in-out infinite',
-      eyesOpen: mstate === 'awake' || mstate === 'hungry' || mstate === 'flash',
+      eyesOpen: false,
       eyesClosed: mstate === 'settled' || mstate === 'sleeping',
       mouthOpen: mstate === 'hungry', mouthSmall: mstate !== 'hungry',
       showZ: mstate === 'sleeping', showSparkle: mstate === 'flash',
@@ -1063,6 +1054,13 @@ class Component extends DCLogic {
       setupDisabled: !this.state.setupName.trim(),
       setupOpacity: this.state.setupName.trim() ? 1 : 0.45,
       finishSetup: () => this.setState(s => ({ setupDone: true, userName: s.setupName.trim() })),
+      confirmOpen: !!this.state.confirmDel,
+      confirmLabel: this.state.confirmDel ? this.state.confirmDel.label : '',
+      cancelDelete: () => this.setState({ confirmDel: null, swipeId: null, dx: 0 }),
+      doDelete: () => this.setState(s => ({
+        entries: s.entries.filter(e => !s.confirmDel.ids.includes(e.id)),
+        confirmDel: null, swipeId: null, dx: 0
+      })),
       goHome: () => this.setState({ screen: 'home', swipeId: null, dx: 0 }),
       goDay: () => this.setState({ screen: 'day' }),
       openFeed: () => this.setState({ sheet: 'feed', draft: this.newDraft('feed') }),

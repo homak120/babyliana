@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { sameDay, totalsOf } from '../derive'
 import { AddSheet } from '../log/AddSheet'
 import { getMoments, removeMoment } from '../moments'
@@ -6,8 +6,9 @@ import { getDevices } from '../db'
 import { subscribe, sync } from '../sync'
 import type { Device, Moment } from '../types'
 import { Icon } from '../log/Icon'
-import { chronological, daysWithEntries } from './cells'
+import { chronological, daysWithEntries, describeMoment } from './cells'
 import { DayRow } from './DayRow'
+import { ConfirmDelete } from '../swipe/ConfirmDelete'
 import { PeriodPicker } from './PeriodPicker'
 import { isoOf, rangeLabel, type Range } from './period'
 
@@ -20,8 +21,6 @@ const dayPill = (d: Date) =>
     ? `today ${d.getMonth() + 1}/${d.getDate()}`
     : `${d.getMonth() + 1}/${d.getDate()}`
 
-/** How long a deleted moment is held before it actually goes (D-025). */
-const UNDO_MS = 5000
 const ALL = 'all' as const
 
 export function DayScreen() {
@@ -37,21 +36,10 @@ export function DayScreen() {
   const [range, setRange] = useState<Range | null>(null)
   const [picking, setPicking] = useState(false)
 
-  // The moment is hidden at once and actually deleted when the toast expires.
-  // D-003 is a hard delete with no tombstone, so once it goes there is nothing
-  // to restore it from — the window is the only recourse a mis-swipe has.
-  const [undo, setUndo] = useState<Moment | null>(null)
-  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Nothing is removed until the sheet is confirmed (Q-012). D-003 is a hard
+  // delete with no tombstone, so the check happens before, not after.
+  const [pendingDelete, setPendingDelete] = useState<Moment | null>(null)
 
-
-  // If the screen goes away mid-window the delete still happens. You asked for
-  // it; silently keeping the row would be the surprising outcome.
-  useEffect(
-    () => () => {
-      if (undoTimer.current) clearTimeout(undoTimer.current)
-    },
-    [],
-  )
 
   const refresh = useCallback(() => {
     getMoments().then(setMoments)
@@ -61,9 +49,7 @@ export function DayScreen() {
 
   const commitDelete = useCallback(
     (id: string) => {
-      if (undoTimer.current) clearTimeout(undoTimer.current)
-      undoTimer.current = null
-      setUndo(null)
+      setPendingDelete(null)
       void removeMoment(id).then(() => {
         refresh()
         void sync()
@@ -83,7 +69,7 @@ export function DayScreen() {
     }
     return showingAll || sameDay(m.timeslot.occurred_at, selected)
   })
-  const forDay = chronological(inScope.filter((m) => m.timeslot.id !== undo?.timeslot.id))
+  const forDay = chronological(inScope)
   // Totalled over what is actually on screen, so the numbers match the heading.
   const totals = totalsOf(forDay)
   const withData = new Set(moments.map((m) => isoOf(new Date(m.timeslot.occurred_at))))
@@ -153,29 +139,17 @@ export function DayScreen() {
             name={nameFor(m.timeslot.logged_by)}
             allDeviceIds={devices.map((d) => d.id)}
             onEdit={() => setEditing(m)}
-            onDelete={() => {
-              setUndo(m)
-              if (undoTimer.current) clearTimeout(undoTimer.current)
-              undoTimer.current = setTimeout(() => commitDelete(m.timeslot.id), UNDO_MS)
-            }}
+            onDelete={() => setPendingDelete(m)}
           />
         ))}
       </div>
 
-      {undo && (
-        <div className="toast" role="status">
-          <span>moment deleted</span>
-          <button
-            type="button"
-            onClick={() => {
-              if (undoTimer.current) clearTimeout(undoTimer.current)
-              undoTimer.current = null
-              setUndo(null)
-            }}
-          >
-            undo
-          </button>
-        </div>
+      {pendingDelete && (
+        <ConfirmDelete
+          label={describeMoment(pendingDelete)}
+          onKeep={() => setPendingDelete(null)}
+          onDelete={() => commitDelete(pendingDelete.timeslot.id)}
+        />
       )}
 
       {picking && (

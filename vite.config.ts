@@ -46,7 +46,18 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webp}'],
+        // The mascot ships as WebP with a PNG fallback. Every browser this app
+        // runs on takes the WebP, so precaching the fallbacks would add ~650KB
+        // to the offline bundle that nobody ever downloads. They stay deployed
+        // and fetchable; they are just not part of the offline payload.
+        //
+        // The 1024 icon is the same story: the manifest references it, install
+        // happens online, and it is 840KB.
+        globIgnores: [
+          'assets/{settled,awake,hungry,sleeping,home}-*.png',
+          'pwa-1024x1024.png',
+        ],
         // The app must open with no signal, and the font carries the product's
         // tone — falling back to system sans offline would make it look broken
         // rather than plain. Cache-first: these files never change.

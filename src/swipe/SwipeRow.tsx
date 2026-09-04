@@ -5,7 +5,7 @@ import './swipe.css'
 /** Two 88px actions, so an open row sits at 176. */
 const ACTIONS_W = 176
 /** Past this, the row stays open; short of it, it springs back. */
-const SNAP_AT = 40
+const SNAP_AT = 60
 /** Horizontal travel before the row starts visibly moving. */
 const ENGAGE_AT = 8
 /**

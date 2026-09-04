@@ -16,6 +16,13 @@ or a product with a personal skin. Both are legitimate. They are different apps.
 Anything recognisably derived from an existing IP becomes a problem the moment
 money is involved.
 
+**2026-09-04.** The second design delivery ships supplied artwork for all four
+states plus the welcome and the app icon, and says *"ensure the client holds the
+rights to them"*. That answers the mechanical half of this question — there is
+per-state art, so a flat image no longer costs the states — and leaves the half
+that was always the owner's. The caution above stands unchanged and needs no
+further flagging.
+
 ---
 
 ### Q-004 — Does Safari evict IndexedDB, and on what timeline?

@@ -47,6 +47,7 @@ check('future days disabled', (await p.locator('.cal:disabled').count()) >= 0, `
 await p.getByRole('button', { name: 'last 7 days' }).click()
 await p.waitForTimeout(200)
 // "last 7 days" straddles two months, so only one edge is in the visible grid.
+check('today preset exists', await p.getByRole('button', { name: 'today', exact: true }).isVisible(), 'first preset')
 check('preset marks an edge', (await p.locator('.cal.edge').count()) >= 1, `${await p.locator('.cal.edge').count()} edge(s) in view`)
 check('preset fills the span', (await p.locator('.cal.between').count()) > 0, `${await p.locator('.cal.between').count()} days between`)
 await p.getByLabel('next month').click()

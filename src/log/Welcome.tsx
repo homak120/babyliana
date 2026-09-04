@@ -35,7 +35,7 @@ export function Welcome({ onDone }: { onDone: () => void }) {
 
   return (
     <main className="welcome">
-      <Mascot state="settled" size={76} />
+      <Mascot state="settled" size={88} welcome />
 
       <p className="kickerup">welcome</p>
       <h1>

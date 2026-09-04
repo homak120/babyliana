@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   formatElapsed,
   lastFeedAt,
@@ -10,7 +10,7 @@ import {
   type MascotState,
 } from '../derive'
 import { getDevices } from '../db'
-import { avatarClass } from '../day/cells'
+import { avatarClass, describeMoment } from '../day/cells'
 import { getDeviceId } from '../device-id'
 import { getMoments, removeMoment, renameThisDevice } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
@@ -19,11 +19,9 @@ import { AddSheet } from './AddSheet'
 import { Icon } from './Icon'
 import { Mascot } from './Mascot'
 import { SwipeRow } from '../swipe/SwipeRow'
+import { ConfirmDelete } from '../swipe/ConfirmDelete'
 
 // Icon per state, exactly as the handoff pairs them.
-/** How long a deleted moment is held before it actually goes (D-025). */
-const UNDO_MS = 5000
-
 const STATE: Record<MascotState, { word: string; icon: string }> = {
   settled: { word: 'settled', icon: 'spa' },
   awake: { word: 'awake', icon: 'visibility' },
@@ -111,10 +109,8 @@ export function LogScreen() {
   // The home screen is where the app is actually used.
   const [editing, setEditing] = useState<Moment | null>(null)
 
-  // Hidden at once, deleted when the toast expires. D-003 is a hard delete with
-  // no tombstone, so this window is the only recourse a mis-swipe has.
-  const [undo, setUndo] = useState<Moment | null>(null)
-  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Nothing is removed until the sheet is confirmed (Q-012).
+  const [pendingDelete, setPendingDelete] = useState<Moment | null>(null)
 
   const refresh = useCallback(() => {
     getMoments().then(setMoments)
@@ -123,15 +119,9 @@ export function LogScreen() {
 
   useEffect(refresh, [refresh])
 
-  // If the screen goes away mid-window the delete still happens. You asked for
-  // it; silently keeping the row would be the surprising outcome.
-  useEffect(() => () => { if (undoTimer.current) clearTimeout(undoTimer.current) }, [])
-
   const commitDelete = useCallback(
     (id: string) => {
-      if (undoTimer.current) clearTimeout(undoTimer.current)
-      undoTimer.current = null
-      setUndo(null)
+      setPendingDelete(null)
       void removeMoment(id).then(() => { refresh(); void sync() })
     },
     [refresh],
@@ -150,7 +140,7 @@ export function LogScreen() {
     document.documentElement.dataset.theme = theme
   }, [theme])
 
-  const shown = moments.filter((m) => m.timeslot.id !== undo?.timeslot.id)
+  const shown = moments
   const since = minutesSince(lastFeedAt(moments), now)
   const totals = totalsFor(moments, now)
   const state = mascotState(since, theme, justLogged)
@@ -233,11 +223,7 @@ export function LogScreen() {
               <SwipeRow
                 className="row"
                 onEdit={() => setEditing(m)}
-                onDelete={() => {
-                  setUndo(m)
-                  if (undoTimer.current) clearTimeout(undoTimer.current)
-                  undoTimer.current = setTimeout(() => commitDelete(m.timeslot.id), UNDO_MS)
-                }}
+                onDelete={() => setPendingDelete(m)}
               >
                 <time>{time(m.timeslot.occurred_at)}</time>
                 <span className="chips">
@@ -293,20 +279,12 @@ export function LogScreen() {
         />
       )}
 
-      {undo && (
-        <div className="toast" role="status">
-          <span>moment deleted</span>
-          <button
-            type="button"
-            onClick={() => {
-              if (undoTimer.current) clearTimeout(undoTimer.current)
-              undoTimer.current = null
-              setUndo(null)
-            }}
-          >
-            undo
-          </button>
-        </div>
+      {pendingDelete && (
+        <ConfirmDelete
+          label={describeMoment(pendingDelete)}
+          onKeep={() => setPendingDelete(null)}
+          onDelete={() => commitDelete(pendingDelete.timeslot.id)}
+        />
       )}
 
       {editing && (

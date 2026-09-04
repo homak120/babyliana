@@ -555,6 +555,21 @@ against the day view, three of them on wrong diagnoses, before anyone noticed th
 screens differed. The gesture now lives in one shared component
 (`src/swipe/SwipeRow.tsx`) used by both, so the two cannot drift again.
 
+**Reversed on the confirmation, 2026-09-04 (Q-012, closed by the owner).** The
+second design delivery specified a bottom confirm sheet naming the entry, and
+that is what ships. The undo toast is gone.
+
+The original reasoning here — that a modal in front of someone holding a baby at
+4am is the friction that sends people back to the pen — was sound but lost to the
+stronger point: D-003 is a **hard delete with no tombstone**, it syncs to the
+other phone, and there is nothing to restore from. A confirmation that names the
+row back ("9/3 · 21:35 · 60(B) + 73(F)") turns an irreversible action into a
+readable one, and costs one tap on an action taken rarely. `keep it` is the
+wider of the two buttons, deliberately.
+
+The rest of D-025 stands unchanged: two actions, both lists, delete takes the
+whole moment.
+
 **Consequence for the build.** The client holds a deleted moment briefly rather
 than deleting straight away, so S8 owns the undo window, not just the delete.
 

@@ -1,18 +1,46 @@
 import type { MascotState } from '../derive'
 
-// Liana, drawn in CSS exactly as the Phase 2 handoff draws her. Phase 7 decides
-// whether she is the baby or a separate creature (Q-003) and may replace this
-// with commissioned art; until then this is the design as delivered.
+import settledWebp from '../assets/mascot/settled.webp'
+import awakeWebp from '../assets/mascot/awake.webp'
+import hungryWebp from '../assets/mascot/hungry.webp'
+import sleepingWebp from '../assets/mascot/sleeping.webp'
+import homeWebp from '../assets/mascot/home.webp'
+import settledPng from '../assets/mascot/settled.png'
+import awakePng from '../assets/mascot/awake.png'
+import hungryPng from '../assets/mascot/hungry.png'
+import sleepingPng from '../assets/mascot/sleeping.png'
+import homePng from '../assets/mascot/home.png'
+
+// Liana, as supplied artwork. The second design delivery ships one transparent
+// PNG per state, which is what made the switch from the CSS composition
+// possible at all — a single flat image would have collapsed the five states
+// into one expression.
 //
-// Her states are derived and descriptive only. She never nags.
+// Her states stay derived and descriptive only. She never nags.
 
-const ASLEEP: MascotState[] = ['sleeping']
+/** `logged` reuses the awake art, as the handoff specifies. */
+const ART: Record<MascotState | 'home', { webp: string; png: string }> = {
+  settled: { webp: settledWebp, png: settledPng },
+  awake: { webp: awakeWebp, png: awakePng },
+  hungry: { webp: hungryWebp, png: hungryPng },
+  sleeping: { webp: sleepingWebp, png: sleepingPng },
+  logged: { webp: awakeWebp, png: awakePng },
+  home: { webp: homeWebp, png: homePng },
+}
 
-export function Mascot({ state, size = 100 }: { state: MascotState; size?: number }) {
-  const s = size / 100
-  const px = (n: number) => `${n * s}px`
-  const asleep = ASLEEP.includes(state)
+export function Mascot({
+  state, size = 108, welcome = false,
+}: {
+  state: MascotState
+  size?: number
+  /** The welcome screen uses its own art rather than a state. */
+  welcome?: boolean
+}) {
+  const art = ART[welcome ? 'home' : state]
+  const asleep = state === 'sleeping'
 
+  // The z marks are painted into the sleeping artwork, so there is no CSS
+  // overlay any more — two sets would read as a mistake.
   const animation =
     state === 'logged'
       ? 'lianaPop 0.6s ease-out'
@@ -21,44 +49,15 @@ export function Mascot({ state, size = 100 }: { state: MascotState; size?: numbe
         : 'lianaBreathe 7s ease-in-out infinite'
 
   return (
-    <div
-      className="mascot"
-      style={{ width: px(100), height: px(96), animation }}
-      aria-label={`Liana is ${state}`}
-      role="img"
-    >
-      <i className="vine" style={{ left: px(44), top: px(-8), width: px(9), height: px(16) }} />
-      <i className="leaf" style={{ left: px(52), top: px(-4), width: px(16), height: px(9) }} />
-      <i className="ear" style={{ left: px(12), top: px(6), width: px(27), height: px(27) }} />
-      <i className="ear" style={{ right: px(12), top: px(6), width: px(27), height: px(27) }} />
-
-      <div className="face" style={{ gap: px(5) }}>
-        <div className="eyes" style={{ gap: px(20) }}>
-          {asleep ? (
-            <>
-              <i className="eye shut" style={{ width: px(15), height: px(7) }} />
-              <i className="eye shut" style={{ width: px(15), height: px(7) }} />
-            </>
-          ) : (
-            <>
-              <i className="eye" style={{ width: px(10), height: px(12) }} />
-              <i className="eye" style={{ width: px(10), height: px(12) }} />
-            </>
-          )}
-        </div>
-        {state === 'hungry' ? (
-          <i className="mouth open" style={{ width: px(13), height: px(11) }} />
-        ) : (
-          <i className="mouth" style={{ width: px(17), height: px(7) }} />
-        )}
-      </div>
-
-      {asleep && (
-        <>
-          <i className="z" style={{ right: px(-2), top: px(6) }}>z</i>
-          <i className="z slow" style={{ right: px(-8), top: px(16) }}>z</i>
-        </>
-      )}
-    </div>
+    <picture className="mascot" style={{ width: `${size}px`, animation }}>
+      <source srcSet={art.webp} type="image/webp" />
+      <img
+        src={art.png}
+        alt=""
+        width={size}
+        role="img"
+        aria-label={welcome ? 'Liana' : `Liana is ${state}`}
+      />
+    </picture>
   )
 }

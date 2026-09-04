@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Icon } from '../log/Icon'
-import { pad2 as pad, rangeLabel, shiftIso as shift, type Range } from './period'
+import { pad2 as pad, shiftIso as shift, type Range } from './period'
 
 // The period picker from the Phone prototype's day view. The app shipped the
 // date pills but not this, so any day older than the handful of pills was
@@ -11,6 +11,13 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+
+/** "1 day" / "7 days" — the spec labels apply with the span, not the dates. */
+function spanLabel(from: string, to: string) {
+  const ms = new Date(`${to}T00:00:00`).getTime() - new Date(`${from}T00:00:00`).getTime()
+  const days = Math.round(ms / 86_400_000) + 1
+  return days === 1 ? '1 day' : `${days} days`
+}
 
 export function PeriodPicker({
   today, withData, initial, onClose, onApply,
@@ -32,6 +39,7 @@ export function PeriodPicker({
   const length = new Date(year, month, 0).getDate()
 
   const presets: [string, string, string][] = [
+    ['today', today, today],
     ['last 7 days', shift(today, -6), today],
     ['last 14 days', shift(today, -13), today],
     ['this month', `${today.slice(0, 7)}-01`, today],
@@ -100,12 +108,16 @@ export function PeriodPicker({
             {Array.from({ length: lead }, (_, i) => <span key={`b${i}`} />)}
             {Array.from({ length }, (_, i) => {
               const iso = `${year}-${pad(month)}-${pad(i + 1)}`
-              const edge = iso === from || iso === to
+              const isFrom = iso === from
+              const isTo = iso === to || (from && !to && iso === from)
+              const edge = isFrom || iso === to
               const between = from && to ? iso > from && iso < to : false
               const future = iso > today
               const cls = [
                 'cal',
                 edge ? 'edge' : '',
+                isFrom ? 'from' : '',
+                isTo ? 'to' : '',
                 between ? 'between' : '',
                 iso === today ? 'today' : '',
               ].filter(Boolean).join(' ')
@@ -136,7 +148,7 @@ export function PeriodPicker({
           onClick={() => from && onApply({ from, to: to ?? from })}
         >
           <Icon name="check_circle" size={24} />
-          {from ? `show ${rangeLabel({ from, to: to ?? from })}` : 'pick a day'}
+          {from ? `apply · ${spanLabel(from, to ?? from)}` : 'pick a day'}
         </button>
       </div>
     </div>

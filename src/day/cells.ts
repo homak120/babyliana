@@ -113,3 +113,32 @@ export function avatarClass(deviceId: string, allIds: string[]): string {
   const i = [...allIds].sort().indexOf(deviceId)
   return i % 2 === 0 ? 'avatar avatar-m' : 'avatar avatar-a'
 }
+
+/**
+ * "9/3 · 21:35 · 60(B) + 73(F)" — the entry named back to you in the delete
+ * confirm sheet (Q-012).
+ *
+ * A hard delete with no tombstone (D-003) is the one place worth spending a
+ * sentence on being sure you have the right row, so this says what the row was,
+ * not just that it exists.
+ */
+export function describeMoment(m: Moment): string {
+  const d = new Date(m.timeslot.occurred_at)
+  const milk = milkCell(m.events)
+  const { pee, poop } = diaperParts(m.events)
+  const rest = otherCell(m.events)
+
+  const what = [
+    milk ? milk.parts.join(' + ') : null,
+    pee ? 'pee' : null,
+    poop,
+    rest,
+  ].filter(Boolean).join(' · ')
+
+  return [
+    `${d.getMonth() + 1}/${d.getDate()}`,
+    timeCell(m),
+    // A moment can be a note and nothing else, and that is still worth naming.
+    what || (m.timeslot.note ? 'note' : 'empty'),
+  ].join(' · ')
+}

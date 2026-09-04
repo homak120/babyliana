@@ -1,20 +1,21 @@
 # Handoff: BabyLiana — baby log (iOS/Android phone app)
 
-> **Amended after delivery, 2026-09-03.** The unknown-minute marker described in
-> the original handoff has been struck from this document. D-018 in
-> `docs/decisions.md` rules out any time-precision marker — no `exact` /
-> `approximate` / `unknown`, no `?`, no `~` — because a phone knows the time and
-> the paper log's `04:?` is a workaround for a pen that does not. The app answers
-> that case with fast time *adjustment* instead, which this design already does
-> well via the steppers and offset pills.
+> **Delivered 2026-09-04. Kept verbatim.** Two things in it are overridden by
+> decisions this repo has already taken, and a cold session that builds straight
+> from this document will get them wrong:
 >
-> The prototype HTML still carries dormant `minUnknown` scaffolding. It is
-> unreachable — nothing sets it and no seeded row uses it — and has been left
-> as delivered rather than edited. **Do not build it.**
+> 1. **The unknown-minute `?` is struck.** D-018 rules out any time-precision
+>    marker. This is the second delivery to carry it; do not build `minUnknown`,
+>    and do not re-raise it.
+> 2. ~~**Delete's confirm sheet conflicts with D-025**~~, which chose immediate
+>    delete with an undo toast specifically to keep a modal away from someone
+>    holding a baby at 4am. **Resolved 2026-09-04 in the design's favour** —
+>    the confirm sheet ships. D-025 records why.
 >
-> Other divergences between this handoff and the current data model are listed
-> in `.specify/memory/design/phase-2-reconciliation.md`. They are remapping
-> work for Phase 6, not design problems.
+> Everything else here is the specification. Read
+> `.specify/memory/design/phase-2-reconciliation.md` before building from it:
+> it lists the data-shape remapping and the fidelity gaps against what is built.
+
 
 ## Overview
 
@@ -73,7 +74,7 @@ Top to bottom:
 
 | Element | Spec |
 | --- | --- |
-| Mascot | 76 × 74px, `lianaBreathe 7s ease-in-out infinite`, eyes blink on `lianaBlink 5.5s`. Margin-bottom 22px. |
+| Mascot | `assets/liana-home.png` at 88 × 88px, `lianaBreathe 7s ease-in-out infinite`. Margin-bottom 22px. |
 | Kicker | "welcome" — 13px / 700, `letter-spacing: 0.14em`, uppercase, `--muted` |
 | Headline | "what should we call you?" — 30px / 900, `line-height: 1.2`, breaks after "we", margins `6px 0 8px` |
 | Sub | "your name marks every entry you log, so liana's other grown-ups know who did what." — 14px, `--muted`, margin-bottom 26px |
@@ -132,7 +133,8 @@ as tags, then "most recent first" list, then the tab bar.
   rule, padding `9px 18px`.
   - date cell prints only on the first row of a day (12px, `--muted`); other
     rows inherit it, exactly like the paper page.
-  - time prints `HH:MM`, or `HH:MM–HH:MM` for a period.
+  - time prints `HH:MM`, or `HH:MM–HH:MM` for a period, or `HH:MM` with a `?`
+    minute when the minute was unknown.
   - milk prints `45`, `30 + 30` for a two-part feed, `45(B)` when a source is
     marked; an entirely unknown volume prints `?` in `--accent` at weight 900.
   - pee/poop prints `pee`, `poop (olive)`, or `pee · poop` when both were
@@ -140,8 +142,13 @@ as tags, then "most recent first" list, then the tab bar.
   - who is a 16px circle with the initial, `--parentM` / `--parentA`.
   - notes render as a second line under the row, indented 130px, 12px,
     `--periInk`, prefixed with an `edit_note` icon.
-- **Row edit**: drag a row left to reveal an 88px `--accent` "edit" action
-  (`transform: translateX(dx)`, dx clamped to −88…0, snaps open past −40px).
+- **Row actions**: drag a row left to reveal two 88px actions — `edit`
+  (`--accent`) then `delete` (`--delBg`) — on the day views AND the home
+  "most recent first" list. `transform: translateX(dx)`, dx clamped to
+  −176…0, snaps open past −60px, otherwise springs back. `delete` opens a
+  bottom confirm sheet naming the entry (date · time · what it was); it
+  removes every record in that row, since one row can hold a feed and a
+  diaper logged at the same minute.
   Tapping it opens the add-sheet pre-filled for that entry.
 - Two alternative read-backs exist and are worth keeping as a user preference:
   **cards** (one rounded card per day, one line per moment) and **timeline**
@@ -232,8 +239,9 @@ Opens from the `more` pill. Title "pick a period" with `calendar_month` in
 | type into a time field | 2-digit numeric entry; the field's underline turns `--accent` while active |
 | `+ end time` / `×` | adds / removes the end time; duration line appears with it |
 | save | writes one record per type at the same timestamp; returns to log; mascot flashes *logged* for 1.5s |
-| drag a row left | reveals the 88px edit action; snaps open past −40px, otherwise springs back |
+| drag a row left | reveals the edit + delete actions (176px); snaps open past −60px, otherwise springs back |
 | tap `edit` | reopens the sheet pre-filled with that record |
+| tap `delete` | confirm sheet ("delete this entry?" / keep it / delete); confirming removes every record in the row |
 | tap a date pill | filters the day view to that day |
 | `more` | opens the period picker |
 | tab bar `pets` / `calendar_month` | switches log / day |
@@ -256,8 +264,7 @@ reviewed.
 `28px 22px`. Elapsed hero reads "—" when there is no feed yet.
 
 **Validation** — nothing is required except a type. An unknown volume is a
-first-class value (`?`). An unknown *minute* is not — see the amendment note at
-the top. Volumes are integers in mL.
+first-class value (`?`), as is an unknown minute. Volumes are integers in mL.
 
 **Responsive behaviour** — the design is a single phone column; it should scale
 by stretching the content column and keeping every control at its specified
@@ -278,6 +285,7 @@ Session / screen:
 - `sheet: null | 'add' | 'edit'`, `draft: Draft | null`
 - `selectedPeriod: { from: ISODate, to: ISODate }`
 - `swipe: { rowKey, dx }` — open row action
+- `confirmDelete: { ids: EntryId[], label: string } | null` — pending delete
 - `justSaved: boolean` — drives the *logged* flash for 1.5s
 
 Draft shape (what the sheet edits):
@@ -286,6 +294,7 @@ Draft shape (what the sheet edits):
 type Draft = {
   id: string | null;               // set when editing
   h: number; m: number;            // start time
+  minUnknown: boolean;             // minute not known
   endH: number | null; endM: number | null;
   added: Array<'feed' | 'diaper' | 'other'>;
   parts: Array<{ vol: number | null; src: 'B' | 'F' | null }>;  // milk, 1–2 parts
@@ -305,7 +314,7 @@ type Entry = {
   id: string;
   kind: 'feed' | 'diaper' | 'other';
   date: ISODate;                  // local day
-  h: number; m: number;
+  h: number; m: number; minUnknown: boolean;
   endH: number | null; endM: number | null;
   parts: Array<{ vol: number | null; src: 'B' | 'F' | null }>;  // feed only
   pee: boolean; poop: boolean; qual: string;                    // diaper only
@@ -340,10 +349,15 @@ All in `tokens.css`, both themes. Summary of what matters:
 
 ## Assets
 
-- `assets/app-icon-1024.png`, `-512`, `-180` — the app icon: Liana's head with
-  her vine sprout and blue bib on the app's pink-lilac gradient. Drawn for this
-  project; free to use, resize or re-export. Generate the remaining platform
-  sizes from the 1024.
+- `assets/app-icon-1024.png`, `-512`, `-180` — the app icon: the supplied
+  mascot artwork centred on the cream ground (`#fdf7f2`) with 7% padding.
+  Generate the remaining platform sizes from the 1024.
+- `assets/liana-settled.png`, `-awake`, `-hungry`, `-sleeping` — the four
+  mascot states, transparent PNG, rendered 108px wide in the home header and
+  swapped by derived state (the *logged* flash reuses `-awake`). Supplied by
+  the client; backgrounds knocked out and the baked-in state word trimmed off
+  so it does not duplicate the state chip.
+- `assets/liana-home.png` — the welcome / first-run mascot.
 - **Icons**: Material Symbols Rounded (opsz 24, wght 500, FILL 1). Names used:
   `pets`, `calendar_month`, `add`, `remove`, `close`, `check_circle`,
   `chevron_left`, `chevron_right`, `schedule`, `line_end_arrow`, `local_drink`,
@@ -354,9 +368,8 @@ All in `tokens.css`, both themes. Summary of what matters:
   Material Symbols is not available, keeping the weight light.
 - **Fonts**: Zen Maru Gothic (Google Fonts, OFL) — bundle it; it carries the
   product's tone and there is no acceptable system substitute.
-- The mascot in the prototype is drawn in CSS. If the app wants a richer
-  Liana, commission the illustration; do not re-derive her from any existing
-  character.
+- The mascot is supplied artwork (PNG with alpha), not CSS shapes. Ship the
+  files in `assets/`; ensure the client holds the rights to them.
 
 ## Files
 

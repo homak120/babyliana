@@ -120,6 +120,30 @@ await p.getByRole('navigation').getByLabel('day').click()
 await p.waitForTimeout(600)
 await suite('day')
 
+// --- the confirm sheet (Q-012) ----------------------------------------------
+const rowsBefore = await p.locator(SEL).count()
+await drag(-150, 0)
+await p.getByRole('button', { name: 'delete' }).first().click()
+await p.waitForTimeout(300)
+
+const sheet = p.getByRole('dialog', { name: 'delete this entry?' })
+check('delete opens a confirm sheet', await sheet.isVisible(), 'not an immediate delete')
+const named = (await p.locator('.confirm-what').innerText()).trim()
+check('the sheet names the entry', /^\d+\/\d+ · \d{2}:\d{2} · .+/.test(named), named)
+
+await p.getByRole('button', { name: 'keep it' }).click()
+await p.waitForTimeout(300)
+check('keep it removes nothing', (await p.locator(SEL).count()) === rowsBefore, `${rowsBefore} rows`)
+
+await drag(-150, 0)
+await p.getByRole('button', { name: 'delete' }).first().click()
+await p.waitForTimeout(200)
+await p.locator('.confirm .del').click()
+await p.waitForTimeout(600)
+check('confirming deletes the row', (await p.locator(SEL).count()) === rowsBefore - 1,
+  `${rowsBefore} -> ${await p.locator(SEL).count()}`)
+check('no undo toast survives', (await p.locator('.toast').count()) === 0, 'toast is gone (Q-012)')
+
 await p.screenshot({ path: 'scripts/shots/swipe-check.png' })
 await b.close()
 stop()

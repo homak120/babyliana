@@ -155,17 +155,45 @@ a:hover { color: #ef7f96; }
     <div id="2d" style="flex:none">
       <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px">
         <span style="background:#ef7f96;color:#fff8fa;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px">2d</span>
-        <span style="font-size:17px;font-weight:900">mascot art slot</span>
+        <span style="font-size:17px;font-weight:900">mascot art</span>
       </div>
-      <p style="width:620px;font-size:13px;line-height:1.6;color:#7d6f68;margin:0 0 16px">Liana in the prototype is built from plain shapes — a stand-in, not final art. Real illustration drops into a 96×92 box at this position, one file per state. I can't draw these; they need an illustrator or an image tool.</p>
+      <p style="width:620px;font-size:13px;line-height:1.6;color:#7d6f68;margin:0 0 16px">Final art, supplied by you and live in the prototype above. One file per state, rendered at 108px in the home header; the baked-in state word was trimmed off so it doesn't fight the state chip beside it.</p>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;width:620px">
-        <sc-for list="{{ slots }}" as="s" hint-placeholder-count="5">
-          <div>
-            <image-slot id="{{ s.id }}" style="width:100%;height:112px" shape="rounded" radius="20" placeholder="{{ s.file }}"></image-slot>
-            <div style="font-size:12px;font-weight:700;margin-top:6px">{{ s.label }}</div>
-            <div style="font-size:11px;color:#a89890;line-height:1.4">{{ s.trigger }}</div>
+        <div>
+          <div style="height:112px;background:#fff;border-radius:20px;display:flex;align-items:center;justify-content:center;padding:8px;box-shadow:0 4px 12px rgba(140,100,110,0.08)">
+            <img src="assets/liana-settled.png" alt="settled" style="max-width:100%;max-height:100%;object-fit:contain" />
           </div>
-        </sc-for>
+          <div style="font-size:12px;font-weight:700;margin-top:6px">settled</div>
+          <div style="font-size:11px;color:#a89890;line-height:1.4">fed under 2h ago</div>
+        </div>
+        <div>
+          <div style="height:112px;background:#fff;border-radius:20px;display:flex;align-items:center;justify-content:center;padding:8px;box-shadow:0 4px 12px rgba(140,100,110,0.08)">
+            <img src="assets/liana-awake.png" alt="awake" style="max-width:100%;max-height:100%;object-fit:contain" />
+          </div>
+          <div style="font-size:12px;font-weight:700;margin-top:6px">awake</div>
+          <div style="font-size:11px;color:#a89890;line-height:1.4">2–4h since feed</div>
+        </div>
+        <div>
+          <div style="height:112px;background:#fff;border-radius:20px;display:flex;align-items:center;justify-content:center;padding:8px;box-shadow:0 4px 12px rgba(140,100,110,0.08)">
+            <img src="assets/liana-hungry.png" alt="hungry" style="max-width:100%;max-height:100%;object-fit:contain" />
+          </div>
+          <div style="font-size:12px;font-weight:700;margin-top:6px">hungry</div>
+          <div style="font-size:11px;color:#a89890;line-height:1.4">over 4h since feed</div>
+        </div>
+        <div>
+          <div style="height:112px;background:#fff;border-radius:20px;display:flex;align-items:center;justify-content:center;padding:8px;box-shadow:0 4px 12px rgba(140,100,110,0.08)">
+            <img src="assets/liana-sleeping.png" alt="sleeping" style="max-width:100%;max-height:100%;object-fit:contain" />
+          </div>
+          <div style="font-size:12px;font-weight:700;margin-top:6px">sleeping</div>
+          <div style="font-size:11px;color:#a89890;line-height:1.4">night, quiet stretch</div>
+        </div>
+        <div>
+          <div style="height:112px;background:#fff;border-radius:20px;display:flex;align-items:center;justify-content:center;padding:8px;box-shadow:0 4px 12px rgba(140,100,110,0.08)">
+            <img src="assets/liana-home.png" alt="welcome" style="max-width:100%;max-height:100%;object-fit:contain" />
+          </div>
+          <div style="font-size:12px;font-weight:700;margin-top:6px">welcome</div>
+          <div style="font-size:11px;color:#a89890;line-height:1.4">first-run screen</div>
+        </div>
       </div>
       <p style="width:620px;font-size:12px;line-height:1.6;color:#a89890;margin:16px 0 0">no evaluative states by design — nothing sad, worried or disappointed, and no state that reads as a comment on a late feed.</p>
     </div>
@@ -207,13 +235,6 @@ class Component extends DCLogic {
         { name: 'poop', icon: 'cookie', fill: '#dff2e8', ink: '#3f8a6b', note: 'diaper, with colour + consistency' },
         { name: 'note', icon: 'edit_note', fill: '#e9edfa', ink: '#5d72b8', note: 'the escape hatch, on every entry' }
       ],
-      slots: [
-        { id: 'liana-settled', label: 'settled', trigger: 'fed under 2h ago', file: 'liana-settled.png' },
-        { id: 'liana-awake', label: 'awake', trigger: '2–4h since feed', file: 'liana-awake.png' },
-        { id: 'liana-hungry', label: 'hungry', trigger: 'over 4h since feed', file: 'liana-hungry.png' },
-        { id: 'liana-sleeping', label: 'sleeping', trigger: 'night, quiet stretch', file: 'liana-sleeping.png' },
-        { id: 'liana-logged', label: 'logged', trigger: 'flash after a save', file: 'liana-logged.png' }
-      ]
     };
   }
 }
