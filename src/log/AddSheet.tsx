@@ -8,7 +8,7 @@ import {
   newDiaper,
   newMilk,
   newOther,
-  toEntry,
+  toEntries,
   type Block,
   type DiaperDraft,
   type MilkDraft,
@@ -97,12 +97,15 @@ export function AddSheet({
       occurredAt: start,
       endedAt: end,
       note: note.trim() || null,
-      entries: blocks.map(toEntry),
+      entries: blocks.flatMap(toEntries),
     }
     if (editing) {
       await updateMoment(editing.timeslot.id, {
         ...payload,
-        entryIds: blocks.map((b) => b.id),
+        entryIds: blocks.flatMap((b) =>
+          // One block can be two entries; pad so ids line up with entries.
+          toEntries(b).map((_, i) => b.ids?.[i]),
+        ),
       })
     } else {
       await logMoment(payload)
@@ -141,7 +144,6 @@ export function AddSheet({
             value={b.draft}
             onChange={(d) => update(i, d)}
             onRemove={() => remove(i)}
-            onAddAnother={() => add('milk')}
           />
         ) : b.type === 'diaper' ? (
           <DiaperBlock

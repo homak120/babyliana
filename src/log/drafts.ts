@@ -1,11 +1,22 @@
-import type { DraftEntry, EventType, LogEvent, Moment, PoopColour, PoopConsistency, Source } from '../types'
+import type { DraftEntry, EventType, Moment, PoopColour, PoopConsistency, Source } from '../types'
 
 // What the sheet edits before ids and timestamps are attached. Kept out of the
 // component files so those export components only — and because the "does this
 // block say anything" rules are logic worth testing on their own.
 
-/** No `unknown` flag: a null volume *is* the paper's `?`. One representation. */
-export type MilkDraft = { volume: number | null; source: Source }
+export type MilkPart = { volume: number | null; source: Source }
+
+/**
+ * One card, up to two parts.
+ *
+ * The design puts both parts in the same card — "selecting a part moves the
+ * underline to it, and the row reads 30 + 30" — with one keypad editing
+ * whichever is active. Storage still makes them two feed events (D-019); the
+ * card is how they are entered, not how they are kept.
+ *
+ * No `unknown` flag: a null volume *is* the paper's `?`. One representation.
+ */
+export type MilkDraft = { parts: MilkPart[]; active: number }
 
 export type DiaperDraft = {
   pee: boolean
@@ -14,7 +25,7 @@ export type DiaperDraft = {
   consistency: PoopConsistency | null
 }
 
-export const newMilk = (): MilkDraft => ({ volume: null, source: 'unknown' })
+export const newMilk = (): MilkDraft => ({ parts: [{ volume: null, source: 'unknown' }], active: 0 })
 
 /**
  * A new diaper block starts as a pee.
@@ -75,10 +86,14 @@ export const otherIsEmpty = (d: OtherDraft) => d.kind === null
  * importantly, means correcting a volume does not disturb the diaper logged at
  * the same moment — the paper log's corrections strike a value, not a row.
  */
+/**
+ * `ids` are the entries this block came from, when it was opened for editing.
+ * A milk block can map to two of them, which is why this is a list.
+ */
 export type Block =
-  | { key: string; id?: string; type: 'milk'; draft: MilkDraft }
-  | { key: string; id?: string; type: 'diaper'; draft: DiaperDraft }
-  | { key: string; id?: string; type: 'other'; draft: OtherDraft }
+  | { key: string; ids?: string[]; type: 'milk'; draft: MilkDraft }
+  | { key: string; ids?: string[]; type: 'diaper'; draft: DiaperDraft }
+  | { key: string; ids?: string[]; type: 'other'; draft: OtherDraft }
 
 export const blockIsEmpty = (b: Block) =>
   b.type === 'milk'
@@ -91,59 +106,66 @@ export const blockIsEmpty = (b: Block) =>
 export const canSave = (blocks: Block[]) =>
   blocks.length > 0 && !blocks.some(blockIsEmpty)
 
-export function toEntry(b: Block): DraftEntry {
+/** One block, one *or more* entries: a two-part feed is two of them (D-019). */
+export function toEntries(b: Block): DraftEntry[] {
   if (b.type === 'milk') {
-    return {
-      type: 'feed',
-      // An explicit `?` is a feed of unknown volume, which is not the same as
-      // no feed — the paper log distinguishes them and so must this.
+    return b.draft.parts.map((part) => ({
+      type: 'feed' as const,
       // Blank stays blank: null is the `?`, and is not the same as 0.
-      volume_ml: b.draft.volume,
-      source: b.draft.source,
-    }
+      volume_ml: part.volume,
+      source: part.source,
+    }))
   }
   if (b.type === 'diaper') {
-    return {
+    return [{
       type: 'diaper',
       pee: b.draft.pee,
       poop: b.draft.poop,
       poop_colour: b.draft.colour,
       poop_consistency: b.draft.consistency,
-    }
+    }]
   }
   // `other` carries nothing but its type — the moment's note holds the detail.
-  return { type: b.draft.kind! }
+  return [{ type: b.draft.kind! }]
 }
 
-/** The reverse of toEntry: an existing moment, opened for editing. */
+/**
+ * The reverse: an existing moment, opened for editing.
+ *
+ * Feeds collapse back into milk cards of up to two parts, which is how they
+ * were entered even though they are stored separately.
+ */
 export function blocksFromMoment(m: Moment): Block[] {
-  return m.events.map((e: LogEvent): Block => {
+  const feeds = m.events.filter((e) => e.type === 'feed')
+  const rest = m.events.filter((e) => e.type !== 'feed')
+  const blocks: Block[] = []
+
+  for (let i = 0; i < feeds.length; i += 2) {
+    const pair = feeds.slice(i, i + 2)
+    blocks.push({
+      key: crypto.randomUUID(),
+      ids: pair.map((e) => e.id),
+      type: 'milk',
+      draft: {
+        parts: pair.map((e) => ({ volume: e.volume_ml, source: e.source ?? 'unknown' })),
+        active: 0,
+      },
+    })
+  }
+
+  for (const e of rest) {
     const key = crypto.randomUUID()
-    if (e.type === 'feed') {
-      return {
-        key,
-        id: e.id,
-        type: 'milk',
-        draft: {
-          // A stored null stays null: reopening a `?` must not turn it into 0.
-          volume: e.volume_ml,
-          source: e.source ?? 'unknown',
-        },
-      }
-    }
     if (e.type === 'diaper') {
-      return {
-        key,
-        id: e.id,
-        type: 'diaper',
+      blocks.push({
+        key, ids: [e.id], type: 'diaper',
         draft: {
-          pee: e.pee ?? false,
-          poop: e.poop ?? false,
-          colour: e.poop_colour,
-          consistency: e.poop_consistency,
+          pee: e.pee ?? false, poop: e.poop ?? false,
+          colour: e.poop_colour, consistency: e.poop_consistency,
         },
-      }
+      })
+    } else {
+      blocks.push({ key, ids: [e.id], type: 'other', draft: { kind: e.type } })
     }
-    return { key, id: e.id, type: 'other', draft: { kind: e.type } }
-  })
+  }
+  return blocks
 }

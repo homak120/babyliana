@@ -1,44 +1,58 @@
 import { Icon } from './Icon'
 import type { MilkDraft } from './drafts'
 
-// One bottle. A split feed is two of these in one moment (D-019) — the `+` key
-// adds another rather than this one growing a second half.
+// One card, up to two parts. The design keeps a split feed in the same card —
+// "selecting a part moves the underline to it, and the row reads 30 + 30" —
+// with one keypad editing whichever part is active. Storage still makes them
+// two feed events (D-019); this is how they are entered, not how they are kept.
 //
 // Arbitrary integers, not presets: the real log contains 31, 41, 43, 46, 57,
-// and a picker of 30/45/60 cannot express it (paper-log-baseline.md).
+// and a picker of 30/45/60 cannot express it.
 //
-// There is no `?` key and no "unknown" source button. Leaving the volume blank
-// *is* the paper's `?` — a feed happened, volume unknown — and leaving both
-// source toggles off is the unlabelled `30 + 30`. The prototype says so in as
-// many words, and a control for something the absence already expresses is a
-// control to get wrong at 4am.
+// No `?` key and no "unknown" source button. Leaving a part blank *is* the
+// paper's `?`, and leaving both toggles off is the unlabelled `30 + 30`.
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '0', '⌫']
+const MAX_PARTS = 2
 
 export function MilkBlock({
   value,
   onChange,
   onRemove,
-  onAddAnother,
 }: {
   value: MilkDraft
   onChange: (v: MilkDraft) => void
   onRemove: () => void
-  onAddAnother: () => void
 }) {
+  const part = value.parts[value.active]
+
+  const setPart = (patch: Partial<MilkDraft['parts'][number]>) =>
+    onChange({
+      ...value,
+      parts: value.parts.map((p, i) => (i === value.active ? { ...p, ...patch } : p)),
+    })
+
   function press(key: string) {
-    if (key === '+') return onAddAnother()
-    if (key === '⌫') {
-      const next = value.volume === null ? null : Math.floor(value.volume / 10)
-      return onChange({ ...value, volume: next === 0 ? null : next })
+    if (key === '+') {
+      // Adds the second half of a split feed, and moves the underline to it.
+      if (value.parts.length >= MAX_PARTS) return
+      onChange({
+        parts: [...value.parts, { volume: null, source: 'unknown' }],
+        active: value.parts.length,
+      })
+      return
     }
-    const next = (value.volume ?? 0) * 10 + Number(key)
+    if (key === '⌫') {
+      const next = part.volume === null ? null : Math.floor(part.volume / 10)
+      return setPart({ volume: next === 0 ? null : next })
+    }
+    const next = (part.volume ?? 0) * 10 + Number(key)
     if (next > 999) return
-    onChange({ ...value, volume: next })
+    setPart({ volume: next })
   }
 
-  const toggle = (s: MilkDraft['source']) =>
-    onChange({ ...value, source: value.source === s ? 'unknown' : s })
+  const toggle = (s: MilkDraft['parts'][number]['source']) =>
+    setPart({ source: part.source === s ? 'unknown' : s })
 
   return (
     <section className="block milkblock">
@@ -52,7 +66,38 @@ export function MilkBlock({
         </button>
       </header>
 
-      <p className="volume">{value.volume ?? ''}</p>
+      <div className="parts">
+        {value.parts.map((p, i) => (
+          <span key={i} className="partwrap">
+            {i > 0 && <span className="plus">+</span>}
+            <button
+              type="button"
+              className={`part ${i === value.active ? 'active' : ''}`}
+              aria-pressed={i === value.active}
+              aria-label={`part ${i + 1}`}
+              onClick={() => onChange({ ...value, active: i })}
+            >
+              {p.volume ?? ''}
+            </button>
+            {value.parts.length > 1 && (
+              <button
+                type="button"
+                className="droppart"
+                aria-label={`remove part ${i + 1}`}
+                onClick={() =>
+                  onChange({
+                    parts: value.parts.filter((_, j) => j !== i),
+                    active: 0,
+                  })
+                }
+              >
+                <Icon name="close" size={14} />
+              </button>
+            )}
+          </span>
+        ))}
+      </div>
+
       <p className="volunit">
         <Icon name="water_full" size={16} /> mL
       </p>
@@ -63,16 +108,16 @@ export function MilkBlock({
       <div className="sources">
         <button
           type="button"
-          className={value.source === 'breast_milk' ? 'on breast' : ''}
-          aria-pressed={value.source === 'breast_milk'}
+          className={part.source === 'breast_milk' ? 'on breast' : ''}
+          aria-pressed={part.source === 'breast_milk'}
           onClick={() => toggle('breast_milk')}
         >
           <Icon name="favorite" size={17} /> breast
         </button>
         <button
           type="button"
-          className={value.source === 'formula' ? 'on formula' : ''}
-          aria-pressed={value.source === 'formula'}
+          className={part.source === 'formula' ? 'on formula' : ''}
+          aria-pressed={part.source === 'formula'}
           onClick={() => toggle('formula')}
         >
           <Icon name="local_drink" size={17} /> formula
@@ -83,7 +128,7 @@ export function MilkBlock({
         className="scrub"
         role="slider"
         aria-label="drag to adjust volume"
-        aria-valuenow={value.volume ?? 0}
+        aria-valuenow={part.volume ?? 0}
         aria-valuemin={0}
         aria-valuemax={999}
         tabIndex={0}
@@ -92,7 +137,7 @@ export function MilkBlock({
           if (e.buttons !== 1) return
           const r = e.currentTarget.getBoundingClientRect()
           const pct = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width))
-          onChange({ ...value, volume: Math.round(pct * 120) })
+          setPart({ volume: Math.round(pct * 120) })
         }}
       >
         <Icon name="drag_indicator" size={16} /> drag to adjust
@@ -100,7 +145,12 @@ export function MilkBlock({
 
       <div className="keypad">
         {KEYS.map((k) => (
-          <button type="button" key={k} onClick={() => press(k)}>
+          <button
+            type="button"
+            key={k}
+            disabled={k === '+' && value.parts.length >= MAX_PARTS}
+            onClick={() => press(k)}
+          >
             {k === '⌫' ? <Icon name="backspace" size={22} /> : k}
           </button>
         ))}

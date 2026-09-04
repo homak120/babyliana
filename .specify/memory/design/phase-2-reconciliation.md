@@ -29,11 +29,16 @@ dormant and unreachable and was left as delivered. Do not build it.
 | `date` plus `h` / `m` as separate fields | `occurred_at timestamptz` |
 | "last-write-wins per field" | Row-level last-write-wins on `updated_at` |
 
-**The one place this reaches the interaction, not just storage.** The milk block
-lets you select between two parts of one feed, so the row reads `30 + 30`. Under
-D-019 that is two feed entries in the same moment, so the affordance is closer to
-*add another bottle* than *edit the second half*. Everything else is invisible to
-the user.
+**Where this reaches the interaction — and how it was resolved.** The milk card
+holds up to two parts: the row reads `30 + 30`, tapping a part moves the
+underline to it, and one keypad edits whichever is active. That is the design's
+own model and it stands.
+
+An earlier attempt made "add another bottle" spawn a second card, reasoning from
+D-019 that a split feed is two events. That was reading a storage decision as an
+interaction one. The card is how a split feed is *entered*; two feed rows are
+how it is *kept*. `toEntries` turns one card into two entries, and
+`blocksFromMoment` collapses them back on edit.
 
 ## What is built vs what is still deferred
 

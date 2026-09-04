@@ -12,11 +12,12 @@ const store = new Map<string, string>([['babyliana.device_id', '00000000-0000-40
 } as Storage
 
 import type { Block } from '../src/log/drafts.ts'
-const { canSave, newDiaper, newMilk, newOther, toEntry, OTHER_TYPES } = await import(
+const { canSave, newDiaper, newOther, toEntries, OTHER_TYPES } = await import(
   '../src/log/drafts.ts'
 )
 const { createThisDevice, logMoment, getMoments } = await import('../src/moments.ts')
 
+const one = (b: Block) => toEntries(b)[0]
 let failures = 0
 const check = (label: string, ok: boolean, detail = '') => {
   console.log(`  ${ok ? 'ok  ' : 'FAIL'}  ${label}${detail && !ok ? ` — ${detail}` : ''}`)
@@ -32,12 +33,12 @@ check('every secondary type in the schema is reachable',
   OTHER_TYPES.map((t) => t.kind).join() === 'sleep,weight,temperature,supplement,spit_up,other')
 check('nothing picked cannot be saved', !canSave([other(null)]))
 check('picking one can', canSave([other('sleep')]))
-check('it becomes an entry of that type', toEntry(other('weight')).type === 'weight')
+check('it becomes an entry of that type', one(other('weight')).type === 'weight')
 
 // --- the note ---------------------------------------------------------------
 const noted = await logMoment({
   note: 'seemed uncomfortable, arched a lot',
-  entries: [toEntry({ key: 'm', type: 'milk', draft: { ...newMilk(), volume: 40 } })],
+  entries: [one({ key: 'm', type: 'milk', draft: { parts: [{ volume: 40, source: 'unknown' }], active: 0 } })],
 })
 check('a moment carries a note', noted.timeslot.note === 'seemed uncomfortable, arched a lot')
 const back = (await getMoments()).find((x) => x.timeslot.id === noted.timeslot.id)!
@@ -48,7 +49,7 @@ check('the note survives a reload', back.timeslot.note === noted.timeslot.note)
 const transition = await logMoment({
   note: 'green→yellow',
   entries: [
-    toEntry({ key: 'd', type: 'diaper',
+    one({ key: 'd', type: 'diaper',
       draft: { ...newDiaper(), pee: false, poop: true, colour: 'green', consistency: 'liquid' } }),
   ],
 })
@@ -60,7 +61,7 @@ check('2 (G→Y liquid) is expressible — structure plus the note for the trans
 // `2 (small Y)` — "small" is a quantity with no column, so it is prose too
 const small = await logMoment({
   note: 'small',
-  entries: [toEntry({ key: 'd', type: 'diaper',
+  entries: [one({ key: 'd', type: 'diaper',
     draft: { ...newDiaper(), pee: false, poop: true, colour: 'yellow' } })],
 })
 check('2 (small Y) is expressible', small.timeslot.note === 'small' &&
@@ -69,7 +70,7 @@ check('2 (small Y) is expressible', small.timeslot.note === 'small' &&
 // the last checklist item, in its own words
 const unanticipated = await logMoment({
   note: 'rash on her neck, showed the midwife',
-  entries: [toEntry(other('other'))],
+  entries: [one(other('other'))],
 })
 check('something nobody anticipated has somewhere to go',
   unanticipated.events[0].type === 'other' && !!unanticipated.timeslot.note)
@@ -78,7 +79,7 @@ check('something nobody anticipated has somewhere to go',
 const sleep = await logMoment({
   occurredAt: new Date(2026, 8, 3, 19, 0),
   endedAt: new Date(2026, 8, 3, 21, 30),
-  entries: [toEntry(other('sleep'))],
+  entries: [one(other('sleep'))],
 })
 check('sleep uses the moment period, not a field of its own',
   sleep.events[0].type === 'sleep' && sleep.timeslot.ended_at !== null)

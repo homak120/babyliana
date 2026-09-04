@@ -23,13 +23,14 @@ const store = new Map<string, string>()
 Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true })
 
 import type { Block } from '../src/log/drafts.ts'
-const { blocksFromMoment, newDiaper, newMilk, toEntry } = await import('../src/log/drafts.ts')
+const { blocksFromMoment, newDiaper, newMilk, toEntries } = await import('../src/log/drafts.ts')
 const { createThisDevice, logMoment, updateMoment, getMoments, removeMoment } = await import(
   '../src/moments.ts'
 )
 const { sync } = await import('../src/sync.ts')
 const { supabase } = await import('../src/supabase.ts')
 
+const one = (b: Block) => toEntries(b)[0]
 let failures = 0
 const check = (label: string, ok: boolean, detail = '') => {
   console.log(`  ${ok ? 'ok  ' : 'FAIL'}  ${label}${detail && !ok ? ` — ${detail}` : ''}`)
@@ -44,8 +45,8 @@ try {
   // --- correcting a value, without disturbing the rest ----------------------
   const m = await logMoment({
     entries: [
-      toEntry({ key: 'a', type: 'milk', draft: { ...newMilk(), volume: 50, source: 'formula' } }),
-      toEntry({ key: 'b', type: 'diaper', draft: { ...newDiaper(), poop: true, colour: 'yellow' } }),
+      one({ key: 'a', type: 'milk', draft: { parts: [{ volume: 50, source: 'formula' }], active: 0 } }),
+      one({ key: 'b', type: 'diaper', draft: { ...newDiaper(), poop: true, colour: 'yellow' } }),
     ],
   })
   made.push(m.timeslot.id)
@@ -53,15 +54,17 @@ try {
 
   const blocks = blocksFromMoment(m)
   check('reopening gives a block per entry, each carrying its id',
-    blocks.length === 2 && blocks.every((b) => !!b.id))
+    blocks.length === 2 && blocks.every((b) => !!b.ids?.length))
 
   // the paper log's own correction: strike the value, leave the row
   const corrected = blocks.map((b) =>
-    b.type === 'milk' ? ({ ...b, draft: { ...b.draft, volume: 60 } } as Block) : b,
+    b.type === 'milk'
+      ? ({ ...b, draft: { ...b.draft, parts: [{ ...b.draft.parts[0], volume: 60 }] } } as Block)
+      : b,
   )
   const after = await updateMoment(m.timeslot.id, {
-    entries: corrected.map(toEntry),
-    entryIds: corrected.map((b) => b.id),
+    entries: corrected.flatMap(toEntries),
+    entryIds: corrected.flatMap((b) => toEntries(b).map((_: unknown, i: number) => b.ids?.[i])),
   })
 
   const feed = after.events.find((e) => e.type === 'feed')!
@@ -73,17 +76,17 @@ try {
   check('the moment still holds exactly two entries', after.events.length === 2)
 
   // --- an unknown volume must survive a round trip through the sheet --------
-  const q = await logMoment({ entries: [toEntry({ key: 'q', type: 'milk', draft: newMilk() })] })
+  const q = await logMoment({ entries: [one({ key: 'q', type: 'milk', draft: newMilk() })] })
   made.push(q.timeslot.id)
   const reopened = blocksFromMoment(q)[0]
   check('a stored ? reopens blank, not as 0',
-    reopened.type === 'milk' && reopened.draft.volume === null)
+    reopened.type === 'milk' && reopened.draft.parts[0].volume === null)
 
   // --- removing one entry from a moment ------------------------------------
   const trimmed = blocksFromMoment(after).filter((b) => b.type === 'milk')
   const smaller = await updateMoment(m.timeslot.id, {
-    entries: trimmed.map(toEntry),
-    entryIds: trimmed.map((b) => b.id),
+    entries: trimmed.flatMap(toEntries),
+    entryIds: trimmed.flatMap((b) => toEntries(b).map((_: unknown, i: number) => b.ids?.[i])),
   })
   check('removing a block deletes just that entry', smaller.events.length === 1)
   const stored = (await getMoments()).find((x) => x.timeslot.id === m.timeslot.id)!
@@ -97,7 +100,7 @@ try {
     JSON.stringify(remote.data?.map((r) => r.volume_ml)))
 
   // --- delete, and undo ----------------------------------------------------
-  const doomed = await logMoment({ entries: [toEntry({ key: 'x', type: 'milk', draft: { ...newMilk(), volume: 31 } })] })
+  const doomed = await logMoment({ entries: [one({ key: 'x', type: 'milk', draft: { parts: [{ volume: 31, source: 'unknown' }], active: 0 } })] })
   made.push(doomed.timeslot.id)
   await sync()
   // undo is "the timer never fired", so nothing was called — the row stands
