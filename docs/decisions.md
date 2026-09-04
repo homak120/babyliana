@@ -592,3 +592,33 @@ server-side default would quietly mint an id the client does not know, producing
 a row it cannot match on retry — a silent duplicate instead of a loud not-null
 error. `baby` keeps its default, since it is created once through the API.
 
+---
+
+## D-027 — The day view gets the prototype's period picker
+
+The date strip only ever holds pills for days that already have entries, so any
+day beyond that handful had **no route to it at all**. The Phase 2 prototype
+solved this and the app skipped it: a `more` pill closing the strip, opening a
+`pick a period` sheet with presets, a month grid, and a from/to range.
+
+Built as the prototype has it, including the details that carry the weight:
+
+- **A dot on every day that has entries.** Choosing a range is guesswork without
+  it — the whole point of the screen is finding data you already recorded.
+- **Future days are disabled.** There is nothing there and never will be.
+- **Tapping backwards flips the ends** rather than rejecting the tap. At 4am a
+  rejected tap reads as a broken app.
+- **The range wins over the day pills** while it is set, and tapping any pill
+  clears it. One selection is in force at a time.
+
+**It also fixed a wrong number.** Totals were computed for a single day, so the
+`all days` view showed *today's* totals under an "all days" heading, and a range
+could not be totalled at all. `totalsOf` now totals whatever is on screen, and
+`totalsFor` is a thin wrapper on it.
+
+**Also in this pass: the tab bar matches the prototype.** The FAB had been raised
+28px out of the bar, putting it on a different line from the two tab icons and
+floating it over the last row of the day table. The prototype centres all three
+and sizes the FAB up instead (72px against 56px), with the bar at 10/18/22px.
+Page bottom padding grew to match the taller bar — verified as 33px of clearance
+below the last row on both screens, rather than by eye.

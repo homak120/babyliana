@@ -44,35 +44,43 @@ them before the coverage run reports back — it may move what they contain.
 
 ## In flight
 
-**Uncommitted: swipe on the home screen, which is the actual bug.**
+**Uncommitted: the tab bar matched to the prototype, and the period picker
+built.** Both recorded in D-027.
 
-The owner reported swipe-to-reveal broken four times. Every fix went into the day
-view. He was swiping the **home screen's recent list**, which never had the
-gesture — D-025 said "a row in the day view" and S8 built exactly that. Three of
-those four diagnoses were wrong, and all of them were about a component that was
-not in play. The lesson is cheap and worth keeping: confirm *which screen* before
-diagnosing anything.
+- `src/day/PeriodPicker.tsx` + `src/day/period.ts` — the `pick a period` sheet
+  from the Phase 2 prototype: presets, a month grid with dots on days that have
+  entries, future days disabled, from/to range. Reached by a `more` pill closing
+  the date strip. Without it, only days that already had pills were reachable.
+- `src/derive.ts` — `totalsOf` totals whatever it is handed. `all days` had been
+  showing *today's* totals under an "all days" heading.
+- `.tabs` — the FAB is no longer raised 28px out of the bar. All three controls
+  share one centre line, FAB 72px against 56px, bar padding 10/18/22, as the
+  prototype has it. Page bottom padding grew to match; measured at 33px of
+  clearance below the last row on both screens.
+- `scripts/verify-period.mts` — 16 checks, in `npm run verify`. 173 total.
 
-- `src/swipe/SwipeRow.tsx` + `swipe.css` — the gesture, extracted from DayRow so
-  one implementation serves both lists and they cannot drift apart again.
-- `src/log/LogScreen.tsx` — home rows are now swipeable, with edit, delete and the
-  same undo window as the day view.
-- `src/day/DayRow.tsx` — reduced to cells; the note moved outside the wrapper so
-  the actions back the row rather than the note too.
-- `docs/decisions.md` — D-025 amended to cover both lists.
-- `scripts/verify-swipe.mts` — runs the whole suite against **both** screens now,
-  including an arcing swipe. 16 checks; the home half would have caught this on
-  day one.
-- `src/probe/TouchProbe.tsx` at `/touch` — a readout of what a real finger
-  produces. Kept because this bug class cost four rounds; safe to delete.
-- `scripts/ios/` — the Simulator harness and README.
-
-**Verified with real OS-level touch on iOS 18.3 Safari:** the home row opens,
-reveals edit and delete, and closes again.
+Checked on the Simulator against real iOS: the strip, the sheet, the dots, the
+disabled future days and the disabled apply button all render as the prototype
+draws them.
 
 ## Open threads
 
 Noticed, not blocking, no owner yet.
+
+- **New mascot art, parked by the owner on 2026-09-04.** He has a chibi
+  illustration at `~/Downloads/mascotArt.png` he wants to use and will come back
+  to it. Two things need deciding before it can be wired in, and they are not
+  agent calls:
+  1. `mascotState()` returns five states and `Mascot.tsx` draws them with eyes,
+     mouth and z's. A flat image has one expression, so the states either move
+     to the word chip alone, get light overlays, or the CSS mascot stays and the
+     art goes to the welcome screen or app icon instead.
+  2. The art is a recognisable copyrighted character, and this repo and the
+     deploy are public, so committing it publishes it. His call — do not
+     re-litigate it, just carry out whatever he decides. An original mascot
+     drawn in a similar style is the third option if he wants one.
+
+  This closes nothing on Q-003; that question is still open and unrelated.
 
 - **Unresolved marks on the paper log.** Several `1`s in the Pee/Poop column
   appear underlined, and one 9/1 milk cell may be a ditto mark rather than a

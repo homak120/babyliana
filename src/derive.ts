@@ -59,12 +59,22 @@ export type Totals = {
 }
 
 export function totalsFor(moments: Moment[], day = new Date()): Totals {
+  return totalsOf(moments.filter((m) => sameDay(m.timeslot.occurred_at, day)))
+}
+
+/**
+ * Totals for whatever is handed in, with no date filtering of its own.
+ *
+ * The day screen needs this because its scope is not always one day: "all days"
+ * was showing *today's* totals under an "all days" heading, and a picked range
+ * could not be totalled at all.
+ */
+export function totalsOf(moments: Moment[]): Totals {
   const t: Totals = {
     feeds: 0, ml: 0, unknownVolumes: 0, pee: 0, poop: 0,
     breastMl: 0, formulaMl: 0, unmarkedMl: 0,
   }
   for (const m of moments) {
-    if (!sameDay(m.timeslot.occurred_at, day)) continue
     for (const e of m.events) {
       if (e.type === 'feed') {
         t.feeds++

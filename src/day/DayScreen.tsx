@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { sameDay, totalsFor } from '../derive'
+import { sameDay, totalsOf } from '../derive'
 import { AddSheet } from '../log/AddSheet'
 import { getMoments, removeMoment } from '../moments'
 import { getDevices } from '../db'
@@ -8,6 +8,8 @@ import type { Device, Moment } from '../types'
 import { Icon } from '../log/Icon'
 import { chronological, daysWithEntries } from './cells'
 import { DayRow } from './DayRow'
+import { PeriodPicker } from './PeriodPicker'
+import { isoOf, rangeLabel, type Range } from './period'
 
 // The read-back. Its whole purpose is that you can hold the phone next to the
 // paper page and see the same thing, so the column order and the inherited date
@@ -28,6 +30,12 @@ export function DayScreen() {
   // null means "the most recent day with anything in it"; ALL means every day.
   const [day, setDay] = useState<Date | null | typeof ALL>(null)
   const [editing, setEditing] = useState<Moment | null>(null)
+
+  // A picked period, which overrides `day` while it is set. The date pills only
+  // ever cover the days that happen to have entries, so without this there was
+  // no route to an older day at all.
+  const [range, setRange] = useState<Range | null>(null)
+  const [picking, setPicking] = useState(false)
 
   // The moment is hidden at once and actually deleted when the toast expires.
   // D-003 is a hard delete with no tombstone, so once it goes there is nothing
@@ -66,14 +74,19 @@ export function DayScreen() {
   useEffect(() => subscribe(refresh), [refresh])
 
   const days = daysWithEntries(moments)
-  const showingAll = day === ALL
-  const selected = showingAll ? new Date() : (day ?? days[0] ?? new Date())
-  const forDay = chronological(
-    moments
-      .filter((m) => showingAll || sameDay(m.timeslot.occurred_at, selected))
-      .filter((m) => m.timeslot.id !== undo?.timeslot.id),
-  )
-  const totals = totalsFor(moments, selected)
+  const showingAll = day === ALL && !range
+  const selected = showingAll ? new Date() : (day instanceof Date ? day : days[0] ?? new Date())
+  const inScope = moments.filter((m) => {
+    if (range) {
+      const iso = isoOf(new Date(m.timeslot.occurred_at))
+      return iso >= range.from && iso <= range.to
+    }
+    return showingAll || sameDay(m.timeslot.occurred_at, selected)
+  })
+  const forDay = chronological(inScope.filter((m) => m.timeslot.id !== undo?.timeslot.id))
+  // Totalled over what is actually on screen, so the numbers match the heading.
+  const totals = totalsOf(forDay)
+  const withData = new Set(moments.map((m) => isoOf(new Date(m.timeslot.occurred_at))))
   const nameFor = (id: string) => devices.find((d) => d.id === id)?.name ?? null
 
   return (
@@ -81,8 +94,8 @@ export function DayScreen() {
       <div className="datestrip">
         <button
           type="button"
-          className={`daypill ${day === ALL ? 'on' : ''}`}
-          onClick={() => setDay(ALL)}
+          className={`daypill ${showingAll ? 'on' : ''}`}
+          onClick={() => { setRange(null); setDay(ALL) }}
         >
           all days
         </button>
@@ -90,15 +103,26 @@ export function DayScreen() {
           <button
             type="button"
             key={+d}
-            className={`daypill ${!showingAll && +d === +selected ? 'on' : ''}`}
-            onClick={() => setDay(d)}
+            className={`daypill ${!showingAll && !range && +d === +selected ? 'on' : ''}`}
+            onClick={() => { setRange(null); setDay(d) }}
           >
             {dayPill(d)}
           </button>
         ))}
+
+        <button
+          type="button"
+          className={`morepill ${range ? 'on' : ''}`}
+          onClick={() => setPicking(true)}
+        >
+          <Icon name="calendar_month" size={18} />
+          {range ? rangeLabel(range) : 'more'}
+        </button>
       </div>
 
-      <p className="daylabel">{showingAll ? 'all days' : dayPill(selected)}</p>
+      <p className="daylabel">
+        {range ? rangeLabel(range) : showingAll ? 'all days' : dayPill(selected)}
+      </p>
 
       <div className="totals">
         <span className="tag rose"><Icon name="local_drink" size={14} /> {totals.feeds}</span>
@@ -152,6 +176,16 @@ export function DayScreen() {
             undo
           </button>
         </div>
+      )}
+
+      {picking && (
+        <PeriodPicker
+          today={isoOf(new Date())}
+          withData={withData}
+          initial={range}
+          onClose={() => setPicking(false)}
+          onApply={(r) => { setRange(r); setPicking(false) }}
+        />
       )}
 
       {editing && (

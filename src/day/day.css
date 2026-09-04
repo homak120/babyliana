@@ -5,7 +5,7 @@
   max-width: 26rem;
   margin: 0 auto;
   padding: calc(1rem + env(safe-area-inset-top)) 0
-    calc(7rem + env(safe-area-inset-bottom));
+    calc(8.5rem + env(safe-area-inset-bottom));
 }
 
 .datestrip {
@@ -94,6 +94,8 @@
 
 /* --- tab bar --------------------------------------------------------------- */
 
+/* Geometry copied from the prototype's tab bar: 10px 18px 22px, gap 10px, and
+   everything on one centre line. */
 .tabs {
   position: fixed;
   left: 0;
@@ -101,29 +103,31 @@
   bottom: 0;
   display: flex;
   align-items: center;
-  justify-content: space-around;
-  padding: 0.5rem 1.5rem calc(0.5rem + env(safe-area-inset-bottom));
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 18px calc(22px + env(safe-area-inset-bottom));
   background: var(--bg);
 }
 
-/* Raised out of the bar, which is where the prototype puts it — reachable from
-   either screen without floating over the content. */
+/* Not raised. It was lifted 28px out of the bar, which put it on a different
+   line from the two tab icons and floated it over the last row of the day
+   table — the prototype centres all three and sizes the FAB up instead. */
 .tabs .fab {
-  width: 4.5rem;
-  height: 4.5rem;
-  border-radius: 50%;
+  width: 72px;
+  height: 72px;
+  border-radius: 36px;
   background: var(--accent);
   color: var(--onAccent, #fff8fa);
-  box-shadow: 0 8px 18px var(--roseShadow);
-  margin-top: -1.75rem;
+  box-shadow: 0 8px 20px var(--roseShadow);
 }
 .tabs .fab.on { background: var(--accent); }
 
 .tabs button {
-  width: 3.5rem;
-  height: 3.5rem;
+  width: 56px;
+  height: 56px;
+  flex: none;
   border: none;
-  border-radius: 50%;
+  border-radius: 28px;
   background: none;
   color: var(--muted);
   display: grid;
@@ -170,3 +174,157 @@
   cursor: pointer;
   padding: 0;
 }
+
+/* --- period picker --------------------------------------------------------- */
+
+/* The "more" pill closes the date strip. Without it only the handful of
+   generated pills were reachable, so older days had no route at all. */
+.morepill {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 2.5rem;
+  padding: 0 0.875rem 0 0.6875rem;
+  border: none;
+  border-radius: 1.25rem;
+  background: var(--chip);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.morepill.on { background: var(--roseFill); color: var(--roseInk); }
+
+.picker {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  padding-top: env(safe-area-inset-top);
+}
+
+.picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.375rem 1.375rem 0.75rem;
+}
+.picker-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.3125rem;
+  font-weight: 900;
+}
+.picker-head h2 .icon { color: var(--lavInk); }
+.picker-head .x {
+  width: 2.75rem;
+  height: 2.75rem;
+  border: none;
+  border-radius: 1.375rem;
+  background: var(--chip);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.picker-body { flex: 1; overflow: auto; min-height: 0; padding: 0 1.125rem 0.625rem; }
+
+.presets { display: flex; gap: 0.375rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.preset {
+  height: 2.75rem;
+  padding: 0 0.9375rem;
+  border: none;
+  border-radius: 1.375rem;
+  background: var(--chip);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.preset.on { background: var(--lavFill); color: var(--lavInk); }
+
+.calcard { background: var(--card); border-radius: 1.75rem; padding: 0.875rem; }
+
+.calhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.625rem;
+  font-weight: 900;
+  font-size: 1rem;
+}
+.calhead button {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  border-radius: 1.25rem;
+  background: var(--chip);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.calweek,
+.calgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.calweek {
+  font-size: 0.625rem;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 0.25rem;
+}
+
+.cal {
+  height: 2.75rem;
+  border: none;
+  border-radius: 1.125rem;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+}
+.cal:disabled { color: var(--hair); cursor: default; }
+.cal.today { background: var(--chip); font-weight: 900; }
+.cal.between { background: var(--roseFill); color: var(--roseInk); }
+.cal.edge { background: var(--accent); color: var(--onAccent, #fff8fa); font-weight: 900; }
+
+/* A day that has entries. The read-back is useless if you cannot see where the
+   data actually is before choosing a range. */
+.dot { width: 4px; height: 4px; border-radius: 50%; background: transparent; }
+.dot.on { background: var(--mintInk); }
+
+.calhint { font-size: 0.6875rem; color: var(--muted); margin: 0.625rem 0 0; }
+
+.picker-foot { padding: 0.625rem 1.125rem calc(1.375rem + env(safe-area-inset-bottom)); }
+.apply {
+  width: 100%;
+  height: 3.75rem;
+  border: none;
+  border-radius: 1.625rem;
+  background: var(--accent);
+  color: var(--onAccent, #fff8fa);
+  font: inherit;
+  font-size: 1.1875rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0 1.125rem;
+  cursor: pointer;
+}
+.apply:disabled { opacity: 0.4; cursor: default; }

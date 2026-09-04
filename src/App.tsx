@@ -87,7 +87,7 @@ export default function App() {
           onClick={() => setAdding(true)}
           aria-label="log a moment"
         >
-          <Icon name="add" size={30} />
+          <Icon name="add" size={40} />
         </button>
 
         <button
