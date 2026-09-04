@@ -14,7 +14,10 @@ body,
 
 body {
   -webkit-font-smoothing: antialiased;
-  /* Respect the notch and home indicator when installed. */
-  padding: env(safe-area-inset-top) env(safe-area-inset-right)
-    env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
+
+/* The safe area is applied per container, never on body.
+   `position: fixed` positions against the viewport, so a fixed sheet escapes
+   body's padding entirely and slides under the status bar — which made the
+   close button unreachable on a real phone. Scrolling containers that inherited
+   it were also double-counting against their own padding. */

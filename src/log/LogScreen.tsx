@@ -48,13 +48,11 @@ function feedLabel(m: Moment) {
     .join(' + ')
 }
 
+/** The prototype prints the date on every separator, today included. */
 function dayLabel(iso: string) {
   const d = new Date(iso)
-  if (sameDay(iso, new Date())) return 'today'
-  const y = new Date()
-  y.setDate(y.getDate() - 1)
-  if (sameDay(iso, y)) return 'yesterday'
-  return d.toLocaleDateString([], { day: '2-digit', month: '2-digit' })
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(d.getMonth() + 1)}/${pad(d.getDate())}`
 }
 
 const time = (iso: string) =>

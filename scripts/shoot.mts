@@ -22,6 +22,12 @@ const browser = await chromium.launch()
 const ctx = await browser.newContext(iphone)
 const page = await ctx.newPage()
 
+// Nothing here reaches Supabase. Completing the welcome creates a device, and
+// with sync live that landed a real row in the production database on every
+// run — which is exactly what happened, three times. Screenshots are about
+// pixels; the local write path is enough for them.
+await page.route('**://*.supabase.co/**', (r) => r.abort())
+
 const shot = async (name: string) => {
   await page.waitForTimeout(600) // let fonts and the mascot settle
   await page.screenshot({ path: `${OUT}/${name}.png` })

@@ -4,7 +4,8 @@
 .day {
   max-width: 26rem;
   margin: 0 auto;
-  padding: 1rem 0 calc(7rem + env(safe-area-inset-bottom));
+  padding: calc(1rem + env(safe-area-inset-top)) 0
+    calc(7rem + env(safe-area-inset-bottom));
 }
 
 .datestrip {
@@ -102,8 +103,7 @@
   align-items: center;
   justify-content: space-around;
   padding: 0.5rem 1.5rem calc(0.5rem + env(safe-area-inset-bottom));
-  background: var(--card);
-  border-top: 1px solid var(--hair);
+  background: var(--bg);
 }
 
 /* Raised out of the bar, which is where the prototype puts it — reachable from
@@ -120,10 +120,10 @@
 .tabs .fab.on { background: var(--accent); }
 
 .tabs button {
-  width: 3.25rem;
-  height: 3rem;
+  width: 3.5rem;
+  height: 3.5rem;
   border: none;
-  border-radius: 1rem;
+  border-radius: 50%;
   background: none;
   color: var(--muted);
   display: grid;
