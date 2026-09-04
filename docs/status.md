@@ -44,32 +44,39 @@ them before the coverage run reports back — it may move what they contain.
 
 ## In flight
 
-**Uncommitted: a partial fix and a diagnostic for the tab bar's bottom gap.**
+**Uncommitted: the app shell is a flex column, which fixes the tab bar for good.**
 
-The owner reports the day screen sitting further off the bottom edge than the
-home screen. Measured from his own screenshot with
-`scripts/ios/measure-screenshot.mts`:
+Measured from the owner's own screenshots with
+`scripts/ios/measure-screenshot.mts`, same build and same device:
 
-- FAB diameter **71pt**, so he is on the current build.
-- FAB centre 704.8pt, paw centre 705.5pt — **same line**, so the earlier
-  raised-FAB fix did land.
-- **103.7pt below the FAB**, where 56 is expected (22px padding + a 34pt home
-  indicator). Roughly 48pt unaccounted for.
+| | gap below the FAB |
+| --- | --- |
+| home screen | 56.7pt — exactly the 22px padding + 34pt home indicator |
+| day screen | 103.7pt |
 
-Driven in Chromium at 390×844 the two screens are **byte-identical and flush** —
-same nav rect, same padding, no horizontal overflow — so the cause is
-environmental and only exists on the device. Do not chase it in a desktop
-browser.
+So the two really did differ, by **47.7pt — which is an iPhone 13's
+`safe-area-inset-top` to within half a point.** The bar was `position: fixed;
+bottom: 0`, and on iOS that resolved ~47pt above the screen edge on the day
+screen and flush on the home screen. Not reproducible in Chromium, with the
+insets substituted as literals or not, so the mechanism was never pinned down.
 
-Half of it is now fixed: the nav used `calc(22px + env(safe-area-inset-bottom))`,
-which stacks the design's intended edge gap on top of the home indicator that
-already occupies it. That is `max(22px, …)` now, worth ~22pt.
+It did not need to be. **The prototype does not use a fixed bar** — its shell is
+`display:flex; flex-direction:column`, the screen is `flex:1; min-height:0`, and
+the tab bar is `flex:none` at the end. The app now matches: `#root` is a
+`100dvh` flex column, `main` scrolls internally, and `.tabs` is a static flex
+child. A flex child cannot land anywhere but the end of its column, so the whole
+class of question is gone rather than answered.
 
-**The rest is unexplained and needs a reading from the phone.** `/touch` now
-prints `screen`, `window.inner`, `visualViewport`, `documentElement`, the four
-resolved `env(safe-area-inset-*)` values and the nav's own bottom against
-`innerHeight`. One screenshot of that page settles it. Do not guess a fifth iOS
-fix without it — the last four cost a round trip each.
+Verified on the Simulator: both screens now report FAB top 618.5pt, bottom
+688.8pt, identical to the pixel.
+
+**Consequence worth knowing:** the scrolling element is `main`, not the document.
+Anything reading `window.scrollY` is wrong now — `verify-swipe` was, and is
+fixed. The 8.5rem bottom padding that used to clear the fixed bar is gone too;
+the bar is a sibling below the content, so 1.5rem of breathing room is all it
+needs.
+
+181 checks pass.
 
 ## Open threads
 

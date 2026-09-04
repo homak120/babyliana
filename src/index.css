@@ -6,10 +6,29 @@
 }
 
 html,
-body,
-#root {
+body {
   height: 100%;
   margin: 0;
+}
+
+/* The app shell is a column: screen, then tab bar. The prototype is built this
+   way and the reason turned out to matter — the bar used `position: fixed;
+   bottom: 0`, and on iOS that resolved ~47pt above the screen edge on the day
+   screen but flush on the home screen, on the same build and the same device.
+   Not reproducible in any desktop browser, insets substituted or not.
+   A flex child cannot land anywhere but the end of its column, so the whole
+   class of question goes away. */
+#root {
+  height: 100dvh;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Old iOS without dvh: 100% of a body that is already the viewport. */
+@supports not (height: 100dvh) {
+  #root { height: 100%; }
 }
 
 body {

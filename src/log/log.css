@@ -10,8 +10,12 @@ body {
 .log {
   max-width: 26rem;
   margin: 0 auto;
-  padding: calc(1rem + env(safe-area-inset-top)) 1.125rem
-    calc(8.5rem + env(safe-area-inset-bottom));
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* The tab bar is a sibling below, not an overlay, so this is breathing room
+     rather than clearance. */
+  padding: calc(1rem + env(safe-area-inset-top)) 1.125rem 1.5rem;
 }
 
 .statusrow {

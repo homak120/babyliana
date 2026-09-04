@@ -4,8 +4,10 @@
 .day {
   max-width: 26rem;
   margin: 0 auto;
-  padding: calc(1rem + env(safe-area-inset-top)) 0
-    calc(8.5rem + env(safe-area-inset-bottom));
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: calc(1rem + env(safe-area-inset-top)) 0 1.5rem;
 }
 
 .datestrip {
@@ -97,10 +99,7 @@
 /* Geometry copied from the prototype's tab bar: 10px 18px 22px, gap 10px, and
    everything on one centre line. */
 .tabs {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;

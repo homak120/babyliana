@@ -62,6 +62,18 @@ const offset = () =>
     return Math.round(m.m41)
   }, SEL)
 
+async function dragFrom(x0: number, y0: number, dx: number, dy: number, steps = 14) {
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y: y0 }] })
+  for (let i = 1; i <= steps; i++) {
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ x: x0 + (dx * i) / steps, y: y0 + (dy * i) / steps }],
+    })
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  await p.waitForTimeout(450)
+}
+
 async function drag(dx: number, dy: number, steps = 14) {
   const box = (await p.locator(SEL).first().boundingBox())!
   const x0 = box.x + box.width - 30
@@ -104,9 +116,19 @@ async function suite(label: string) {
   // The one the axis lock is there to protect.
   await p.setViewportSize({ width: 390, height: 420 })
   await p.waitForTimeout(200)
-  const before = await p.evaluate(() => window.scrollY)
-  await drag(-30, -260)
-  const after = await p.evaluate(() => window.scrollY)
+  // The screen scrolls, not the window — the shell is a flex column now.
+  const scrollTop = () => p.evaluate(() => document.querySelector('main')!.scrollTop)
+  const room = await p.evaluate(() => {
+    const m = document.querySelector('main')!
+    return m.scrollHeight - m.clientHeight
+  })
+  check(`${label}: the screen has somewhere to scroll`, room > 0, `${room}px of overflow`)
+  // Started from a fixed point rather than a row: on the home screen at 420px
+  // the first row sits below the fold, so a row-anchored drag began off-screen
+  // and sent no events at all.
+  const before = await scrollTop()
+  await dragFrom(195, 300, -30, -230)
+  const after = await scrollTop()
   check(`${label}: vertical drag does not open`, (await offset()) === 0, `offset ${await offset()}`)
   check(`${label}: vertical drag still scrolls`, after > before, `scrollY ${before} -> ${after}`)
   await p.setViewportSize({ width: 390, height: 844 })
