@@ -34,12 +34,21 @@
 
 .day .totals { padding: 0 1.125rem; }
 
+.daylabel {
+  padding: 0 1.125rem;
+  margin: 0 0 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
 .table { margin-top: 0.5rem; }
 
 .thead,
 .trow {
   display: grid;
-  grid-template-columns: 38px 84px 1fr 70px 16px;
+  /* The pee/poop cell has to hold "poop (green liquid)" without wrapping to
+     three lines, which 70px could not. */
+  grid-template-columns: 34px 62px 1fr 108px 18px;
   align-items: baseline;
   gap: 0.25rem;
   padding: 9px 18px;
@@ -64,21 +73,11 @@
 .ttime { color: var(--ink); }
 .tmilk { font-weight: 700; }
 .unknown { color: var(--accent); font-weight: 900; }
-.tdiaper { font-size: 0.8125rem; color: var(--mintInk); }
+.tdiaper { display: flex; flex-direction: column; gap: 0.125rem; font-size: 0.8125rem; }
+.tpee { color: var(--yellowInk); font-style: normal; }
+.tpoop { color: var(--mintInk); font-style: normal; }
 .trest { display: block; color: var(--lavInk); font-style: normal; font-size: 0.75rem; }
 
-.avatar {
-  display: grid;
-  place-items: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--parentM);
-  color: var(--card);
-  font-size: 0.5625rem;
-  font-weight: 900;
-  font-style: normal;
-}
 
 .tnote {
   display: flex;

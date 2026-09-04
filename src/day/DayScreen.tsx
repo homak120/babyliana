@@ -5,6 +5,7 @@ import { getMoments, removeMoment } from '../moments'
 import { getDevices } from '../db'
 import { subscribe, sync } from '../sync'
 import type { Device, Moment } from '../types'
+import { Icon } from '../log/Icon'
 import { chronological, daysWithEntries } from './cells'
 import { DayRow } from './DayRow'
 
@@ -87,13 +88,15 @@ export function DayScreen() {
         ))}
       </div>
 
+      <p className="daylabel">{dayPill(selected)}</p>
+
       <div className="totals">
-        <span className="tag rose">{totals.feeds} feeds</span>
-        <span className="tag lav">{totals.ml} mL</span>
-        <span className="tag yellow">{totals.pee} pee</span>
-        <span className="tag mint">{totals.poop} poop</span>
+        <span className="tag rose"><Icon name="local_drink" size={14} /> {totals.feeds}</span>
+        <span className="tag lav"><Icon name="water_full" size={14} /> {totals.ml} mL</span>
+        <span className="tag yellow"><Icon name="water_drop" size={14} /> {totals.pee}</span>
+        <span className="tag mint"><Icon name="cookie" size={14} /> {totals.poop}</span>
         {totals.unknownVolumes > 0 && (
-          <span className="tag chip">unmarked {totals.unknownVolumes}</span>
+          <span className="tag chip">? &times; {totals.unknownVolumes}</span>
         )}
       </div>
 

@@ -47,9 +47,12 @@ await page.getByRole('button', { name: '+ diaper' }).click()
 await page.getByRole('button', { name: 'poop', exact: true }).click()
 await shot('app-05-sheet-diaper')
 
+await page.getByRole('button', { name: '+ other' }).click()
+await shot('app-06-sheet-other')
+
 await page.getByRole('button', { name: 'close' }).click()
 await page.getByRole('navigation').getByLabel('day').click()
-await shot('app-06-day')
+await shot('app-07-day')
 
 console.log('prototype:')
 await page.goto(PROTO, { waitUntil: 'networkidle' })

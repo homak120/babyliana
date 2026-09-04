@@ -20,7 +20,18 @@ const PROBE = `(() => {
   look('fab', '.fab', ['width', 'height', 'border-radius'])
   look('tab button', '.tabs button', ['width', 'height', 'flex-grow'])
   look('elapsed', '.elapsed', ['font-size'])
-  look('hero', '.hero', ['display', 'gap'])
+  const row = document.querySelector('.timerow')
+  if (row) {
+    out['timerow'] = {
+      box: Math.round(row.getBoundingClientRect().width) + 'x' +
+           Math.round(row.getBoundingClientRect().height),
+      scrollWidth: row.scrollWidth,
+      children: [...row.children].map((c) => {
+        const r = c.getBoundingClientRect()
+        return c.className + ':' + Math.round(r.width) + '@' + Math.round(r.left)
+      }),
+    }
+  }
   return out
 })()`
 
@@ -30,5 +41,7 @@ const page = await ctx.newPage()
 await page.goto('http://localhost:5173', { waitUntil: 'networkidle' })
 await page.evaluate("localStorage.setItem('babyliana.welcomed','1')")
 await page.reload({ waitUntil: 'networkidle' })
+await page.getByLabel('log a moment').click()
+await page.waitForTimeout(400)
 console.log(JSON.stringify(await page.evaluate(PROBE), null, 2))
 await browser.close()

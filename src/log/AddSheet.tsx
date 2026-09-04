@@ -32,16 +32,16 @@ import { TimeCard } from './TimeCard'
 
 type BlockType = Block['type']
 
-const AVAILABLE: { type: BlockType; label: string; repeats: boolean }[] = [
+const AVAILABLE: { type: BlockType; label: string; icon: string; repeats: boolean }[] = [
   // Milk repeats, and has to: under D-019 a split feed is two milk blocks in
   // one moment. The handoff says a bubble disappears once added, but it was
   // written when a split feed was one block with two halves — so that rule
   // holds for the others and not for this one.
-  { type: 'milk', label: '+ milk', repeats: true },
+  { type: 'milk', label: 'milk', icon: 'local_drink', repeats: true },
   // One change is one change; pee and poop are flags on it, not two entries.
-  { type: 'diaper', label: '+ diaper', repeats: false },
+  { type: 'diaper', label: 'diaper', icon: 'water_drop', repeats: false },
   // A moment might carry a sleep and a weight, so this repeats too.
-  { type: 'other', label: '+ other', repeats: true },
+  { type: 'other', label: 'other', icon: 'more_horiz', repeats: true },
 ]
 
 const emptyDraft = (type: BlockType) =>
@@ -116,7 +116,10 @@ export function AddSheet({
   return (
     <div className="sheet">
       <header className="sheet-head">
-        <h2>{editing ? 'edit this moment' : 'log a moment'}</h2>
+        <h2>
+          <Icon name="auto_awesome" size={20} />
+          {editing ? 'edit this moment' : 'what just happened'}
+        </h2>
         <button type="button" className="x" onClick={onClose} aria-label="close">
           <Icon name="close" size={20} />
         </button>
@@ -157,16 +160,17 @@ export function AddSheet({
       )}
 
       <div className="bubbles">
+        <p className="bubbleslabel">what happened at this time</p>
         {AVAILABLE.filter((a) => a.repeats || !blocks.some((b) => b.type === a.type)).map((a) => (
-          <button type="button" key={a.type} onClick={() => add(a.type)}>
-            {a.label}
+          <button type="button" key={a.type} className={`bubble ${a.type}`} onClick={() => add(a.type)}>
+            + <Icon name={a.icon} size={17} /> {a.label}
           </button>
         ))}
       </div>
 
       <section className="notecard">
         <label htmlFor="note">
-          <Icon name="edit_note" size={17} /> note
+          <Icon name="edit_note" size={17} /> note — anything at all
         </label>
         <input
           id="note"
@@ -176,9 +180,11 @@ export function AddSheet({
         />
       </section>
 
+      {/* A disabled button that says why is worth more than a greyed-out one
+          that does not — the prototype's own copy. */}
       <button type="button" className="save" disabled={!ready} onClick={save}>
         <Icon name="check_circle" size={24} />
-        save
+        {blocks.length === 0 ? 'pick what happened' : editing ? 'save changes' : 'save'}
       </button>
     </div>
   )

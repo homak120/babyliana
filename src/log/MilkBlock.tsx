@@ -7,7 +7,7 @@ import { Icon } from './Icon'
 // Arbitrary integers, not presets: the real log contains 31, 41, 43, 46, 57,
 // and a picker of 30/45/60 cannot express it (paper-log-baseline.md).
 
-const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '?', '0', '⌫']
+const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '?']
 
 export function MilkBlock({
   value,
@@ -46,7 +46,7 @@ export function MilkBlock({
       </header>
 
       <p className="volume">
-        {value.unknown ? '?' : (value.volume ?? '—')}
+        {value.unknown ? '?' : value.volume === null ? <i className="ph">tap a number</i> : value.volume}
         <small>mL</small>
       </p>
 

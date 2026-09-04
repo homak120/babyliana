@@ -37,23 +37,28 @@ export function milkCell(events: LogEvent[]): { parts: string[]; unknown: boolea
   return { parts, unknown: feeds.every((e) => e.volume_ml === null) }
 }
 
-/** `pee`, `poop (olive)`, `pee · poop`. Null when the moment has no change. */
-export function diaperCell(events: LogEvent[]): string | null {
+/**
+ * The pee/poop column, split so each half can carry its own colour — the
+ * prototype prints `pee` in yellow and the poop in mint rather than one string.
+ */
+export function diaperParts(events: LogEvent[]): { pee: boolean; poop: string | null } {
   const changes = events.filter((e) => e.type === 'diaper')
-  if (changes.length === 0) return null
-  const bits: string[] = []
-  for (const c of changes) {
-    if (c.pee) bits.push('pee')
-    if (c.poop) {
-      // `other` is a schema value, not something anyone wrote. Printing
-      // "poop (other)" says less than "poop" does, and the detail is in the
-      // note anyway — which is why `other` exists as an option at all.
-      const qual = [c.poop_colour, c.poop_consistency]
-        .filter((v) => v && v !== 'other')
-        .join(' ')
-      bits.push(qual ? `poop (${qual})` : 'poop')
-    }
-  }
+  const pee = changes.some((c) => c.pee)
+  const pooped = changes.find((c) => c.poop)
+  if (!pooped) return { pee, poop: null }
+  // `other` is a schema value, not something anyone wrote. Printing
+  // "poop (other)" says less than "poop" does, and the detail is in the note
+  // anyway — which is why `other` exists as an option at all.
+  const qual = [pooped.poop_colour, pooped.poop_consistency]
+    .filter((v) => v && v !== 'other')
+    .join(' ')
+  return { pee, poop: qual ? `poop (${qual})` : 'poop' }
+}
+
+/** Flat form, for tests and anywhere a single string is wanted. */
+export function diaperCell(events: LogEvent[]): string | null {
+  const { pee, poop } = diaperParts(events)
+  const bits = [pee ? 'pee' : null, poop].filter(Boolean)
   return bits.length ? bits.join(' · ') : null
 }
 

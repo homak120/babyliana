@@ -53,8 +53,8 @@ function Stepper({
   const down = useHold((s) => onChange(value - s))
   const up = useHold((s) => onChange(value + s))
   return (
-    <div className="stepper">
-      <button type="button" className="step" aria-label="down" {...down}>
+    <div className="timestepper">
+      <button type="button" className="stepper" aria-label="down" {...down}>
         <Icon name="remove" size={18} />
       </button>
       <input
@@ -67,7 +67,7 @@ function Stepper({
           if (digits !== '') onChange(Number(digits))
         }}
       />
-      <button type="button" className="step" aria-label="up" {...up}>
+      <button type="button" className="stepper" aria-label="up" {...up}>
         <Icon name="add" size={18} />
       </button>
     </div>
@@ -99,6 +99,7 @@ export function TimeCard({
   return (
     <section className="block timecard">
       <div className="timerow">
+        <Icon name="schedule" size={17} />
         <Stepper
           value={start.getHours()} active={field === 'h'} big
           onFocusField={() => setField('h')}
@@ -112,9 +113,11 @@ export function TimeCard({
         />
       </div>
 
+      <p className="timehint">hold &minus; or + to run, or type over any number</p>
+
       <div className="shortcuts">
         <button type="button" className="pill" onClick={() => setStart(new Date().getHours(), new Date().getMinutes())}>
-          now
+          <Icon name="schedule" size={14} /> now
         </button>
         {offsets.map((o) => (
           <button
@@ -124,7 +127,7 @@ export function TimeCard({
               onChange(d, end ? resolveEnd(d, end) : null)
             }}
           >
-            {o}
+            {o} min ago
           </button>
         ))}
         <button type="button" className="pill dim" onClick={() => setExpanded(!expanded)}>
@@ -137,7 +140,7 @@ export function TimeCard({
           type="button" className="pill addend"
           onClick={() => onChange(start, minutesAfter(start, 30))}
         >
-          + end time — optional
+          <Icon name="add" size={16} /> end time — optional
         </button>
       ) : (
         <div className="endblock">

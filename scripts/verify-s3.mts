@@ -92,5 +92,24 @@ check('night at 22:00', themeFor(new Date(2026, 8, 3, 22)) === 'night')
 check('night at 03:00', themeFor(new Date(2026, 8, 3, 3)) === 'night')
 check('day at 09:00', themeFor(new Date(2026, 8, 3, 9)) === 'day')
 
+// --- the design system's classes are not ours to redefine -----------------
+// tokens.css is authoritative for colour, type, radius and motion, and it also
+// ships component classes. Redefining one silently breaks it: `.stepper` there
+// is a 42px round button, and using the same name for a container collapsed the
+// time row to 42px with its children overlapping. Only a screenshot caught it.
+{
+  const { readFileSync } = await import('node:fs')
+  const classesIn = (f: string) =>
+    new Set([...readFileSync(f, 'utf8').matchAll(/^\.([a-zA-Z][\w-]*)/gm)].map((m) => m[1]))
+  const design = classesIn('src/tokens.css')
+  const mine = new Set([
+    ...classesIn('src/log/log.css'),
+    ...classesIn('src/day/day.css'),
+  ])
+  const ALLOWED = new Set(['avatar', 'day-sep']) // extended deliberately, not redefined
+  const clash = [...mine].filter((c) => design.has(c) && !ALLOWED.has(c))
+  check('no class redefines one from tokens.css', clash.length === 0, clash.join(', '))
+}
+
 console.log(failures === 0 ? '\n  all checks passed' : `\n  ${failures} FAILED`)
 process.exit(failures === 0 ? 0 : 1)
