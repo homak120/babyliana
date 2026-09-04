@@ -141,6 +141,7 @@ export function AddSheet({
             value={b.draft}
             onChange={(d) => update(i, d)}
             onRemove={() => remove(i)}
+            onAddAnother={() => add('milk')}
           />
         ) : b.type === 'diaper' ? (
           <DiaperBlock
@@ -160,7 +161,9 @@ export function AddSheet({
       )}
 
       <div className="bubbles">
-        <p className="bubbleslabel">what happened at this time</p>
+        <p className="bubbleslabel">
+          {blocks.length === 0 ? 'what happened at this time' : 'also happened at this time'}
+        </p>
         {AVAILABLE.filter((a) => a.repeats || !blocks.some((b) => b.type === a.type)).map((a) => (
           <button type="button" key={a.type} className={`bubble ${a.type}`} onClick={() => add(a.type)}>
             + <Icon name={a.icon} size={17} /> {a.label}

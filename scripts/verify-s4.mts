@@ -34,11 +34,13 @@ check('so the commonest change is savable with zero extra taps', canSave([diaper
 check('nothing selected cannot be saved', !canSave([]))
 check('a diaper with neither flag cannot be saved',
   !canSave([diaper({ pee: false, poop: false })]))
-check('a milk block with no volume and no ? cannot be saved', !canSave([milk()]))
-check('an explicit ? IS savable — unknown volume is a real answer',
-  canSave([milk({ unknown: true })]))
-check('one empty block blocks the whole save',
-  !canSave([diaper(), milk()]), 'a half-filled moment should not go in')
+// The prototype states this outright: "leave it blank and it saves as ? — a
+// feed happened, volume unknown". Requiring a number would make the app unable
+// to record something the paper log does about once a day.
+check('a blank milk block IS savable — blank is the paper\'s ?', canSave([milk()]))
+check('and it stores as null, not 0', toEntry(milk()).volume_ml === null)
+check('an empty diaper still blocks the save',
+  !canSave([milk(), diaper({ pee: false, poop: false })]))
 
 // --- coverage checklist -----------------------------------------------------
 const peeEntry = toEntry(diaper())

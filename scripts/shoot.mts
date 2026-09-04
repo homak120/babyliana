@@ -32,9 +32,11 @@ console.log('app:')
 await page.goto(APP, { waitUntil: 'networkidle' })
 await shot('app-01-first')
 
-// past the welcome, since a named device is the normal state
-await page.evaluate(() => localStorage.setItem('babyliana.welcomed', '1'))
-await page.reload({ waitUntil: 'networkidle' })
+// Complete setup for real. There is no flag to set any more — the device id
+// only exists once a name is submitted, which is the point.
+await page.getByPlaceholder('Anya').fill('Anya')
+await page.getByRole('button', { name: 'start logging' }).click()
+await page.waitForTimeout(800)
 await shot('app-02-log')
 
 await page.getByLabel('log a moment').click()

@@ -41,6 +41,7 @@ export function DiaperBlock({
           aria-pressed={value.pee}
           onClick={() => onChange({ ...value, pee: !value.pee })}
         >
+          <Icon name="water_drop" size={22} />
           pee
         </button>
         <button
@@ -55,6 +56,7 @@ export function DiaperBlock({
             )
           }
         >
+          <Icon name="cookie" size={22} />
           poop
         </button>
       </div>

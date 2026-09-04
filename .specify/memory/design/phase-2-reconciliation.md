@@ -55,6 +55,30 @@ Deferred by slicing, not oversight — each lands where it has something to be:
 | Row swipe to edit / delete | S8 | |
 | Period picker, cards and timeline day views | post-MVP | Alternatives the handoff offers, not the default |
 
+## What the prototype settled that the written spec did not
+
+Driving the prototype's own milk and diaper blocks in a browser answered a
+behaviour question the README never states. Its milk block has **no `?` key and
+no "unknown" source button**, and says why in its own copy: *"leave it blank and
+it saves as ? — a feed happened, volume unknown."*
+
+So blank is the unknown, in both dimensions — a blank volume is the paper's `?`,
+and both source toggles off is the unlabelled `30 + 30`. A control for something
+the absence already expresses is a control to get wrong at 4am. The `MilkDraft`
+no longer carries an `unknown` flag: one representation, not two.
+
+The consequence for saving: a blank milk block is **valid**, where an earlier
+version required a number or an explicit `?`. Requiring one would make the app
+unable to record something the paper log does about once a day.
+
+The keypad's bottom-left is `+`, not `?` — it adds another bottle, which under
+D-019 is exactly what a split feed is.
+
+**One deliberate divergence.** A new diaper block defaults to pee; the prototype
+starts with neither selected. The dominant entry across seven days of the real
+log is a bare `1`, so defaulting makes the commonest change zero extra taps and
+is one tap to undo.
+
 ## One interaction rule the model overrides
 
 The handoff says *"tap a type bubble → appends that block; bubble disappears

@@ -4,7 +4,8 @@ import type { DraftEntry, EventType, LogEvent, Moment, PoopColour, PoopConsisten
 // component files so those export components only — and because the "does this
 // block say anything" rules are logic worth testing on their own.
 
-export type MilkDraft = { volume: number | null; unknown: boolean; source: Source }
+/** No `unknown` flag: a null volume *is* the paper's `?`. One representation. */
+export type MilkDraft = { volume: number | null; source: Source }
 
 export type DiaperDraft = {
   pee: boolean
@@ -13,7 +14,7 @@ export type DiaperDraft = {
   consistency: PoopConsistency | null
 }
 
-export const newMilk = (): MilkDraft => ({ volume: null, unknown: false, source: 'unknown' })
+export const newMilk = (): MilkDraft => ({ volume: null, source: 'unknown' })
 
 /**
  * A new diaper block starts as a pee.
@@ -29,8 +30,14 @@ export const newDiaper = (): DiaperDraft => ({
   consistency: null,
 })
 
-/** No volume typed and no explicit `?` means the block says nothing yet. */
-export const milkIsEmpty = (d: MilkDraft) => d.volume === null && !d.unknown
+/**
+ * Never empty.
+ *
+ * A blank volume is the paper's `?` — a feed happened, volume unknown — which
+ * the prototype states outright. Requiring a number would make the app unable
+ * to record something the paper does about once a day.
+ */
+export const milkIsEmpty = (_d: MilkDraft) => false
 
 /** Neither flag set records nothing, so it is not savable. */
 export const diaperIsEmpty = (d: DiaperDraft) => !d.pee && !d.poop
@@ -90,7 +97,8 @@ export function toEntry(b: Block): DraftEntry {
       type: 'feed',
       // An explicit `?` is a feed of unknown volume, which is not the same as
       // no feed — the paper log distinguishes them and so must this.
-      volume_ml: b.draft.unknown ? null : b.draft.volume,
+      // Blank stays blank: null is the `?`, and is not the same as 0.
+      volume_ml: b.draft.volume,
       source: b.draft.source,
     }
   }
@@ -117,10 +125,8 @@ export function blocksFromMoment(m: Moment): Block[] {
         id: e.id,
         type: 'milk',
         draft: {
+          // A stored null stays null: reopening a `?` must not turn it into 0.
           volume: e.volume_ml,
-          // A stored null volume is the paper's `?` — a feed of unknown volume,
-          // not an empty block. Reopening it must not silently lose that.
-          unknown: e.volume_ml === null,
           source: e.source ?? 'unknown',
         },
       }

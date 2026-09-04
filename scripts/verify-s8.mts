@@ -73,11 +73,11 @@ try {
   check('the moment still holds exactly two entries', after.events.length === 2)
 
   // --- an unknown volume must survive a round trip through the sheet --------
-  const q = await logMoment({ entries: [toEntry({ key: 'q', type: 'milk', draft: { ...newMilk(), unknown: true } })] })
+  const q = await logMoment({ entries: [toEntry({ key: 'q', type: 'milk', draft: newMilk() })] })
   made.push(q.timeslot.id)
   const reopened = blocksFromMoment(q)[0]
-  check('a stored ? reopens as ?, not as an empty block',
-    reopened.type === 'milk' && reopened.draft.unknown && reopened.draft.volume === null)
+  check('a stored ? reopens blank, not as 0',
+    reopened.type === 'milk' && reopened.draft.volume === null)
 
   // --- removing one entry from a moment ------------------------------------
   const trimmed = blocksFromMoment(after).filter((b) => b.type === 'milk')
