@@ -18,7 +18,8 @@ Last updated: 2026-09-05
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0–6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. 187 checks pass across twelve suites.
+delivered by the second design handoff. 254 checks pass across seventeen
+suites.
 
 What exists: local-first writes to IndexedDB that never block on the network,
 push-then-reconcile sync with Supabase, the home screen (mascot artwork by
@@ -72,31 +73,9 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**Uncommitted: sleep's colours, a live-data hazard, and the wrong-date bug
-(D-031).**
-
-*Wrong date.* Logging a sleep filed it on the wrong day, and there were two
-causes in `withHourMinute`. It anchored to **today** rather than to the moment
-being edited, so changing an older entry's minute dragged it to today. And its
-future tolerance was **one minute**, so nudging a time two minutes forward read
-as "the future" and filed it a day earlier. Six hours now, and the fall-back rule
-only applies to a moment being logged today.
-
-This reverses what `verify-s5` asserted — "a moment cannot be in the future". The
-reasoning is in D-031: being an hour early is visible and one tap to fix, where a
-23-hour jump is neither.
-
-*Colours.* The sleep bubble had no `.bubble.sleep` rule and fell through to the
-default; its block header kept the milk red. Both peri now, and `verify-sleep`
-checks all four types as a set.
-
-*The hazard.* `verify-s2` failed on an outbox count only in the full run. Not
-flaky: `logMoment` called `closeOpenSleep`, s2 syncs the **live** database first,
-and the newest row there was a real open sleep — so **running `npm run verify`
-could have ended a sleep in progress on the owner's own log.** The close runs
-from the save path now.
-
-254 checks.
+**Nothing uncommitted.** The sleep colours, the live-data hazard and the
+wrong-date bug (D-031) that sat here went out in `ad2ccce`; this section had not
+been cleared after them. The tab bar's bottom gap followed in its own commit.
 
 ## Open threads
 

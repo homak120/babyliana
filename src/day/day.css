@@ -102,10 +102,14 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  /* max(), not calc(). The design's 22px is the gap it wants above the screen
+  /* max(), not calc. The design's 22px is the gap it wants above the screen
      edge; the home indicator already claims 34pt of that. Adding them stacked
-     two paddings and pushed the icons ~22pt further up than intended. */
-  padding: 10px 18px max(22px, env(safe-area-inset-bottom));
+     two paddings and pushed the icons ~22pt further up than intended.
+     The inset is then discounted by 16pt: the bar's children are 40-56px
+     rounded targets with much smaller icons inside, so the *visible* gap under
+     the icons runs well past the padding and the bar read as floating. 18pt on
+     a notched phone, 8px anywhere without an inset. */
+  padding: 10px 18px max(8px, calc(env(safe-area-inset-bottom) - 16px));
   background: var(--bg);
 }
 
