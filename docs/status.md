@@ -89,7 +89,8 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**Nothing.** The tree is clean as of the insights commit.
+**Nothing but this file** and `scripts/_scratch-insights.mts`, which is
+untracked scratch like `_gap.mts` and `_px.mts` beside it.
 
 One thing that outlives it: **read D-032 before touching the watch-list rules.**
 The insights card that flags four thresholds contradicts what `CLAUDE.md` said
@@ -97,10 +98,21 @@ until 2026-09-05. It was raised as a conflict before anything was built and the
 owner chose the handoff with the old rule in front of him. `CLAUDE.md` and
 `docs/plan.md` Phase 7 both say so now, so it does not read as an oversight.
 
-**The insights screen has only ever been seen with one day of empty-volume
-data.** The bars, the projection and the watch list all want a real week behind
-them. Running `supabase/imports/2026-09-05_paper-log-backfill.sql` into a scratch
-project is the cheap way to look at it properly.
+**The insights screen has now been seen with the real paper log behind it** —
+80 timeslots seeded straight into a throwaway IndexedDB by
+`scripts/_scratch-insights.mts` (untracked scratch, parses the backfill SQL, no
+Supabase project involved). Every card renders at both ranges. 417 mL/day over
+8/29–9/4, 8 feeds/day, a 3h 16m typical gap.
+
+**Two things that finding surfaced, both about the watch list rather than the
+code.** It fired six times on seven days, five of them "below the 6-a-day mark"
+— the paper log records 3–5 wet nappies on most days against a threshold of 6,
+so on this data the card is close to permanently on. And the sixth, *10h 10m
+between feeds on 8/30*, is an artifact of the backfill's own hole: the two
+unreadable 8/30 afternoon rows are commented out in section 6, and restoring
+them drops that gap to about three hours. A rule that fires on a gap in the
+record reads identically to one firing on a gap in the feeding. Owner's call —
+D-032 stands, this is just what it looks like loaded.
 
 Worth knowing why this section was wrong twice in one day: it named the sleep
 colours, the live-data hazard and D-031 long after `ad2ccce` shipped them,
