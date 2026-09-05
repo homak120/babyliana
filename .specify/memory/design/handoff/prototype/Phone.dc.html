@@ -45,12 +45,17 @@
   <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
     <div style="position:relative;flex:1;display:flex;flex-direction:column;min-height:0">
 
-      <div style="padding:8px 18px 14px">
-        <div style="background:var(--card,#ffffff);border-radius:30px;padding:18px;box-shadow:0 8px 22px var(--soft,rgba(140,100,110,0.1))">
+      <div style="padding:8px 18px 14px;display:flex;align-items:stretch;gap:8px">
+        <div style="flex:none;display:flex;flex-direction:column;justify-content:center;gap:6px">
+          <button type="button" onClick="{{ setLeadElapsed }}" aria-label="elapsed view" style="width:32px;height:32px;border:0;border-radius:16px;background:{{ leadElapsedBg }};color:{{ leadElapsedInk }};cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:18px">schedule</span></button>
+          <button type="button" onClick="{{ setLeadCombined }}" aria-label="combined view" style="width:32px;height:32px;border:0;border-radius:16px;background:{{ leadCombinedBg }};color:{{ leadCombinedInk }};cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:18px">insights</span></button>
+          <button type="button" onClick="{{ setLeadMascot }}" aria-label="mascot view" style="width:32px;height:32px;border:0;border-radius:16px;background:{{ leadMascotBg }};color:{{ leadMascotInk }};cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:18px">pets</span></button>
+        </div>
+        <div style="flex:1;min-width:0;background:var(--card,#ffffff);border-radius:30px;padding:18px;box-shadow:0 8px 22px var(--soft,rgba(140,100,110,0.1))">
           <div style="display:flex;align-items:center;gap:16px">
 
-            <div style="position:relative;width:100px;height:96px;flex:none;animation:{{ mascotAnim }}">
-              <img src="{{ mascotImg }}" alt="liana" style="position:absolute;left:-4px;top:-8px;width:108px;height:108px;object-fit:contain" />
+            <div style="position:relative;width:88px;height:88px;flex:none;animation:{{ mascotAnim }}">
+              <img src="{{ mascotImg }}" alt="liana" style="position:absolute;left:-6px;top:-8px;width:100px;height:100px;object-fit:contain" />
               <sc-if value="{{ showSparkle }}" hint-placeholder-val="{{ false }}">
                 <span class="msr" style="position:absolute;right:-8px;top:-2px;font-size:22px;color:var(--amber,#f2a65a);animation:lianaSparkle 1.2s ease-out forwards">auto_awesome</span>
               </sc-if>
@@ -65,6 +70,18 @@
                 <div style="display:inline-flex;align-items:center;gap:5px;margin-top:5px;background:var(--stateFill,#f0e5fb);color:var(--stateInk,#7a5aa8);border-radius:999px;padding:3px 11px;font-size:12px;font-weight:700">
                   <span class="msr" style="font-size:14px">{{ stateIcon }}</span>{{ mascotWord }}
                 </div>
+                <sc-if value="{{ isSleeping }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:7px">
+                    <div style="font-size:13px;font-weight:700;color:var(--periInk,#5d72b8);font-variant-numeric:tabular-nums">{{ sleepRun }} asleep</div>
+                    <button type="button" onClick="{{ endSleep }}" aria-label="end sleep" style="width:30px;height:30px;flex:none;border:0;border-radius:15px;background:var(--periFill,#e4e9fb);color:var(--periInk,#5d72b8);cursor:pointer;display:flex;align-items:center;justify-content:center">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M11.6 5.4A6.4 6.4 0 1 0 19 12.8 8.4 8.4 0 0 1 11.6 5.4Z"></path>
+                        <path d="M16.6 8.6 21.2 4"></path>
+                        <path d="M17.6 3.6h3.8v3.8"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </sc-if>
               </sc-if>
               <sc-if value="{{ leadCombined }}" hint-placeholder-val="{{ false }}">
                 <div style="font-size:29px;line-height:1.12;font-weight:900;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">{{ combinedLine }}</div>
@@ -149,6 +166,12 @@
 
   <sc-if value="{{ isDay }}" hint-placeholder-val="{{ false }}">
     <div style="position:relative;flex:1;display:flex;flex-direction:column;min-height:0">
+      <div style="display:flex;gap:6px;padding:6px 22px 10px">
+        <button type="button" onClick="{{ setRepLog }}" style="height:34px;padding:0 14px;border:0;border-radius:17px;background:{{ repLogBg }};color:{{ repLogInk }};font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:16px">list</span>log</button>
+        <button type="button" onClick="{{ setRepIns }}" style="height:34px;padding:0 14px;border:0;border-radius:17px;background:{{ repInsBg }};color:{{ repInsInk }};font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:16px">insights</span>insights</button>
+      </div>
+
+      <sc-if value="{{ repLog }}" hint-placeholder-val="{{ true }}">
       <div style="padding:4px 0 12px">
         <div class="liana-scroll" style="display:flex;gap:6px;overflow:auto;padding:0 22px 10px">
           <sc-for list="{{ dayTabs }}" as="dt" hint-placeholder-count="4">
@@ -271,6 +294,165 @@
               </sc-for>
             </div>
           </sc-for>
+        </div>
+      </sc-if>
+      </sc-if>
+
+      <sc-if value="{{ repInsights }}" hint-placeholder-val="{{ false }}">
+        <div class="liana-scroll" style="flex:1;overflow:auto;min-height:0;padding:0 18px 24px">
+
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">
+            <div style="min-width:0">
+              <div style="font-size:13px;font-weight:700;color:var(--ink,#4b403a);font-variant-numeric:tabular-nums">{{ repRange }}</div>
+              <div style="font-size:12px;color:var(--dim,#7d6b62)">{{ repDays }}</div>
+            </div>
+            <div style="flex:none;display:flex;gap:2px;background:var(--chip,#f6ece6);border-radius:16px;padding:3px">
+              <button type="button" onClick="{{ setSpan3 }}" style="height:26px;padding:0 11px;border:0;border-radius:13px;background:{{ spanBg3 }};color:{{ spanInk3 }};font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:12px;cursor:pointer">3d</button>
+              <button type="button" onClick="{{ setSpan7 }}" style="height:26px;padding:0 11px;border:0;border-radius:13px;background:{{ spanBg7 }};color:{{ spanInk7 }};font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:12px;cursor:pointer">7d</button>
+            </div>
+          </div>
+
+          <sc-if value="{{ repHasFlags }}" hint-placeholder-val="{{ false }}">
+            <div style="background:var(--yellowFill,#fff3d6);border-radius:24px;padding:14px 16px;margin-bottom:12px">
+              <div style="font-size:10px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;color:var(--flagInk,#7a5a0f);display:flex;align-items:center;gap:5px;margin-bottom:8px"><span class="msr" style="font-size:15px">flag</span>worth a look</div>
+              <sc-for list="{{ repFlags }}" as="f" hint-placeholder-count="2">
+                <div style="display:flex;align-items:flex-start;gap:7px;font-size:13px;color:var(--flagInk,#7a5a0f);margin-top:5px;text-wrap:pretty">
+                  <span class="msr" style="font-size:16px;flex:none">{{ f.icon }}</span><span>{{ f.text }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <div style="background:var(--card,#ffffff);border-radius:26px;padding:16px;margin-bottom:12px;box-shadow:0 6px 16px var(--soft,rgba(140,100,110,0.09))">
+            <div style="font-size:10px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;color:var(--roseInk,#c2506c);display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:15px">local_drink</span>milk intake</div>
+            <div style="display:flex;align-items:baseline;gap:7px;margin-top:6px">
+              <span style="font-size:36px;font-weight:900;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">{{ repAvgMl }}</span>
+              <span style="font-size:13px;color:var(--dim,#7d6b62)">mL average per day</span>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:5px;height:96px;margin-top:12px">
+              <sc-for list="{{ repBars }}" as="b" hint-placeholder-count="5">
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <span style="font-size:11px;font-weight:700;color:var(--ink,#4b403a);font-variant-numeric:tabular-nums">{{ b.mlTxt }}</span>
+                  <div style="width:100%;height:{{ b.mlH }};border-radius:8px 8px 4px 4px;background:{{ b.fill }}"></div>
+                  <span style="font-size:11px;font-weight:700;color:{{ b.labInk }};font-variant-numeric:tabular-nums">{{ b.label }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--hair,#f2e5dc)">
+              <div>
+                <div style="font-size:11px;color:var(--dim,#7d6b62)">feeds per day</div>
+                <div style="font-size:18px;font-weight:900;font-variant-numeric:tabular-nums">{{ repAvgFeeds }}</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--dim,#7d6b62)">average per feed</div>
+                <div style="font-size:18px;font-weight:900;font-variant-numeric:tabular-nums">{{ repPerFeed }}</div>
+              </div>
+            </div>
+            <div style="margin-top:12px;background:var(--roseFill,#ffe1e8);border-radius:18px;padding:10px 12px">
+              <div style="font-size:11px;font-weight:700;color:var(--roseDeep,#9d3550)">today · {{ repTodayMl }}</div>
+              <div style="display:flex;align-items:baseline;gap:6px;margin-top:2px">
+                <span style="font-size:20px;font-weight:900;color:var(--roseDeep,#9d3550);font-variant-numeric:tabular-nums">{{ repPace }}</span>
+                <span style="font-size:11px;font-weight:700;color:var(--roseDeep,#9d3550)">on pace</span>
+              </div>
+              <div style="font-size:11px;color:{{ repPaceInk }};margin-top:3px">{{ repPaceNote }}</div>
+            </div>
+          </div>
+
+          <div style="background:var(--card,#ffffff);border-radius:26px;padding:16px;margin-bottom:12px;box-shadow:0 6px 16px var(--soft,rgba(140,100,110,0.09))">
+            <div style="font-size:10px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink,#4b403a);display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:15px">grid_view</span>daily rhythm</div>
+            <div style="font-size:11px;color:var(--dim,#7d6b62);margin-top:3px">each column is one hour, midnight to midnight</div>
+            <div style="margin-top:12px">
+              <sc-for list="{{ repRows }}" as="row" hint-placeholder-count="3">
+                <div style="display:grid;grid-template-columns:30px 1fr;align-items:center;gap:6px;margin-bottom:4px">
+                  <span style="font-size:11px;font-weight:700;color:var(--ink,#4b403a);font-variant-numeric:tabular-nums">{{ row.label }}</span>
+                  <div style="display:grid;grid-template-columns:repeat(24,1fr);gap:1px">
+                    <sc-for list="{{ row.cells }}" as="c" hint-placeholder-count="24">
+                      <div style="height:15px;border-radius:3px;background:{{ c.bg }}"></div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+              <div style="display:grid;grid-template-columns:30px 1fr;gap:6px">
+                <span></span>
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--dim,#7d6b62);font-variant-numeric:tabular-nums">
+                  <span>0</span><span>6</span><span>12</span><span>18</span><span>23</span>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;font-size:11px;color:var(--dim,#7d6b62)">
+              <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:var(--roseFill,#ffe1e8)"></span>milk</span>
+              <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:var(--yellowFill,#fff3d6)"></span>pee</span>
+              <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:var(--mintFill,#dff2e8)"></span>poop</span>
+              <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:var(--periFill,#e9edfa)"></span>sleep</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--hair,#f2e5dc)">
+              <div>
+                <div style="font-size:11px;color:var(--dim,#7d6b62)">typical gap between feeds</div>
+                <div style="font-size:18px;font-weight:900;font-variant-numeric:tabular-nums">{{ repAvgGap }}</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--dim,#7d6b62)">longest gap {{ repWorstGapDay }}</div>
+                <div style="font-size:18px;font-weight:900;font-variant-numeric:tabular-nums">{{ repWorstGap }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+            <div style="background:var(--card,#ffffff);border-radius:26px;padding:15px;box-shadow:0 6px 16px var(--soft,rgba(140,100,110,0.09))">
+              <div style="font-size:12px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;color:var(--flagInk,#7a5a0f);display:flex;align-items:center;gap:4px"><span class="msr" style="font-size:15px">water_drop</span>wet</div>
+              <div style="display:flex;align-items:baseline;gap:5px;margin-top:5px">
+                <span style="font-size:28px;font-weight:900;color:{{ repPeeInk }};font-variant-numeric:tabular-nums">{{ repAvgPee }}</span>
+                <span style="font-size:11px;color:var(--dim,#7d6b62)">/ day</span>
+              </div>
+              <div style="font-size:11px;color:var(--dim,#7d6b62);margin-top:4px;text-wrap:pretty">{{ repPeeNote }}</div>
+            </div>
+            <div style="background:var(--card,#ffffff);border-radius:26px;padding:15px;box-shadow:0 6px 16px var(--soft,rgba(140,100,110,0.09))">
+              <div style="font-size:12px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;color:var(--mintDeep,#2c6b50);display:flex;align-items:center;gap:4px"><span class="msr" style="font-size:15px">cookie</span>poop</div>
+              <div style="display:flex;align-items:baseline;gap:5px;margin-top:5px">
+                <span style="font-size:28px;font-weight:900;color:var(--mintDeep,#2c6b50);font-variant-numeric:tabular-nums">{{ repSincePoop }}</span>
+                <span style="font-size:11px;color:var(--dim,#7d6b62)">ago</span>
+              </div>
+              <div style="font-size:11px;color:var(--dim,#7d6b62);margin-top:4px;text-wrap:pretty">{{ repLastPoopNote }}</div>
+            </div>
+          </div>
+
+          <div style="background:var(--card,#ffffff);border-radius:26px;padding:16px;margin-bottom:12px;box-shadow:0 6px 16px var(--soft,rgba(140,100,110,0.09))">
+            <div style="font-size:10px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;color:var(--periInk,#5d72b8);display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:15px">bedtime</span>sleep</div>
+            <sc-if value="{{ repHasNaps }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;align-items:baseline;gap:7px;margin-top:6px">
+                <span style="font-size:30px;font-weight:900;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">{{ repAvgNap }}</span>
+                <span style="font-size:13px;color:var(--dim,#7d6b62)">a day, across {{ repNapCount }} sleeps</span>
+              </div>
+              <div style="display:flex;align-items:flex-end;gap:5px;height:52px;margin-top:12px">
+                <sc-for list="{{ repBars }}" as="b" hint-placeholder-count="5">
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px">
+                    <div style="width:100%;height:{{ b.napH }};border-radius:8px 8px 4px 4px;background:{{ napFill }}"></div>
+                    <span style="font-size:11px;font-weight:700;color:var(--ink,#4b403a);font-variant-numeric:tabular-nums">{{ b.label }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--hair,#f2e5dc)">
+                <div style="font-size:11px;color:var(--dim,#7d6b62)">longest single stretch</div>
+                <div style="font-size:18px;font-weight:900;font-variant-numeric:tabular-nums">{{ repLongestNap }}</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ repNoNaps }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:13px;color:var(--dim,#7d6b62);margin-top:8px;text-wrap:pretty">no sleep logged in this period. tap the moon on the log screen when she goes down and end it when she wakes.</div>
+            </sc-if>
+          </div>
+
+          <sc-if value="{{ repHasWeights }}" hint-placeholder-val="{{ false }}">
+            <div style="background:var(--card,#ffffff);border-radius:26px;padding:16px;margin-bottom:12px;box-shadow:0 6px 16px var(--soft,rgba(140,100,110,0.09))">
+              <div style="font-size:10px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;color:var(--lavInk,#7a5aa8);display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:15px">monitor_weight</span>growth</div>
+              <sc-for list="{{ repWeights }}" as="w" hint-placeholder-count="2">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:14px;padding:7px 0;border-bottom:1px solid var(--hair,#f2e5dc)">
+                  <span style="color:var(--muted,#a89890);font-variant-numeric:tabular-nums">{{ w.day }}</span>
+                  <span style="font-weight:700">{{ w.val }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
         </div>
       </sc-if>
     </div>
@@ -679,12 +861,12 @@ class Component extends DCLogic {
         bg: '#fdf7f2', card: '#ffffff', ink: '#4b403a', muted: '#a89890', hair: '#f2e5dc',
         sky: 'linear-gradient(160deg,#ffe3ec 0%,#f3e6ff 40%,#fdf7f2 100%)',
         accent: '#ef7f96', onAccent: '#fff8fa', chip: '#f6ece6',
-        roseFill: '#ffe1e8', roseInk: '#c2506c', roseShadow: 'rgba(239,127,150,0.35)',
+        roseFill: '#ffe1e8', roseInk: '#c2506c', roseDeep: '#9d3550', roseShadow: 'rgba(239,127,150,0.35)',
         lavFill: '#f0e5fb', lavInk: '#7a5aa8',
         lilacFill: '#efe7fb', lilacInk: '#7a5aa8',
         amberFill: '#ffeeda', amberInk: '#b06a1e', amber: '#f2a65a',
-        yellowFill: '#fff3d6', yellowInk: '#a97f16', yellow: '#f5c451',
-        mint: '#7cc4a4', onMint: '#f3fbf7', mintFill: '#dff2e8', mintInk: '#3f8a6b', mintShadow: 'rgba(124,196,164,0.35)',
+        yellowFill: '#fff3d6', yellowInk: '#a97f16', yellow: '#f5c451', flagInk: '#7a5a0f', dim: '#7d6b62',
+        mint: '#7cc4a4', onMint: '#f3fbf7', mintFill: '#dff2e8', mintInk: '#3f8a6b', mintDeep: '#2c6b50', mintShadow: 'rgba(124,196,164,0.35)',
         periFill: '#e9edfa', periInk: '#5d72b8',
         dayHead: '#fbeef4',
         fur: '#ffd9e0', furDark: '#f9c3d1', face: '#6b4b52', mouth: '#d96a83', blush: '#ff9db1',
@@ -697,12 +879,12 @@ class Component extends DCLogic {
         bg: '#171426', card: '#221e33', ink: '#cbbedb', muted: '#7a6f92', hair: '#2d2743',
         sky: 'linear-gradient(160deg,#2a1f3d 0%,#231d38 45%,#171426 100%)',
         accent: '#c07690', onAccent: '#fdeef4', chip: '#282240',
-        roseFill: '#3a2338', roseInk: '#e5a6bd', roseShadow: 'rgba(0,0,0,0.4)',
+        roseFill: '#3a2338', roseInk: '#e5a6bd', roseDeep: '#f4c6d6', roseShadow: 'rgba(0,0,0,0.4)',
         lavFill: '#2e2549', lavInk: '#b9a3e0',
         lilacFill: '#2e2549', lilacInk: '#b9a3e0',
         amberFill: '#3a2c1e', amberInk: '#e0ac6e', amber: '#d1934f',
-        yellowFill: '#3a3320', yellowInk: '#dcc373', yellow: '#c9ab55',
-        mint: '#5f9e84', onMint: '#eaf7f1', mintFill: '#1f3a30', mintInk: '#8fd0b3', mintShadow: 'rgba(0,0,0,0.4)',
+        yellowFill: '#3a3320', yellowInk: '#dcc373', yellow: '#c9ab55', flagInk: '#efd79a', dim: '#a99cc0',
+        mint: '#5f9e84', onMint: '#eaf7f1', mintFill: '#1f3a30', mintInk: '#8fd0b3', mintDeep: '#b3e2cb', mintShadow: 'rgba(0,0,0,0.4)',
         periFill: '#232a45', periInk: '#94a6dd',
         dayHead: '#2a2038',
         fur: '#5a4568', furDark: '#4a3757', face: '#e7dcf0', mouth: '#c98fa8', blush: '#8f5a76',
@@ -745,6 +927,114 @@ class Component extends DCLogic {
     if (!e || e.kind !== 'diaper') return '';
     const a = []; if (e.pee) a.push('pee'); if (e.poop) a.push('poop' + (e.qual ? ', ' + e.qual : ''));
     return a.join(' + ');
+  }
+
+
+  hm(mins) {
+    if (!mins) return '—';
+    const h = Math.floor(mins / 60), m = mins % 60;
+    return h ? h + 'h' + (m ? ' ' + m + 'm' : '') : m + 'm';
+  }
+  report() {
+    const t = this.th(), vis = this.visible();
+    const n = this.now(), nm = n.h * 60 + n.m;
+    const dayKeys = Array.from(new Set(vis.map(e => e.day))).sort((a, b) => this.isoOf(a) < this.isoOf(b) ? -1 : 1);
+    const span = this.state.repSpan || 7;
+    const keys = dayKeys.slice(-span);
+    const per = keys.map(day => {
+      const es = vis.filter(e => e.day === day);
+      const feeds = es.filter(e => e.kind === 'feed');
+      const ml = feeds.reduce((a, e) => a + e.parts.reduce((x, q) => x + (q.vol || 0), 0), 0);
+      const pees = es.filter(e => e.kind === 'diaper' && e.pee).length;
+      const poops = es.filter(e => e.kind === 'diaper' && e.poop).length;
+      const naps = es.filter(e => e.sleep && e.endH != null);
+      const napMins = naps.reduce((a, e) => a + (((e.endH * 60 + e.endM) - this.mins(e) + 1440) % 1440), 0);
+      const longestNap = naps.reduce((a, e) => Math.max(a, ((e.endH * 60 + e.endM) - this.mins(e) + 1440) % 1440), 0);
+      const times = feeds.map(e => this.mins(e)).sort((a, b) => a - b);
+      let maxGap = 0;
+      for (let i = 1; i < times.length; i++) maxGap = Math.max(maxGap, times[i] - times[i - 1]);
+      const gapAvg = times.length > 1 ? Math.round((times[times.length - 1] - times[0]) / (times.length - 1)) : 0;
+      const breast = feeds.reduce((a, e) => a + e.parts.filter(q => q.src === 'B').reduce((x, q) => x + (q.vol || 0), 0), 0);
+      return { day, ml, feeds: feeds.length, pees, poops, naps: naps.length, napMins, longestNap, maxGap, gapAvg, breast, es };
+    });
+    const today = per[per.length - 1] || null;
+    const full = per.length > 1 ? per.slice(0, -1) : per;
+    const mean = (a, f) => a.length ? Math.round(a.reduce((x, y) => x + f(y), 0) / a.length) : 0;
+    const avgMl = mean(full, x => x.ml), avgFeeds = mean(full, x => x.feeds);
+    const avgPee = mean(full, x => x.pees), avgNap = mean(full, x => x.napMins);
+    const maxMl = Math.max(1, ...per.map(x => x.ml));
+    const maxNap = Math.max(1, ...per.map(x => x.napMins));
+    const frac = today ? Math.max(0.2, nm / 1440) : 1;
+    const pace = today ? Math.round(today.ml / frac) : 0;
+    const paceDelta = avgMl ? Math.round(((pace - avgMl) / avgMl) * 100) : 0;
+    const bars = per.map((x, i) => ({
+      key: 'b' + x.day, label: this.usDay(x.day).replace(/^0/, ''),
+      mlH: Math.round((x.ml / maxMl) * 78) + 'px',
+      napH: Math.round((x.napMins / maxNap) * 40) + 'px',
+      mlTxt: x.ml || '—',
+      fill: i === per.length - 1 ? t.accent : 'color-mix(in oklab, ' + t.accent + ' 42%, ' + t.card + ')',
+      ink: i === per.length - 1 ? t.roseInk : t.roseInk,
+      labInk: i === per.length - 1 ? t.roseInk : t.ink,
+      peeOk: x.pees >= 6 ? t.mintInk : t.yellowInk,
+      pees: x.pees, poops: x.poops
+    }));
+    const rows = per.map(x => {
+      const cells = [];
+      for (let h = 0; h < 24; h++) {
+        const es = x.es.filter(e => e.h === h);
+        const napHere = x.es.some(e => e.sleep && (e.endH != null ? (h >= e.h && h <= e.endH) : h === e.h));
+        let bg = t.chip, ink = 'transparent', ic = '';
+        if (es.some(e => e.kind === 'feed')) { bg = t.roseFill; ink = t.roseInk; ic = 'local_drink'; }
+        else if (es.some(e => e.kind === 'diaper' && e.poop)) { bg = t.mintFill; ink = t.mintInk; ic = 'cookie'; }
+        else if (es.some(e => e.kind === 'diaper' && e.pee)) { bg = t.yellowFill; ink = t.yellowInk; ic = 'water_drop'; }
+        else if (napHere) { bg = t.periFill; ink = t.periInk; ic = 'bedtime'; }
+        cells.push({ key: x.day + '-' + h, bg, ink, ic, hasIc: !!ic });
+      }
+      return { key: 'r' + x.day, label: this.usDay(x.day).replace(/^0/, ''), cells };
+    });
+    const poopEs = vis.filter(e => e.kind === 'diaper' && e.poop).sort((a, b) => this.isoOf(a.day) + pad(a.h) < this.isoOf(b.day) + pad(b.h) ? -1 : 1);
+    const lastPoop = poopEs[poopEs.length - 1] || null;
+    let sincePoop = null;
+    if (lastPoop) {
+      const dayGap = Math.round((new Date(this.isoOf(keys[keys.length - 1]) + 'T00:00:00') - new Date(this.isoOf(lastPoop.day) + 'T00:00:00')) / 86400000);
+      sincePoop = dayGap * 1440 + nm - this.mins(lastPoop);
+    }
+    const worstGap = per.reduce((a, x) => x.maxGap > a.maxGap ? x : a, per[0] || { maxGap: 0 });
+    const flags = [];
+    full.forEach(x => { if (x.pees < 6) flags.push({ key: 'p' + x.day, icon: 'water_drop', text: this.usDay(x.day) + ': ' + x.pees + ' wet ' + (x.pees === 1 ? 'diaper' : 'diapers') + ', below the 6-a-day mark' }); });
+    if (sincePoop != null && sincePoop > 1440) flags.push({ key: 'poop', icon: 'cookie', text: 'no poop for ' + this.hm(sincePoop) });
+    if (worstGap && worstGap.maxGap >= 300) flags.push({ key: 'gap', icon: 'schedule', text: this.hm(worstGap.maxGap) + ' between feeds on ' + this.usDay(worstGap.day) });
+    if (today && paceDelta <= -20) flags.push({ key: 'pace', icon: 'trending_down', text: 'today is tracking ' + Math.abs(paceDelta) + '% under the ' + avgMl + ' mL average' });
+    const weights = vis.filter(e => e.other === 'weight' && /[0-9]/.test(String(e.note || ''))).map(e => ({ key: 'w' + e.id, day: this.usDay(e.day), val: String(e.note) }));
+    return {
+      repSpan7: span === 7, repSpan3: span === 3,
+      repRange: keys.length ? this.usDay(keys[0]) + ' – ' + this.usDay(keys[keys.length - 1]) : '',
+      repDays: keys.length + (keys.length === 1 ? ' day' : ' days') + ' logged',
+      repAvgMl: avgMl || '—', repAvgFeeds: avgFeeds || '—',
+      repPerFeed: avgFeeds ? Math.round(avgMl / avgFeeds) + ' mL' : '—',
+      repPace: today ? pace + ' mL' : '—',
+      repPaceNote: !today ? '' : paceDelta === 0 ? 'in line with the average' : (paceDelta > 0 ? paceDelta + '% over' : Math.abs(paceDelta) + '% under') + ' the ' + avgMl + ' mL average',
+      repPaceInk: t.roseDeep,
+      repTodayMl: today ? today.ml + ' mL so far' : '—',
+      repBars: bars, repRows: rows, napFill: 'color-mix(in oklab, ' + t.periInk + ' 55%, ' + t.card + ')',
+      repAvgPee: avgPee || '—', repPeeInk: avgPee >= 6 ? t.mintDeep : t.flagInk,
+      repPeeNote: avgPee >= 6 ? 'at or above the 6-a-day hydration mark' : 'under the 6-a-day hydration mark',
+      repPoopTotal: per.reduce((a, x) => a + x.poops, 0),
+      repSincePoop: sincePoop == null ? '—' : this.hm(sincePoop),
+      repLastPoopNote: lastPoop ? 'last: ' + this.usDay(lastPoop.day) + ' ' + pad(lastPoop.h) + ':' + pad(lastPoop.m) + (lastPoop.qual ? ' · ' + lastPoop.qual : '') : 'nothing logged yet',
+      repAvgNap: this.hm(avgNap),
+      repLongestNap: this.hm(Math.max(0, ...per.map(x => x.longestNap))),
+      repNapCount: per.reduce((a, x) => a + x.naps, 0),
+      repHasNaps: per.some(x => x.naps > 0), repNoNaps: !per.some(x => x.naps > 0),
+      repAvgGap: this.hm(mean(full.filter(x => x.gapAvg), x => x.gapAvg)),
+      repWorstGap: this.hm(worstGap ? worstGap.maxGap : 0),
+      repWorstGapDay: worstGap && worstGap.maxGap ? 'on ' + this.usDay(worstGap.day) : '',
+      repBreast: per.reduce((a, x) => a + x.breast, 0),
+      repFlags: flags, repHasFlags: flags.length > 0,
+      repWeights: weights, repHasWeights: weights.length > 0,
+      setSpan3: () => this.setState({ repSpan: 3 }),
+      setSpan7: () => this.setState({ repSpan: 7 })
+    };
   }
 
   rowsForDay(day) {
@@ -893,7 +1183,7 @@ class Component extends DCLogic {
 
   renderVals() {
     const t = this.th(), p = this.props;
-    const lead = p.lead || 'elapsed', flow = 'moment', view = p.dayView || 'table';
+    const lead = this.state.lead || p.lead || 'elapsed', flow = 'moment', view = p.dayView || 'table';
     const screen = this.state.screen, d = this.state.draft, sheet = this.state.sheet;
     const n = this.now(), nm = n.h * 60 + n.m, night = p.theme === 'night';
     const vis = this.visible();
@@ -940,7 +1230,8 @@ class Component extends DCLogic {
       roseFill: t.roseFill, roseInk: t.roseInk, roseShadow: t.roseShadow,
       lavFill: t.lavFill, lavInk: t.lavInk, lilacFill: t.lilacFill, lilacInk: t.lilacInk,
       amberFill: t.amberFill, amberInk: t.amberInk, amber: t.amber,
-      yellowFill: t.yellowFill, yellowInk: t.yellowInk,
+      yellowFill: t.yellowFill, yellowInk: t.yellowInk, flagInk: t.flagInk, dim: t.dim,
+      roseDeep: t.roseDeep, mintDeep: t.mintDeep,
       mint: t.mint, onMint: t.onMint, mintFill: t.mintFill, mintInk: t.mintInk, mintShadow: t.mintShadow,
       periFill: t.periFill, periInk: t.periInk, dayHead: t.dayHead,
       fur: t.fur, furDark: t.furDark, face: t.face, blush: t.blush, vine: t.vine, bib: t.bib,
@@ -1123,7 +1414,18 @@ class Component extends DCLogic {
     return {
       themeCss, nowText: pad(n.h) + ':' + pad(n.m), clockIcon: night ? 'bedtime' : 'wb_sunny',
       isHome: screen === 'home', isDay: screen === 'day',
+      repLog: (this.state.repMode || 'log') === 'log', repInsights: this.state.repMode === 'insights',
+      repLogBg: (this.state.repMode || 'log') === 'log' ? t.accent : t.chip, repLogInk: (this.state.repMode || 'log') === 'log' ? t.onAccent : t.muted,
+      repInsBg: this.state.repMode === 'insights' ? t.accent : t.chip, repInsInk: this.state.repMode === 'insights' ? t.onAccent : t.muted,
+      setRepLog: () => this.setState({ repMode: 'log' }), setRepIns: () => this.setState({ repMode: 'insights' }),
+      spanBg3: (this.state.repSpan || 7) === 3 ? t.card : 'transparent', spanInk3: (this.state.repSpan || 7) === 3 ? t.ink : t.muted,
+      spanBg7: (this.state.repSpan || 7) === 7 ? t.card : 'transparent', spanInk7: (this.state.repSpan || 7) === 7 ? t.ink : t.muted,
+      ...this.report(),
       leadElapsed: lead === 'elapsed', leadCombined: lead === 'combined', leadMascot: lead === 'mascot',
+      leadElapsedBg: lead === 'elapsed' ? t.accent : t.chip, leadElapsedInk: lead === 'elapsed' ? t.onAccent : t.muted,
+      leadCombinedBg: lead === 'combined' ? t.accent : t.chip, leadCombinedInk: lead === 'combined' ? t.onAccent : t.muted,
+      leadMascotBg: lead === 'mascot' ? t.accent : t.chip, leadMascotInk: lead === 'mascot' ? t.onAccent : t.muted,
+      setLeadElapsed: () => this.setState({ lead: 'elapsed' }), setLeadCombined: () => this.setState({ lead: 'combined' }), setLeadMascot: () => this.setState({ lead: 'mascot' }),
       leadIcon: lead === 'mascot' ? 'pets' : 'schedule',
       leadLabel: lead === 'mascot' ? 'Liana is' : lead === 'combined' ? 'last feed' : 'since last feed',
       elapsed, combinedLine: elapsed + ' ago · ' + lastVol + ' mL',

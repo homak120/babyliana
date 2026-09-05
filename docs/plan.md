@@ -113,7 +113,13 @@ Before reveal, because a gift cannot look like a prototype (D-005).
 - Mascot: the baby as a character, or a separate creature
 - Character states descriptive, never evaluative — sleepy, awake, hungry; never
   sad, worried, or scolding. Postpartum anxiety is real and an app that emotes
-  disapproval at 4am lands very differently than intended
+  disapproval at 4am lands very differently than intended. **The mascot rule is
+  untouched by D-032** — she does not react to a watch-list flag, and the
+  insights screen never reaches her
+- The wider "no normal-range judgements" rule this section used to carry was
+  narrowed by **D-032**, which admits four counted thresholds on the insights
+  screen and nothing else. Growth percentiles and population comparison remain
+  out of scope
 - Asset production. Consistency across the set is the hard part
 - App icon, launch experience, the small things that make it feel made
 - Naming decision lives here

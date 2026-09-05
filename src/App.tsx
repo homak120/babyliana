@@ -14,6 +14,7 @@ import { registerUpdates } from './updates'
 import './tokens.css'
 import './log/log.css'
 import './day/day.css'
+import './report/insights.css'
 
 // Still no router. The design navigates with a two-tab bar rather than URLs, so
 // a router would buy nothing but a dependency — /spike stays a path check

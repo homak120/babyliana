@@ -103,6 +103,18 @@ as tags, then "most recent first" list, then the tab bar.
   deliberately styled unlike the time values so the eye can find day
   boundaries.
 
+### 1b. Lead-view switcher
+
+A vertical rail of three 32px icon buttons sits immediately left of the top
+card: `schedule` (elapsed), `insights` (combined), `pets` (mascot). It switches
+which summary the card leads with — the three lead layouts already specified
+above. The active button is `--accent` on `--onAccent`; inactive are `--chip`
+on `--muted`. The choice is session state, defaulting to the `lead` prop.
+
+While a sleep is open, the elapsed layout adds a line under the state bubble —
+"`<duration>` asleep" plus a 30px end-sleep button carrying the same
+crescent-and-arrow SVG as the bar control.
+
 ### 2b. Bottom action bar
 
 The bar is contextual, not a persistent tab bar.
@@ -123,7 +135,32 @@ rising out of the notch, 2px stroke in `currentColor`, round caps — read as
 **On day / report**, no add actions appear at all — only a single `← back`
 pill (56px tall, `--chip`) returning to log.
 
-### 3. Day (read-back)
+### 3. Report — log / insights
+
+The report screen opens on **log** (the table / cards / timeline read-back
+below) and switches to **insights** from a pill pair at the top; insights has
+its own 3d / 7d range toggle and hides the date tabs. Every insights figure is
+derived at render time from the entries — nothing extra is stored.
+
+Insights cards, top to bottom: a **worth a look** watch list (only when a rule
+fires — under 6 wet diapers on a complete day, over 24h since a poop, a feed
+gap of 5h+, today tracking 20%+ under average); **milk intake** (average
+mL/day, per-day bars with today in the accent, feeds/day, average per feed, and
+today's projected total with its delta); **daily rhythm** (a days × 24-hour
+grid coloured by each hour's dominant event, priority feed > poop > pee >
+sleep, with typical and longest feed gap); **wet** and **poop** as paired
+half-cards (average wet diapers against the 6-a-day mark, time since the last
+poop); **sleep** (average per day, per-day bars, longest stretch); and
+**growth**, listing weight entries when any exist.
+
+Contrast rule for this screen: chart values, day labels and heatmap row labels
+are `--ink` at 11px bold, captions and the hour scale `--dim` at 11–12px, the
+watch list `--flagInk` on `--yellowFill`, and the on-pace figures
+`--roseDeep`. `--dim`, `--flagInk`, `--roseDeep` and `--mintDeep` are theme
+tokens with day and night values — body-size text must clear 4.5:1, which
+`--muted` does not.
+
+### 4. Day (read-back)
 
 **Purpose** — hold the phone next to the paper page and see the same thing.
 

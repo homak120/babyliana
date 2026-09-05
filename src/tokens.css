@@ -72,6 +72,12 @@
   --periFill: #e9edfa;  --periInk: #5d72b8;
   --dayHead: #fbeef4;
 
+  /* Insights only. Chart labels and the watch list are body-size text on a
+     fill, and must clear 4.5:1 — which --muted and the base --*Ink tones do
+     not. Do not substitute those here. */
+  --dim: #7d6b62;       --flagInk: #7a5a0f;
+  --roseDeep: #9d3550;  --mintDeep: #2c6b50;
+
   /* mascot */
   --fur: #ffd9e0;  --furDark: #f9c3d1;  --face: #6b4b52;
   --mouth: #d96a83; --blush: #ff9db1;   --vine: #7cc4a4;
@@ -106,6 +112,9 @@
   --onMint: #eaf7f1;    --mintShadow: rgba(0,0,0,0.4);
   --periFill: #232a45;  --periInk: #94a6dd;
   --dayHead: #2a2038;
+
+  --dim: #a99cc0;       --flagInk: #efd79a;
+  --roseDeep: #f4c6d6;  --mintDeep: #b3e2cb;
 
   --fur: #5a4568;  --furDark: #4a3757;  --face: #e7dcf0;
   --mouth: #c98fa8; --blush: #8f5a76;   --vine: #5f9e84;

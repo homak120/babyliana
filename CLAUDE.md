@@ -95,11 +95,16 @@ This app is used by parents of a newborn, often at 4am, often exhausted.
 
 - The mascot's states must be **descriptive, never evaluative**. Sleepy, awake,
   hungry. Never sad, worried, disappointed, or scolding. An app that appears to
-  disapprove of a late feed lands very differently than intended.
-- Do not generate health advice, normal-range judgements, or anything that
-  implies a reading is concerning. The app records; it does not assess.
-- No growth percentiles, no "is this normal" features. Out of scope, and out of
-  scope on purpose.
+  disapprove of a late feed lands very differently than intended. **This one has
+  not moved and does not.**
+- Do not generate health advice, or anything that implies a reading is
+  medically concerning. The app records; it does not diagnose.
+- No growth percentiles. Nothing comparing this baby to a population.
+- **Narrowed by D-032:** the insights screen may flag four fixed, counted
+  thresholds — under 6 wet diapers on a complete day, over 24h since a poop, a
+  5h+ feed gap, today projecting 20%+ under average. The owner chose this with
+  the older, broader rule in front of him. It is not an oversight and does not
+  license a fifth rule. Read D-032 before adding one.
 
 ---
 

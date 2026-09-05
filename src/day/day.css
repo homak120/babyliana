@@ -422,3 +422,27 @@
   cursor: pointer;
 }
 .apply:disabled { opacity: 0.4; cursor: default; }
+
+/* ---------- report mode pills ---------- */
+/* log / insights, at the top of the report screen. The date strip belongs to
+   the log mode only, so it sits below these rather than beside them. */
+
+.repmode { display: flex; gap: 6px; padding: 6px 22px 10px; }
+
+.modepill {
+  height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 17px;
+  background: var(--chip);
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.modepill.on { background: var(--accent); color: var(--onAccent); }

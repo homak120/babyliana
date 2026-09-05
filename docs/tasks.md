@@ -136,6 +136,16 @@ when". Read that first; this list is the checklist view of the same thing.
       to today rather than to the moment being edited, so editing an older entry
       dragged it forward; and a one-minute future tolerance filed a time nudged
       two minutes ahead a day early
+- [x] **CC** The third delivery's **insights screen** — a log/insights pill pair
+      on the report screen, a 3d/7d range, and six cards: milk intake with
+      per-day bars and a day-end projection, a days × 24h rhythm heatmap, wet and
+      poop as half-cards, sleep, and growth. All derived at render time; nothing
+      new is stored. `verify-insights` covers the arithmetic, `verify-report`
+      renders it
+- [x] **H/CC** **D-032** — the watch-list card asserts things about the baby,
+      which `CLAUDE.md` forbade. Raised as a conflict before building; the owner
+      chose the handoff. `CLAUDE.md` and `docs/plan.md` Phase 7 amended so the
+      rule and the shipped code agree
 
 - [ ] **H** Run the coverage checklist: enter all **ten** photographed days —
       8/26 to 9/4, three of them past what the baseline writes up. This is the

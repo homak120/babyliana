@@ -789,3 +789,44 @@ true, and wrong in practice: at 08:00, reading a typed 09:00 as *yesterday*
 09:00 moves it 23 hours to avoid being one hour ahead. A slightly future time is
 visible on the screen and takes one tap to fix; a 23-hour error is neither.
 The falling-back rule now applies only to a moment being logged today.
+
+---
+
+## D-032 — The insights screen is allowed to assess
+
+The third design handoff's report screen does something the app has never done:
+it judges the data. A **worth a look** card fires on four fixed rules, and the
+wet-diaper figure turns amber below six a day.
+
+`CLAUDE.md` forbade exactly this — *"Do not generate health advice, normal-range
+judgements, or anything that implies a reading is concerning. The app records; it
+does not assess"* — and named `docs/plan.md` Phase 7 as its authority. The
+conflict was raised before any of it was built. **The owner chose the handoff,
+deliberately and with the rule in front of him.** That is the decision; this
+entry exists so the next session does not reopen it as an oversight.
+
+**What is now allowed, and only this.** Four rules, all thresholds fixed and
+visible in `src/report/insights.ts`:
+
+- a complete day with fewer than 6 wet diapers
+- more than 24h since the last poop
+- a within-day gap of 5h or more between feeds
+- today projecting 20% or more under the running average
+
+Plus the wet-diaper average rendered against the same 6-a-day mark.
+
+**What is still forbidden, unchanged.** Growth percentiles. Anything comparing
+this baby to a population. Advice on what to do about a flag. Any suggestion
+that a reading is medically concerning rather than numerically unusual. The
+mascot remains descriptive — none of this reaches her, and she does not react to
+a flag. The rules count what was logged and say so; they do not diagnose.
+
+**Why the line sits there.** The four rules restate the parent's own data back to
+them — "9/6: 4 wet diapers" is a fact they wrote down. What made the original
+rule right was the fear of an app that *emotes disapproval at 4am*, and a card
+listing counts does not do that where a worried mascot would. The distinction
+worth keeping is between surfacing a number and passing judgement on the person.
+
+**Today is never flagged.** Every day-level rule skips the current day, which is
+still filling up. Without that, the wet-diaper rule fires every morning on every
+day, and a warning that is always on is not a warning.

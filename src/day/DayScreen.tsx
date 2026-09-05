@@ -11,6 +11,8 @@ import { DayRow } from './DayRow'
 import { ConfirmDelete } from '../swipe/ConfirmDelete'
 import { PeriodPicker } from './PeriodPicker'
 import { isoOf, rangeLabel, type Range } from './period'
+import { InsightsView } from '../report/InsightsView'
+import type { Span } from '../report/insights'
 
 // The read-back. Its whole purpose is that you can hold the phone next to the
 // paper page and see the same thing, so the column order and the inherited date
@@ -22,6 +24,33 @@ const dayPill = (d: Date) =>
     : `${d.getMonth() + 1}/${d.getDate()}`
 
 const ALL = 'all' as const
+
+function ModePills({
+  mode,
+  onMode,
+}: {
+  mode: 'log' | 'insights'
+  onMode: (m: 'log' | 'insights') => void
+}) {
+  return (
+    <div className="repmode">
+      <button
+        type="button"
+        className={`modepill ${mode === 'log' ? 'on' : ''}`}
+        onClick={() => onMode('log')}
+      >
+        <Icon name="list" size={16} /> log
+      </button>
+      <button
+        type="button"
+        className={`modepill ${mode === 'insights' ? 'on' : ''}`}
+        onClick={() => onMode('insights')}
+      >
+        <Icon name="insights" size={16} /> insights
+      </button>
+    </div>
+  )
+}
 
 export function DayScreen() {
   const [moments, setMoments] = useState<Moment[]>([])
@@ -39,6 +68,12 @@ export function DayScreen() {
   // Nothing is removed until the sheet is confirmed (Q-012). D-003 is a hard
   // delete with no tombstone, so the check happens before, not after.
   const [pendingDelete, setPendingDelete] = useState<Moment | null>(null)
+
+  // The screen opens on the read-back, which is the thing it exists for.
+  // Insights is the second mode and carries its own range, so it ignores the
+  // date strip and the picked period entirely.
+  const [mode, setMode] = useState<'log' | 'insights'>('log')
+  const [span, setSpan] = useState<Span>(7)
 
 
   const refresh = useCallback(() => {
@@ -75,8 +110,22 @@ export function DayScreen() {
   const withData = new Set(moments.map((m) => isoOf(new Date(m.timeslot.occurred_at))))
   const nameFor = (id: string) => devices.find((d) => d.id === id)?.name ?? null
 
+  // Insights shares only the mode pills with the read-back — no date strip, no
+  // picked period, no totals row. Returning early keeps that honest instead of
+  // threading four conditionals through one tree.
+  if (mode === 'insights') {
+    return (
+      <main className="day">
+        <ModePills mode={mode} onMode={setMode} />
+        <InsightsView moments={moments} span={span} onSpan={setSpan} />
+      </main>
+    )
+  }
+
   return (
     <main className="day">
+      <ModePills mode={mode} onMode={setMode} />
+
       <div className="datestrip">
         <button
           type="button"

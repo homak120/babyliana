@@ -1,0 +1,269 @@
+/* Insights — the report screen's second mode.
+ *
+ * Contrast rule for this screen, from the handoff: chart values, day labels and
+ * heatmap row labels are --ink at 11px bold; captions and the hour scale are
+ * --dim at 11-12px. --muted is NOT a substitute at these sizes — it does not
+ * reach 4.5:1 on --card in either theme, which is why --dim exists at all.
+ */
+
+/* index.css is a reset only and stops short of typographic margins — the rest
+   of the app zeroes them rule by rule. This screen is mostly headings,
+   paragraphs and lists, so it does it once. Without this the UA's 26px on <p>
+   and 8.3px on <h2> put ~44px of dead space under every card title. */
+.insights h2,
+.insights p,
+.insights ul,
+.insights li {
+  margin: 0;
+  padding: 0;
+}
+
+.insights ul { list-style: none; }
+
+.insights {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 16px 24px;
+}
+
+.insHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 4px 0;
+}
+
+.insRange {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.insCaption {
+  font-size: 11px;
+  color: var(--dim);
+  line-height: 1.45;
+}
+
+.spanToggle { display: flex; gap: 6px; }
+
+.spanPill {
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--chip);
+  color: var(--dim);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.spanPill.on { background: var(--accent); color: var(--onAccent); }
+
+/* ---------- cards ---------- */
+
+.insights .card {
+  background: var(--card);
+  border-radius: 22px;
+  padding: 14px 16px 16px;
+  box-shadow: 0 2px 10px var(--soft);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cardPair { display: flex; gap: 12px; }
+.cardPair .card { flex: 1; min-width: 0; }
+
+.cardTitle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.bigFigure {
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.bigFigure small { font-size: 12px; font-weight: 700; color: var(--dim); }
+.bigFigure.ok { color: var(--mintDeep); }
+.bigFigure.flagged { color: var(--flagInk); }
+
+.statRow { display: flex; gap: 14px; }
+.statRow > div { flex: 1; min-width: 0; }
+
+.statValue {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- worth a look ---------- */
+
+.insights .flagCard { background: var(--yellowFill); }
+.flagTitle { color: var(--flagInk); }
+
+.flagList { display: flex; flex-direction: column; gap: 7px; }
+
+.flagList li {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--flagInk);
+}
+
+.flagList .icon { flex: none; margin-top: 1px; }
+
+/* ---------- bars ---------- */
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  min-height: 78px;
+}
+
+.sleepBars { min-height: 40px; }
+
+.bar {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+}
+
+.barValue {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--roseInk);
+  font-variant-numeric: tabular-nums;
+}
+
+.barFill {
+  width: 100%;
+  min-height: 3px;
+  border-radius: 6px;
+  background: color-mix(in oklab, var(--accent) 42%, var(--card));
+}
+
+.barFill.today { background: var(--accent); }
+.barFill.sleep { background: color-mix(in oklab, var(--periInk) 55%, var(--card)); }
+
+.barLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.barLabel.today { color: var(--roseInk); }
+
+/* ---------- on pace ---------- */
+
+.paceCard {
+  background: var(--roseFill);
+  border-radius: 16px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.paceCard .insCaption { color: var(--roseDeep); }
+
+.paceLine { display: flex; align-items: baseline; gap: 6px; }
+
+.paceValue {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--roseDeep);
+  font-variant-numeric: tabular-nums;
+}
+
+.paceTag { font-size: 11px; font-weight: 700; color: var(--roseDeep); }
+.paceNote { font-size: 11px; color: var(--roseDeep); }
+
+/* ---------- daily rhythm ---------- */
+
+.heat { display: flex; flex-direction: column; gap: 3px; }
+
+.heatRow, .heatScale { display: flex; align-items: center; gap: 6px; }
+
+.heatLabel {
+  flex: none;
+  width: 30px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.heatCells { flex: 1; display: flex; gap: 2px; }
+
+.heatCell {
+  flex: 1;
+  min-width: 0;
+  height: 15px;
+  border-radius: 3px;
+  background: var(--chip);
+}
+
+.heatCell.feed  { background: var(--roseFill); }
+.heatCell.poop  { background: var(--mintFill); }
+.heatCell.pee   { background: var(--yellowFill); }
+.heatCell.sleep { background: var(--periFill); }
+
+.heatTicks {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--dim);
+}
+
+.legend li { display: flex; align-items: center; gap: 4px; }
+.legend .heatCell { flex: none; width: 11px; height: 11px; }
+
+/* ---------- growth ---------- */
+
+.weightList { display: flex; flex-direction: column; }
+
+.weightList li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--hair);
+}
+
+.weightList li:last-child { border-bottom: 0; }

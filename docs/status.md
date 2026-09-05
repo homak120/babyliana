@@ -18,7 +18,7 @@ Last updated: 2026-09-05
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0–6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. 264 checks pass across seventeen
+delivered by the second design handoff. 332 checks pass across nineteen
 suites.
 
 What exists: local-first writes to IndexedDB that never block on the network,
@@ -72,13 +72,13 @@ phone. The clock is running; nobody needs to do anything.
 
 Read `CLAUDE.md` first, then this file. Beyond that:
 
-- **`npm run verify`** is the gate: typecheck, the nine data-layer suites
-  (`verify-s1`…`s9`), a build, then **eight** browser suites against it —
-  `swipe`, `period`, `hero`, `milk`, `period-row`, `overlay`, `sleep`, `welcome`.
-  Seventeen in total. The browser eight serve their own build and touch no
-  database, so they are the cheap ones to run on a UI change. Two of the
-  data-layer suites hit the **live** database and delete only ids they created in
-  that run — never widen one to a filter.
+- **`npm run verify`** is the gate: typecheck, **ten** data-layer suites
+  (`verify-s1`…`s9` plus `insights`), a build, then **nine** browser suites
+  against it — `swipe`, `period`, `hero`, `milk`, `period-row`, `overlay`,
+  `sleep`, `welcome`, `report`. Nineteen in total. The browser nine serve their
+  own build and touch no database, so they are the cheap ones to run on a UI
+  change. Two of the data-layer suites hit the **live** database and delete only
+  ids they created in that run — never widen one to a filter.
 - **`scripts/ios/`** drives the iOS Simulator with real touch, and
   `measure-screenshot.mts` measures a screenshot the owner sends. Both exist
   because this project has repeatedly shipped fixes that passed on desktop and
@@ -89,7 +89,18 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**Nothing.** The tree is clean as of the lead-view switcher commit.
+**Nothing.** The tree is clean as of the insights commit.
+
+One thing that outlives it: **read D-032 before touching the watch-list rules.**
+The insights card that flags four thresholds contradicts what `CLAUDE.md` said
+until 2026-09-05. It was raised as a conflict before anything was built and the
+owner chose the handoff with the old rule in front of him. `CLAUDE.md` and
+`docs/plan.md` Phase 7 both say so now, so it does not read as an oversight.
+
+**The insights screen has only ever been seen with one day of empty-volume
+data.** The bars, the projection and the watch list all want a real week behind
+them. Running `supabase/imports/2026-09-05_paper-log-backfill.sql` into a scratch
+project is the cheap way to look at it properly.
 
 Worth knowing why this section was wrong twice in one day: it named the sleep
 colours, the live-data hazard and D-031 long after `ad2ccce` shipped them,
@@ -206,38 +217,32 @@ when written.** Nothing was wrong at the time. They went stale because a decisio
 landed in `decisions.md` and stopped there, which is the failure mode a document
 set has instead of a bug.
 
-### 2026-09-05 — the paper log transcribed, and a backfill script that is not the gate
+### 2026-09-05 — the insights screen, and the rule it required changing
 
-Both notebook photographs read at full resolution and transcribed: 8/26–9/4, 80
-moments, 78 feeds, 3843 mL, 42 pee, 25 poop, one `other`. Three of those days
-postdate the baseline. Output is `supabase/imports/2026-09-05_paper-log-backfill.sql`
-— staging tables shaped to be diffed against the photographs line by line, then
-mechanical inserts. Committed in `5682ef3`, and **executed end to end on
-PostgreSQL 16**
-against a throwaway database built from the real migration — 80 timeslots, 144
-events, guard and rollback both exercised.
+The third design handoff's report screen, built: a log/insights pill pair on the
+report screen, a 3d/7d range, and six cards — milk intake with per-day bars and a
+day-end projection, a days × 24h rhythm heatmap, wet and poop as half-cards,
+sleep, and growth. All of it derived at render time; nothing new is stored.
 
-`logged_by` is the owner's own device by his instruction, not a synthetic "Paper
-log" one, so provenance rests entirely on `updated_by = 'paper-log-import'` —
-which the app never writes, so it stays exact. The rollback filters on that and
-nothing else.
+**The part worth knowing about is not the code.** Card one asserts things about
+the baby — under 6 wet diapers, over 24h without a poop, a 5h feed gap, today
+tracking 20% under average — and `CLAUDE.md` forbade exactly that. The conflict
+was put to the owner before anything was built, with the alternative of shipping
+the descriptive cards only. He chose the handoff. **D-032 records that**, and
+`CLAUDE.md` and `docs/plan.md` Phase 7 were both amended, because a rule
+contradicted by shipped code and not by a document is a rule the next session
+quietly re-litigates. The mascot rule did not move and she never sees a flag.
 
-The 9/4 column was cut short in the original photograph and read as two rows; the
-owner supplied a closer crop showing seven. Worth remembering as a transcription
-failure mode — the missing rows looked like the end of the page, not like
-missing data, so nothing flagged them.
+Two things the prototype gets wrong and this does not, both commented where they
+diverge. Its "today" is the last day *with entries*, so a day with nothing logged
+projects yesterday's total against today's elapsed hours; here `today` means
+today and the pace card is absent otherwise. And its heatmap tests a sleep with
+`h >= start && h <= end`, which drops a sleep crossing midnight from both days —
+here the span is clamped per day, so a night's sleep colours the evening and the
+morning.
 
-**The script is deliberately not a substitute for the coverage run**, and says so
-in its own header. It proves the schema can hold the data. The gate asks whether
-the *app* can capture it at 4am with thumbs, which no script can answer.
-
-Every awkward case in `coverage-requirement.md` appears in the real data and
-survived the round trip: split feeds with and without sources, a `5(B)`, volumes
-of 31/41/43/46/57, an unknown volume, a pee-only and a poop-only row, `1+2` on
-one change, `2×2`, and `Nasal`. Strikethroughs are dropped entirely under D-003
-rather than imported as anything.
-
-Four readings are genuinely uncertain and were left as holes, not guesses — see
-*Open threads*. The two 8/30 rows sit commented out at the end of the script with
-both candidate times, because the cleanup rule that was applied (unclear minutes
-round to the hour) cannot help when the *hour* is the unreadable part.
+`verify-insights` covers the arithmetic in 50 checks with no browser — the
+thresholds, the 0.2 projection floor, the midnight sleep, "today is never
+flagged". `verify-report` renders it, because two of the three bugs found while
+building were layout: a screenshot taken after switching modes, and 44px of dead
+space under every card title from UA margins `index.css` does not reset.
