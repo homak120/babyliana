@@ -18,8 +18,8 @@ Last updated: 2026-09-05
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0–6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. 332 checks pass across nineteen
-suites.
+delivered by the second design handoff. 367 checks pass across twenty suites.
+**No schema change — `0001` is still the whole schema.**
 
 What exists: local-first writes to IndexedDB that never block on the network,
 push-then-reconcile sync with Supabase, the home screen (mascot artwork by
@@ -29,6 +29,17 @@ and notes, swipe-to-edit-and-delete on both lists behind a confirm sheet, a
 photograph gate before the welcome, name entry, two mascot sets and a theme
 switched by clock, and an offline-capable PWA at 24 entries / 1012.76 KiB
 precached.
+
+**Feeds now run live too** — §11 and §12 of `CHANGES.md`, the last two items.
+A feed with no end time reads as running: the bar's bottle becomes the handoff's
+`timer_off` pill carrying the live duration, the top card grows a
+`<duration> feeding` line with a matching 30px button, Liana's state is
+*feeding*, and `fed 25 min` reads back on the row once it is over. Either control
+stamps the end on the **timeslot**. **Derived from `ended_at` and nothing else**, the
+same rule as sleep — D-033, which records that a first pass added an
+`event.in_progress` column and the owner rejected it, because the timeslot
+already carries the end time for every type (D-020). Milk also reads in words
+now: `25 mL breast + 45 mL formula`, not `25(B) + 45(F)` (D-034).
 
 **Sleep is a first-class type** as of the third design delivery — its own bubble,
 its own block, a quick icon that becomes a live "end sleep" pill while one is
@@ -73,12 +84,15 @@ phone. The clock is running; nobody needs to do anything.
 Read `CLAUDE.md` first, then this file. Beyond that:
 
 - **`npm run verify`** is the gate: typecheck, **ten** data-layer suites
-  (`verify-s1`…`s9` plus `insights`), a build, then **nine** browser suites
+  (`verify-s1`…`s9` plus `insights`), a build, then **ten** browser suites
   against it — `swipe`, `period`, `hero`, `milk`, `period-row`, `overlay`,
-  `sleep`, `welcome`, `report`. Nineteen in total. The browser nine serve their
-  own build and touch no database, so they are the cheap ones to run on a UI
-  change. Two of the data-layer suites hit the **live** database and delete only
-  ids they created in that run — never widen one to a filter.
+  `sleep`, `feed`, `welcome`, `report`. Twenty in total. The browser ten serve
+  their own build and touch no database, so they are the cheap ones to run on a
+  UI change. Two of the data-layer suites — `s2` and `s8` — hit the **live**
+  database and delete only ids they created in that run; never widen one to a
+  filter. **Those two are the ones that go red when the schema and the app
+  disagree** — which is how a stray column got caught on 2026-09-05 before it
+  reached the database.
 - **`scripts/ios/`** drives the iOS Simulator with real touch, and
   `measure-screenshot.mts` measures a screenshot the owner sends. Both exist
   because this project has repeatedly shipped fixes that passed on desktop and
@@ -89,36 +103,36 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**Nothing but this file** and `scripts/_scratch-insights.mts`, which is
-untracked scratch like `_gap.mts` and `_px.mts` beside it.
+**§11 and §12, committed but not pushed** (`a2cb0cb`, amended), plus
+`scripts/_scratch-insights.mts`, which is untracked scratch like `_gap.mts` and
+`_px.mts` beside it.
 
-One thing that outlives it: **read D-032 before touching the watch-list rules.**
-The insights card that flags four thresholds contradicts what `CLAUDE.md` said
-until 2026-09-05. It was raised as a conflict before anything was built and the
-owner chose the handoff with the old rule in front of him. `CLAUDE.md` and
-`docs/plan.md` Phase 7 both say so now, so it does not read as an oversight.
+**Read D-033 before touching any of it.** The first pass followed the prototype
+and added an `event.in_progress` column with a migration behind it. The owner
+rejected it on the model: the timeslot already carries the end time for every
+type (D-020), so a feed derives its open state from `ended_at` exactly as a sleep
+does, and nothing new is stored. The column, the migration and the "she is still
+on it" toggle were all rolled back. **The prototype is authority on interaction,
+not on the data model** — that is the durable lesson, and it is now the first
+line of D-033.
 
-**The insights screen has now been seen with the real paper log behind it** —
-80 timeslots seeded straight into a throwaway IndexedDB by
-`scripts/_scratch-insights.mts` (untracked scratch, parses the backfill SQL, no
-Supabase project involved). Every card renders at both ranges. 417 mL/day over
-8/29–9/4, 8 feeds/day, a 3h 16m typical gap.
+The one asymmetry with sleep that survives is the auto-close: logging something
+else ends a running *sleep* and deliberately does **not** end a running *feed*,
+because the next diaper is no evidence of when a bottle finished. `verify-feed`
+asserts the feed's row still reads `20:57` and not `20:57–20:58`. Everything else
+is the same rule on the same field.
 
-**Two things that finding surfaced, both about the watch list rather than the
-code.** It fired six times on seven days, five of them "below the 6-a-day mark"
-— the paper log records 3–5 wet nappies on most days against a threshold of 6,
-so on this data the card is close to permanently on. And the sixth, *10h 10m
-between feeds on 8/30*, is an artifact of the backfill's own hole: the two
-unreadable 8/30 afternoon rows are commented out in section 6, and restoring
-them drops that gap to about three hours. A rule that fires on a gap in the
-record reads identically to one firing on a gap in the feeding. Owner's call —
-D-032 stands, this is just what it looks like loaded.
+**Known and accepted:** while a feed is open the quick bottle is the end-feed
+pill, so a second feed goes through `+`. Tried the other way first; the owner
+chose the swap, and closing the feed is what the pill is asking for.
 
-Worth knowing why this section was wrong twice in one day: it named the sleep
-colours, the live-data hazard and D-031 long after `ad2ccce` shipped them,
-because clearing it is a separate act from doing the work. **If you are finishing
-a session, clear this before you commit, not after** — the commit that empties
-the tree is the same commit that should empty this list.
+Two smaller judgement calls:
+
+- **The end-sleep icon did not revert.** §11 moves it back to `wb_twilight`; the
+  app keeps the hand-drawn crescent from the last session, because that change
+  was made deliberately and end-feed's `timer_off` already tells the two apart.
+- **`endOpenPeriod` is the button; `closeOpenSleep` is the save path.** One
+  closes whatever a person says is over, the other only ever a sleep.
 
 ## Open threads
 
@@ -161,6 +175,48 @@ Noticed, not blocking, no owner yet.
 
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
+
+### 2026-09-05 (latest) — feeds run live, and a column that should never have been
+
+§11 and §12, the last two items in the third handoff's `CHANGES.md`. The build
+reads like sleep because it *is* sleep: `ongoingFeed` differs from `ongoingSleep`
+by one event type. An end-feed pill in the bar, a `feedline` on the card, a
+`feeding` mascot state ahead of `sleeping`, `fed 25 min` on the row and in the
+day table, and milk spelt out in words everywhere it is printed.
+
+**The session's real content was a wrong turn.** The prototype keeps a
+`feeding: true` flag on the entry, and I followed it — an `event.in_progress`
+column, a migration, a toggle in the milk block, and a long argument in D-033 for
+why the flag was unavoidable. It was avoidable. The owner's answer was one line:
+the timeslot already has the end time, so handle it the same as sleep. He was
+right, and the argument I had built was for a problem the model does not have.
+All of it is rolled back; the schema is untouched at `0001`.
+
+Two things worth carrying forward, both now written down where they will be
+found:
+
+- **The prototype is authority on interaction, not on the data model.** It is a
+  design artefact and its storage shape is incidental. Where the two disagree the
+  model wins — the first paragraph of D-033 says so, because this is the second
+  time a handoff detail has been followed further than it earned.
+- **Migration numbers are spent even when the file is deleted.**
+  `0002_seed_household.sql` was run on 2026-09-03 and dropped from the repo the
+  same day, so `ls` shows the slot free and it is not. Numbering a new migration
+  `0002` made "have you run 0002?" unanswerable and cost several rounds to
+  untangle. `supabase/README.md` records it; number from
+  `git log --all --diff-filter=AD -- supabase/migrations/`.
+
+**The rollback then surfaced something the flag had been hiding.** `verify-hero`
+started failing: it logs two feeds in a row, and the second had nowhere to go,
+because the first was open and the bar had turned the bottle into the end-feed
+pill. I removed the swap; the owner put it back, which is right — the pill is the
+app asking you to close the feed, and `+` still reaches every type. `verify-hero`
+logs a diaper for its second entry now, which is all that test ever needed.
+
+The asymmetry that does survive is the auto-close. A running sleep is closed by the next
+entry, because at 4am you log the feed and not the waking. A running feed is not,
+because the next diaper says nothing about when the bottle finished, and an
+invented duration is unrecoverable under D-003.
 
 ### 2026-09-05 (later still) — the lead switcher, and a card that says how long she has slept
 
@@ -228,33 +284,3 @@ The pattern worth keeping: **every one of these was a document that was correct
 when written.** Nothing was wrong at the time. They went stale because a decision
 landed in `decisions.md` and stopped there, which is the failure mode a document
 set has instead of a bug.
-
-### 2026-09-05 — the insights screen, and the rule it required changing
-
-The third design handoff's report screen, built: a log/insights pill pair on the
-report screen, a 3d/7d range, and six cards — milk intake with per-day bars and a
-day-end projection, a days × 24h rhythm heatmap, wet and poop as half-cards,
-sleep, and growth. All of it derived at render time; nothing new is stored.
-
-**The part worth knowing about is not the code.** Card one asserts things about
-the baby — under 6 wet diapers, over 24h without a poop, a 5h feed gap, today
-tracking 20% under average — and `CLAUDE.md` forbade exactly that. The conflict
-was put to the owner before anything was built, with the alternative of shipping
-the descriptive cards only. He chose the handoff. **D-032 records that**, and
-`CLAUDE.md` and `docs/plan.md` Phase 7 were both amended, because a rule
-contradicted by shipped code and not by a document is a rule the next session
-quietly re-litigates. The mascot rule did not move and she never sees a flag.
-
-Two things the prototype gets wrong and this does not, both commented where they
-diverge. Its "today" is the last day *with entries*, so a day with nothing logged
-projects yesterday's total against today's elapsed hours; here `today` means
-today and the pace card is absent otherwise. And its heatmap tests a sleep with
-`h >= start && h <= end`, which drops a sleep crossing midnight from both days —
-here the span is clamped per day, so a night's sleep colours the evening and the
-morning.
-
-`verify-insights` covers the arithmetic in 50 checks with no browser — the
-thresholds, the 0.2 projection floor, the midnight sleep, "today is never
-flagged". `verify-report` renders it, because two of the three bugs found while
-building were layout: a screenshot taken after switching modes, and 44px of dead
-space under every card title from UA margins `index.css` does not reset.

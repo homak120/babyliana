@@ -78,6 +78,16 @@
 .tpee { color: var(--yellowInk); font-style: normal; }
 .tpoop { color: var(--mintInk); font-style: normal; }
 .trest { display: block; color: var(--lavInk); font-style: normal; font-size: 0.75rem; }
+/* "fed 25 min", stacked with the sleep and diaper lines rather than crowding
+   the milk column, which the unit and the source word already filled. */
+.tfeed {
+  display: flex;
+  align-items: center;
+  gap: 0.1875rem;
+  color: var(--roseDeep);
+  font-style: normal;
+  font-size: 0.75rem;
+}
 
 
 .tnote {
@@ -157,8 +167,12 @@
 .tabs .quick.diaper { background: var(--mintFill); color: var(--mintInk); }
 .tabs .quick.sleep { background: var(--periFill); color: var(--periInk); }
 
-/* Replaces the sleep icon while one is running, carrying the live duration.
-   Offering "log a sleep" mid-sleep would be the wrong verb. */
+/* Each replaces its quick icon while that type is running, carrying the live
+   duration: `.endfeed` the bottle, `.endsleep` the moon. Neither may fall
+   through to the bare `.tabs button` default — which is how the sleep pill once
+   rendered as a background-less grid cell. Geometry and colours are the
+   prototype's; the feed pill is timer_off on rose. */
+.tabs .endfeed,
 .tabs .endsleep {
   width: auto;
   height: 40px;
@@ -174,6 +188,8 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+.tabs .endfeed { background: var(--roseFill); color: var(--roseDeep); }
 
 /* The day screen is a read-back and carries no add actions at all. */
 .tabs .backpill {

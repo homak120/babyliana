@@ -2,7 +2,8 @@ import { SwipeRow } from '../swipe/SwipeRow'
 import { Icon } from '../log/Icon'
 import type { Moment } from '../types'
 import {
-  avatarClass, dateCell, diaperParts, initialOf, milkCell, otherCell, sleepCell, timeCell,
+  avatarClass, dateCell, diaperParts, feedCell, initialOf, milkCell, otherCell, sleepCell,
+  timeCell,
 } from './cells'
 
 export function DayRow({
@@ -20,6 +21,7 @@ export function DayRow({
   const diaper = diaperParts(moment.events)
   const rest = otherCell(moment.events)
   const sleep = sleepCell(moment)
+  const fed = feedCell(moment)
   const initial = initialOf(name)
 
   return (
@@ -37,6 +39,13 @@ export function DayRow({
         <span className="tdiaper">
           {diaper.pee && <em className="tpee">pee</em>}
           {diaper.poop && <em className="tpoop">{diaper.poop}</em>}
+          {/* Beside "slept 1h 20m" rather than in the milk column, which the
+              unit and the source word already filled. */}
+          {fed && (
+            <em className="tfeed">
+              <Icon name="timer" size={13} /> {fed}
+            </em>
+          )}
           {sleep && (
             <em className={sleep.open ? 'tsleep open' : 'tsleep'}>
               <Icon name={sleep.icon} size={13} /> {sleep.text}

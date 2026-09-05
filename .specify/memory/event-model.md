@@ -107,6 +107,17 @@ because one change may contain both.
 Two places to express one fact is how a duration ends up correct in one view and
 wrong in another.
 
+**A feed has no `ended_at` of its own either, and no in-progress flag.** Running
+or finished, a feed is read from the timeslot exactly as a sleep is (D-033). A
+column was added for this once and removed: the timeslot is already the one place
+a duration lives, and the whole point of D-020 was that there be only one.
+
+**What differs between them is the auto-close, not the state.** Logging something
+else stamps its time as the end of a running *sleep*, because at 4am you log the
+feed and not the waking. It never does so for a feed — the next diaper is no
+evidence of when the bottle finished, and an invented duration cannot be undone
+in a model with hard deletes (D-003).
+
 **`other` has no columns at all.** Type plus `note`, and a period if it needs
 one. It is the escape hatch that makes the app as accepting as paper: anything
 the schema never anticipated still has somewhere to go, which is the last item
@@ -208,7 +219,6 @@ create table if not exists public.event (
   source        text check (
                   source is null or source in ('breast_milk', 'formula', 'unknown')
                 ),
-
   -- diaper. One row per change; both flags may be true at once.
   pee               boolean,
   poop              boolean,

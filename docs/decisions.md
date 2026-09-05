@@ -830,3 +830,93 @@ worth keeping is between surfacing a number and passing judgement on the person.
 **Today is never flagged.** Every day-level rule skips the current day, which is
 still filling up. Without that, the wet-diaper rule fires every morning on every
 day, and a warning that is always on is not a warning.
+
+---
+
+## D-033 — A running feed is a missing end time, exactly like a sleep
+
+The third handoff's §11 gives feeds the live tracking sleep already has: while
+one is running the bar's bottle becomes an "end feed" pill with the duration on
+it, the top card carries a `<duration> feeding` line, Liana's state is
+**feeding**, and `fed 25 min` reads back on the row once it is over.
+
+**It stores nothing new.** An open feed is a timeslot with a feed event and no
+`ended_at` — the same rule, the same field, as D-029's open sleep.
+
+**The design implies otherwise and is not followed.** The prototype keeps a
+`feeding: true` flag on the entry, and a first pass here added a matching
+`event.in_progress` column with a migration behind it. That was wrong, and the
+owner rejected it: **the timeslot already carries the end time for every type
+(D-020).** A second field expressing the same fact in different words is exactly
+what D-020 removed from sleep, and re-adding it for feeds would have reintroduced
+the failure mode that decision exists to prevent — a duration that is right in
+one view and wrong in another. Claude Design's prototype is a source for the
+*interaction*, not for the data model; where the two disagree, the model wins.
+
+**The asymmetry that remains is in the auto-close, not the state.** Logging
+anything else ends a running **sleep**, stamping the new entry's time as its end
+— at 4am you log the feed, not the waking, so the next entry is the best evidence
+there is. A running **feed** is not closed that way. The next diaper says nothing
+about when the bottle finished, and writing that time in would invent a duration
+nobody observed, into a model with hard deletes and no revision history (D-003)
+to recover it from. The feed simply stops being the latest moment and stops
+reading as running. No write, so nothing to be wrong later.
+
+**The bar swaps the bottle, exactly as it swaps the moon.** While a feed has no
+end time the quick-feed icon becomes the handoff's pill — `timer_off` on
+`--roseFill`/`--roseDeep`, 40px, carrying the running duration — and tapping it
+stamps the end. An unfinished feed's useful verb is "end it", not "log another".
+
+**The consequence, stated because it is not small.** Since the state is derived,
+an ordinary feed logged after the fact also reads as running, so the quick bottle
+is unavailable until it is closed or something else is logged; a second feed goes
+through the `+` button, which reaches every type. This was tried the other way
+first — bottle always present, ending only on the card — and the owner chose the
+swap. It is the design's behaviour, and closing the feed is the thing it is
+asking for. `verify-feed` covers both halves: the pill replaces the bottle, and
+the `+` button still reaches milk while one is open.
+
+**So the only thing that ever ends a feed is a person saying so** — the bar pill,
+the card button, or an end time typed into the time card. `endOpenPeriod` handles
+all four of those controls and does not care which type it is closing, because stamping
+`ended_at` is the same write either way; `closeOpenSleep` stays narrow and is
+what the save path calls.
+
+**What this costs, stated plainly.** A feed logged the ordinary way — after the
+fact, with no end time — reads as running until something else is logged. On a
+log where the pen is picked up afterwards that will happen often. It is
+cosmetic: nothing is stored, the elapsed hero already reads 0m at that instant
+for the same reason, and the state clears itself. The alternative cost was a
+column, and the owner judged this the cheaper of the two.
+
+**Reversal condition.** If the transient "feeding" state proves annoying in real
+use, the fix is in `ongoingFeed` alone — a bound on how long a feed may read as
+running, derived from the data rather than stored beside it.
+
+---
+
+## D-034 — The milk column reads in words, not the paper's codes
+
+`45 mL formula`, `25 mL breast + 45 mL formula`, `30 mL + 30 mL`, `? mL`. The
+`(B)` / `(F)` short codes the paper uses are gone, from the day table, the home
+row, the delete confirmation and the day-summary chips — §12 of the third
+handoff.
+
+**Why it is worth recording.** The read-back was a transcription: `milkCell`
+copied the paper's own notation so the acceptance test could be "hold the phone
+next to the photograph and compare". Spelling it out ends that. What the codes
+carried is all still there — which source, and that a split feed is two volumes
+— and the fact the app must never lose (an empty cell and a `?` mean different
+things) is untouched.
+
+**What it costs, stated so nobody rediscovers it.** The day table's milk column
+is about 140px and a split feed now wraps to two lines in it. The prototype's own
+table wraps the same way at the same width, so this is the design's choice rather
+than a porting mistake.
+
+**And where it was too long to use.** The top card's combined and mascot leads
+have a one-line figure slot that `25 mL breast + 45 mL formula` overflows, so
+those two take a new `milkTotal` — one figure, `70 mL`, or `90 + ? mL` where a
+part was unknown. Carrying the unknown rather than dropping it keeps `90 + ?`
+distinct from `90`, which is the same distinction the column exists to preserve.
+

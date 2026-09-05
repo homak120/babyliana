@@ -38,6 +38,9 @@ const NIGHT: Record<MascotState | 'home', { webp: string; png: string }> = {
   awake: { webp: awakeWebp, png: awakePng },
   hungry: { webp: hungryWebp, png: hungryPng },
   sleeping: { webp: sleepingWebp, png: sleepingPng },
+  // No feeding artwork exists, so it borrows the awake art, as the handoff
+  // says. She is awake for it, which is the honest picture anyway.
+  feeding: { webp: awakeWebp, png: awakePng },
   logged: { webp: awakeWebp, png: awakePng },
   home: { webp: homeWebp, png: homePng },
 }
@@ -47,6 +50,7 @@ const DAY: Record<MascotState | 'home', { webp: string; png: string }> = {
   awake: { webp: awakeDayWebp, png: awakeDayPng },
   hungry: { webp: hungryDayWebp, png: hungryDayPng },
   sleeping: { webp: sleepingDayWebp, png: sleepingDayPng },
+  feeding: { webp: awakeDayWebp, png: awakeDayPng },
   logged: { webp: awakeDayWebp, png: awakeDayPng },
   // The welcome art is the same in both themes — the handoff names one file.
   home: { webp: homeWebp, png: homePng },

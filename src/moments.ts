@@ -103,7 +103,31 @@ export async function logMoment(input: NewMoment): Promise<Moment> {
 }
 
 /**
+ * The end button: stamp `at` as the end of whatever is still running.
+ *
+ * A sleep or a feed — the same write either way, which is why one function
+ * serves both pills and both card buttons. Nothing distinguishes the two here
+ * beyond which event the moment carries: an open period is a timeslot with no
+ * `ended_at` (D-020), and that single field is the whole of it (D-033).
+ *
+ * User-initiated only. Its automatic cousin below is deliberately narrower.
+ */
+export async function endOpenPeriod(at: Date) {
+  const latest = latestOpen(await db.getMoments(), at)
+  if (!latest) return
+  if (!latest.events.some((e) => e.type === 'sleep' || e.type === 'feed')) return
+  await stampEnd(latest, at)
+}
+
+/**
  * End any sleep still running at `at`, because something else just happened.
+ *
+ * **Sleeps only, and that asymmetry is the point.** At 4am you log the feed, not
+ * the waking, so the next entry is the best evidence there is of when a sleep
+ * ended. A feed is the opposite: the next diaper says nothing about when the
+ * bottle finished, and stamping that time on it would invent a duration nobody
+ * observed. An open feed simply stops being the latest moment and stops reading
+ * as running — no write, nothing to be wrong later.
  *
  * Skips `exceptId` so a sleep does not close itself in the same save, and skips
  * sleeps that started *after* the new entry — backdating an old feed should not
@@ -116,22 +140,34 @@ export async function logMoment(input: NewMoment): Promise<Moment> {
  * the test suite could have ended a real sleep that was in progress.
  */
 export async function closeOpenSleep(at: Date, exceptId?: string) {
-  const before = (await db.getMoments()).filter(
+  const latest = latestOpen(await db.getMoments(), at, exceptId)
+  if (!latest) return
+  if (!latest.events.some((e) => e.type === 'sleep')) return
+  await stampEnd(latest, at)
+}
+
+/**
+ * The most recent moment before `at` that is still open, if it is open at all.
+ *
+ * Only the most recent one. Anything older already had something logged after
+ * it, so it was over long before now — reaching back to stamp an end time on it
+ * would be inventing data, not closing a period.
+ */
+function latestOpen(moments: Moment[], at: Date, exceptId?: string): Moment | null {
+  const before = moments.filter(
     (m) => m.timeslot.id !== exceptId && new Date(m.timeslot.occurred_at) < at,
   )
-  if (before.length === 0) return
-
-  // Only the most recent one. Anything older already had something logged after
-  // it, so it was over long before now — reaching back to stamp an end time on
-  // it would be inventing data, not closing a sleep.
+  if (before.length === 0) return null
   const latest = before.reduce((a, b) =>
     new Date(a.timeslot.occurred_at) >= new Date(b.timeslot.occurred_at) ? a : b,
   )
-  if (latest.timeslot.ended_at !== null) return
-  if (!latest.events.some((e) => e.type === 'sleep')) return
+  return latest.timeslot.ended_at === null ? latest : null
+}
 
-  const timeslot: Timeslot = { ...latest.timeslot, ended_at: at.toISOString(), updated_at: now() }
-  await db.putMoment({ timeslot, events: latest.events })
+/** The whole of ending a period: one field on one row. */
+async function stampEnd(m: Moment, at: Date) {
+  const timeslot: Timeslot = { ...m.timeslot, ended_at: at.toISOString(), updated_at: now() }
+  await db.putMoment({ timeslot, events: m.events })
   await db.enqueue([{ table: 'timeslot', rowId: timeslot.id, op: 'put' }])
 }
 

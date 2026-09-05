@@ -21,8 +21,8 @@ import './report/insights.css'
 // because it is a diagnostic, not a screen anyone navigates to.
 
 import { AddSheet } from './log/AddSheet'
-import { getMoments, closeOpenSleep } from './moments'
-import { ongoingSleep, sleepDuration } from './derive'
+import { getMoments, endOpenPeriod } from './moments'
+import { feedDuration, ongoingFeed, ongoingSleep, sleepDuration } from './derive'
 import type { Moment } from './types'
 import type { Block } from './log/drafts'
 
@@ -37,8 +37,8 @@ export default function App() {
   // same sheet with one block already added — not a screen of its own.
   const [adding, setAdding] = useState<Block['type'] | 'none' | null>(null)
 
-  // App needs the moments only to know whether a sleep is still running, which
-  // decides what the third quick button is.
+  // App needs the moments only to know whether a sleep or a feed is still
+  // running, which decides what the first and third quick buttons are.
   const [moments, setMoments] = useState<Moment[]>([])
   const [now, setNow] = useState(new Date())
   const overlay = useOverlayOpen()
@@ -54,9 +54,12 @@ export default function App() {
   // moves every 30s, and a sleep logged *just now* would fail its own
   // "started at or before now" test until the next tick.
   const asleep = ongoingSleep(moments)
+  const feeding = ongoingFeed(moments)
 
-  const endSleep = useCallback(() => {
-    void closeOpenSleep(new Date()).then(() => {
+  // One handler for both pills: ending a feed and ending a sleep are the same
+  // act on the same latest moment — stamp now as its end (D-033).
+  const endOpen = useCallback(() => {
+    void endOpenPeriod(new Date()).then(() => {
       void getMoments().then(setMoments)
       setSaved((n) => n + 1)
       void sync()
@@ -67,7 +70,7 @@ export default function App() {
   useEffect(refreshMoments, [refreshMoments])
   useEffect(() => subscribe(refreshMoments), [refreshMoments])
 
-  // The end-sleep pill shows a running duration, so it has to move on its own.
+  // The end pills show a running duration, so they have to move on their own.
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000)
     return () => clearInterval(t)
@@ -106,7 +109,7 @@ export default function App() {
   return (
     <>
       {screen === 'log' ? (
-        <LogScreen key={saved} onEndSleep={endSleep} />
+        <LogScreen key={saved} onEndOpen={endOpen} />
       ) : (
         <DayScreen key={saved} />
       )}
@@ -118,14 +121,34 @@ export default function App() {
         <nav className="tabs">
           {screen === 'log' ? (
             <>
-              <button
-                type="button"
-                className="quick feed"
-                onClick={() => setAdding('milk')}
-                aria-label="log a feed"
-              >
-                <Icon name="local_drink" size={20} />
-              </button>
+              {/* The same swap as sleep below, and for the same reason: a feed
+                  with no end time is unfinished, so the useful verb is "end it"
+                  rather than "log another". `timer_off` on roseFill, carrying
+                  the running duration — the handoff's own pill.
+
+                  The consequence, stated because it is not small: while a feed
+                  is open the quick bottle is gone, so a second feed goes through
+                  the `+` button. That is what closing the first one is for. */}
+              {feeding ? (
+                <button
+                  type="button"
+                  className="endfeed"
+                  onClick={endOpen}
+                  aria-label="end feed"
+                >
+                  <Icon name="timer_off" size={20} />
+                  {feedDuration(feeding.timeslot.occurred_at, now)}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="quick feed"
+                  onClick={() => setAdding('milk')}
+                  aria-label="log a feed"
+                >
+                  <Icon name="local_drink" size={20} />
+                </button>
+              )}
 
               <button
                 type="button"
@@ -143,7 +166,7 @@ export default function App() {
                 <button
                   type="button"
                   className="endsleep"
-                  onClick={endSleep}
+                  onClick={endOpen}
                   aria-label="end sleep"
                 >
                   <EndSleepIcon size={20} />
@@ -198,8 +221,8 @@ export default function App() {
           onClose={() => setAdding(null)}
           onSaved={() => {
             setAdding(null)
-            // A local write does not go through `subscribe`, and the bar's third
-            // button depends on whether a sleep is now open.
+            // A local write does not go through `subscribe`, and the bar's
+            // first and third buttons depend on what is now open.
             refreshMoments()
             setSaved((n) => n + 1)
           }}

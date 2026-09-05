@@ -16,9 +16,10 @@
 //         21:01  55
 import type { Moment } from '../src/types.ts'
 import {
-  chronological, dateCell, daysWithEntries, diaperCell, initialOf, milkCell, otherCell, timeCell,
+  chronological, dateCell, daysWithEntries, diaperCell, feedCell, initialOf, milkCell, milkTotal,
+  otherCell, srcWord, timeCell,
 } from '../src/day/cells.ts'
-import { ongoingSleep, sleepDuration } from '../src/derive.ts'
+import { feedDuration, mascotState, ongoingFeed, ongoingSleep, sleepDuration } from '../src/derive.ts'
 
 let failures = 0
 const check = (label: string, ok: boolean, detail = '') => {
@@ -72,15 +73,25 @@ const nextDay = mom(at(0, 10, 28), [feed(60)])
 check('a new day prints its date again', dateCell(nextDay, day[9]) === '8/28')
 
 // --- the milk column --------------------------------------------------------
-check('a single volume prints bare', milkCell(day[0].events)!.parts.join(' + ') === '43')
-check('a source is marked in brackets',
-  milkCell([feed(45, 'breast_milk')])!.parts.join(' + ') === '45(B)')
+//
+// The unit and the source word, not the paper's (B)/(F) codes — §12 of the
+// third handoff, recorded as D-034. What the codes carried is all still here.
+const milk = (events: Moment['events']) => milkCell(events)!.parts.join(' + ')
+check('a volume carries its unit', milk(day[0].events) === '43 mL')
+check('a source is spelt out', milk([feed(45, 'breast_milk')]) === '45 mL breast')
 check('a split feed joins with a plus, as the paper writes it',
-  milkCell([feed(25, 'breast_milk'), feed(45, 'formula')])!.parts.join(' + ') === '25(B) + 45(F)')
-check('an unlabelled split too',
-  milkCell([feed(30), feed(30)])!.parts.join(' + ') === '30 + 30')
+  milk([feed(25, 'breast_milk'), feed(45, 'formula')]) === '25 mL breast + 45 mL formula')
+check('an unlabelled split too', milk([feed(30), feed(30)]) === '30 mL + 30 mL')
 check('an unknown volume prints ? and is flagged for the accent colour',
-  milkCell([feed(null)])!.parts[0] === '?' && milkCell([feed(null)])!.unknown)
+  milkCell([feed(null)])!.parts[0] === '? mL' && milkCell([feed(null)])!.unknown)
+check('an unmarked source adds no word', srcWord(null) === '' && srcWord('unknown') === '')
+
+// The one-line form the top card's narrow leads take instead.
+check('the total is one figure', milkTotal([feed(25, 'breast_milk'), feed(45, 'formula')]) === '70 mL')
+check('an unknown part is carried, not dropped',
+  milkTotal([feed(90), feed(null)]) === '90 + ? mL')
+check('all unknown is just ?', milkTotal([feed(null)]) === '? mL')
+check('and no feed is null, like the column', milkTotal([diaper({ pee: true })]) === null)
 
 // the distinction the whole model turns on
 check('NO feed is null, not an empty string — a blank cell and a ? differ',
@@ -135,6 +146,41 @@ check('a sleep starting in the future is ignored',
 
 check('a duration reads in hours and minutes', sleepDuration(t20, t22) === '2h 30m')
 check('and drops the hours under one', sleepDuration(t20, at(20, 45)) === '45m')
+
+// --- a feed still running (D-033) -------------------------------------------
+//
+// The same rule as sleep, on the same field: an open period is a timeslot with
+// no ended_at. No flag on the event — the timeslot already carries the end time
+// for every type (D-020), and a second field saying it again is how a duration
+// ends up right in one view and wrong in another.
+const eating = (occurred: string, endedAt: string | null): Moment => {
+  const m = mom(occurred, [feed(60)])
+  m.timeslot.ended_at = endedAt
+  return m
+}
+
+check('a feed with no end time is running',
+  ongoingFeed([eating(t20, null)], new Date(t23)) !== null)
+check('one that has been given an end time is not',
+  ongoingFeed([eating(t20, t22)], new Date(t23)) === null)
+check('a feed with something logged after it is over',
+  ongoingFeed([eating(t20, null), mom(t22, [diaper({ pee: true })])], new Date(t23)) === null)
+check('a feed starting in the future is ignored',
+  ongoingFeed([eating(at(23, 30), null)], new Date(t23)) === null)
+check('and a sleep is not a feed', ongoingFeed([sleepy(t20, null)], new Date(t23)) === null)
+
+check('a feed duration spells out the minutes', feedDuration(t20, at(20, 25)) === '25 min')
+check('and reads in hours past one', feedDuration(t20, t22) === '2h 30m')
+check('the row says how long an ended feed took', feedCell(eating(t20, t22)) === 'fed 2h 30m')
+check('a running feed says nothing on the row — the card carries it',
+  feedCell(eating(t20, null)) === null)
+check('and a moment with no feed says nothing either', feedCell(sleepy(t20, t22)) === null)
+
+// The mascot, whose priority the handoff states outright.
+check('feeding outranks sleeping', mascotState(30, 'night', false, true, true) === 'feeding')
+check('and the save flash outranks both', mascotState(30, 'night', true, true, true) === 'logged')
+check('sleeping still wins when nothing is feeding',
+  mascotState(30, 'night', false, true, false) === 'sleeping')
 check('the date strip lists each day once, newest first',
   daysWithEntries([...day, nextDay]).length === 2)
 check('an unnamed device shows no initial rather than a UUID', initialOf(null) === null)
@@ -147,7 +193,7 @@ const rendered = day.map((m, i) => [
 ])
 console.log('\n  8/27 as the app renders it:')
 for (const r of rendered) {
-  console.log(`    ${r[0].padEnd(5)} ${r[1].padEnd(6)} ${r[2].padEnd(7)} ${r[3]}`)
+  console.log(`    ${r[0].padEnd(5)} ${r[1].padEnd(6)} ${r[2].padEnd(9)} ${r[3]}`)
 }
 check('every row on the page carries something',
   rendered.every((r) => r[2] !== '' || r[3] !== ''))

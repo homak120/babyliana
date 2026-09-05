@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
+  feedDuration,
   formatElapsed,
   lastFeedAt,
   lastFeedMoment,
   mascotState,
   minutesSince,
+  ongoingFeed,
   ongoingSleep,
   sameDay,
   sleepDuration,
@@ -13,7 +15,9 @@ import {
   type MascotState,
 } from '../derive'
 import { getDevices } from '../db'
-import { avatarClass, describeMoment, hhmm, milkCell, sleepCell, timeCell } from '../day/cells'
+import {
+  avatarClass, describeMoment, feedCell, hhmm, milkCell, milkTotal, sleepCell, timeCell,
+} from '../day/cells'
 import { getDeviceId } from '../device-id'
 import { getMoments, removeMoment, renameThisDevice } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
@@ -30,6 +34,9 @@ const STATE: Record<MascotState, { word: string; icon: string }> = {
   settled: { word: 'settled', icon: 'spa' },
   awake: { word: 'awake', icon: 'visibility' },
   hungry: { word: 'hungry', icon: 'local_drink' },
+  // Descriptive, like every other state: what is happening, never whether it
+  // is going well.
+  feeding: { word: 'feeding', icon: 'local_drink' },
   sleeping: { word: 'sleeping', icon: 'bedtime' },
   logged: { word: 'logged', icon: 'auto_awesome' },
 }
@@ -74,18 +81,6 @@ function poopLabel(m: Moment) {
   return p.poop_colour && p.poop_colour !== 'other' ? p.poop_colour : 'poop'
 }
 
-function feedLabel(m: Moment) {
-  const feeds = m.events.filter((e) => e.type === 'feed')
-  if (feeds.length === 0) return null
-  return feeds
-    .map((e) => {
-      const vol = e.volume_ml === null ? '?' : String(e.volume_ml)
-      const src = e.source === 'breast_milk' ? '(B)' : e.source === 'formula' ? '(F)' : ''
-      return vol + src
-    })
-    .join(' + ')
-}
-
 /** The prototype prints the date on every separator, today included. */
 function dayLabel(iso: string) {
   const d = new Date(iso)
@@ -126,7 +121,10 @@ function NamePrompt({
   )
 }
 
-export function LogScreen({ onEndSleep }: { onEndSleep: () => void }) {
+export function LogScreen({ onEndOpen }: {
+  /** Ends whatever is running — a feed or a sleep. One act, two pills (D-033). */
+  onEndOpen: () => void
+}) {
   const [moments, setMoments] = useState<Moment[]>([])
   const [lead, setLead] = useState<Lead>(storedLead)
   const [devices, setDevices] = useState<Device[]>([])
@@ -181,15 +179,18 @@ export function LogScreen({ onEndSleep }: { onEndSleep: () => void }) {
   // the ticking `now`: it moves every 30s, and a sleep logged just now would
   // fail its own "started at or before now" test until the next tick.
   const asleep = ongoingSleep(moments)
-  const state = mascotState(since, theme, justLogged, asleep !== null)
+  const feeding = ongoingFeed(moments)
+  const state = mascotState(since, theme, justLogged, asleep !== null, feeding !== null)
 
   // The combined and mascot leads print the last feed itself, not just how long
   // ago it was: its volume as the paper writes it, its clock time, and who
   // logged it. An em dash where there is nothing yet, same as the elapsed lead.
   const elapsedText = formatElapsed(since)
   const lastFeed = lastFeedMoment(moments)
-  const lastMilk = lastFeed ? milkCell(lastFeed.events) : null
-  const lastVol = lastMilk ? lastMilk.parts.join(' + ') : '—'
+  // The total, not the breakdown. With the unit and the source word on every
+  // part (§12), "25 mL breast + 45 mL formula" is far past what a one-line
+  // figure slot holds — so these two leads print one number.
+  const lastVol = (lastFeed && milkTotal(lastFeed.events)) || '—'
   const lastBy = lastFeed
     ? devices.find((d) => d.id === lastFeed.timeslot.logged_by)?.name ?? null
     : null
@@ -264,14 +265,29 @@ export function LogScreen({ onEndSleep }: { onEndSleep: () => void }) {
                 {/* How long she has been down, and the way out of it, without
                     going near the bar. Descriptive: how long, not whether it is
                     long enough. */}
-                {asleep && (
+                {feeding && (
+                  <div className="feedline">
+                    <span>{feedDuration(feeding.timeslot.occurred_at, now)} feeding</span>
+                    <button
+                      type="button"
+                      className="endfeedmini"
+                      aria-label="end feed"
+                      onClick={onEndOpen}
+                    >
+                      <Icon name="timer_off" size={18} />
+                    </button>
+                  </div>
+                )}
+                {/* Only one of the two, and the feed wins — the same priority
+                    the mascot state uses. A moment can carry both. */}
+                {asleep && !feeding && (
                   <div className="sleepline">
                     <span>{sleepDuration(asleep.timeslot.occurred_at, now)} asleep</span>
                     <button
                       type="button"
                       className="endsleepmini"
                       aria-label="end sleep"
-                      onClick={onEndSleep}
+                      onClick={onEndOpen}
                     >
                       <EndSleepIcon size={18} />
                     </button>
@@ -283,11 +299,11 @@ export function LogScreen({ onEndSleep }: { onEndSleep: () => void }) {
             {lead === 'combined' && (
               <>
                 <p className="combined">
-                  {/* A non-breaking space before the unit: the column is
-                      about eight characters wide at this size, so the line
-                      always wraps, and "mL" alone on the second line reads as a
-                      mistake. */}
-                  {lastFeed ? `${elapsedText} ago · ${lastVol}\u00a0mL` : '—'}
+                  {/* The unit comes from `milkTotal` now, with a non-breaking
+                      space ahead of it: the column is about eight characters
+                      wide at this size, so the line always wraps, and "mL"
+                      alone on the second line reads as a mistake. */}
+                  {lastFeed ? `${elapsedText} ago · ${lastVol}`.replace(' mL', '\u00a0mL') : '—'}
                 </p>
                 <p className="leadsub">
                   {lastFeed
@@ -302,7 +318,9 @@ export function LogScreen({ onEndSleep }: { onEndSleep: () => void }) {
                 <p className={`mascotword ${state}`}>{STATE[state].word}</p>
                 <p className="leadelapsed">{elapsedText}</p>
                 <p className="leadsub">
-                  {lastFeed ? `${lastVol}\u00a0mL${lastBy ? ` · ${lastBy}` : ''}` : 'nothing logged yet'}
+                  {lastFeed
+                    ? `${lastVol.replace(' mL', '\u00a0mL')}${lastBy ? ` · ${lastBy}` : ''}`
+                    : 'nothing logged yet'}
                 </p>
               </>
             )}
@@ -326,9 +344,17 @@ export function LogScreen({ onEndSleep }: { onEndSleep: () => void }) {
       </div>
 
       <div className="totals">
-        <span className="tag lilac"><Icon name="favorite" size={13} /> B {totals.breastMl}</span>
-        <span className="tag amber"><Icon name="local_drink" size={13} /> F {totals.formulaMl}</span>
-        {totals.unmarkedMl > 0 && <span className="tag chip">unmarked {totals.unmarkedMl}</span>}
+        {/* Words, not codes — the same move `milkCell` makes (§12). "B 240"
+            needed the legend; "breast 240 mL" does not. */}
+        <span className="tag lilac">
+          <Icon name="favorite" size={13} /> breast {totals.breastMl} mL
+        </span>
+        <span className="tag amber">
+          <Icon name="local_drink" size={13} /> formula {totals.formulaMl} mL
+        </span>
+        {totals.unmarkedMl > 0 && (
+          <span className="tag chip">unmarked {totals.unmarkedMl} mL</span>
+        )}
         {totals.unknownVolumes > 0 && (
           <span className="tag chip">? &times; {totals.unknownVolumes}</span>
         )}
@@ -342,7 +368,8 @@ export function LogScreen({ onEndSleep }: { onEndSleep: () => void }) {
         {shown.map((m, i) => {
           const prev = shown[i - 1]
           const newDay = !prev || !sameDay(prev.timeslot.occurred_at, new Date(m.timeslot.occurred_at))
-          const feeds = feedLabel(m)
+          const feeds = milkCell(m.events)
+          const fed = feedCell(m)
           return (
             <li key={m.timeslot.id}>
               {newDay && <p className="day-sep">{dayLabel(m.timeslot.occurred_at)}</p>}
@@ -359,7 +386,14 @@ export function LogScreen({ onEndSleep }: { onEndSleep: () => void }) {
                 <span className="chips">
                   {feeds && (
                     <span className="chip-rose">
-                      <Icon name="local_drink" size={14} /> {feeds}
+                      <Icon name="local_drink" size={14} /> {feeds.parts.join(' + ')}
+                    </span>
+                  )}
+                  {/* "fed 25 min", the mirror of "slept 1h 20m" — the one thing
+                      a finished feed says that an instant one does not. */}
+                  {fed && (
+                    <span className="chip-timer">
+                      <Icon name="timer" size={14} /> {fed}
                     </span>
                   )}
                   {m.events.some((e) => e.pee) && (

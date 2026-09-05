@@ -135,9 +135,10 @@ export function AddSheet({
       })
     } else {
       const m = await logMoment(payload)
-      // Logging anything else means she woke. Doing it here rather than inside
-      // logMoment keeps that primitive from touching rows its caller never
-      // named — see closeOpenSleep's note.
+      // Logging anything else means she woke. Sleeps only — the next entry says
+      // nothing about when a bottle finished (D-033). Done here rather than
+      // inside logMoment so that primitive never touches rows its caller did
+      // not name — see closeOpenSleep's note.
       await closeOpenSleep(new Date(m.timeslot.occurred_at), m.timeslot.id)
     }
     setSaving(false)

@@ -15,6 +15,10 @@ export type MilkPart = { volume: number | null; source: Source }
  * card is how they are entered, not how they are kept.
  *
  * No `unknown` flag: a null volume *is* the paper's `?`. One representation.
+ *
+ * Nothing here says whether the feed is still going, either. That is the time
+ * card's business — an open period is a missing end time (D-033) — and the block
+ * carries only what a feed *is*.
  */
 export type MilkDraft = { parts: MilkPart[]; active: number }
 

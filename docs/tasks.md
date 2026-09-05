@@ -199,6 +199,9 @@ the owner's judgement, not production work.
       not the character. Launch experience still open
 - [x] **CC** Implement the visual identity — artwork wired to derived state,
       icons rebuilt, hero geometry matched to the prototype
+- [x] **CC** Feeds run live, and milk in words — the third handoff's §11 and
+      §12. Derived from the timeslot's end time, no new column (D-033);
+      `(B)`/`(F)` retired (D-034)
 - [ ] **H** Naming decision. Replace "BabyLiana" if it isn't the keeper. Q-008,
       and it gets more expensive with every asset that carries the name
 

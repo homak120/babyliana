@@ -1,4 +1,4 @@
-import { sameDay, sleepDuration } from '../derive'
+import { feedDuration, sameDay, sleepDuration } from '../derive'
 import type { LogEvent, Moment } from '../types'
 
 // How a moment renders as a paper row. Kept out of the component because the
@@ -19,11 +19,21 @@ export function timeCell(m: Moment): string {
   return m.timeslot.ended_at ? `${start}–${hhmm(m.timeslot.ended_at)}` : start
 }
 
-const SRC: Record<string, string> = { breast_milk: '(B)', formula: '(F)' }
+/** `breast` / `formula`, or nothing at all where the source was not marked. */
+export const srcWord = (source: LogEvent['source']) =>
+  source === 'breast_milk' ? 'breast' : source === 'formula' ? 'formula' : ''
 
 /**
- * The Milk column, as the paper writes it: `45`, `45(B)`, `25(B) + 45(F)`,
- * `30 + 30`, or `?`.
+ * The Milk column: `45 mL`, `45 mL formula`, `25 mL breast + 45 mL formula`,
+ * `30 mL + 30 mL`, or `? mL`.
+ *
+ * **The `(B)` / `(F)` short codes are gone**, replaced by the unit and the word.
+ * The paper writes the codes and this used to copy them, which made the read-back
+ * a transcription; the third handoff spends the width on saying it outright,
+ * because the person reading at 4am is not holding the legend in their head.
+ * What the codes carried — which source, and that a split feed is two volumes —
+ * is all still here. The cost is real and lands in the day table, where a split
+ * feed now wraps to two lines.
  *
  * An empty cell and a `?` are different facts — no feed at all, versus a feed
  * whose volume was not known. The paper log distinguishes them and so must
@@ -34,9 +44,43 @@ export function milkCell(events: LogEvent[]): { parts: string[]; unknown: boolea
   if (feeds.length === 0) return null
   const parts = feeds.map((e) => {
     const vol = e.volume_ml === null ? '?' : String(e.volume_ml)
-    return vol + (e.source ? (SRC[e.source] ?? '') : '')
+    const word = srcWord(e.source)
+    return `${vol} mL${word ? ` ${word}` : ''}`
   })
   return { parts, unknown: feeds.every((e) => e.volume_ml === null) }
+}
+
+/**
+ * The same feed as one figure: `60 mL`, `90 + ? mL`, `? mL`.
+ *
+ * For the places that have one line and no room to lose — the combined and
+ * mascot leads on the top card. `milkCell` grew long enough with the unit and
+ * the source word that a split feed overflowed the figure slot, so those two
+ * take the sum instead of the breakdown. An unknown part is carried through
+ * rather than dropped: `90 + ?` is a different fact from `90`.
+ */
+export function milkTotal(events: LogEvent[]): string | null {
+  const feeds = events.filter((e) => e.type === 'feed')
+  if (feeds.length === 0) return null
+  const known = feeds.filter((e) => e.volume_ml !== null)
+  const anyUnknown = known.length < feeds.length
+  if (known.length === 0) return '? mL'
+  const sum = known.reduce((a, e) => a + e.volume_ml!, 0)
+  return `${sum}${anyUnknown ? ' + ?' : ''} mL`
+}
+
+/**
+ * "fed 25 min" — how long the feed took, where the moment has an end time.
+ *
+ * The mirror of `sleepCell`, and the only thing an ended feed says that an
+ * instant one does not. Nothing when the moment carries no feed, and nothing
+ * while the feed is still running: the card and the bar carry the live number,
+ * and a row is a read-back rather than a clock.
+ */
+export function feedCell(m: Moment): string | null {
+  if (!m.events.some((e) => e.type === 'feed')) return null
+  const { occurred_at, ended_at } = m.timeslot
+  return ended_at === null ? null : `fed ${feedDuration(occurred_at, ended_at)}`
 }
 
 /**

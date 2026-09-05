@@ -118,11 +118,15 @@ for (const [label, sel] of [
 }
 
 // The choice outlives the remount that every save causes.
+//
+// A diaper, not a second feed: the feed logged at the top of this file has no
+// end time, so the bar is showing its end-feed pill where the bottle was
+// (D-033). Any save exercises the remount, and this one does not depend on
+// which quick icon happens to be on screen.
 await p.getByLabel('mascot view').click()
 await p.waitForTimeout(200)
-await p.getByLabel('log a feed').click()
-await p.getByRole('button', { name: '3', exact: true }).click()
-await p.getByRole('button', { name: '0', exact: true }).click()
+await p.getByLabel('log a diaper').click()
+await p.waitForTimeout(300)
 await p.getByRole('button', { name: 'save', exact: true }).click()
 await p.waitForTimeout(900)
 check('the lead survives a save', (await p.locator('.mascotword').count()) === 1,

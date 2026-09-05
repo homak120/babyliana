@@ -139,12 +139,18 @@ body {
 }
 .statetag.awake, .statetag.sleeping { background: var(--lavFill); color: var(--lavInk); }
 .statetag.hungry { background: var(--roseFill); color: var(--roseInk); }
+/* Rose, like hungry, but the deeper ink: the two are one keystroke apart in
+   meaning and must not be one glance apart on the card. */
+.statetag.feeding { background: var(--roseFill); color: var(--roseDeep); }
 .statetag.logged { background: var(--amberFill); color: var(--amberInk); }
 
 /* While a sleep is open the elapsed lead says how long it has been running and
    offers the way out of it, so ending a sleep never depends on finding the bar.
    Descriptive, as everywhere else: how long, never whether that is long
    enough. */
+/* The feed's twin of `.sleepline`: how long she has been on it, and the way
+   off it, without going near the bar. */
+.feedline,
 .sleepline {
   display: flex;
   align-items: center;
@@ -152,13 +158,16 @@ body {
   margin-top: 0.4375rem;
 }
 
+.feedline span,
 .sleepline span {
   font-size: 0.8125rem;
   font-weight: 700;
   color: var(--periInk);
   font-variant-numeric: tabular-nums;
 }
+.feedline span { color: var(--roseDeep); }
 
+.endfeedmini,
 .endsleepmini {
   width: 30px;
   height: 30px;
@@ -172,6 +181,8 @@ body {
   place-items: center;
   cursor: pointer;
 }
+
+.endfeedmini { background: var(--roseFill); color: var(--roseDeep); }
 
 /* The combined lead: how long ago and how much, on one line. Smaller than
    `.elapsed` because it carries roughly twice the characters in the same
@@ -196,6 +207,7 @@ body {
 }
 .mascotword.awake, .mascotword.sleeping { color: var(--lavInk); }
 .mascotword.hungry { color: var(--roseInk); }
+.mascotword.feeding { color: var(--roseDeep); }
 .mascotword.logged { color: var(--amberInk); }
 
 .leadelapsed {
@@ -244,6 +256,9 @@ body {
 
 
 .chip-rose { background: var(--roseFill); color: var(--roseInk); }
+/* Neutral on purpose: the duration is a footnote to the volume beside it, and
+   a second rose chip would read as a second feed. */
+.chip-timer { background: var(--chip); color: var(--ink); }
 .chip-yellow { background: var(--yellowFill); color: var(--yellowInk); }
 .chip-mint { background: var(--mintFill); color: var(--mintInk); }
 

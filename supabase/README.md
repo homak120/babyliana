@@ -18,7 +18,25 @@ Editor, paste each file in order, run it.
 | --- | --- | --- |
 | `migrations/0001_initial_schema.sql` | Drops the spike table, creates the three tables, RLS, grants, realtime | Once. Safe to re-run |
 
-That is the whole schema. There is nothing else to run.
+**There is no `0002`, and the number is burned.** `0002_seed_household.sql`
+existed on 2026-09-03 and was **run against the database** before `0b14b40`
+deleted it from the repo — device rows are written by the app, not seeded. The
+directory therefore looks like `0002` is free and it is not: the owner has run a
+file by that number, so reusing it makes "have you run 0002?" an unanswerable
+question. It has already caused one round trip: a new migration
+was numbered `0002`, and "0002 was run long ago" and "0002 has never been run"
+were both true about different files. **Number from the git history, not from
+what is on disk** — `git log --all --diff-filter=AD -- supabase/migrations/`
+lists the deleted ones too. That migration was then dropped altogether; the
+schema is still `0001` and nothing else has ever needed to run.
+
+**When one is ever added, order matters against the app, not just against the
+other files.** Sync pushes whole local rows, so a client that knows about a
+column and a database that does not fails the upsert and the outbox stops
+draining — quietly, because push returns false and the reconcile is skipped while
+writes are pending. Run the migration **before** deploying the version that
+writes it. `verify-s2` and `verify-s8` are the two suites that would tell you,
+because they are the two that hit the live database.
 
 ## `imports/` — one-off data, not schema
 

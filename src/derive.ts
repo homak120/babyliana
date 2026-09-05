@@ -114,25 +114,73 @@ export function totalsOf(moments: Moment[]): Totals {
  * hour by mistake should not put the app to sleep.
  */
 export function ongoingSleep(moments: Moment[], now = new Date()): Moment | null {
-  // The **latest** timeslot only, which is the rule as the owner stated it. A
-  // sleep with anything logged after it is over by definition — something else
-  // happened, so she woke. Scanning all open sleeps instead made every sleep
-  // recorded before this feature existed read as still running, which on the
-  // real log meant a bar reporting "30h 58m".
-  const past = moments.filter((m) => new Date(m.timeslot.occurred_at) <= now)
-  if (past.length === 0) return null
-  const latest = past.reduce((a, b) =>
-    new Date(a.timeslot.occurred_at) >= new Date(b.timeslot.occurred_at) ? a : b,
-  )
+  const latest = latestPast(moments, now)
+  if (!latest) return null
   const open = latest.timeslot.ended_at === null && latest.events.some((e) => e.type === 'sleep')
   return open ? latest : null
 }
 
+/**
+ * The feed that is still running, if there is one.
+ *
+ * **The same rule as `ongoingSleep`, on the same field.** A moment with a feed
+ * and no `ended_at` is a feed that has not been given an end time yet; once
+ * anything else is logged it is no longer the latest moment and stops reading
+ * as running, without a single byte being written to say so.
+ *
+ * No flag on the event, deliberately (D-033). `ended_at` is the timeslot's and
+ * is shared by everything in the moment (D-020) — that is already the one place
+ * a duration lives, and a second field saying the same thing in different words
+ * is how a duration ends up right in one view and wrong in another. The state is
+ * derived at render time like every other thing on the home screen.
+ */
+export function ongoingFeed(moments: Moment[], now = new Date()): Moment | null {
+  const latest = latestPast(moments, now)
+  if (!latest) return null
+  const open = latest.timeslot.ended_at === null && latest.events.some((e) => e.type === 'feed')
+  return open ? latest : null
+}
+
+/**
+ * The most recent moment at or before `now` — the only one either rule looks at.
+ *
+ * The **latest** timeslot only, which is the rule as the owner stated it for
+ * sleep (D-029) and which this keeps for feeds. Anything logged after an open
+ * period ended it: something else happened. Scanning all open sleeps instead
+ * made every sleep recorded before that feature existed read as still running,
+ * which on the real log meant a bar reporting "30h 58m". A start in the future
+ * is ignored: backdating is a core flow, and someone typing tomorrow's hour by
+ * mistake should not put the app to sleep.
+ */
+function latestPast(moments: Moment[], now: Date): Moment | null {
+  const past = moments.filter((m) => new Date(m.timeslot.occurred_at) <= now)
+  if (past.length === 0) return null
+  return past.reduce((a, b) =>
+    new Date(a.timeslot.occurred_at) >= new Date(b.timeslot.occurred_at) ? a : b,
+  )
+}
+
+const durationMinutes = (from: string, to: string | Date) =>
+  Math.max(0, Math.round((new Date(to).getTime() - new Date(from).getTime()) / 60000))
+
 /** "1h 20m" / "45m" — how long a sleep ran, or has been running. */
 export function sleepDuration(from: string, to: string | Date): string {
-  const mins = Math.max(0, Math.round((new Date(to).getTime() - new Date(from).getTime()) / 60000))
+  const mins = durationMinutes(from, to)
   const h = Math.floor(mins / 60)
   return h === 0 ? `${mins}m` : `${h}h ${String(mins % 60).padStart(2, '0')}m`
+}
+
+/**
+ * "25 min" / "1h 05m" — how long a feed took, or has been taking.
+ *
+ * Spelt out under the hour where a sleep says "45m", because that is what the
+ * handoff writes and because the two read differently on the row: a feed is
+ * minutes and a sleep is hours, so the unit is doing more work here.
+ */
+export function feedDuration(from: string, to: string | Date): string {
+  const mins = durationMinutes(from, to)
+  const h = Math.floor(mins / 60)
+  return h === 0 ? `${mins} min` : `${h}h ${String(mins % 60).padStart(2, '0')}m`
 }
 
 export type Theme = 'day' | 'night'
@@ -143,7 +191,7 @@ export function themeFor(now = new Date()): Theme {
   return h >= 20 || h < 7 ? 'night' : 'day'
 }
 
-export type MascotState = 'settled' | 'awake' | 'hungry' | 'sleeping' | 'logged'
+export type MascotState = 'settled' | 'awake' | 'hungry' | 'feeding' | 'sleeping' | 'logged'
 
 /**
  * Derived, never set — and descriptive, never evaluative. Sleepy, awake,
@@ -155,8 +203,12 @@ export function mascotState(
   theme: Theme,
   justLogged = false,
   asleep = false,
+  feeding = false,
 ): MascotState {
   if (justLogged) return 'logged'
+  // Feeding outranks sleeping: the feed is what is happening right now, and a
+  // moment carrying both can only be one of them on the card.
+  if (feeding) return 'feeding'
   // A logged, still-open sleep is a fact and outranks the guess below it. The
   // night-plus-a-long-gap heuristic stays as the fallback for when nobody has
   // logged a sleep at all, which is most of the time.
