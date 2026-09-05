@@ -24,12 +24,21 @@ const hasFeed = (m: Moment) => m.events.some((e) => e.type === 'feed')
  * since she started.
  */
 export function lastFeedAt(moments: Moment[]): Date | null {
+  const m = lastFeedMoment(moments)
+  return m ? new Date(m.timeslot.ended_at ?? m.timeslot.occurred_at) : null
+}
+
+/**
+ * The moment that feed was part of, not just when it was.
+ *
+ * The combined and mascot leads print its volume, its clock time and who
+ * logged it, so they need the row and not only the timestamp.
+ */
+export function lastFeedMoment(moments: Moment[]): Moment | null {
   const feeds = moments.filter(hasFeed)
   if (feeds.length === 0) return null
-  const times = feeds.map((m) =>
-    new Date(m.timeslot.ended_at ?? m.timeslot.occurred_at).getTime(),
-  )
-  return new Date(Math.max(...times))
+  const at = (m: Moment) => new Date(m.timeslot.ended_at ?? m.timeslot.occurred_at).getTime()
+  return feeds.reduce((a, b) => (at(a) >= at(b) ? a : b))
 }
 
 export function minutesSince(at: Date | null, now = new Date()): number | null {

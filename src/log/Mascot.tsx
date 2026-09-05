@@ -53,7 +53,7 @@ const DAY: Record<MascotState | 'home', { webp: string; png: string }> = {
 }
 
 export function Mascot({
-  state, size = 100, welcome = false, theme,
+  state, size = 88, welcome = false, theme,
 }: {
   state: MascotState
   /** The width of the *slot*. The art is drawn larger and overflows it. */
@@ -80,14 +80,17 @@ export function Mascot({
         ? 'lianaBreathe 5s ease-in-out infinite'
         : 'lianaBreathe 7s ease-in-out infinite'
 
-  // The prototype's hero gives Liana a 100×96 slot and draws her at 108px on
-  // top of it, bleeding 4px to each side and 8px above. That is what keeps the
-  // art generous without stealing width from the elapsed figure beside it —
-  // sizing the slot at 108 is what pushed "14h 21m" onto two lines.
-  const k = size / 100
-  const slotH = welcome ? size : Math.round(96 * k)
-  const artSize = welcome ? size : Math.round(108 * k)
-  const offX = welcome ? 0 : Math.round(-4 * k)
+  // The prototype's card gives Liana an 88×88 slot and draws her at 100px on
+  // top of it, bleeding 6px left and 8px above. That is what keeps the art
+  // generous without stealing width from the figure beside it — sizing the slot
+  // at the art's own size is what pushed "14h 21m" onto two lines.
+  //
+  // It was 100×96 with 108px art until the lead rail arrived. The rail costs
+  // the card 40px of width, and this is where 12 of them came back from.
+  const k = size / 88
+  const slotH = size
+  const artSize = welcome ? size : Math.round(100 * k)
+  const offX = welcome ? 0 : Math.round(-6 * k)
   const offY = welcome ? 0 : Math.round(-8 * k)
 
   return (

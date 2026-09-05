@@ -18,7 +18,7 @@ Last updated: 2026-09-05
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0–6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. 254 checks pass across seventeen
+delivered by the second design handoff. 264 checks pass across seventeen
 suites.
 
 What exists: local-first writes to IndexedDB that never block on the network,
@@ -34,7 +34,9 @@ precached.
 its own block, a quick icon that becomes a live "end sleep" pill while one is
 running, and an open sleep expressed as a missing end time rather than a flag.
 D-029 has the reasoning; it amends D-013, which had sleep supported but not
-featured.
+featured. The card now also says how long she has been down and offers a second
+way to end it, and **the top card has three leads** — elapsed, combined, mascot
+— chosen from a rail beside it. That completes the third handoff's `CHANGES.md`.
 
 **What is left is mostly not code.** Two build items remain — export and a
 settings screen — and the rest is the owner's judgement. See *Next action*.
@@ -87,8 +89,7 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**Nothing uncommitted.** The working tree is clean as of the documentation sweep
-below.
+**Nothing.** The tree is clean as of the lead-view switcher commit.
 
 Worth knowing why this section was wrong twice in one day: it named the sleep
 colours, the live-data hazard and D-031 long after `ad2ccce` shipped them,
@@ -137,6 +138,42 @@ Noticed, not blocking, no owner yet.
 
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
+
+### 2026-09-05 (later still) — the lead switcher, and a card that says how long she has slept
+
+The last three items of the third handoff's `CHANGES.md` — §7 sleep in the log
+views, §8 sleep duration on the top card, §9 the lead-view switcher.
+
+**§7 was already there.** Sleep had its own row slot, its peri chip on the home
+list and its peri line in the day table; only one thing was missing, and it was
+in the confirm sheet rather than the list: `describeMoment` had no sleep branch,
+so a sleep-only row asked "delete 9/3 · 21:35 · **empty**?". A hard delete with
+no tombstone is the one place the app must not shrug. The handoff's timeline dot
+does not apply — the app builds the prototype's *table* read-back, which has no
+dots.
+
+**§9 cost the card 40px, and that is the whole story of this change.** The rail
+sits outside the card, so the text column went from 202px to 140px, and 44px
+only holds six characters in that — "14h 21m" is seven and an overnight gap is
+not an edge case. The mascot dropped to the handoff's 88px slot (100px art),
+which gave 12px back, and anything over six characters now steps down to 36px.
+The alternative was the wrap that `verify-hero` exists to catch.
+
+Two more judgement calls worth knowing:
+
+- **The lead lives in localStorage, not in state.** The handoff calls it session
+  state, which is right in a prototype but wrong here: `App` remounts the screen
+  with `key={saved}` on every save, so plain state snapped back to `elapsed` the
+  moment you logged anything. It stays local and unsynced either way.
+- **Both end-sleep controls now carry the hand-drawn crescent-and-arrow SVG**,
+  not `wb_twilight`. The bar pill shipped with the Material icon in `ad2ccce`;
+  having the card's button and the bar's disagree about what the same action
+  looks like was worse than the small scope creep of changing it.
+
+`aria-label="end sleep"` is now on two visible controls, which broke
+`getByLabel` under Playwright's strict mode — `verify-sleep` scopes the bar one
+to `nav.tabs` and exercises the card one on its own sleep. 264 checks across the
+same seventeen suites.
 
 ### 2026-09-05 (later) — the tab bar's bottom gap, and a documentation sweep
 
@@ -204,36 +241,3 @@ Four readings are genuinely uncertain and were left as holes, not guesses — se
 *Open threads*. The two 8/30 rows sit commented out at the end of the script with
 both candidate times, because the cleanup rule that was applied (unclear minutes
 round to the hour) cannot help when the *hour* is the unreadable part.
-
-### 2026-09-04 — second handoff, mascot artwork, and four layout fixes
-
-The second design handoff replaced the first wholesale. `tokens.css` is
-byte-identical, so nothing about colour, type, radius or motion moved; four
-things changed and `phase-2-reconciliation.md` lists them. The mascot is supplied
-artwork now, one PNG per state, which is what made retiring the CSS composition
-possible — a single flat image would have collapsed five states into one
-expression.
-
-**Q-012 closed against D-025's original reasoning.** Delete now opens a confirm
-sheet naming the row rather than deleting with an undo toast. The 4am-modal
-argument lost to D-003: a hard delete with no tombstone that syncs to the other
-phone deserves its check before the action, not after.
-
-**Four layout problems, and the pattern connecting them is worth keeping.** Every
-one came from believing a document or a desktop browser over the phone:
-
-- The swipe was dead on the home screen for four rounds of fixes because D-025
-  said "the day view" and nobody checked which screen the owner was on.
-- The tab bar sat 47.7pt higher on the day screen — exactly the device's
-  `safe-area-inset-top`. Never reproduced in Chromium, insets substituted or not.
-  Fixed by adopting the prototype's flex-column shell, which has no fixed bar at
-  all, so the mechanism stayed unknown and stopped mattering.
-- The elapsed hero wrapped because the README says 64px where the prototype draws
-  44, and says 108px for a mascot the prototype puts in a 100×96 slot.
-- The unknown-minute marker came back in the handoff for the second time and was
-  struck again under D-018.
-
-`scripts/ios/` came out of this: a Swift tool that posts mouse events to the
-Simulator, which iOS turns into genuine touches, and a screenshot measurer.
-"103.7pt against an expected 56" is what turned a vague complaint into a bug;
-eyeballing had already produced one wrong answer.

@@ -147,11 +147,15 @@ export function describeMoment(m: Moment): string {
   const milk = milkCell(m.events)
   const { pee, poop } = diaperParts(m.events)
   const rest = otherCell(m.events)
+  // Without this a sleep-only row was named "empty" in the sheet that asks
+  // whether to delete it, which is the one place the app must not shrug.
+  const sleep = sleepCell(m)
 
   const what = [
     milk ? milk.parts.join(' + ') : null,
     pee ? 'pee' : null,
     poop,
+    sleep ? sleep.text : null,
     rest,
   ].filter(Boolean).join(' · ')
 

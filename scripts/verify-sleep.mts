@@ -97,15 +97,47 @@ const pill = await p.evaluate(() => {
 check('the pill is laid out as a pill', pill.display === 'flex' && pill.h === 40 && pill.bg !== 'rgba(0, 0, 0, 0)',
   `${pill.display}, ${pill.h}px, ${pill.bg}`)
 
+// --- the top card says how long, and offers the same way out ---
+//
+// Two controls carry "end sleep" now — the bar pill and the card's 30px button
+// — so every reference to one has to say which.
+const cardLine = p.locator('.sleepline')
+await cardLine.waitFor({ state: 'visible', timeout: 5000 })
+check('the card says how long she has been asleep',
+  /\d+m asleep$/.test((await cardLine.locator('span').innerText()).trim()),
+  (await cardLine.innerText()).replace(/\n/g, ' '))
+const mini = await p.evaluate(() => {
+  const el = document.querySelector('.endsleepmini') as HTMLElement
+  if (!el) return null
+  const r = el.getBoundingClientRect()
+  return { size: `${Math.round(r.width)}x${Math.round(r.height)}`, svg: !!el.querySelector('svg') }
+})
+check('with the 30px end-sleep button beside it',
+  mini !== null && mini.size === '30x30' && mini.svg, mini === null ? 'missing' : mini.size)
+
 // --- ending it from the bar ---
-await p.getByLabel('end sleep').click()
+await p.locator('nav.tabs [aria-label="end sleep"]').click()
 await p.waitForTimeout(900)
 const ended = (await p.locator('.chip-peri').first().innerText()).replace(/\n/g, ' ')
 check('the end-sleep button closes it', /slept/.test(ended), ended)
+check('and the card drops its asleep line', (await p.locator('.sleepline').count()) === 0, 'gone')
 await p.locator('.quick.sleep').waitFor({ state: 'visible', timeout: 5000 })
 check('and the bar goes back to offering a sleep', true, 'restored')
 
-// start another, to test the auto-close path
+// start another, to end from the card this time
+await p.getByLabel('log a sleep').click()
+await p.waitForTimeout(300)
+await p.getByRole('button', { name: 'save', exact: true }).click()
+await p.waitForTimeout(700)
+await p.locator('.endsleep').waitFor({ state: 'visible', timeout: 5000 })
+
+// --- ending it from the card instead ---
+await p.locator('.endsleepmini').click()
+await p.waitForTimeout(900)
+const fromCard = (await p.locator('.chip-peri').first().innerText()).replace(/\n/g, ' ')
+check('the card button closes it too', /slept/.test(fromCard), fromCard)
+
+// a third, to test the auto-close path
 await p.getByLabel('log a sleep').click()
 await p.waitForTimeout(300)
 await p.getByRole('button', { name: 'save', exact: true }).click()

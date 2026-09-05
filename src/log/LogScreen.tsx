@@ -2,21 +2,24 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   formatElapsed,
   lastFeedAt,
+  lastFeedMoment,
   mascotState,
   minutesSince,
   ongoingSleep,
   sameDay,
+  sleepDuration,
   themeFor,
   totalsFor,
   type MascotState,
 } from '../derive'
 import { getDevices } from '../db'
-import { avatarClass, describeMoment, hhmm, sleepCell, timeCell } from '../day/cells'
+import { avatarClass, describeMoment, hhmm, milkCell, sleepCell, timeCell } from '../day/cells'
 import { getDeviceId } from '../device-id'
 import { getMoments, removeMoment, renameThisDevice } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
 import type { Device, Moment } from '../types'
 import { AddSheet } from './AddSheet'
+import { EndSleepIcon } from './EndSleepIcon'
 import { Icon } from './Icon'
 import { Mascot } from './Mascot'
 import { SwipeRow } from '../swipe/SwipeRow'
@@ -29,6 +32,38 @@ const STATE: Record<MascotState, { word: string; icon: string }> = {
   hungry: { word: 'hungry', icon: 'local_drink' },
   sleeping: { word: 'sleeping', icon: 'bedtime' },
   logged: { word: 'logged', icon: 'auto_awesome' },
+}
+
+/**
+ * Which summary the top card leads with.
+ *
+ * Three layouts of the same facts, not three feature sets: the card always
+ * answers "when did she last eat", and this is only which half of the answer is
+ * the big number. `elapsed` is the default because it is the question the paper
+ * log was being read for at 4am.
+ */
+type Lead = 'elapsed' | 'combined' | 'mascot'
+
+const LEADS: { id: Lead; icon: string; label: string }[] = [
+  { id: 'elapsed', icon: 'schedule', label: 'elapsed view' },
+  { id: 'combined', icon: 'insights', label: 'combined view' },
+  { id: 'mascot', icon: 'pets', label: 'mascot view' },
+]
+
+/**
+ * Kept in localStorage rather than in component state alone.
+ *
+ * The handoff calls the choice session state, and in the prototype that is
+ * enough — but this screen is remounted by `key={saved}` on every save and
+ * every ended sleep, so plain state would silently snap back to `elapsed` the
+ * moment you logged anything. It stays local and unsynced either way: a lead is
+ * a preference of the phone in your hand, not a fact about the baby.
+ */
+const LEAD_KEY = 'babyliana.lead'
+
+function storedLead(): Lead {
+  const v = localStorage.getItem(LEAD_KEY)
+  return v === 'combined' || v === 'mascot' ? v : 'elapsed'
 }
 
 /** The poop chip shows the colour when there is one — the prototype prints
@@ -91,8 +126,9 @@ function NamePrompt({
   )
 }
 
-export function LogScreen() {
+export function LogScreen({ onEndSleep }: { onEndSleep: () => void }) {
   const [moments, setMoments] = useState<Moment[]>([])
+  const [lead, setLead] = useState<Lead>(storedLead)
   const [devices, setDevices] = useState<Device[]>([])
   const [sheet, setSheet] = useState(false)
   const [sync_, setSync] = useState(syncState())
@@ -144,8 +180,19 @@ export function LogScreen() {
   // A logged, still-open sleep beats the night-plus-long-gap guess. Not passed
   // the ticking `now`: it moves every 30s, and a sleep logged just now would
   // fail its own "started at or before now" test until the next tick.
-  const asleep = ongoingSleep(moments) !== null
-  const state = mascotState(since, theme, justLogged, asleep)
+  const asleep = ongoingSleep(moments)
+  const state = mascotState(since, theme, justLogged, asleep !== null)
+
+  // The combined and mascot leads print the last feed itself, not just how long
+  // ago it was: its volume as the paper writes it, its clock time, and who
+  // logged it. An em dash where there is nothing yet, same as the elapsed lead.
+  const elapsedText = formatElapsed(since)
+  const lastFeed = lastFeedMoment(moments)
+  const lastMilk = lastFeed ? milkCell(lastFeed.events) : null
+  const lastVol = lastMilk ? lastMilk.parts.join(' + ') : '—'
+  const lastBy = lastFeed
+    ? devices.find((d) => d.id === lastFeed.timeslot.logged_by)?.name ?? null
+    : null
 
   return (
     <main className="log">
@@ -172,20 +219,96 @@ export function LogScreen() {
         </span>
       </div>
 
-      <section className="herocard">
-        <Mascot state={state} theme={theme} />
-        {/* min-width:0 so the figure can shrink rather than force the card wide. */}
-        <div style={{ minWidth: 0 }}>
-          <p className="kicker">
-            <Icon name="schedule" size={13} /> since last feed
-          </p>
-          <p className="elapsed">{formatElapsed(since)}</p>
-          <span className={`statetag ${state}`}>
-            <Icon name={STATE[state].icon} size={16} />
-            {STATE[state].word}
-          </span>
+      <div className="herorow">
+        {/* Outside the card, not on it: the card is the summary and the rail is
+            what chooses which summary, so they are siblings. */}
+        <div className="leadrail">
+          {LEADS.map((l) => (
+            <button
+              key={l.id}
+              type="button"
+              className={`leadbtn ${lead === l.id ? 'on' : ''}`}
+              aria-label={l.label}
+              aria-pressed={lead === l.id}
+              onClick={() => {
+                setLead(l.id)
+                localStorage.setItem(LEAD_KEY, l.id)
+              }}
+            >
+              <Icon name={l.icon} size={18} />
+            </button>
+          ))}
         </div>
-      </section>
+
+        <section className="herocard">
+          <Mascot state={state} theme={theme} />
+          {/* min-width:0 so the figure can shrink rather than force the card wide. */}
+          <div style={{ minWidth: 0 }}>
+            <p className="kicker">
+              <Icon name={lead === 'mascot' ? 'pets' : 'schedule'} size={13} />{' '}
+              {lead === 'mascot' ? 'Liana is' : lead === 'combined' ? 'last feed' : 'since last feed'}
+            </p>
+
+            {lead === 'elapsed' && (
+              <>
+                {/* The rail costs the card 40px, which leaves this column
+                    about six characters at 44px. "14h 21m" is seven and an
+                    overnight gap is not an edge case, so anything longer steps
+                    down a size rather than wrapping — the one thing this figure
+                    must never do. */}
+                <p className={elapsedText.length > 6 ? 'elapsed long' : 'elapsed'}>{elapsedText}</p>
+                <span className={`statetag ${state}`}>
+                  <Icon name={STATE[state].icon} size={16} />
+                  {STATE[state].word}
+                </span>
+                {/* How long she has been down, and the way out of it, without
+                    going near the bar. Descriptive: how long, not whether it is
+                    long enough. */}
+                {asleep && (
+                  <div className="sleepline">
+                    <span>{sleepDuration(asleep.timeslot.occurred_at, now)} asleep</span>
+                    <button
+                      type="button"
+                      className="endsleepmini"
+                      aria-label="end sleep"
+                      onClick={onEndSleep}
+                    >
+                      <EndSleepIcon size={18} />
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+
+            {lead === 'combined' && (
+              <>
+                <p className="combined">
+                  {/* A non-breaking space before the unit: the column is
+                      about eight characters wide at this size, so the line
+                      always wraps, and "mL" alone on the second line reads as a
+                      mistake. */}
+                  {lastFeed ? `${elapsedText} ago · ${lastVol}\u00a0mL` : '—'}
+                </p>
+                <p className="leadsub">
+                  {lastFeed
+                    ? `at ${hhmm(lastFeed.timeslot.occurred_at)}${lastBy ? ` · logged by ${lastBy}` : ''}`
+                    : 'nothing logged yet'}
+                </p>
+              </>
+            )}
+
+            {lead === 'mascot' && (
+              <>
+                <p className={`mascotword ${state}`}>{STATE[state].word}</p>
+                <p className="leadelapsed">{elapsedText}</p>
+                <p className="leadsub">
+                  {lastFeed ? `${lastVol}\u00a0mL${lastBy ? ` · ${lastBy}` : ''}` : 'nothing logged yet'}
+                </p>
+              </>
+            )}
+          </div>
+        </section>
+      </div>
 
       <div className="statcards">
         <div className="stat rose">

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { forgetDevice, getDeviceId } from './device-id'
 import { DayScreen } from './day/DayScreen'
+import { EndSleepIcon } from './log/EndSleepIcon'
 import { Icon } from './log/Icon'
 import { LogScreen } from './log/LogScreen'
 import { Welcome } from './log/Welcome'
@@ -103,7 +104,11 @@ export default function App() {
 
   return (
     <>
-      {screen === 'log' ? <LogScreen key={saved} /> : <DayScreen key={saved} />}
+      {screen === 'log' ? (
+        <LogScreen key={saved} onEndSleep={endSleep} />
+      ) : (
+        <DayScreen key={saved} />
+      )}
 
       {/* Contextual, per the handoff. Home carries the quick-add row; the day
           screen is a read-back and carries no add actions at all. Hidden behind
@@ -140,7 +145,7 @@ export default function App() {
                   onClick={endSleep}
                   aria-label="end sleep"
                 >
-                  <Icon name="wb_twilight" size={18} />
+                  <EndSleepIcon size={20} />
                   {sleepDuration(asleep.timeslot.occurred_at, now)}
                 </button>
               ) : (

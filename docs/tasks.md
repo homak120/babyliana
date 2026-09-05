@@ -127,6 +127,11 @@ when". Read that first; this list is the checklist view of the same thing.
       a missing end time, a contextual tab bar whose sleep icon becomes a live
       "end sleep" pill (D-029), two mascot sets switched by clock, and a
       photograph gate before the welcome
+- [x] **CC** The rest of the third design delivery's card work: the lead-view
+      switcher (a three-icon rail that swaps the top card between elapsed,
+      combined and mascot), an open sleep's running duration and a second
+      end-sleep button on the card itself, and the hand-drawn crescent-and-arrow
+      icon both end-sleep controls now carry
 - [x] **CC** A typed time keeps its own day (D-031) — `withHourMinute` anchored
       to today rather than to the moment being edited, so editing an older entry
       dragged it forward; and a one-minute future tolerance filed a time nudged
