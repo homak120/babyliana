@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
 import { chromium, devices } from 'playwright'
+import { enterApp } from './ui.mts'
 
 // The hero's elapsed figure must never wrap. It did: the README lists 64px and
 // the mascot at 108, and "14h 21m" broke onto two lines beside her. The
@@ -22,10 +23,7 @@ const ctx = await b.newContext({ ...devices['iPhone 13'], viewport: { width: 390
 const p = await ctx.newPage()
 await p.route('**://*.supabase.co/**', (r) => r.abort())
 await p.goto(`http://localhost:${PORT}/`, { waitUntil: 'load' })
-const w = p.getByPlaceholder('Anya')
-if (await w.isVisible().catch(() => false)) {
-  await w.fill('Anya'); await p.getByRole('button', { name: 'start logging' }).click(); await p.waitForTimeout(400)
-}
+await enterApp(p)
 await p.getByLabel('log a moment').click()
 await p.getByRole('button', { name: '+ milk' }).click()
 await p.getByRole('button', { name: '6', exact: true }).click()

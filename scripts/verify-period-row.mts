@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
 import { chromium, devices } from 'playwright'
+import { enterApp } from './ui.mts'
 
 // A moment with an end time must read back as a period on BOTH screens.
 // The home list had its own time formatter that only ever read occurred_at, so
@@ -21,10 +22,7 @@ const ctx = await b.newContext({ ...devices['iPhone 13'], viewport: { width: 390
 const p = await ctx.newPage()
 await p.route('**://*.supabase.co/**', (r) => r.abort())
 await p.goto(`http://localhost:${PORT}/`, { waitUntil: 'load' })
-const w = p.getByPlaceholder('Anya')
-if (await w.isVisible().catch(() => false)) {
-  await w.fill('Anya'); await p.getByRole('button', { name: 'start logging' }).click(); await p.waitForTimeout(400)
-}
+await enterApp(p)
 
 let fail = 0
 const check = (l: string, ok: boolean, d: string) => { if (!ok) fail++; console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${l} — ${d}`) }

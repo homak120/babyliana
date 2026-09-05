@@ -17,11 +17,36 @@ import { Mascot } from './Mascot'
 // No device id and no pairing here: D-022 has one baby, one hard-coded id and
 // no join flow for MVP. `baby-and-devices.md` has the shape for when that
 // changes.
+//
+// Two pages, per the third handoff: a gate, then the name. See D-030 — the gate
+// is a doormat, not a lock, and the code ships in a public bundle.
+
+/**
+ * The answer to "when did you first time to meet me".
+ *
+ * Deliberately the only place it appears, because it *will* need changing: this
+ * repo is public and the built bundle carries it in plain text. It keeps a
+ * stranger who finds the URL from typing into the real log; it stops nobody who
+ * opens dev tools. D-030 says so out loud.
+ */
+const SECRET_CODE = '08242026'
 
 export function Welcome({ onDone }: { onDone: () => void }) {
+  const [passed, setPassed] = useState(false)
+  const [code, setCode] = useState('')
+  const [wrong, setWrong] = useState(false)
   const [name, setName] = useState('')
 
   const [saving, setSaving] = useState(false)
+
+  const submitCode = () => {
+    if (code === SECRET_CODE) {
+      setPassed(true)
+      setWrong(false)
+    } else {
+      setWrong(true)
+    }
+  }
 
   // This is where the device comes into existence — nothing before it. Which is
   // also why a name is required: with no device there is nothing for a moment's
@@ -31,6 +56,60 @@ export function Welcome({ onDone }: { onDone: () => void }) {
     setSaving(true)
     await createThisDevice(name)
     onDone()
+  }
+
+  if (!passed) {
+    return (
+      <main className="welcome gate">
+        <div className="gatephoto">
+          <Mascot state="settled" size={168} welcome />
+        </div>
+
+        <p className="kickerup">hello there</p>
+        <h1>do you know me?</h1>
+        <p className="sub">only Liana&rsquo;s people get in. enter the secret code to confirm.</p>
+
+        <label className="fieldlabel" htmlFor="code">secret code</label>
+        <input
+          id="code"
+          className={wrong ? 'nameinput code wrong' : 'nameinput code'}
+          value={code}
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder="••••••••"
+          onChange={(e) => {
+            setCode(e.target.value.replace(/\D/g, '').slice(0, 8))
+            setWrong(false)
+          }}
+          onKeyDown={(e) => e.key === 'Enter' && submitCode()}
+        />
+
+        <div className="hintcard">
+          <Icon name="lightbulb" size={19} />
+          <div>
+            <p className="hintlabel">hint</p>
+            <p className="hinttext">when did you first time to meet me</p>
+          </div>
+        </div>
+
+        {wrong && (
+          <p className="gateerr">
+            <Icon name="error" size={18} /> that&rsquo;s not it. try the day we met.
+          </p>
+        )}
+
+        <div className="spacer" />
+
+        <button
+          type="button"
+          className="save"
+          disabled={code.length < 4}
+          onClick={submitCode}
+        >
+          <Icon name="lock_open" size={26} /> that&rsquo;s me
+        </button>
+      </main>
+    )
   }
 
   return (

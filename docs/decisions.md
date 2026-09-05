@@ -702,3 +702,40 @@ carries no add actions at all, only a way back.
 for the day theme), the bespoke crescent-and-arrow SVG for end-sleep — it uses
 Material's `wb_twilight`, matching every other icon in the app — and
 `liana-appicon.png`. All are available in the handoff if wanted.
+
+---
+
+## D-030 — Two art sets by clock, and a gate before the welcome
+
+**The mascot has a day set and a night set.** Night keeps the girl; day is the
+plush, drawn landscape against a soft ground. It is not a recolour but a
+different character, and it letterboxes inside the same 108px box on
+`object-fit: contain` — which is what the prototype does with it too. The set is
+chosen by `themeFor()`, the same clock that picks the palette (D-021), and the
+home screen passes its theme in explicitly so the art turns over with everything
+else rather than on the next unrelated re-render.
+
+**First run is two pages: a gate, then the name.** The gate asks for a secret
+code — "when did you first time to meet me" — and refuses anything else.
+
+**The gate is a doormat, not a lock, and this is worth being plain about.** The
+repo is public (D-008) and the built bundle carries the code in plain text, so
+anyone who opens dev tools is past it in seconds. What it buys is that a stranger
+who stumbles onto the URL cannot type into the real log by accident. That is a
+real problem worth solving and this solves it; it is not authentication and
+nothing should be built on it as if it were. Data isolation remains the
+post-MVP item it always was — one anon key, no RLS separating families.
+
+It does not breach *"never require a login to log an event"*: the gate runs once
+per install, before any identity exists, and no event has ever been logged behind
+it. The code lives in one named constant in `Welcome.tsx` so changing it is a
+one-line edit.
+
+**The gate's photograph is missing.** The design leads with a 330px photograph
+of Liana, `assets/liana-photo.png`, which the prototype references but the
+package does not ship. The welcome art stands in on a card until the real file
+arrives.
+
+**Consequence for the suites.** Seven browser suites bootstrapped by filling the
+name field, and all of them stalled on page one at once. `scripts/ui.mts` now
+owns that path, so the next change to first-run costs one edit rather than seven.

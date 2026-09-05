@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
 import { chromium, devices } from 'playwright'
+import { enterApp } from './ui.mts'
 
 // Serves its own build so `npm run verify` needs no running dev server.
 const PORT = 4191
@@ -18,10 +19,7 @@ const ctx = await b.newContext({ ...devices['iPhone 13'], viewport: { width: 390
 const p = await ctx.newPage()
 await p.route('**://*.supabase.co/**', (r) => r.abort())
 await p.goto(`http://localhost:${PORT}/`, { waitUntil: 'load' })
-const w = p.getByPlaceholder('Anya')
-if (await w.isVisible().catch(() => false)) {
-  await w.fill('Anya'); await p.getByRole('button', { name: 'start logging' }).click(); await p.waitForTimeout(400)
-}
+await enterApp(p)
 for (const v of [['6','0'], ['4','5']]) {
   await p.getByLabel('log a moment').click()
   await p.getByRole('button', { name: '+ milk' }).click()

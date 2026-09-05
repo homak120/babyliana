@@ -1,5 +1,13 @@
-import type { MascotState } from '../derive'
+import { themeFor, type MascotState, type Theme } from '../derive'
 
+import settledDayWebp from '../assets/mascot/settled-day.webp'
+import awakeDayWebp from '../assets/mascot/awake-day.webp'
+import hungryDayWebp from '../assets/mascot/hungry-day.webp'
+import sleepingDayWebp from '../assets/mascot/sleeping-day.webp'
+import settledDayPng from '../assets/mascot/settled-day.png'
+import awakeDayPng from '../assets/mascot/awake-day.png'
+import hungryDayPng from '../assets/mascot/hungry-day.png'
+import sleepingDayPng from '../assets/mascot/sleeping-day.png'
 import settledWebp from '../assets/mascot/settled.webp'
 import awakeWebp from '../assets/mascot/awake.webp'
 import hungryWebp from '../assets/mascot/hungry.webp'
@@ -18,8 +26,14 @@ import homePng from '../assets/mascot/home.png'
 //
 // Her states stay derived and descriptive only. She never nags.
 
-/** `logged` reuses the awake art, as the handoff specifies. */
-const ART: Record<MascotState | 'home', { webp: string; png: string }> = {
+/**
+ * Two sets, one per theme. `logged` reuses the awake art, as the handoff says.
+ *
+ * The day set is not a recolour — it is a different character, the plush, drawn
+ * landscape against a soft ground. It letterboxes inside the same 108px box on
+ * `object-fit: contain`, which is what the prototype does with it too.
+ */
+const NIGHT: Record<MascotState | 'home', { webp: string; png: string }> = {
   settled: { webp: settledWebp, png: settledPng },
   awake: { webp: awakeWebp, png: awakePng },
   hungry: { webp: hungryWebp, png: hungryPng },
@@ -28,16 +42,33 @@ const ART: Record<MascotState | 'home', { webp: string; png: string }> = {
   home: { webp: homeWebp, png: homePng },
 }
 
+const DAY: Record<MascotState | 'home', { webp: string; png: string }> = {
+  settled: { webp: settledDayWebp, png: settledDayPng },
+  awake: { webp: awakeDayWebp, png: awakeDayPng },
+  hungry: { webp: hungryDayWebp, png: hungryDayPng },
+  sleeping: { webp: sleepingDayWebp, png: sleepingDayPng },
+  logged: { webp: awakeDayWebp, png: awakeDayPng },
+  // The welcome art is the same in both themes — the handoff names one file.
+  home: { webp: homeWebp, png: homePng },
+}
+
 export function Mascot({
-  state, size = 100, welcome = false,
+  state, size = 100, welcome = false, theme,
 }: {
   state: MascotState
   /** The width of the *slot*. The art is drawn larger and overflows it. */
   size?: number
   /** The welcome screen uses its own art rather than a state. */
   welcome?: boolean
+  /**
+   * Defaults to the clock, like every other theme decision (D-021). Passed
+   * explicitly from the home screen so the art turns over at the boundary with
+   * the rest of the palette rather than on the next unrelated re-render.
+   */
+  theme?: Theme
 }) {
-  const art = ART[welcome ? 'home' : state]
+  const set = (theme ?? themeFor()) === 'night' ? NIGHT : DAY
+  const art = set[welcome ? 'home' : state]
   const asleep = state === 'sleeping'
 
   // The z marks are painted into the sleeping artwork, so there is no CSS

@@ -173,7 +173,7 @@ export function LogScreen() {
       </div>
 
       <section className="herocard">
-        <Mascot state={state} />
+        <Mascot state={state} theme={theme} />
         {/* min-width:0 so the figure can shrink rather than force the card wide. */}
         <div style={{ minWidth: 0 }}>
           <p className="kicker">

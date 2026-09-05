@@ -741,3 +741,74 @@ body {
   font-size: 0.875rem;
   color: var(--muted);
 }
+
+/* --- welcome, page one: the gate ------------------------------------------- */
+
+/* The handoff's gate leads with a 330px photograph of Liana
+   (`assets/liana-photo.png`), which was referenced by the prototype but not
+   shipped with the package. The welcome art stands in on the ground colour
+   until the photograph arrives — see D-030. */
+.gatephoto {
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 13.75rem;
+  flex: none;
+  margin-bottom: 0.5rem;
+  border-radius: 1.75rem;
+  background: var(--card);
+  overflow: hidden;
+}
+
+.gate h1 { font-size: 2rem; }
+
+.fieldlabel {
+  font-size: 0.6875rem;
+  color: var(--periInk);
+  margin: 0 0 0.5rem;
+}
+
+.nameinput.code {
+  font-size: 1.625rem;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+}
+.nameinput.code.wrong { border-color: var(--roseInk); }
+
+.hintcard {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5625rem;
+  margin-top: 0.875rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: 1.125rem;
+  background: var(--chip);
+  color: var(--muted);
+}
+
+.hintlabel {
+  margin: 0;
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.hinttext {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.gateerr {
+  display: flex;
+  align-items: center;
+  gap: 0.4375rem;
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--roseInk);
+}

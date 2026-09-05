@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
 import { chromium, devices } from 'playwright'
+import { enterApp } from './ui.mts'
 
 // What this can and cannot prove: CDP touch goes through Chromium's real input
 // pipeline, so it catches wiring and logic. It does NOT reproduce iOS's gesture
@@ -35,12 +36,7 @@ const p = await ctx.newPage()
 await p.route('**://*.supabase.co/**', (r) => r.abort())
 await p.goto(`http://localhost:${PORT}/`, { waitUntil: 'load' })
 
-const welcome = p.getByPlaceholder('Anya')
-if (await welcome.isVisible().catch(() => false)) {
-  await welcome.fill('Anya')
-  await p.getByRole('button', { name: 'start logging' }).click()
-  await p.waitForTimeout(400)
-}
+await enterApp(p)
 // Enough rows that a vertical drag has somewhere to scroll to.
 for (const vol of [['6', '0'], ['4', '5'], ['3', '1'], ['7', '5'], ['5', '0']]) {
   await p.getByLabel('log a moment').click()

@@ -72,35 +72,25 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**Uncommitted: the third design handoff, and sleep as a first-class type (D-029).**
+**Uncommitted: day/night mascot sets and the two-page welcome (D-030), on top of
+the sleep work (D-029).**
 
-The handoff is copied in and carries its own `CHANGES.md`, which is the best
-summary of what moved. `tokens.css` is byte-identical for the third delivery
-running.
+The day set is the plush rather than the girl — a different character, not a
+recolour — chosen by the same clock that picks the palette. The welcome now opens
+on a gate asking for a secret code, then the name page.
 
-Built: sleep has its own bubble, block and quick icon; the bar is contextual
-(quick-add row plus report icon on home, a back pill on the day screen); an open
-sleep drives the mascot; the row reads "sleeping…" then "slept 1h 20m"; and
-logging anything else closes the sleep automatically.
+**Two things to know about the gate.** It is a doormat, not a lock: the repo is
+public and the bundle carries the code in plain text, so it stops a stranger who
+finds the URL and nobody else. And **its photograph is missing** — the design
+leads with `assets/liana-photo.png`, which the prototype references but the
+package never shipped; the welcome art stands in until the real file arrives.
 
-**The rule that matters is "the latest timeslot only".** Scanning all open sleeps
-made every pre-feature sleep read as still running — the bar showed a live
-"30h 58m" against the real log before that was corrected.
+Adding the gate stalled all seven browser suites at once, since each
+bootstrapped by filling the name field. `scripts/ui.mts` owns that path now.
 
-Two bugs worth remembering, both caught on the device rather than in a test:
-
-- `.tabs button` beat the new bar classes on specificity, so the end-sleep pill
-  rendered as a 56px grid cell with its icon stacked over its duration and no
-  background. The suite now asserts the *resolved* layout, not presence.
-- App's clock ticks every 30s, and a sleep logged just now failed its own
-  "started at or before now" test until the next tick. The filter uses the
-  render-time clock; only the displayed duration uses the ticking one.
-
-`scripts/verify-sleep.mts` drives the whole lifecycle in a browser, and
-`verify-s7` unit-tests the derivation. **233 checks.**
-
-Not taken from this delivery: the day/night mascot variants, the bespoke
-end-sleep SVG, and `liana-appicon.png` — see D-029.
+**243 checks.** `verify-welcome.mts` covers both gate outcomes and asserts the
+two art sets resolve to different files, pinning the clock so the theme is
+deterministic.
 
 ## Open threads
 
