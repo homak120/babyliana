@@ -31,6 +31,21 @@ body {
   #root { height: 100%; }
 }
 
+/* Every screen is the column's scrolling middle, not just the two that were
+   converted by hand. Welcome, the spike page and the touch probe are `main`
+   elements too, and inside an `overflow: hidden` shell anything taller than the
+   viewport would simply be clipped with no way to reach it. */
+#root > main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* Momentum on older iOS. Harmless where it is already the default. */
+  -webkit-overflow-scrolling: touch;
+  /* A scroll that reaches the end stays in the screen rather than rubber-banding
+     the shell behind it. */
+  overscroll-behavior-y: contain;
+}
+
 body {
   -webkit-font-smoothing: antialiased;
 }

@@ -72,32 +72,36 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**Uncommitted: the hero wrap fix, the milk block's colours, and the doc pass.**
+**Uncommitted: the end time on the home list, plus a shell hardening — and one
+thing that needs checking on the phone.**
 
-*Hero.* "14h 21m" was breaking onto two lines. Two causes, both from trusting the
-handoff's prose over its prototype: the elapsed figure is **44px, not the 64 the
-README states**, and **108px is the art, not the slot** — the prototype uses a
-100×96 slot with a 108×108 image bleeding over its edges.
+*End time.* The home list had its own `time()` formatter that only ever read
+`occurred_at`, so a period logged there showed as a single time until you opened
+the day view. It uses `timeCell` now, the same function the day table uses, and
+`hhmm` is exported so the status-row clock shares one formatter too — the local
+one had drifted. `scripts/verify-period-row.mts` logs a period and asserts both
+screens print `HH:MM–HH:MM` **and agree with each other**; the same shape of bug
+as the swipe, where the two lists quietly diverged.
 
-*Milk block.* The volume figure now takes its source's colour (`--lilacInk` for
-breast, `--amberInk` for formula, `--ink` unmarked, `--muted` blank), and the
-drag strip has the `--scrubFill` gradient bar it never had — it was taking a
-value without showing one. **Both tokens were already in `tokens.css` and simply
-unused**, which is the kind of gap that reads as complete in the markup and only
-shows up in a rendered-colour check.
+*Shell hardening.* The flex-column change made `.log` and `.day` scrollers by
+hand, which left `.welcome`, the spike page and `/touch` as plain `main`
+elements inside an `overflow: hidden` shell — anything taller than the viewport
+would have been clipped with no way to reach it. The rule is now on
+`#root > main`, with `-webkit-overflow-scrolling: touch` and
+`overscroll-behavior-y: contain`. `.welcome` lost its `min-height: 100dvh`,
+which had been forcing it taller than its own scroll box.
 
-The drag strip spans 120 mL where the prototype uses 75. Deliberate: the paper
-log runs to 120, so 75 puts the owner's larger feeds out of a drag's reach.
+**Needs a check on the real phone: does the list scroll?** The shell change moved
+the scroll container from the document to `main`. Chromium scrolls it correctly —
+`verify-swipe` asserts both screens scroll and by how much — but repeated
+attempts to confirm it in the Simulator failed, first because injected touch may
+not drive a nested scroller and then because the Simulator stopped exposing a
+window to System Events at all. **This is unconfirmed on iOS, and a list that
+cannot scroll would hide every older entry.** If it does not scroll, the shell is
+the cause and the fix is not another guess — it is to give the tab bar its own
+non-scrolling row and let the document scroll behind it.
 
-*Two new suites*, `verify-hero.mts` and `verify-milk.mts`, both in
-`npm run verify`. **194 checks.** One lesson from writing them: the milk
-assertions first hardcoded day-theme rgb values and failed against night, because
-the theme switches by clock. They resolve tokens through a probe element now, so
-they hold in either theme — worth copying for any future colour check.
-
-Uncommitted work is a normal end state, not a defect to tidy away: the owner
-reviews diffs before they enter history. See `CLAUDE.md` § Never commit without
-being asked.
+197 checks pass.
 
 ## Open threads
 

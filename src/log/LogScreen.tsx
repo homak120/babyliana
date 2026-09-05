@@ -10,7 +10,7 @@ import {
   type MascotState,
 } from '../derive'
 import { getDevices } from '../db'
-import { avatarClass, describeMoment } from '../day/cells'
+import { avatarClass, describeMoment, hhmm, timeCell } from '../day/cells'
 import { getDeviceId } from '../device-id'
 import { getMoments, removeMoment, renameThisDevice } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
@@ -56,9 +56,6 @@ function dayLabel(iso: string) {
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${pad(d.getMonth() + 1)}/${pad(d.getDate())}`
 }
-
-const time = (iso: string) =>
-  new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
 
 function NamePrompt({
   current,
@@ -150,7 +147,7 @@ export function LogScreen() {
       <div className="statusrow">
         <span>
           <Icon name={theme === 'night' ? 'bedtime' : 'wb_sunny'} size={15} />
-          {time(now.toISOString())}
+          {hhmm(now.toISOString())}
         </span>
         <span className="whos">
           {devices.filter((d) => d.name).map((d) => (
@@ -226,7 +223,11 @@ export function LogScreen() {
                 onEdit={() => setEditing(m)}
                 onDelete={() => setPendingDelete(m)}
               >
-                <time>{time(m.timeslot.occurred_at)}</time>
+                {/* timeCell, not a local formatter: it prints the period as
+                    21:37–23:37 where there is one. The home list had its own
+                    formatter that only ever read occurred_at, so an end time
+                    logged here was invisible until you opened the day view. */}
+                <time>{timeCell(m)}</time>
                 <span className="chips">
                   {feeds && (
                     <span className="chip-rose">

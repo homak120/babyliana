@@ -6,7 +6,9 @@ import type { LogEvent, Moment } from '../types'
 // that is easier to check against real entries here than by eye.
 
 const pad = (n: number) => String(n).padStart(2, '0')
-const hhmm = (iso: string) => {
+/** 24-hour HH:MM. The one time formatter in the app — the home list used to
+ *  have its own and drifted from this one. */
+export const hhmm = (iso: string) => {
   const d = new Date(iso)
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`
 }

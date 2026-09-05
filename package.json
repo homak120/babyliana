@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "verify": "npm run typecheck && tsx scripts/verify-s1.mts && tsx scripts/verify-s2.mts && tsx scripts/verify-s3.mts && tsx scripts/verify-s4.mts && tsx scripts/verify-s5.mts && tsx scripts/verify-s6.mts && tsx scripts/verify-s7.mts && tsx scripts/verify-s8.mts && tsx scripts/verify-s9.mts && npm run build && tsx scripts/verify-swipe.mts && tsx scripts/verify-period.mts && tsx scripts/verify-hero.mts && tsx scripts/verify-milk.mts",
+    "verify": "npm run typecheck && tsx scripts/verify-s1.mts && tsx scripts/verify-s2.mts && tsx scripts/verify-s3.mts && tsx scripts/verify-s4.mts && tsx scripts/verify-s5.mts && tsx scripts/verify-s6.mts && tsx scripts/verify-s7.mts && tsx scripts/verify-s8.mts && tsx scripts/verify-s9.mts && npm run build && tsx scripts/verify-swipe.mts && tsx scripts/verify-period.mts && tsx scripts/verify-hero.mts && tsx scripts/verify-milk.mts && tsx scripts/verify-period-row.mts",
     "typecheck": "tsc -b && tsc --noEmit -p tsconfig.scripts.json",
     "shoot": "tsx scripts/shoot.mts",
     "inspect": "tsx scripts/inspect.mts"

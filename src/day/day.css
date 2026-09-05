@@ -4,9 +4,7 @@
 .day {
   max-width: 26rem;
   margin: 0 auto;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
+  /* Scrolling comes from `#root > main`. */
   padding: calc(1rem + env(safe-area-inset-top)) 0 1.5rem;
 }
 
