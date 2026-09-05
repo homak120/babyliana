@@ -98,7 +98,38 @@ export async function logMoment(input: NewMoment): Promise<Moment> {
     { table: 'timeslot', rowId: timeslot.id, op: 'put' },
     ...events.map((e) => ({ table: 'event' as const, rowId: e.id, op: 'put' as const })),
   ])
+
+  // Logging anything else means she woke up. Closing the open sleep here rather
+  // than asking is the whole point: at 4am you log the feed, not the waking.
+  await closeOpenSleep(new Date(timeslot.occurred_at), timeslot.id)
   return moment
+}
+
+/**
+ * End any sleep still running at `at`, because something else just happened.
+ *
+ * Skips `exceptId` so a sleep does not close itself in the same save, and skips
+ * sleeps that started *after* the new entry — backdating an old feed should not
+ * reach forward and end tonight's sleep.
+ */
+export async function closeOpenSleep(at: Date, exceptId?: string) {
+  const before = (await db.getMoments()).filter(
+    (m) => m.timeslot.id !== exceptId && new Date(m.timeslot.occurred_at) < at,
+  )
+  if (before.length === 0) return
+
+  // Only the most recent one. Anything older already had something logged after
+  // it, so it was over long before now — reaching back to stamp an end time on
+  // it would be inventing data, not closing a sleep.
+  const latest = before.reduce((a, b) =>
+    new Date(a.timeslot.occurred_at) >= new Date(b.timeslot.occurred_at) ? a : b,
+  )
+  if (latest.timeslot.ended_at !== null) return
+  if (!latest.events.some((e) => e.type === 'sleep')) return
+
+  const timeslot: Timeslot = { ...latest.timeslot, ended_at: at.toISOString(), updated_at: now() }
+  await db.putMoment({ timeslot, events: latest.events })
+  await db.enqueue([{ table: 'timeslot', rowId: timeslot.id, op: 'put' }])
 }
 
 /**

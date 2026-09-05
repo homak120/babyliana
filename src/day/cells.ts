@@ -1,4 +1,4 @@
-import { sameDay } from '../derive'
+import { sameDay, sleepDuration } from '../derive'
 import type { LogEvent, Moment } from '../types'
 
 // How a moment renders as a paper row. Kept out of the component because the
@@ -64,11 +64,29 @@ export function diaperCell(events: LogEvent[]): string | null {
   return bits.length ? bits.join(' · ') : null
 }
 
-/** Anything that is neither a feed nor a change — sleep, weight, other. */
+/** Anything that is neither a feed, a change, nor a sleep — sleep has its own. */
 export function otherCell(events: LogEvent[]): string | null {
-  const rest = events.filter((e) => e.type !== 'feed' && e.type !== 'diaper')
+  const rest = events.filter(
+    (e) => e.type !== 'feed' && e.type !== 'diaper' && e.type !== 'sleep',
+  )
   if (rest.length === 0) return null
   return rest.map((e) => e.type.replace('_', ' ')).join(' · ')
+}
+
+/**
+ * The sleep cell: "sleeping…" while it is still running, "slept 1h 20m" once
+ * it has ended.
+ *
+ * Its own slot rather than part of `otherCell`, because the two read
+ * differently — one is a state you are in, the other is something that
+ * happened — and they take different icons.
+ */
+export function sleepCell(m: Moment): { text: string; icon: string; open: boolean } | null {
+  if (!m.events.some((e) => e.type === 'sleep')) return null
+  const { occurred_at, ended_at } = m.timeslot
+  return ended_at === null
+    ? { text: 'sleeping…', icon: 'bedtime', open: true }
+    : { text: `slept ${sleepDuration(occurred_at, ended_at)}`, icon: 'wb_twilight', open: false }
 }
 
 /**

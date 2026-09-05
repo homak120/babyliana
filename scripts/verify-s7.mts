@@ -18,6 +18,7 @@ import type { Moment } from '../src/types.ts'
 import {
   chronological, dateCell, daysWithEntries, diaperCell, initialOf, milkCell, otherCell, timeCell,
 } from '../src/day/cells.ts'
+import { ongoingSleep, sleepDuration } from '../src/derive.ts'
 
 let failures = 0
 const check = (label: string, ok: boolean, detail = '') => {
@@ -106,9 +107,34 @@ period.timeslot.ended_at = at(21, 30)
 check('a period prints both ends', timeCell(period) === '19:00–21:30')
 
 // --- the rest ---------------------------------------------------------------
-check('sleep and other land in their own cell',
-  otherCell([ev({ type: 'sleep' })]) === 'sleep' &&
+// Sleep has its own cell now — it reads as a state, not as an event that
+// happened, and takes its own icon.
+check('the other cell carries the secondary types',
   otherCell([ev({ type: 'spit_up' })]) === 'spit up')
+check('and leaves sleep alone', otherCell([ev({ type: 'sleep' })]) === null)
+
+// --- sleep ------------------------------------------------------------------
+const sleepy = (occurred: string, endedAt: string | null): Moment => {
+  const m = mom(occurred, [ev({ type: 'sleep' })])
+  m.timeslot.ended_at = endedAt
+  return m
+}
+const t20 = at(20, 0), t22 = at(22, 30), t23 = at(23, 0)
+
+check('an open sleep on the latest timeslot is running',
+  ongoingSleep([sleepy(t20, null)], new Date(t23)) !== null)
+check('a closed one is not', ongoingSleep([sleepy(t20, t22)], new Date(t23)) === null)
+
+// The rule the owner stated: the *last* timeslot. Anything logged after a sleep
+// means she woke, so an old open sleep must not read as still running — on the
+// real log that showed a bar reporting "30h 58m".
+check('a sleep with something logged after it is over',
+  ongoingSleep([sleepy(t20, null), mom(t22, [feed(60)])], new Date(t23)) === null)
+check('a sleep starting in the future is ignored',
+  ongoingSleep([sleepy(at(23, 30), null)], new Date(t23)) === null)
+
+check('a duration reads in hours and minutes', sleepDuration(t20, t22) === '2h 30m')
+check('and drops the hours under one', sleepDuration(t20, at(20, 45)) === '45m')
 check('the date strip lists each day once, newest first',
   daysWithEntries([...day, nextDay]).length === 2)
 check('an unnamed device shows no initial rather than a UUID', initialOf(null) === null)

@@ -113,9 +113,9 @@
    line from the two tab icons and floated it over the last row of the day
    table — the prototype centres all three and sizes the FAB up instead. */
 .tabs .fab {
-  width: 72px;
-  height: 72px;
-  border-radius: 36px;
+  width: 46px;
+  height: 46px;
+  border-radius: 23px;
   background: var(--accent);
   color: var(--onAccent, #fff8fa);
   box-shadow: 0 8px 20px var(--roseShadow);
@@ -136,6 +136,68 @@
 }
 
 .tabs button.on { color: var(--accent); background: var(--roseFill); }
+
+/* All scoped under .tabs: `.tabs button` above sets width, height, display and
+   background, and a bare class loses to it on specificity — which is why the
+   end-sleep pill first rendered as a 56px grid cell with its icon stacked over
+   its duration and no background at all. */
+
+/* The quick-add row. Shortcuts into the same sheet with one block already
+   added, not screens of their own. */
+.tabs .quick {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+}
+.tabs .quick.feed { background: var(--roseFill); color: var(--roseInk); }
+.tabs .quick.diaper { background: var(--mintFill); color: var(--mintInk); }
+.tabs .quick.sleep { background: var(--periFill); color: var(--periInk); }
+
+/* Replaces the sleep icon while one is running, carrying the live duration.
+   Offering "log a sleep" mid-sleep would be the wrong verb. */
+.tabs .endsleep {
+  width: auto;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 0.3125rem;
+  padding: 0 0.75rem;
+  border-radius: 20px;
+  background: var(--periFill);
+  color: var(--periInk);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The day screen is a read-back and carries no add actions at all. */
+.tabs .backpill {
+  width: auto;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0 1rem 0 0.75rem;
+  border-radius: 20px;
+  background: var(--chip);
+  color: var(--ink);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.tabspacer { flex: 1; }
+
+/* Sleep in the day table. */
+.tsleep {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1875rem;
+  color: var(--periInk);
+  font-style: normal;
+}
+
+
 
 /* Row actions (swipe to reveal edit and delete) live in src/swipe/swipe.css,
    shared with the home list. */

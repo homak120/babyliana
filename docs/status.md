@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-04
+Last updated: 2026-09-05
 
 ---
 
@@ -72,29 +72,35 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**Uncommitted: the tab bar no longer covers the save button (D-028), plus the
-end-time fix and shell hardening from the same batch.**
+**Uncommitted: the third design handoff, and sleep as a first-class type (D-029).**
 
-The bar became a flex row at the bottom of the shell rather than a fixed overlay,
-and a sheet scrolled to its end put the save button at 756–812 inside the bar's
-band of 740–844 — 56px of overlap on a 56px button, so an edit could not be saved
-at all. It is hidden behind every full-screen overlay now: the add/edit sheet,
-the period picker, the confirm sheet. `src/overlay.ts` is a counted store, so a
-confirm sheet opened over a picker cannot leave the bar hidden when one closes.
+The handoff is copied in and carries its own `CHANGES.md`, which is the best
+summary of what moved. `tokens.css` is byte-identical for the third delivery
+running.
 
-Also in this batch: the home list shows an end time (it had its own formatter
-reading only `occurred_at`), and `#root > main` is the scroller so `.welcome`,
-the spike page and `/touch` are not clipped by the shell.
+Built: sleep has its own bubble, block and quick icon; the bar is contextual
+(quick-add row plus report icon on home, a back pill on the day screen); an open
+sleep drives the mascot; the row reads "sleeping…" then "slept 1h 20m"; and
+logging anything else closes the sleep automatically.
 
-`scripts/verify-overlay.mts` asserts the bar disappears for all three overlays,
-comes back afterwards, and — the check that matters — that **save is fully on
-screen and the topmost element at its own centre**. 206 checks.
+**The rule that matters is "the latest timeslot only".** Scanning all open sleeps
+made every pre-feature sleep read as still running — the bar showed a live
+"30h 58m" against the real log before that was corrected.
 
-**Still unconfirmed on the phone: does the list scroll?** The shell moved the
-scroll container from the document to `main`. Chromium scrolls it and
-`verify-swipe` asserts both screens do, but the Simulator would not scroll it
-under injected touch and then stopped exposing a window at all, so the two causes
-were never separated. A list that cannot scroll hides every older entry.
+Two bugs worth remembering, both caught on the device rather than in a test:
+
+- `.tabs button` beat the new bar classes on specificity, so the end-sleep pill
+  rendered as a 56px grid cell with its icon stacked over its duration and no
+  background. The suite now asserts the *resolved* layout, not presence.
+- App's clock ticks every 30s, and a sleep logged just now failed its own
+  "started at or before now" test until the next tick. The filter uses the
+  render-time clock; only the displayed duration uses the ticking one.
+
+`scripts/verify-sleep.mts` drives the whole lifecycle in a browser, and
+`verify-s7` unit-tests the derivation. **233 checks.**
+
+Not taken from this delivery: the day/night mascot variants, the bespoke
+end-sleep SVG, and `liana-appicon.png` — see D-029.
 
 ## Open threads
 
@@ -106,6 +112,22 @@ Noticed, not blocking, no owner yet.
   recorded in the baseline as fact. Needs human eyes on the original page — the
   coverage rule is *every mark has a home*, so if an underline means something,
   the model is missing a dimension.
+
+  **Sharpened 2026-09-05 by re-reading the photographs at full resolution.** The
+  9/1 `00:22` cell reads as `80` to me; if it is instead a ditto it inherits
+  `30(B)+30(F)` from the row above and becomes two feed rows, not one — a
+  materially different entry either way. Two more: on 8/30 the two afternoon
+  hours are overwritten and unreadable (`1?:?`, twice), so two moments cannot be
+  placed at all; and 8/31 `12:40` is written above `04:10`, which is either the
+  out-of-order insertion the baseline already describes or a slipped leading
+  digit. All four are left as holes in the backfill script rather than guessed.
+
+- **The paper log runs three days past the baseline.** `paper-log-baseline.md`
+  covers 8/26–9/1; the photographs also carry 9/2, 9/3 and 9/4. Those days
+  introduce at least one thing the baseline never saw — `Nasal` written in the
+  Pee/Poop column on 9/3, which is neither a feed nor a diaper and lands on
+  `other`. Worth a baseline pass, since the baseline is the authority and is now
+  narrower than its own source.
 - **No Spec Kit scaffold.** `.specify/memory/` follows the convention but there
   is no `constitution.md`, no scripts, no templates. The non-negotiables in
   `CLAUDE.md` are effectively the constitution. If Phase 5 intends to run real
@@ -115,6 +137,29 @@ Noticed, not blocking, no owner yet.
 
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
+
+### 2026-09-05 — the paper log transcribed, and a backfill script that is not the gate
+
+Both notebook photographs read at full resolution and transcribed: 8/26–9/4, 75
+moments, 71 feeds, 3523 mL, 39 pee, 23 poop, one `other`. Three of those days
+postdate the baseline. Output is `supabase/imports/2026-09-05_paper-log-backfill.sql`
+— staging tables shaped to be diffed against the photographs line by line, then
+mechanical inserts.
+
+**The script is deliberately not a substitute for the coverage run**, and says so
+in its own header. It proves the schema can hold the data. The gate asks whether
+the *app* can capture it at 4am with thumbs, which no script can answer.
+
+Every awkward case in `coverage-requirement.md` appears in the real data and
+survived the round trip: split feeds with and without sources, a `5(B)`, volumes
+of 31/41/43/46/57, an unknown volume, a pee-only and a poop-only row, `1+2` on
+one change, `2×2`, and `Nasal`. Strikethroughs are dropped entirely under D-003
+rather than imported as anything.
+
+Four readings are genuinely uncertain and were left as holes, not guesses — see
+*Open threads*. The two 8/30 rows sit commented out at the end of the script with
+both candidate times, because the cleanup rule that was applied (unclear minutes
+round to the hour) cannot help when the *hour* is the unreadable part.
 
 ### 2026-09-04 — second handoff, mascot artwork, and four layout fixes
 
@@ -174,19 +219,3 @@ touch gesture, because arbitration is exactly what synthetic events skip. Use
 `scripts/ios/` instead.
 
 The first (d9c3bad) also went in without consent.
-
-### 2026-09-03 — Phase 2 landed, Phase 4 re-scoped
-
-Claude Design's handoff arrived and is final (D-021), closing Q-001, Q-002,
-Q-007 and Q-009. Its unknown-minute marker was struck as a D-018 conflict, and
-`.specify/memory/design/phase-2-reconciliation.md` lists where its data shapes
-diverge from the model — remapping work for Phase 6, not design problems.
-
-Column types finalised: three tables with full DDL in `event-model.md`.
-
-Phase 4 was then re-scoped on the owner's point that the plan was written with
-less information than we now have, and following it unexamined wastes time.
-Pairing (D-022), duplicate detection (D-023) and export (D-024) are out of MVP,
-each with a named trigger. The offline strategy turned out not to be blocked on
-Q-004 after all. Phase 5 shrank to slicing, since the spec artifacts already
-exist.

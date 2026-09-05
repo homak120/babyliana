@@ -29,10 +29,14 @@ const other = (kind: string | null): Block =>
 await createThisDevice('Test')
 
 // --- the other block --------------------------------------------------------
+// Sleep left this list when it earned its own block and its own bubble; the
+// rest of the schema's secondary types still live behind `other`.
 check('every secondary type in the schema is reachable',
-  OTHER_TYPES.map((t) => t.kind).join() === 'sleep,weight,temperature,supplement,spit_up,other')
+  OTHER_TYPES.map((t) => t.kind).join() === 'weight,temperature,supplement,spit_up,other')
+check('sleep is no longer buried in the other list',
+  !OTHER_TYPES.some((t) => t.kind === 'sleep'))
 check('nothing picked cannot be saved', !canSave([other(null)]))
-check('picking one can', canSave([other('sleep')]))
+check('picking one can', canSave([other('weight')]))
 check('it becomes an entry of that type', one(other('weight')).type === 'weight')
 
 // --- the note ---------------------------------------------------------------

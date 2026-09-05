@@ -63,7 +63,7 @@ export const diaperIsEmpty = (d: DiaperDraft) => !d.pee && !d.poop
  * columns stay unused until a type is promoted.
  */
 export const OTHER_TYPES: { kind: EventType; label: string }[] = [
-  { kind: 'sleep', label: 'sleep' },
+  // Sleep is no longer here: it earned its own block and its own bubble.
   { kind: 'weight', label: 'weight' },
   { kind: 'temperature', label: 'temperature' },
   { kind: 'supplement', label: 'supplement' },
@@ -72,6 +72,18 @@ export const OTHER_TYPES: { kind: EventType; label: string }[] = [
 ]
 
 export type OtherDraft = { kind: EventType | null }
+
+/**
+ * Sleep carries nothing of its own.
+ *
+ * Its end time is the **timeslot's** `ended_at` (D-020), shared by everything in
+ * the moment, so there is no per-event field to hold. That is also what makes an
+ * open-ended sleep expressible at all: no end time means still asleep, which is
+ * the same blank-means-unknown rule the milk volume already uses.
+ */
+export type SleepDraft = Record<string, never>
+
+export const newSleep = (): SleepDraft => ({})
 
 export const newOther = (): OtherDraft => ({ kind: null })
 
@@ -93,6 +105,7 @@ export const otherIsEmpty = (d: OtherDraft) => d.kind === null
 export type Block =
   | { key: string; ids?: string[]; type: 'milk'; draft: MilkDraft }
   | { key: string; ids?: string[]; type: 'diaper'; draft: DiaperDraft }
+  | { key: string; ids?: string[]; type: 'sleep'; draft: SleepDraft }
   | { key: string; ids?: string[]; type: 'other'; draft: OtherDraft }
 
 export const blockIsEmpty = (b: Block) =>
@@ -100,7 +113,10 @@ export const blockIsEmpty = (b: Block) =>
     ? milkIsEmpty(b.draft)
     : b.type === 'diaper'
       ? diaperIsEmpty(b.draft)
-      : otherIsEmpty(b.draft)
+      // Sleep says everything just by being there.
+      : b.type === 'sleep'
+        ? false
+        : otherIsEmpty(b.draft)
 
 /** Save needs at least one block, and every block has to say something. */
 export const canSave = (blocks: Block[]) =>
@@ -125,6 +141,7 @@ export function toEntries(b: Block): DraftEntry[] {
       poop_consistency: b.draft.consistency,
     }]
   }
+  if (b.type === 'sleep') return [{ type: 'sleep' }]
   // `other` carries nothing but its type — the moment's note holds the detail.
   return [{ type: b.draft.kind! }]
 }
@@ -163,6 +180,8 @@ export function blocksFromMoment(m: Moment): Block[] {
           colour: e.poop_colour, consistency: e.poop_consistency,
         },
       })
+    } else if (e.type === 'sleep') {
+      blocks.push({ key, ids: [e.id], type: 'sleep', draft: {} })
     } else {
       blocks.push({ key, ids: [e.id], type: 'other', draft: { kind: e.type } })
     }

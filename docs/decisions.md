@@ -660,3 +660,45 @@ question of which paints on top, which is not worth relying on across browsers.
 mount and unmarks on unmount, and `App` reads it through `useSyncExternalStore`.
 Counted rather than boolean so a confirm sheet opened over a picker cannot leave
 the bar hidden when only one of them closes.
+
+---
+
+## D-029 — Sleep is a first-class type, and "still asleep" is a missing end time
+
+The third design delivery promotes sleep out of the `other` list. It gets its own
+bubble beside milk and diaper, its own block, and a quick icon in the bar.
+
+**An open sleep is a timeslot with a `sleep` event and no `ended_at`.** The
+design stores an end time on the sleep entry itself; our model has always put it
+on the **timeslot** (D-020), shared by everything in the moment, so there is
+nothing to add. That is also what makes an open-ended sleep expressible without a
+flag: no end time means still asleep, the same blank-means-unknown rule the milk
+volume already uses.
+
+**Only the latest timeslot counts.** The rule as the owner stated it, and it
+matters more than it sounds. Scanning every open sleep instead — which the design
+implies — made every sleep recorded before this feature existed read as still
+running, and the bar reported a live "30h 58m" against his real log. Anything
+logged after a sleep means she woke; the sleep is over whether or not anyone said
+so.
+
+**Logging anything else closes it**, stamping the new entry's time as the end.
+At 4am you log the feed, not the waking. This too is scoped to the most recent
+timeslot: reaching back to stamp an end on an older sleep would be inventing
+data.
+
+**The derived text is not stored.** The design writes `sleeping…` and
+`slept 1h 20m` into the entry's note. We compute both from `occurred_at` and
+`ended_at` at render time, so the note stays what the user typed and editing a
+time cannot leave a stale sentence behind.
+
+**The bar is contextual.** Home carries the quick-add row — feed, diaper, sleep,
+then `+` — with the report icon on the right; while a sleep is running the sleep
+icon becomes an "end sleep" pill showing the live duration, because offering
+"log a sleep" mid-sleep is the wrong verb. The day screen is a read-back and
+carries no add actions at all, only a way back.
+
+**Not taken from this delivery:** the day/night mascot variants (the `-2` art set
+for the day theme), the bespoke crescent-and-arrow SVG for end-sleep — it uses
+Material's `wb_twilight`, matching every other icon in the app — and
+`liana-appicon.png`. All are available in the handoff if wanted.

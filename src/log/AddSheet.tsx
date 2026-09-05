@@ -9,6 +9,7 @@ import {
   newDiaper,
   newMilk,
   newOther,
+  newSleep,
   toEntries,
   type Block,
   type DiaperDraft,
@@ -19,6 +20,7 @@ import { DiaperBlock } from './DiaperBlock'
 import { Icon } from './Icon'
 import { MilkBlock } from './MilkBlock'
 import { OtherBlock } from './OtherBlock'
+import { SleepBlock } from './SleepBlock'
 import { TimeCard } from './TimeCard'
 
 // The sheet is one moment (D-019, D-021). It opens with NO type selected and
@@ -41,25 +43,44 @@ const AVAILABLE: { type: BlockType; label: string; icon: string; repeats: boolea
   { type: 'milk', label: 'milk', icon: 'local_drink', repeats: true },
   // One change is one change; pee and poop are flags on it, not two entries.
   { type: 'diaper', label: 'diaper', icon: 'water_drop', repeats: false },
+  // Sleep sits with the other two rather than behind `other`, where it used to
+  // be — it is one of the three things that actually happen all night.
+  { type: 'sleep', label: 'sleep', icon: 'bedtime', repeats: false },
   // A moment might carry a sleep and a weight, so this repeats too.
   { type: 'other', label: 'other', icon: 'more_horiz', repeats: true },
 ]
 
 const emptyDraft = (type: BlockType) =>
-  type === 'milk' ? newMilk() : type === 'diaper' ? newDiaper() : newOther()
+  type === 'milk' ? newMilk()
+    : type === 'diaper' ? newDiaper()
+      : type === 'sleep' ? newSleep()
+        : newOther()
 
 export function AddSheet({
   onClose,
   onSaved,
   editing,
+  opensWith,
 }: {
   onClose: () => void
   onSaved: () => void
   /** Set to reopen an existing moment pre-filled, rather than start a new one. */
   editing?: Moment
+  /**
+   * Start with this block already added — what the bar's quick icons do.
+   *
+   * They are shortcuts into this same sheet, not screens of their own, so the
+   * other types are still one tap away and a feed and a diaper at the same
+   * minute stay one moment.
+   */
+  opensWith?: BlockType
 }) {
   const [blocks, setBlocks] = useState<Block[]>(() =>
-    editing ? blocksFromMoment(editing) : [],
+    editing
+      ? blocksFromMoment(editing)
+      : opensWith
+        ? [{ key: crypto.randomUUID(), type: opensWith, draft: emptyDraft(opensWith) } as Block]
+        : [],
   )
   const [saving, setSaving] = useState(false)
   // Defaults to now — the overwhelmingly common case, at zero taps.
@@ -157,6 +178,8 @@ export function AddSheet({
             onChange={(d) => update(i, d)}
             onRemove={() => remove(i)}
           />
+        ) : b.type === 'sleep' ? (
+          <SleepBlock key={b.key} onRemove={() => remove(i)} />
         ) : (
           <OtherBlock
             key={b.key}

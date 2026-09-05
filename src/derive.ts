@@ -95,6 +95,37 @@ export function totalsOf(moments: Moment[]): Totals {
   return t
 }
 
+/**
+ * The sleep that is still running, if there is one.
+ *
+ * A sleep is open when its moment carries a `sleep` event and the **timeslot**
+ * has no `ended_at` — the end time is the timeslot's, shared by everything in
+ * the moment (D-020), so there is no separate field to consult. A start in the
+ * future is ignored: backdating is a core flow, and someone typing tomorrow's
+ * hour by mistake should not put the app to sleep.
+ */
+export function ongoingSleep(moments: Moment[], now = new Date()): Moment | null {
+  // The **latest** timeslot only, which is the rule as the owner stated it. A
+  // sleep with anything logged after it is over by definition — something else
+  // happened, so she woke. Scanning all open sleeps instead made every sleep
+  // recorded before this feature existed read as still running, which on the
+  // real log meant a bar reporting "30h 58m".
+  const past = moments.filter((m) => new Date(m.timeslot.occurred_at) <= now)
+  if (past.length === 0) return null
+  const latest = past.reduce((a, b) =>
+    new Date(a.timeslot.occurred_at) >= new Date(b.timeslot.occurred_at) ? a : b,
+  )
+  const open = latest.timeslot.ended_at === null && latest.events.some((e) => e.type === 'sleep')
+  return open ? latest : null
+}
+
+/** "1h 20m" / "45m" — how long a sleep ran, or has been running. */
+export function sleepDuration(from: string, to: string | Date): string {
+  const mins = Math.max(0, Math.round((new Date(to).getTime() - new Date(from).getTime()) / 60000))
+  const h = Math.floor(mins / 60)
+  return h === 0 ? `${mins}m` : `${h}h ${String(mins % 60).padStart(2, '0')}m`
+}
+
 export type Theme = 'day' | 'night'
 
 /** By the clock, not by a setting (D-021). Night is roughly 20:00–07:00. */
@@ -114,8 +145,13 @@ export function mascotState(
   minutesSinceFeed: number | null,
   theme: Theme,
   justLogged = false,
+  asleep = false,
 ): MascotState {
   if (justLogged) return 'logged'
+  // A logged, still-open sleep is a fact and outranks the guess below it. The
+  // night-plus-a-long-gap heuristic stays as the fallback for when nobody has
+  // logged a sleep at all, which is most of the time.
+  if (asleep) return 'sleeping'
   const gap = minutesSinceFeed ?? 0
   if (theme === 'night' && gap > 60) return 'sleeping'
   if (gap >= 240) return 'hungry'

@@ -1,22 +1,5 @@
 # Handoff: BabyLiana — baby log (iOS/Android phone app)
 
-> **Delivered 2026-09-04. Kept verbatim.** Two things in it are overridden by
-> decisions this repo has already taken, and a cold session that builds straight
-> from this document will get them wrong:
->
-> 1. **The unknown-minute `?` is struck.** D-018 rules out any time-precision
->    marker. This is the second delivery to carry it; do not build `minUnknown`,
->    and do not re-raise it.
-> 2. ~~**Delete's confirm sheet conflicts with D-025**~~, which chose immediate
->    delete with an undo toast specifically to keep a modal away from someone
->    holding a baby at 4am. **Resolved 2026-09-04 in the design's favour** —
->    the confirm sheet ships. D-025 records why.
->
-> Everything else here is the specification. Read
-> `.specify/memory/design/phase-2-reconciliation.md` before building from it:
-> it lists the data-shape remapping and the fidelity gaps against what is built.
-
-
 ## Overview
 
 BabyLiana replaces a paper feeding log kept by two parents. It records what a
@@ -33,6 +16,10 @@ those.
 The tone is soft and lowercase; the mascot (Liana) is the app's own character
 and reports state descriptively — *settled · awake · hungry · sleeping* — plus a
 one-off *logged* flash after a save. She never nags.
+
+**See `CHANGES.md`** for the delta since the previous handoff — the v2 mascot
+set, the quick-add row, the contextual bottom bar and the new open-ended sleep
+logic. That file is the implementation list; this README is the full spec.
 
 ## About the design files
 
@@ -77,9 +64,9 @@ Top to bottom:
 | Mascot | `assets/liana-home.png` at 88 × 88px, `lianaBreathe 7s ease-in-out infinite`. Margin-bottom 22px. |
 | Kicker | "welcome" — 13px / 700, `letter-spacing: 0.14em`, uppercase, `--muted` |
 | Headline | "what should we call you?" — 30px / 900, `line-height: 1.2`, breaks after "we", margins `6px 0 8px` |
-| Sub | "your name marks every entry you log, so liana's other grown-ups know who did what." — 14px, `--muted`, margin-bottom 26px |
+| Sub | "your name marks every entry you log, so Liana's other grown-ups know who did what." — 14px, `--muted`, margin-bottom 26px |
 | Field label | "your name" — 11px, `--periInk`, margin-bottom 8px |
-| Name input | height 60px, `2px solid --chip` border, radius 22px, `--card` fill, 22px / 700 text, padding `0 18px`, placeholder "mona" |
+| Name input | height 60px, `2px solid --chip` border, radius 22px, `--card` fill, 22px / 700 text, padding `0 18px`, placeholder "Anya" |
 | Device id block | radius 18px, `--chip` fill, padding `12px 14px`, margin-top 14px. Row: `smartphone` icon 19px `--muted`; then label "DEVICE ID" (10px, `letter-spacing: 0.1em`, uppercase, `--muted`) over the id itself (15px / 700, tabular-nums, `letter-spacing: 0.06em`, `--ink`). Sample value `LNA-7QD4-8213`. |
 | Helper | "share this id with the other grown-ups so all your phones log to the same baby." — 12px, `--muted`, margin-top 10px |
 | Primary | `.btn-primary`, `arrow_forward` icon + "start logging". Disabled (opacity 0.45) until the trimmed name is non-empty. |
@@ -115,6 +102,26 @@ as tags, then "most recent first" list, then the tab bar.
   with a 1px rule at 28% opacity filling the remaining width). The separator is
   deliberately styled unlike the time values so the eye can find day
   boundaries.
+
+### 2b. Bottom action bar
+
+The bar is contextual, not a persistent tab bar.
+
+**On log (home)**, left to right: three 40px quick-log circles — **feed**
+(`local_drink`, `--roseFill`/`--roseInk`), **diaper** (`water_drop`,
+`--mintFill`/`--mintInk`), **sleep** (`bedtime`, `--periFill`/`--periInk`) —
+then the 46px accent `+`, then, pushed right, a 48px `assessment` (report)
+icon that opens the day screen. Each quick icon opens the same add-sheet with
+that one type block pre-added; the user can add the others to the same entry.
+
+**While a sleep is open**, the sleep circle is replaced by an **end sleep**
+pill (40px tall, `--periFill`/`--periInk`) showing the live running duration
+("1h 12m"). Its icon is a custom 24px SVG: a crescent moon with an arrow
+rising out of the notch, 2px stroke in `currentColor`, round caps — read as
+"waking". Tapping it ends the sleep at now.
+
+**On day / report**, no add actions appear at all — only a single `← back`
+pill (56px tall, `--chip`) returning to log.
 
 ### 3. Day (read-back)
 
@@ -199,6 +206,13 @@ title row (`21px / 900` + icon tinted per type) with a 36px close button.
   for the low-frequency events, with the note field carrying the detail. Copy:
   "kept off the main screen on purpose. pick one, write the rest in the note."
 
+**Sleep block** (`--periInk` header, `bedtime`) — a fourth type bubble
+alongside milk, diaper and other. It carries no fields: the sleep starts at
+the time in the time card and stays **open** until it is ended. Copy: "starts
+at the time above and stays open until you tap end sleep — or until the next
+entry, which closes it automatically." Sleep was removed from the *other*
+list; it is no longer a free-text other event.
+
 **Note card** — always last: an `edit_note` label in `--periInk` and a 46px
 `--periFill` input, placeholder "spat some up / half asleep / …".
 
@@ -231,7 +245,9 @@ Opens from the `more` pill. Title "pick a period" with `calendar_month` in
 
 | Trigger | Result |
 | --- | --- |
-| `+` (72px FAB) | opens the add-sheet with no type selected, time = now |
+| `+` (46px) | opens the add-sheet with no type selected, time = now |
+| quick icon (feed / diaper / sleep) | opens the **same** add-sheet with that type block already added |
+| **end sleep** pill | closes the open sleep at now; note becomes `slept <duration>` |
 | tap a type bubble | appends that block; bubble disappears from the dashed container |
 | `×` on a block | removes it; save disables again if it was the last one |
 | hold a stepper | repeat every 110ms; ×5 acceleration after 14 ticks |
@@ -244,15 +260,35 @@ Opens from the `more` pill. Title "pick a period" with `calendar_month` in
 | tap `delete` | confirm sheet ("delete this entry?" / keep it / delete); confirming removes every record in the row |
 | tap a date pill | filters the day view to that day |
 | `more` | opens the period picker |
-| tab bar `pets` / `calendar_month` | switches log / day |
+| report icon (`assessment`) | opens the day / report screen |
+| `← back` | returns from day / report to log |
+
+**Sleep is a state, not a point event.**
+
+- Saving a sleep writes a record with `sleep: true` and `endH = endM = null`;
+  its note is `sleeping…` (plus `' — <user note>'` if one was typed).
+- The baby is *sleeping* for as long as such a record exists with a start at
+  or before now. That drives the mascot state and swaps the bar control.
+- Ending it (via the pill) sets the end time to now and rewrites the note to
+  `slept <duration>`.
+- **Any new entry auto-closes an open sleep** that started before it: the
+  sleep's end time becomes the new entry's time and its note becomes
+  `slept <duration>`. This is what makes 3am logging work — you never have to
+  remember to close the night.
+- In the log views a sleep row shows a periwinkle chip: `sleeping…`
+  (`bedtime`) while open, `slept 1h 20m` (`wb_twilight`) once closed. In the
+  timeline read-back the same text is a line under the milk/diaper lines and
+  the row dot is the moon on `--periFill`. Deleting the row deletes the sleep
+  record with it.
 
 **Same-minute multi-type saves are separate records.** A pee and a poop logged
 together become two records sharing a timestamp, which is what makes them show
 as two chips side by side in the read-back and lets either be corrected alone.
 
-**Mascot state** is derived, never set: gap since last feed < 120min →
-*settled*; 120–240min → *awake*; ≥ 240min → *hungry*; night theme with gap >
-60min → *sleeping*; 1.5s after a save → *logged*. She animates
+**Mascot state** is derived, never set: **an open sleep entry (no end time,
+started at or before now) → *sleeping***; otherwise gap since last feed <
+120min → *settled*; 120–240min → *awake*; ≥ 240min → *hungry*; night theme
+with gap > 60min → *sleeping*; 1.5s after a save → *logged*. She animates
 `lianaBreathe` continuously (5s when sleeping, 7s otherwise), blinks on
 `lianaBlink 5.5s`, and shows drifting `z` marks while sleeping.
 
@@ -296,7 +332,7 @@ type Draft = {
   h: number; m: number;            // start time
   minUnknown: boolean;             // minute not known
   endH: number | null; endM: number | null;
-  added: Array<'feed' | 'diaper' | 'other'>;
+  added: Array<'feed' | 'diaper' | 'sleep' | 'other'>;
   parts: Array<{ vol: number | null; src: 'B' | 'F' | null }>;  // milk, 1–2 parts
   active: number;                  // which part the keypad edits
   pee: boolean; poop: boolean;
@@ -313,6 +349,7 @@ Persisted record shape:
 type Entry = {
   id: string;
   kind: 'feed' | 'diaper' | 'other';
+  sleep?: boolean;                // true = a sleep; endH == null means ongoing
   date: ISODate;                  // local day
   h: number; m: number; minUnknown: boolean;
   endH: number | null; endM: number | null;
@@ -353,10 +390,14 @@ All in `tokens.css`, both themes. Summary of what matters:
   mascot artwork centred on the cream ground (`#fdf7f2`) with 7% padding.
   Generate the remaining platform sizes from the 1024.
 - `assets/liana-settled.png`, `-awake`, `-hungry`, `-sleeping` — the four
-  mascot states, transparent PNG, rendered 108px wide in the home header and
-  swapped by derived state (the *logged* flash reuses `-awake`). Supplied by
-  the client; backgrounds knocked out and the baked-in state word trimmed off
-  so it does not duplicate the state chip.
+  mascot states for the **night** theme, transparent PNG, rendered 108px wide
+  in the home header and swapped by derived state (the *logged* flash reuses
+  `-awake`). Supplied by the client; backgrounds knocked out and the baked-in
+  state word trimmed off so it does not duplicate the state chip.
+- `assets/liana-settled-2.png`, `-awake-2`, `-hungry-2`, `-sleeping-2` — the
+  **v2 set, used on the day theme**. Same four states, same sizing; the app
+  picks `-2` in daylight and the plain files overnight.
+- `assets/liana-appicon.png` — the source artwork the app icons are cut from.
 - `assets/liana-home.png` — the welcome / first-run mascot.
 - **Icons**: Material Symbols Rounded (opsz 24, wght 500, FILL 1). Names used:
   `pets`, `calendar_month`, `add`, `remove`, `close`, `check_circle`,
@@ -377,6 +418,8 @@ In `prototype/` (open `BabyLiana.dc.html` in a browser — it is the design doc
 with every screen and variant side by side; `Phone.dc.html` is the interactive
 phone itself and can be opened alone):
 
+- `CHANGES.md` — the change list since the previous handoff, written to be
+  implemented directly.
 - `BabyLiana.dc.html` — the annotated design doc: welcome (turn 4), the live
   prototype, night palette across the three home leads, and the three day
   read-backs.

@@ -178,6 +178,19 @@ body {
 .row .avatar { margin-left: auto; }
 .chips { display: flex; gap: 0.375rem; flex-wrap: wrap; }
 
+/* Sleep on the home list: peri, running or finished. */
+.chip-peri {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  background: var(--periFill);
+  color: var(--periInk);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
 
 /* --- mascot ---------------------------------------------------------------- */
 

@@ -133,6 +133,11 @@
                 <span class="msr" style="font-size:14px">cookie</span>{{ r.poopChip }}
               </span>
             </sc-if>
+            <sc-if value="{{ r.hasSleep }}" hint-placeholder-val="{{ false }}">
+              <span style="display:inline-flex;align-items:center;gap:4px;background:var(--periFill,#e4e9fb);color:var(--periInk,#5d72b8);border-radius:999px;padding:3px 9px;font-weight:700;font-size:13px">
+                <span class="msr" style="font-size:14px">{{ r.sleepIcon }}</span>{{ r.sleepChip }}
+              </span>
+            </sc-if>
             <span style="margin-left:auto;width:18px;height:18px;border-radius:50%;background:{{ r.byColor }};color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">{{ r.by }}</span>
           </div>
           </div>
@@ -254,6 +259,9 @@
                     <div style="padding:11px 0 16px 12px">
                       <div style="font-size:17px;font-variant-numeric:tabular-nums;color:{{ r.milkColor }};font-weight:{{ r.milkWeight }}">{{ r.milkLine }}</div>
                       <div style="font-size:13px;color:var(--muted,#a89890);margin-top:2px">{{ r.diapWords }}</div>
+                      <sc-if value="{{ r.hasSleep }}" hint-placeholder-val="{{ false }}">
+                        <div style="font-size:13px;color:var(--periInk,#5d72b8);margin-top:2px;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:15px">{{ r.sleepIcon }}</span>{{ r.sleepChip }}</div>
+                      </sc-if>
                       <sc-if value="{{ r.hasNote }}" hint-placeholder-val="{{ false }}">
                         <div style="font-size:12px;color:var(--periInk,#5d72b8);margin-top:4px;display:flex;align-items:center;gap:5px"><span class="msr" style="font-size:14px">edit_note</span>{{ r.note }}</div>
                       </sc-if>
@@ -268,21 +276,43 @@
     </div>
   </sc-if>
 
-  <div style="position:relative;display:flex;align-items:center;gap:10px;padding:10px 18px 22px;flex:none">
-    <button type="button" onClick="{{ goHome }}" style="width:56px;height:56px;flex:none;border:0;border-radius:28px;background:var(--tabLog,transparent);color:var(--tabLogInk,#a89890);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:24px">pets</span></button>
-    <div style="flex:1"></div>
-    <button type="button" onClick="{{ openMoment }}" aria-label="add" style="flex:none;width:72px;height:72px;margin:0 auto;border:0;border-radius:36px;background:var(--accent,#ef7f96);color:var(--onAccent,#fff8fa);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px var(--roseShadow,rgba(239,127,150,0.35))">
-      <span class="msr" style="font-size:40px">add</span>
-    </button>
-    <div style="flex:1"></div>
-    <button type="button" onClick="{{ goDay }}" style="width:56px;height:56px;flex:none;border:0;border-radius:28px;background:var(--tabDay,transparent);color:var(--tabDayInk,#a89890);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:24px">calendar_month</span></button>
+  <div style="position:relative;display:flex;align-items:center;gap:6px;padding:10px 18px 22px;flex:none">
+    <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;align-items:center;gap:8px;flex:1">
+        <div style="display:flex;align-items:center;gap:4px">
+          <button type="button" onClick="{{ openFeed }}" aria-label="log feed" style="width:40px;height:40px;flex:none;border:0;border-radius:20px;background:var(--roseFill,#ffe3ec);color:var(--roseInk,#c25a75);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:22px">local_drink</span></button>
+          <button type="button" onClick="{{ openDiaper }}" aria-label="log diaper" style="width:40px;height:40px;flex:none;border:0;border-radius:20px;background:var(--mintFill,#dff3ea);color:var(--mintInk,#3f8f74);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:22px">water_drop</span></button>
+          <sc-if value="{{ notSleeping }}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{ openSleep }}" aria-label="log sleep" style="width:40px;height:40px;flex:none;border:0;border-radius:20px;background:var(--lavFill,#ece7fb);color:var(--lavInk,#7a6bb5);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:22px">bedtime</span></button>
+          </sc-if>
+          <sc-if value="{{ isSleeping }}" hint-placeholder-val="{{ false }}">
+            <button type="button" onClick="{{ endSleep }}" aria-label="end sleep" style="height:40px;flex:none;padding:0 12px 0 9px;border:0;border-radius:20px;background:var(--periFill,#e4e9fb);color:var(--periInk,#5d72b8);cursor:pointer;display:flex;align-items:center;gap:6px;font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:13px">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M11.6 5.4A6.4 6.4 0 1 0 19 12.8 8.4 8.4 0 0 1 11.6 5.4Z"></path>
+                <path d="M16.6 8.6 21.2 4"></path>
+                <path d="M17.6 3.6h3.8v3.8"></path>
+              </svg>
+              <span>{{ sleepRun }}</span>
+            </button>
+          </sc-if>
+        </div>
+        <button type="button" onClick="{{ openMoment }}" aria-label="add" style="flex:none;width:46px;height:46px;border:0;border-radius:23px;background:var(--accent,#ef7f96);color:var(--onAccent,#fff8fa);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px var(--roseShadow,rgba(239,127,150,0.35))">
+          <span class="msr" style="font-size:26px">add</span>
+        </button>
+      </div>
+      <button type="button" onClick="{{ goDay }}" aria-label="report" style="width:48px;height:48px;flex:none;border:0;border-radius:24px;background:var(--tabDay,transparent);color:var(--tabDayInk,#a89890);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:24px">assessment</span></button>
+    </sc-if>
+    <sc-if value="{{ isDay }}" hint-placeholder-val="{{ false }}">
+      <button type="button" onClick="{{ goHome }}" style="height:56px;padding:0 20px 0 14px;border:0;border-radius:28px;background:var(--chip,#f6ece6);color:var(--ink,#4b403a);font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:17px;cursor:pointer;display:flex;align-items:center;gap:8px">
+        <span class="msr" style="font-size:26px">arrow_back</span>back
+      </button>
+    </sc-if>
   </div>
-
   <sc-if value="{{ confirmOpen }}" hint-placeholder-val="{{ false }}">
     <div style="position:absolute;inset:0;background:rgba(40,25,35,0.42);border-radius:38px;display:flex;align-items:flex-end">
       <div style="width:100%;background:var(--card,#ffffff);border-radius:32px 32px 38px 38px;padding:24px 22px 26px">
         <div style="display:flex;align-items:center;gap:9px;font-weight:900;font-size:21px;color:var(--delInk,#b8465f)"><span class="msr" style="font-size:24px">delete</span>delete this entry?</div>
-        <div style="font-size:14px;color:var(--muted,#a89890);margin:8px 0 20px;text-wrap:pretty">{{ confirmLabel }} — this removes it for everyone logging liana.</div>
+        <div style="font-size:14px;color:var(--muted,#a89890);margin:8px 0 20px;text-wrap:pretty">{{ confirmLabel }} — this removes it for everyone logging Liana.</div>
         <div style="display:flex;gap:10px">
           <button type="button" onClick="{{ cancelDelete }}" style="flex:1;height:52px;border:0;border-radius:26px;background:var(--chip,#f6ece6);color:var(--ink,#4b403a);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:16px;cursor:pointer">keep it</button>
           <button type="button" onClick="{{ doDelete }}" style="flex:1;height:52px;border:0;border-radius:26px;background:var(--delBg,#b8465f);color:var(--onDel,#fff1f5);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:16px;cursor:pointer">delete</button>
@@ -469,6 +499,18 @@
           </div>
         </sc-if>
 
+        <sc-if value="{{ hasSleepBlock }}" hint-placeholder-val="{{ false }}">
+          <div style="background:var(--card,#ffffff);border-radius:28px;padding:16px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:12px;font-weight:900;letter-spacing:0.02em;color:var(--periInk,#5d72b8);display:flex;align-items:center;gap:6px"><span class="msr" style="font-size:17px">bedtime</span>sleep</span>
+              <sc-if value="{{ canDropSleep }}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{ dropSleep }}" aria-label="remove sleep" style="width:30px;height:30px;border:0;border-radius:15px;background:var(--chip,#f6ece6);color:var(--muted,#a89890);cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:17px">close</span></button>
+              </sc-if>
+            </div>
+            <div style="font-size:13px;color:var(--muted,#a89890);margin-top:8px;text-wrap:pretty">starts at the time above and stays open until you tap end sleep — or until the next entry, which closes it automatically.</div>
+          </div>
+        </sc-if>
+
         <sc-if value="{{ hasOtherBlock }}" hint-placeholder-val="{{ false }}">
           <div style="background:var(--card,#ffffff);border-radius:28px;padding:16px 10px 10px;margin-bottom:10px">
             <div style="padding:0 6px">
@@ -515,6 +557,44 @@
     </div>
   </sc-if>
 
+  <sc-if value="{{ gateOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:70;background:var(--bg,#fdf7f2);display:flex;flex-direction:column;overflow:hidden">
+      <div style="position:relative;height:330px;flex:none;overflow:hidden">
+        <img src="assets/liana-photo.png" alt="liana" style="width:100%;height:100%;object-fit:cover;object-position:50% 32%;display:block" />
+        <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(253,247,242,0) 55%,var(--bg,#fdf7f2) 100%)"></div>
+      </div>
+
+      <div style="position:relative;flex:1;display:flex;flex-direction:column;padding:4px 26px 26px;min-height:0">
+        <div style="font-size:13px;color:var(--muted,#a89890);letter-spacing:0.14em;text-transform:uppercase;font-weight:700">hello there</div>
+        <div style="font-size:32px;font-weight:900;line-height:1.15;margin:6px 0 8px">do you know me?</div>
+        <div style="font-size:14px;color:var(--muted,#a89890);margin-bottom:22px;text-wrap:pretty">only Liana's people get in. enter the secret code to confirm.</div>
+
+        <div style="font-size:11px;color:var(--periInk,#5d72b8);margin-bottom:8px">secret code</div>
+        <input type="text" inputMode="numeric" value="{{ gateCode }}" onChange="{{ setGateCode }}" onKeyDown="{{ gateKey }}" placeholder="••••••••" style="width:100%;height:60px;border:2px solid {{ gateBorder }};border-radius:22px;background:var(--card,#ffffff);color:var(--ink,#4b403a);font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:26px;letter-spacing:0.22em;padding:0 18px;box-sizing:border-box;outline:none" />
+
+        <div style="display:flex;align-items:flex-start;gap:9px;margin-top:14px;padding:12px 14px;border-radius:18px;background:var(--chip,#f6ece6)">
+          <span class="msr" style="font-size:19px;color:var(--muted,#a89890)">lightbulb</span>
+          <div style="min-width:0">
+            <div style="font-size:10px;color:var(--muted,#a89890);letter-spacing:0.1em;text-transform:uppercase">hint</div>
+            <div style="font-size:14px;font-weight:700;line-height:1.4;text-wrap:pretty">when did you first time to meet me</div>
+          </div>
+        </div>
+
+        <sc-if value="{{ gateErr }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:7px;margin-top:12px;font-size:13px;font-weight:700;color:var(--delInk,#b8465f)">
+            <span class="msr" style="font-size:18px">error</span>that's not it. try the day we met.
+          </div>
+        </sc-if>
+
+        <div style="flex:1;min-height:14px"></div>
+
+        <button type="button" onClick="{{ submitGate }}" disabled="{{ gateDisabled }}" style="opacity:{{ gateOpacity }};width:100%;height:64px;border:0;border-radius:26px;background:var(--accent,#ef7f96);color:var(--onAccent,#fff8fa);font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:22px;text-align:left;padding:0 18px;cursor:pointer;box-shadow:0 8px 18px var(--roseShadow,rgba(239,127,150,0.35));display:flex;align-items:center;gap:10px">
+          <span class="msr" style="font-size:26px">lock_open</span>that's me
+        </button>
+      </div>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ setupOpen }}" hint-placeholder-val="{{ false }}">
     <div style="position:absolute;inset:0;z-index:60;background:var(--bg,#fdf7f2);display:flex;flex-direction:column">
       <div style="position:absolute;left:0;right:0;top:0;height:260px;background:var(--sky,linear-gradient(160deg,#ffe3ec 0%,#f6e6ff 45%,#fdf7f2 100%));pointer-events:none"></div>
@@ -526,10 +606,10 @@
 
         <div style="font-size:13px;color:var(--muted,#a89890);letter-spacing:0.14em;text-transform:uppercase;font-weight:700">welcome</div>
         <div style="font-size:30px;font-weight:900;line-height:1.2;margin:6px 0 8px">what should we<br />call you?</div>
-        <div style="font-size:14px;color:var(--muted,#a89890);margin-bottom:26px;text-wrap:pretty">your name marks every entry you log, so liana's other grown-ups know who did what.</div>
+        <div style="font-size:14px;color:var(--muted,#a89890);margin-bottom:26px;text-wrap:pretty">your name marks every entry you log, so Liana's other grown-ups know who did what.</div>
 
         <div style="font-size:11px;color:var(--periInk,#5d72b8);margin-bottom:8px">your name</div>
-        <input type="text" value="{{ setupName }}" onChange="{{ setSetupName }}" placeholder="mona" style="width:100%;height:60px;border:2px solid var(--chip,#f6ece6);border-radius:22px;background:var(--card,#ffffff);color:var(--ink,#4b403a);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:22px;padding:0 18px;box-sizing:border-box;outline:none" />
+        <input type="text" value="{{ setupName }}" onChange="{{ setSetupName }}" placeholder="Anya" style="width:100%;height:60px;border:2px solid var(--chip,#f6ece6);border-radius:22px;background:var(--card,#ffffff);color:var(--ink,#4b403a);font-family:'Zen Maru Gothic',sans-serif;font-weight:700;font-size:22px;padding:0 18px;box-sizing:border-box;outline:none" />
 
         <div style="display:flex;align-items:center;gap:9px;margin-top:14px;padding:12px 14px;border-radius:18px;background:var(--chip,#f6ece6)">
           <span class="msr" style="font-size:19px;color:var(--muted,#a89890)">smartphone</span>
@@ -555,8 +635,14 @@
 const pad = n => String(n).padStart(2, '0');
 
 class Component extends DCLogic {
-  state = { screen: 'home', sheet: null, draft: null, swipeId: null, dx: 0, confirmDel: null, entries: this.seed(), justSaved: false, setupDone: false, setupName: '', userName: '' };
+  state = { screen: 'home', sheet: null, draft: null, swipeId: null, dx: 0, confirmDel: null, entries: this.seed(), justSaved: false, gateDone: false, gateCode: '', gateErr: false, setupDone: false, setupName: '', userName: '' };
   deviceId = 'LNA-7QD4-8213';
+  secretCode = '08242026';
+
+  tryGate() {
+    if (this.state.gateCode === this.secretCode) this.setState({ gateDone: true, gateErr: false });
+    else this.setState({ gateErr: true });
+  }
 
   seed() {
     let i = 0; const E = [];
@@ -666,12 +752,14 @@ class Component extends DCLogic {
     const map = new Map();
     list.forEach(e => {
       const k = e.h + ':' + (e.minUnknown ? 'u' : e.m);
-      if (!map.has(k)) map.set(k, { key: day + k, time: this.fmtTime(e), feed: null, diaper: null, peeE: null, other: null, by: e.by, notes: [] });
+      if (!map.has(k)) map.set(k, { key: day + k, time: this.fmtTime(e), feed: null, diaper: null, peeE: null, other: null, sleep: null, by: e.by, notes: [] });
       const r = map.get(k);
       if (e.kind === 'feed') r.feed = e;
       else if (e.kind === 'diaper') { if (e.poop) r.diaper = e; else r.peeE = e; }
+      else if (e.sleep) r.sleep = e;
       else r.other = e;
-      if (e.note) r.notes.push(e.note);
+      if (e.sleep) { const ex = String(e.note || '').split(' — ')[1]; if (ex) r.notes.push(ex); }
+      else if (e.note) r.notes.push(e.note);
     });
     return Array.from(map.values());
   }
@@ -752,11 +840,29 @@ class Component extends DCLogic {
     return [d.color, d.cons].filter(Boolean).join(' ');
   }
 
+  ongoingSleep() {
+    const n = this.now(), nm = n.h * 60 + n.m;
+    return this.visible().filter(e => e.sleep && e.endH == null && this.mins(e) <= nm).sort((a, b) => this.mins(a) - this.mins(b)).pop() || null;
+  }
+  endSleep() {
+    const e = this.ongoingSleep(); if (!e) return;
+    const n = this.now(), nm = n.h * 60 + n.m;
+    this.setState(s => ({ entries: s.entries.map(x => x.id === e.id ? Object.assign({}, x, { endH: n.h, endM: n.m, note: 'slept ' + this.durTxt(this.mins(x), nm) }) : x), justSaved: true }));
+    clearTimeout(this._flash);
+    this._flash = setTimeout(() => this.setState({ justSaved: false }), 1500);
+  }
   save() {
     const d = this.state.draft; if (!d) return;
     this.setState(s => {
       let entries = s.entries.slice();
       let maxId = entries.reduce((a, e) => Math.max(a, e.id), 0);
+      const newMins = d.h * 60 + d.m;
+      if (d.id == null) entries = entries.map(e => {
+        if (!e.sleep || e.endH != null) return e;
+        const st = this.mins(e);
+        if (st >= newMins) return e;
+        return Object.assign({}, e, { endH: d.h, endM: d.m, note: 'slept ' + this.durTxt(st, newMins) });
+      });
       const base = { day: '31.08', h: d.h, m: d.m, endH: d.endH, endM: d.endM, minUnknown: d.minUnknown, note: d.note, by: 'M' };
       const volParts = d.parts.filter(p => String(p.vol).length || p.src).map(p => ({ vol: String(p.vol).length ? parseInt(p.vol, 10) : null, src: p.src }));
       const has = k => (d.added || []).indexOf(k) > -1;
@@ -769,6 +875,7 @@ class Component extends DCLogic {
           return Object.assign({}, e, base, { by: e.by, kind: 'diaper', pee: d.pee, poop: d.poop, qual: this.qualOf(d) });
         });
       } else {
+        if (d.kind === 'moment' && has('sleep')) entries.push(Object.assign({ id: ++maxId, kind: 'other', sleep: true, parts: [], pee: false, poop: false, qual: '' }, base, { endH: null, endM: null, note: 'sleeping…' + (d.note ? ' — ' + d.note : '') }));
         if ((d.kind === 'other' || (d.kind === 'moment' && has('other'))) && d.other) entries.push(Object.assign({ id: ++maxId, kind: 'other', parts: [], pee: false, poop: false, qual: '' }, base, { note: d.other + (d.note ? ' — ' + d.note : '') }));
         if (wantsFeed) entries.push(Object.assign({ id: ++maxId, kind: 'feed', parts: volParts.length ? volParts : [{ vol: null, src: null }], pee: false, poop: false, qual: '' }, base));
         if (wantsDiaper) {
@@ -804,8 +911,11 @@ class Component extends DCLogic {
     const elapsed = lastFeed ? Math.floor(gap / 60) + 'h ' + pad(gap % 60) + 'm' : '—';
     const lastVol = lastFeed ? this.fmtMilk(lastFeed) : '—';
 
+    const napping = this.ongoingSleep();
+    const napRun = napping ? (nm - this.mins(napping) + 1440) % 1440 : 0;
     let mstate;
     if (this.state.justSaved) mstate = 'flash';
+    else if (napping) mstate = 'sleeping';
     else if (gap < 0) mstate = 'awake';
     else if (night && gap > 60) mstate = 'sleeping';
     else if (gap >= 240) mstate = 'hungry';
@@ -851,15 +961,18 @@ class Component extends DCLogic {
     }) : '');
 
     const mkRow = (r, i, day) => {
-      const editId = r.feed ? r.feed.id : (r.diaper ? r.diaper.id : (r.peeE ? r.peeE.id : (r.other ? r.other.id : null)));
-      const delIds = [r.feed, r.diaper, r.peeE, r.other].filter(Boolean).map(e => e.id);
+      const editId = r.feed ? r.feed.id : (r.diaper ? r.diaper.id : (r.peeE ? r.peeE.id : (r.other ? r.other.id : (r.sleep ? r.sleep.id : null))));
+      const delIds = [r.feed, r.diaper, r.peeE, r.other, r.sleep].filter(Boolean).map(e => e.id);
       const delWhat = [r.feed ? this.fmtMilk(r.feed) + ' mL feed' : '', r.peeE ? 'pee' : '', (r.diaper && r.diaper.poop) ? 'poop' : (r.diaper && r.diaper.pee ? 'pee' : ''), r.other ? 'note' : ''].filter(Boolean).join(' + ');
       const h = this.swipeHandlers(r.key, editId, delIds, this.usDay(day) + ' ' + r.time + (delWhat ? ' · ' + delWhat : ''));
       const milkUnknown = !!(r.feed && r.feed.parts.length === 1 && r.feed.parts[0].vol == null);
       const milkTxt = r.feed ? this.fmtMilk(r.feed) : '';
+      const napOn = !!(r.sleep && r.sleep.endH == null);
+      const napTxt = r.sleep ? (napOn ? 'sleeping…' : 'slept ' + this.durTxt(this.mins(r.sleep), r.sleep.endH * 60 + r.sleep.endM)) : '';
       return {
         key: r.key, dateCell: i === 0 ? this.usDay(day) : '', time: r.time, by: r.by, byColor: parentColor(r.by),
         hasFeed: !!r.feed, hasPee: !!(r.peeE || (r.diaper && r.diaper.pee)), hasPoop: !!(r.diaper && r.diaper.poop),
+        hasSleep: !!r.sleep, sleepChip: napTxt, sleepIcon: napOn ? 'bedtime' : 'wb_twilight',
         milkChip: milkUnknown ? '?' : milkTxt,
         milkCell: milkTxt, milkLine: r.feed ? (milkUnknown ? '? mL' : milkTxt + ' mL') : '',
         milkColor: milkUnknown ? t.accent : t.ink, milkWeight: milkUnknown ? '900' : '400',
@@ -867,9 +980,9 @@ class Component extends DCLogic {
         diap: [this.fmtDiap(r.peeE), this.fmtDiap(r.diaper)].filter(Boolean).join(' · '),
         diapWords: [this.diapWords(r.peeE), this.diapWords(r.diaper)].filter(Boolean).join(' · '),
         diapColor: (r.diaper && r.diaper.poop) ? t.mintInk : t.yellowInk,
-        dotIcon: r.feed ? 'local_drink' : (r.diaper && r.diaper.poop) ? 'cookie' : 'water_drop',
-        dotFill: r.feed ? t.roseFill : (r.diaper && r.diaper.poop) ? t.mintFill : t.yellowFill,
-        dotInk: r.feed ? t.roseInk : (r.diaper && r.diaper.poop) ? t.mintInk : t.yellowInk,
+        dotIcon: r.feed ? 'local_drink' : (r.diaper && r.diaper.poop) ? 'cookie' : (r.sleep && !r.diaper && !r.peeE) ? 'bedtime' : 'water_drop',
+        dotFill: r.feed ? t.roseFill : (r.diaper && r.diaper.poop) ? t.mintFill : (r.sleep && !r.diaper && !r.peeE) ? t.periFill : t.yellowFill,
+        dotInk: r.feed ? t.roseInk : (r.diaper && r.diaper.poop) ? t.mintInk : (r.sleep && !r.diaper && !r.peeE) ? t.periInk : t.yellowInk,
         note: r.notes.join(' · '), hasNote: r.notes.length > 0,
         tx: this.state.swipeId === r.key ? 'translateX(' + this.state.dx + 'px)' : 'translateX(0px)',
         onDown: h.onDown, onMove: h.onMove, onUp: h.onUp, onEdit: h.onEdit, onDelete: h.onDelete
@@ -995,7 +1108,7 @@ class Component extends DCLogic {
     const tfield = d && d.tfield ? d.tfield : 'm';
     const chipsOpen = !!this.state.chipsOpen;
     const inMoment = sheet === 'moment';
-    const addDefs = [['milk', 'feed', 'local_drink', t.roseFill, t.roseInk], ['diaper', 'diaper', 'water_drop', t.mintFill, t.mintInk], ['other', 'other', 'more_horiz', t.lavFill, t.lavInk]];
+    const addDefs = [['milk', 'feed', 'local_drink', t.roseFill, t.roseInk], ['diaper', 'diaper', 'water_drop', t.mintFill, t.mintInk], ['sleep', 'sleep', 'bedtime', t.periFill, t.periInk], ['other', 'other', 'more_horiz', t.lavFill, t.lavInk]];
     const addTypes = inMoment ? addDefs.filter(a => added.indexOf(a[1]) < 0).map(([label, val, icon, bg, fg]) => ({
       label, icon, bg, fg, onTap: () => this.patch({ added: added.concat([val]) })
     })) : [];
@@ -1012,12 +1125,12 @@ class Component extends DCLogic {
       isHome: screen === 'home', isDay: screen === 'day',
       leadElapsed: lead === 'elapsed', leadCombined: lead === 'combined', leadMascot: lead === 'mascot',
       leadIcon: lead === 'mascot' ? 'pets' : 'schedule',
-      leadLabel: lead === 'mascot' ? 'liana is' : lead === 'combined' ? 'last feed' : 'since last feed',
+      leadLabel: lead === 'mascot' ? 'Liana is' : lead === 'combined' ? 'last feed' : 'since last feed',
       elapsed, combinedLine: elapsed + ' ago · ' + lastVol + ' mL',
       lastVolLine: lastVol + ' mL · ' + (lastFeed ? lastFeed.by : ''),
       lastFeedTime: lastFeed ? 'at ' + this.fmtTime(lastFeed) + ' · logged by ' + lastFeed.by : '',
       mascotWord: stateMeta.word, stateIcon: stateMeta.icon,
-      mascotImg: 'assets/liana-' + (mstate === 'flash' ? 'awake' : mstate) + '.png',
+      mascotImg: 'assets/liana-' + (mstate === 'flash' ? 'awake' : mstate) + (night ? '' : '-2') + '.png',
       mascotAnim: mstate === 'flash' ? 'lianaPop 0.6s ease-out' : mstate === 'sleeping' ? 'lianaBreathe 5s ease-in-out infinite' : 'lianaBreathe 7s ease-in-out infinite',
       eyesOpen: false,
       eyesClosed: mstate === 'settled' || mstate === 'sleeping',
@@ -1047,7 +1160,16 @@ class Component extends DCLogic {
       recent, days: shownDays, today: '31.08',
       viewTable: view === 'table', viewCards: view === 'cards', viewTimeline: view === 'timeline',
       flowTwo: flow === 'two', flowMoment: flow === 'moment',
-      setupOpen: (this.props.firstRun ?? false) && !this.state.setupDone,
+      gateOpen: (this.props.firstRun ?? false) && !this.state.gateDone,
+      gateCode: this.state.gateCode,
+      gateErr: this.state.gateErr,
+      gateBorder: this.state.gateErr ? (night ? '#8c3a52' : '#b8465f') : 'var(--chip,#f6ece6)',
+      gateDisabled: this.state.gateCode.length < 4,
+      gateOpacity: this.state.gateCode.length < 4 ? 0.45 : 1,
+      setGateCode: (e) => this.setState({ gateCode: e.target.value.replace(/\D/g, '').slice(0, 8), gateErr: false }),
+      gateKey: (e) => { if (e.key === 'Enter') this.tryGate(); },
+      submitGate: () => this.tryGate(),
+      setupOpen: (this.props.firstRun ?? false) && this.state.gateDone && !this.state.setupDone,
       setupName: this.state.setupName,
       deviceId: this.deviceId,
       setSetupName: (e) => this.setState({ setupName: e.target.value }),
@@ -1063,8 +1185,12 @@ class Component extends DCLogic {
       })),
       goHome: () => this.setState({ screen: 'home', swipeId: null, dx: 0 }),
       goDay: () => this.setState({ screen: 'day' }),
-      openFeed: () => this.setState({ sheet: 'feed', draft: this.newDraft('feed') }),
-      openDiaper: () => this.setState({ sheet: 'diaper', draft: this.newDraft('diaper') }),
+      openFeed: () => this.setState({ sheet: 'moment', draft: Object.assign(this.newDraft('moment'), { added: ['feed'] }) }),
+      openDiaper: () => this.setState({ sheet: 'moment', draft: Object.assign(this.newDraft('moment'), { added: ['diaper'] }) }),
+      openSleep: () => this.setState({ sheet: 'moment', draft: Object.assign(this.newDraft('moment'), { added: ['sleep'] }) }),
+      isSleeping: !!napping, notSleeping: !napping,
+      sleepRun: napRun >= 60 ? Math.floor(napRun / 60) + 'h ' + pad(napRun % 60) + 'm' : napRun + 'm',
+      endSleep: () => this.endSleep(),
       openMoment: () => this.setState({ sheet: 'moment', draft: this.newDraft('moment') }),
       openOther: () => this.setState({ sheet: 'other', draft: this.newDraft('other') }),
       closeSheet: () => this.setState({ sheet: null, draft: null }),
@@ -1080,7 +1206,9 @@ class Component extends DCLogic {
       canDropFeed: inMoment && added.indexOf('feed') > -1,
       canDropDiaper: inMoment && added.indexOf('diaper') > -1,
       canDropOther: inMoment && added.indexOf('other') > -1,
-      dropFeed: dropType('feed'), dropDiaper: dropType('diaper'), dropOther: dropType('other'),
+      canDropSleep: inMoment && added.indexOf('sleep') > -1,
+      hasSleepBlock: inMoment && added.indexOf('sleep') > -1,
+      dropFeed: dropType('feed'), dropDiaper: dropType('diaper'), dropOther: dropType('other'), dropSleep: dropType('sleep'),
       hasFeedBlock: sheet === 'feed' || (inMoment && added.indexOf('feed') > -1) || (sheet === 'edit' && d && d.kind === 'feed'),
       hasDiaperBlock: sheet === 'diaper' || (inMoment && added.indexOf('diaper') > -1) || (sheet === 'edit' && d && d.kind === 'diaper'),
       hasOtherBlock: sheet === 'other' || (inMoment && added.indexOf('other') > -1),
@@ -1145,7 +1273,7 @@ class Component extends DCLogic {
       draftNote: d ? d.note : '', draftPoop: !!(d && d.poop),
       volHint: 'leave it blank and it saves as ? — a feed happened, volume unknown.',
       parts, keys, colors, conss,
-      otherTypes: [['sleep', 'Sleep', 'bedtime'], ['weight', 'Weight', 'monitor_weight'], ['temperature', 'Temperature', 'thermostat'], ['medication', 'Medication', 'medication']].map(([label, val, icon]) => ({
+      otherTypes: [['weight', 'Weight', 'monitor_weight'], ['temperature', 'Temperature', 'thermostat'], ['medication', 'Medication', 'medication']].map(([label, val, icon]) => ({
         label, icon, bg: d && d.other === val ? t.lavFill : t.chip, fg: d && d.other === val ? t.lavInk : t.ink,
         onTap: () => this.patch({ other: val })
       })),

@@ -4,13 +4,14 @@ import {
   lastFeedAt,
   mascotState,
   minutesSince,
+  ongoingSleep,
   sameDay,
   themeFor,
   totalsFor,
   type MascotState,
 } from '../derive'
 import { getDevices } from '../db'
-import { avatarClass, describeMoment, hhmm, timeCell } from '../day/cells'
+import { avatarClass, describeMoment, hhmm, sleepCell, timeCell } from '../day/cells'
 import { getDeviceId } from '../device-id'
 import { getMoments, removeMoment, renameThisDevice } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
@@ -140,7 +141,11 @@ export function LogScreen() {
   const shown = moments
   const since = minutesSince(lastFeedAt(moments), now)
   const totals = totalsFor(moments, now)
-  const state = mascotState(since, theme, justLogged)
+  // A logged, still-open sleep beats the night-plus-long-gap guess. Not passed
+  // the ticking `now`: it moves every 30s, and a sleep logged just now would
+  // fail its own "started at or before now" test until the next tick.
+  const asleep = ongoingSleep(moments) !== null
+  const state = mascotState(since, theme, justLogged, asleep)
 
   return (
     <main className="log">
@@ -244,8 +249,16 @@ export function LogScreen() {
                       <Icon name="cookie" size={14} /> {poopLabel(m)}
                     </span>
                   )}
+                  {(() => {
+                    const s = sleepCell(m)
+                    return s ? (
+                      <span className={s.open ? 'chip-peri open' : 'chip-peri'}>
+                        <Icon name={s.icon} size={14} /> {s.text}
+                      </span>
+                    ) : null
+                  })()}
                   {m.events
-                    .filter((e) => e.type !== 'feed' && e.type !== 'diaper')
+                    .filter((e) => e.type !== 'feed' && e.type !== 'diaper' && e.type !== 'sleep')
                     .map((e) => (
                       <span className="chip-lav" key={e.id}>
                         {e.type.replace('_', ' ')}
