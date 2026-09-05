@@ -172,7 +172,8 @@ export function LogScreen() {
 
       <section className="herocard">
         <Mascot state={state} />
-        <div>
+        {/* min-width:0 so the figure can shrink rather than force the card wide. */}
+        <div style={{ minWidth: 0 }}>
           <p className="kicker">
             <Icon name="schedule" size={13} /> since last feed
           </p>

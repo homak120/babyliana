@@ -101,6 +101,12 @@ as a smoke test.
 
 ## Phase 7 — Visual identity & polish
 
+**Largely delivered by the second design handoff, 2026-09-04.** The four mascot
+states, the welcome art and the app icon all arrived as finished assets and are
+shipped. What remains in this phase is the owner's judgement — Q-003 on the
+mascot's identity and the rights caution attached to it, and Q-008 on the name —
+not production work.
+
 Before reveal, because a gift cannot look like a prototype (D-005).
 
 - Mascot: the baby as a character, or a separate creature

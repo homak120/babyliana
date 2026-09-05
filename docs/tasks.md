@@ -58,8 +58,11 @@ them is how Phase 0 quietly never happens.
 - [x] **H** Environment variables and secrets handled properly — .env.local
       gitignored, .env.example holds placeholders only, Vercel vars set before
       first build, and the public bundle confirmed to carry no secret material
-- [ ] **H** iOS reality checks — full screen, no address bar, icon rendering,
-      survives a day backgrounded, whether Safari evicts IndexedDB
+- [ ] **H** iOS reality checks. **Full screen, no address bar and icon rendering
+      are all confirmed** — the owner runs the installed PWA daily and the icon
+      was replaced from the second handoff. What is still open is only the
+      long-clock half: surviving a day backgrounded, and whether Safari evicts
+      IndexedDB. That is Q-004 and it runs itself
 - [x] **H** Install on your own phone and leave it there — installed; the
       "leave it" half is the Q-004 clock, now running
 
@@ -110,12 +113,20 @@ when". Read that first; this list is the checklist view of the same thing.
 - [x] **S6** Notes and the `other` type — the escape hatch
 - [x] **S7** The day view — the paper-shaped table, date printed once per day,
       date strip, and the tab bar now that there are two screens
-- [x] **S8** Edit and delete — swipe reveals both; delete takes the whole moment
-      with an undo toast (D-025). Plain updates, real deletes (D-003)
+- [x] **S8** Edit and delete — swipe reveals both, on the home list as well as
+      the day table; delete takes the whole moment behind a confirm sheet that
+      names it (D-025 as amended, Q-012). Plain updates, real deletes (D-003)
 - [x] **S9** Ready for the solo run — name entry (skippable), theme by clock,
       update strategy. **Offline and deploy checks are yours, on the phone**
+- [x] **CC** Post-slice work from the second design handoff: the period picker
+      and its `more` pill (D-027), totals recalculated over whatever period is on
+      screen, the tab bar matched to the prototype, the app shell rebuilt as a
+      flex column, and the mascot artwork wired in
+
 - [ ] **H** Run the coverage checklist: enter all seven photographed days. This
-      is the gate into Phase 7, not a formality
+      is the gate into Phase 7, not a formality. **It is the single biggest
+      open item in the project** — everything else on this list is either the
+      owner's judgement or small
 
 ### Before reveal, not before MVP
 
@@ -141,13 +152,24 @@ first version does not go through them, and each has a named trigger.
 
 ## Phase 7 — Visual identity & polish
 
-- [ ] **H** Mascot decision: the baby as a character, or a separate creature
-- [ ] **CD** Character state exploration — descriptive only, never evaluative
-- [ ] **H/CD** Asset production. Consistency across the set is the hard part
-- [x] **CD** App icon — delivered with the Phase 2 handoff and shipped;
-      launch experience still open
-- [ ] **CC** Implement the visual identity
-- [ ] **H** Naming decision. Replace "BabyLiana" if it isn't the keeper
+**Mostly delivered by the second design handoff (2026-09-04).** What is left is
+the owner's judgement, not production work.
+
+- [ ] **H** Mascot decision: the baby as a character, or a separate creature.
+      Q-003. The art now exists and the app ships it, so this is no longer
+      blocking anything — but the rights caution in Q-003 stands and is the
+      owner's call, not an agent's
+- [x] **CD** Character state exploration — four states delivered as artwork
+      (settled, awake, hungry, sleeping), with the *logged* flash reusing awake.
+      Descriptive throughout; nothing evaluative
+- [x] **H/CD** Asset production — a consistent set supplied and shipped as WebP
+      with PNG fallbacks
+- [x] **CD** App icon — replaced from the second handoff. The icon is the plush,
+      not the character. Launch experience still open
+- [x] **CC** Implement the visual identity — artwork wired to derived state,
+      icons rebuilt, hero geometry matched to the prototype
+- [ ] **H** Naming decision. Replace "BabyLiana" if it isn't the keeper. Q-008,
+      and it gets more expensive with every asset that carries the name
 
 ## Phase 8 — Solo run
 

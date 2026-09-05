@@ -1,5 +1,16 @@
+import type { PointerEvent as ReactPointerEvent } from 'react'
 import { Icon } from './Icon'
 import type { MilkDraft } from './drafts'
+
+/**
+ * The volume the drag strip spans end to end.
+ *
+ * The prototype uses 75, which is a typical feed. The real paper log runs to
+ * 120, so the strip stops short of the owner's own larger feeds at 75 — the
+ * baseline wins over the design here. The keypad takes any value regardless;
+ * this only sets what a drag can reach and how full the bar reads.
+ */
+const SCRUB_MAX = 120
 
 // One card, up to two parts. The design keeps a split feed in the same card —
 // "selecting a part moves the underline to it, and the row reads 30 + 30" —
@@ -54,6 +65,14 @@ export function MilkBlock({
   const toggle = (s: MilkDraft['parts'][number]['source']) =>
     setPart({ source: part.source === s ? 'unknown' : s })
 
+  // Never 0: a blank volume is the paper's `?`, and dragging to the far left
+  // should give the smallest real feed rather than an ambiguous zero.
+  const scrub = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const r = e.currentTarget.getBoundingClientRect()
+    const pct = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width))
+    setPart({ volume: Math.max(1, Math.round(pct * SCRUB_MAX)) })
+  }
+
   return (
     <section className="block milkblock">
       <header>
@@ -72,7 +91,15 @@ export function MilkBlock({
             {i > 0 && <span className="plus">+</span>}
             <button
               type="button"
-              className={`part ${i === value.active ? 'active' : ''}`}
+              className={[
+                'part',
+                i === value.active ? 'active' : '',
+                // The figure carries its own source's colour, so a two-part feed
+                // reads as "25 lilac + 45 amber" without looking anything up.
+                p.volume === null ? 'blank'
+                  : p.source === 'breast_milk' ? 'breast'
+                    : p.source === 'formula' ? 'formula' : '',
+              ].filter(Boolean).join(' ')}
               aria-pressed={i === value.active}
               aria-label={`part ${i + 1}`}
               onClick={() => onChange({ ...value, active: i })}
@@ -129,18 +156,27 @@ export function MilkBlock({
         role="slider"
         aria-label="drag to adjust volume"
         aria-valuenow={part.volume ?? 0}
-        aria-valuemin={0}
-        aria-valuemax={999}
+        aria-valuemin={1}
+        aria-valuemax={SCRUB_MAX}
         tabIndex={0}
-        onPointerDown={(e) => e.currentTarget.setPointerCapture(e.pointerId)}
+        onPointerDown={(e) => {
+          e.currentTarget.setPointerCapture(e.pointerId)
+          scrub(e)
+        }}
         onPointerMove={(e) => {
           if (e.buttons !== 1) return
-          const r = e.currentTarget.getBoundingClientRect()
-          const pct = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width))
-          setPart({ volume: Math.round(pct * 120) })
+          scrub(e)
         }}
       >
-        <Icon name="drag_indicator" size={16} /> drag to adjust
+        {/* The bar the design draws and this never had: a gradient whose width
+            tracks the volume, so the strip shows a value as well as taking one. */}
+        <span
+          className="scrubfill"
+          style={{ width: `${Math.min(100, ((part.volume ?? 0) / SCRUB_MAX) * 100)}%` }}
+        />
+        <span className="scrublabel">
+          <Icon name="drag_indicator" size={16} /> drag to adjust
+        </span>
       </div>
 
       <div className="keypad">

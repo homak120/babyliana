@@ -130,6 +130,18 @@ friction that sends people back to the pen; the design's is that a hard delete
 with no tombstone (D-003) deserves a deliberate confirmation. Both are sound.
 Until it closes, the built behaviour stands.
 
+## The hero mascot: 100×96 slot, 108px art
+
+Worth stating plainly because two sections of the README disagree and the naive
+reading breaks the layout. *Log (home)* says "mascot 100 × 96px"; *Assets* says
+"rendered 108px wide in the home header". Both are true: the prototype gives her
+a `100×96; flex:none` slot and absolutely positions a 108×108 image at
+`left:-4px; top:-8px` inside it, so the art bleeds over the slot's edges.
+
+Sizing the slot itself at 108 steals 8px from the elapsed figure beside it, which
+is what pushed "14h 21m" onto two lines. `Mascot.tsx` reproduces the slot-plus-
+overflow arrangement.
+
 ## Fidelity gaps against what is built
 
 Found by reading the second delivery against the CSS, 2026-09-04. All small, none
@@ -140,10 +152,14 @@ urgent, listed so they are not rediscovered one at a time.
 | Day table `38px 84px 1fr 70px 16px` | `34px 62px 1fr 108px 18px` | **Do not blindly adopt.** The pee/poop column was widened to 108px deliberately — 70px cannot hold "poop (brown soft)" without wrapping to three lines. Take the other four, keep ours here, or shorten the copy. |
 | ~~Row note indented 130px~~ | done | The day rows already had it as `padding-left`; only the home list was short at `4rem`. Fixed 2026-09-04. |
 | ~~Snap open past −60px~~ | done 2026-09-04 | |
-| ~~Home mascot 108px wide~~ | done 2026-09-04 | Artwork landed |
+| ~~Home mascot 108px wide~~ | done 2026-09-04 | See the note below — 108 is the *art*, not the slot |
+| Elapsed hero "64px / 900" | 44px | **The README is wrong here.** The prototype draws `font-size:44px; line-height:1.05; letter-spacing:-0.02em`. At 64px, "14h 21m" wrapped onto two lines beside the mascot. Trust the prototype. |
 | ~~Period presets: today, …~~ | done 2026-09-04 | |
 | ~~Apply reads "apply · 7 days"~~ | done 2026-09-04 | |
 | ~~Range ends square their inner edges~~ | done 2026-09-04 | |
+| ~~Milk figure coloured by its source~~ | done 2026-09-04 | `--lilacInk` for breast, `--amberInk` for formula, `--ink` unmarked, `--muted` blank. The tokens were in `tokens.css` all along and simply unused |
+| ~~Drag strip has a `--scrubFill` bar~~ | done 2026-09-04 | The strip was taking a value without showing one |
+| Drag strip spans 75 mL | spans 120 | **Deliberate.** The paper log runs to 120, so 75 puts the owner's larger feeds out of a drag's reach. The keypad takes any value either way |
 
 Matched and confirmed: `--lavFill`/`--lavInk` on the selected date pill, the
 `more` pill with `calendar_month`, 44px cells over a 4px `--mint` dot, disabled

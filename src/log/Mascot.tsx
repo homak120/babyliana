@@ -29,9 +29,10 @@ const ART: Record<MascotState | 'home', { webp: string; png: string }> = {
 }
 
 export function Mascot({
-  state, size = 108, welcome = false,
+  state, size = 100, welcome = false,
 }: {
   state: MascotState
+  /** The width of the *slot*. The art is drawn larger and overflows it. */
   size?: number
   /** The welcome screen uses its own art rather than a state. */
   welcome?: boolean
@@ -48,16 +49,28 @@ export function Mascot({
         ? 'lianaBreathe 5s ease-in-out infinite'
         : 'lianaBreathe 7s ease-in-out infinite'
 
+  // The prototype's hero gives Liana a 100×96 slot and draws her at 108px on
+  // top of it, bleeding 4px to each side and 8px above. That is what keeps the
+  // art generous without stealing width from the elapsed figure beside it —
+  // sizing the slot at 108 is what pushed "14h 21m" onto two lines.
+  const k = size / 100
+  const slotH = welcome ? size : Math.round(96 * k)
+  const artSize = welcome ? size : Math.round(108 * k)
+  const offX = welcome ? 0 : Math.round(-4 * k)
+  const offY = welcome ? 0 : Math.round(-8 * k)
+
   return (
-    <picture className="mascot" style={{ width: `${size}px`, animation }}>
-      <source srcSet={art.webp} type="image/webp" />
-      <img
-        src={art.png}
-        alt=""
-        width={size}
-        role="img"
-        aria-label={welcome ? 'Liana' : `Liana is ${state}`}
-      />
-    </picture>
+    <span className="mascot" style={{ width: `${size}px`, height: `${slotH}px`, animation }}>
+      <picture>
+        <source srcSet={art.webp} type="image/webp" />
+        <img
+          src={art.png}
+          alt=""
+          role="img"
+          aria-label={welcome ? 'Liana' : `Liana is ${state}`}
+          style={{ left: `${offX}px`, top: `${offY}px`, width: `${artSize}px`, height: `${artSize}px` }}
+        />
+      </picture>
+    </span>
   )
 }

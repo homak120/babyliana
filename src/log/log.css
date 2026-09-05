@@ -42,7 +42,7 @@ body {
   align-items: center;
   gap: 1rem;
   margin: 0.75rem 0 1rem;
-  padding: 1rem 1.125rem;
+  padding: 1.125rem;
   border-radius: var(--r-card-lg, 28px);
   background: var(--card);
   box-shadow: 0 6px 16px var(--soft);
@@ -78,12 +78,17 @@ body {
 .stat.lav { background: var(--lavFill); color: var(--lavInk); }
 .stat.mint { background: var(--mintFill); color: var(--mintInk); }
 
+/* 44px, which is what the prototype actually draws. The README's type list
+   mentions 64 and the hero at 4rem could not hold "14h 21m" on one line beside
+   the mascot — it wrapped. */
 .elapsed {
-  font-size: 4rem;
+  font-size: 2.75rem;
   font-weight: 900;
-  line-height: 1;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
   margin: 0.125rem 0 0.5rem;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .statetag {
@@ -182,10 +187,12 @@ body {
    painted into the sleeping art, so an overlay would double them. */
 .mascot {
   flex: none;
+  position: relative;
   display: block;
   line-height: 0;
 }
-.mascot img { width: 100%; height: auto; display: block; }
+/* The art overflows its slot deliberately — see Mascot.tsx. */
+.mascot img { position: absolute; object-fit: contain; }
 
 @keyframes lianaBreathe { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-3px) scale(1.015); } }
 @keyframes lianaPop { 0% { transform: scale(1); } 35% { transform: scale(1.13) rotate(-4deg); } 100% { transform: scale(1); } }
@@ -276,6 +283,12 @@ body {
 
 .part.active { border-bottom-color: var(--accent); }
 
+/* A two-part feed reads as its own sources — "25" in lilac beside "45" in
+   amber — rather than two identical numbers you have to trace to a toggle. */
+.part.breast { color: var(--lilacInk); }
+.part.formula { color: var(--amberInk); }
+.part.blank { color: var(--muted); }
+
 .droppart {
   width: 1.5rem;
   height: 1.5rem;
@@ -302,16 +315,17 @@ body {
 
 /* A horizontal scrub for coarse adjustment, beside the keypad's precision. */
 .scrub {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
-  gap: 0.375rem;
   height: 2.5rem;
   margin-bottom: 0.625rem;
-  padding: 0 0.75rem;
-  border-radius: 0.875rem;
+  padding: 0 0.875rem;
+  border-radius: 1.25rem;
   background: var(--chip);
-  color: var(--muted);
-  font-size: 0.875rem;
+  color: var(--scrubInk);
+  font-size: 0.6875rem;
   touch-action: none;
   cursor: ew-resize;
   -webkit-user-select: none;
@@ -331,6 +345,23 @@ body {
 .sources button { display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem; }
 .sources button.on.breast { background: var(--lilacFill, var(--lavFill)); color: var(--lilacInk, var(--lavInk)); }
 .sources button.on.formula { background: var(--amberFill); color: var(--amberInk); }
+
+/* The volume as a bar, under the label. Width is set inline from the draft. */
+.scrubfill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--scrubFill);
+  pointer-events: none;
+}
+
+.scrublabel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.3125rem;
+}
 
 .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
 .keypad button {

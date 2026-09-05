@@ -10,73 +10,94 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-03
+Last updated: 2026-09-04
 
 ---
 
 ## Position
 
-**Phases 0–6 are done. The app is built and deployed, and all ten build slices
-are ticked.** It logs feeds, diapers and the `other` types locally, syncs
-between devices, shows the home and day screens, and supports edit, delete and
-undo. `npm run verify` is 141 checks across nine suites and passes.
+**The app is built, deployed, in daily use by the owner, and syncing real data
+between two phones.** Phases 0–6 are done bar three items; Phase 7 was largely
+delivered by the second design handoff. 187 checks pass across twelve suites.
 
-What is left before it can replace the pen is not code. It is the owner using
-it, and the coverage run below.
+What exists: local-first writes to IndexedDB that never block on the network,
+push-then-reconcile sync with Supabase, the home screen (mascot artwork by
+derived state, elapsed hero, totals, recent list), the day table with a date
+strip and period picker, the add/edit sheet with milk, diaper, other and notes,
+swipe-to-edit-and-delete on both lists behind a confirm sheet, name entry, theme
+by clock, and an offline-capable PWA at 874 KiB precached.
 
-Task-level state is in `tasks.md`. Phase-level completion is in `plan.md`. This
-file is the summary and the next move.
+**What is left is mostly not code.** Three build items remain, and the rest is
+the owner's judgement — see *Next action*.
 
 ## Next action
 
-**The coverage run, and it is the owner's, not an agent's.** Enter all seven
-photographed days from `.specify/memory/paper-log/` into the real app on the
-phone. The checklist is `coverage-requirement.md`. It is the only test that
-tells us whether the app can hold what the paper actually held — every split
-feed, every `?` volume, every out-of-order insertion, every correction. If
-something cannot be entered, that is the finding, and it is worth more than any
-further polish.
+**1. The coverage run. This is the gate and it is the owner's.** Enter all seven
+photographed days from `.specify/memory/paper-log/` into the app on the phone,
+against the checklist in `coverage-requirement.md`. Not in a script — the point
+is thumbs, at speed, in the dark. If something cannot be entered, that finding
+outranks any further polish. It is the single biggest open item in the project.
 
-Do not do this in a script. The point is the thumbs, at speed, in the dark.
+**2. Two build items, both small, both `CC`:**
 
-**Phase 7 (mascot and tone) and Phase 8 onward have not started.** Do not begin
-them before the coverage run reports back — it may move what they contain.
+- **JSON export** — `technical-constraints.md` requires it before a second
+  person sees the app, so it is a Phase 9 gate rather than a first-use one.
+  Getting a file off an installed iOS PWA is the hard part, not the format.
+- **A settings screen** — the design has never had one, and export needs
+  somewhere to live.
+
+**3. Three owner decisions, none blocking:** Q-003 (mascot identity and the
+rights caution), Q-008 (the final name, which gets dearer with every asset
+carrying it), Q-006 (which secondary types earned promotion — answered by the
+solo run, not by thinking).
+
+**4. Q-004 runs itself.** Whether Safari evicts IndexedDB on a backgrounded
+phone. The clock is running; nobody needs to do anything.
+
+## How to work on this
+
+Read `CLAUDE.md` first, then this file. Beyond that:
+
+- **`npm run verify`** is the gate: typecheck, nine data-layer suites, then three
+  browser suites (`verify-swipe`, `verify-period`, `verify-hero`) that serve
+  their own build. Two suites hit the **live** database and delete only ids they
+  created in that run — never widen one to a filter.
+- **`scripts/ios/`** drives the iOS Simulator with real touch, and
+  `measure-screenshot.mts` measures a screenshot the owner sends. Both exist
+  because this project has repeatedly shipped fixes that passed on desktop and
+  did nothing on a phone. Read `scripts/ios/README.md` before using them.
+- **When a design detail and the handoff prose disagree, the prototype wins.**
+  The README said the elapsed hero was 64px and the mascot 108px; the prototype
+  draws 44px in a 100×96 slot. Following the prose broke the layout twice.
 
 ## In flight
 
-**Uncommitted: the app shell is a flex column, which fixes the tab bar for good.**
+**Uncommitted: the hero wrap fix, the milk block's colours, and the doc pass.**
 
-Measured from the owner's own screenshots with
-`scripts/ios/measure-screenshot.mts`, same build and same device:
+*Hero.* "14h 21m" was breaking onto two lines. Two causes, both from trusting the
+handoff's prose over its prototype: the elapsed figure is **44px, not the 64 the
+README states**, and **108px is the art, not the slot** — the prototype uses a
+100×96 slot with a 108×108 image bleeding over its edges.
 
-| | gap below the FAB |
-| --- | --- |
-| home screen | 56.7pt — exactly the 22px padding + 34pt home indicator |
-| day screen | 103.7pt |
+*Milk block.* The volume figure now takes its source's colour (`--lilacInk` for
+breast, `--amberInk` for formula, `--ink` unmarked, `--muted` blank), and the
+drag strip has the `--scrubFill` gradient bar it never had — it was taking a
+value without showing one. **Both tokens were already in `tokens.css` and simply
+unused**, which is the kind of gap that reads as complete in the markup and only
+shows up in a rendered-colour check.
 
-So the two really did differ, by **47.7pt — which is an iPhone 13's
-`safe-area-inset-top` to within half a point.** The bar was `position: fixed;
-bottom: 0`, and on iOS that resolved ~47pt above the screen edge on the day
-screen and flush on the home screen. Not reproducible in Chromium, with the
-insets substituted as literals or not, so the mechanism was never pinned down.
+The drag strip spans 120 mL where the prototype uses 75. Deliberate: the paper
+log runs to 120, so 75 puts the owner's larger feeds out of a drag's reach.
 
-It did not need to be. **The prototype does not use a fixed bar** — its shell is
-`display:flex; flex-direction:column`, the screen is `flex:1; min-height:0`, and
-the tab bar is `flex:none` at the end. The app now matches: `#root` is a
-`100dvh` flex column, `main` scrolls internally, and `.tabs` is a static flex
-child. A flex child cannot land anywhere but the end of its column, so the whole
-class of question is gone rather than answered.
+*Two new suites*, `verify-hero.mts` and `verify-milk.mts`, both in
+`npm run verify`. **194 checks.** One lesson from writing them: the milk
+assertions first hardcoded day-theme rgb values and failed against night, because
+the theme switches by clock. They resolve tokens through a probe element now, so
+they hold in either theme — worth copying for any future colour check.
 
-Verified on the Simulator: both screens now report FAB top 618.5pt, bottom
-688.8pt, identical to the pixel.
-
-**Consequence worth knowing:** the scrolling element is `main`, not the document.
-Anything reading `window.scrollY` is wrong now — `verify-swipe` was, and is
-fixed. The 8.5rem bottom padding that used to clear the fixed bar is gone too;
-the bar is a sibling below the content, so 1.5rem of breathing room is all it
-needs.
-
-181 checks pass.
+Uncommitted work is a normal end state, not a defect to tidy away: the owner
+reviews diffs before they enter history. See `CLAUDE.md` § Never commit without
+being asked.
 
 ## Open threads
 
@@ -97,6 +118,39 @@ Noticed, not blocking, no owner yet.
 
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
+
+### 2026-09-04 — second handoff, mascot artwork, and four layout fixes
+
+The second design handoff replaced the first wholesale. `tokens.css` is
+byte-identical, so nothing about colour, type, radius or motion moved; four
+things changed and `phase-2-reconciliation.md` lists them. The mascot is supplied
+artwork now, one PNG per state, which is what made retiring the CSS composition
+possible — a single flat image would have collapsed five states into one
+expression.
+
+**Q-012 closed against D-025's original reasoning.** Delete now opens a confirm
+sheet naming the row rather than deleting with an undo toast. The 4am-modal
+argument lost to D-003: a hard delete with no tombstone that syncs to the other
+phone deserves its check before the action, not after.
+
+**Four layout problems, and the pattern connecting them is worth keeping.** Every
+one came from believing a document or a desktop browser over the phone:
+
+- The swipe was dead on the home screen for four rounds of fixes because D-025
+  said "the day view" and nobody checked which screen the owner was on.
+- The tab bar sat 47.7pt higher on the day screen — exactly the device's
+  `safe-area-inset-top`. Never reproduced in Chromium, insets substituted or not.
+  Fixed by adopting the prototype's flex-column shell, which has no fixed bar at
+  all, so the mechanism stayed unknown and stopped mattering.
+- The elapsed hero wrapped because the README says 64px where the prototype draws
+  44, and says 108px for a mascot the prototype puts in a 100×96 slot.
+- The unknown-minute marker came back in the handoff for the second time and was
+  struck again under D-018.
+
+`scripts/ios/` came out of this: a Swift tool that posts mouse events to the
+Simulator, which iOS turns into genuine touches, and a screenshot measurer.
+"103.7pt against an expected 56" is what turned a vague complaint into a bug;
+eyeballing had already produced one wrong answer.
 
 ### 2026-09-03 — Phase 6 built end to end; swipe fixed for real touch
 
@@ -139,29 +193,3 @@ Pairing (D-022), duplicate detection (D-023) and export (D-024) are out of MVP,
 each with a named trigger. The offline strategy turned out not to be blocked on
 Q-004 after all. Phase 5 shrank to slicing, since the spec artifacts already
 exist.
-
-### 2026-09-02 — D-018, time precision removed
-
-The owner's call, and the reasoning is worth keeping: `04:?` is what you write
-when a pen has no idea what time it is. A phone does, so the app removes the
-cause rather than giving the user a way to express uncertainty. His test for the
-notation was "if a human cannot read a mark and immediately know what it means,
-it does not belong" — which is also why the marker was dropped outright rather
-than softened to a `~`.
-
-What was knowingly given up: a time typed from memory and a time tapped live are
-now indistinguishable, forever, including in exports. Recorded in D-018 so it is
-not later read as an oversight.
-
-What replaces it is entry speed, written into the Phase 2 brief as a new
-§ Entering and adjusting the time — default to now, quick offsets, picker,
-numeric entry. Ranking is left to the prototype under D-007. Natural-language
-time parsing is explicitly ruled out; it fails silently on a tired user.
-
-The coverage test loosened from *every glyph reproduced* to *every fact
-represented*, which is the one real cost and is stated in
-`coverage-requirement.md` rather than left implicit.
-
-`paper-log-baseline.md` § Unknown values was **not** rewritten — it records what
-the paper actually says, and editing evidence to match a decision would destroy
-the ability to re-derive later. It carries a pointer to D-018 instead.
