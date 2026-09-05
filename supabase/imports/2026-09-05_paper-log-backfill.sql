@@ -12,6 +12,13 @@
 -- Model: .specify/memory/event-model.md · D-003 mutable rows · D-019 timeslot
 -- is the unit · D-022 hard-coded baby id
 --
+-- Verified 2026-09-05 end to end on PostgreSQL 16 against a throwaway database
+-- built from supabase/migrations/0001_initial_schema.sql: 80 timeslots and 144
+-- events (78 feed, 65 diaper, 1 other), per-day totals matching section 5, the
+-- re-run guard firing, the rollback cascading clean, a second run after the
+-- rollback reproducing identical totals, and section 6 inserting correctly once
+-- uncommented. Timezone conversion spot-checked — 8/29 19:10 lands at 23:10Z.
+--
 --
 -- BEFORE YOU RUN THIS — read docs/status.md § Next action
 -- =======================================================
@@ -35,15 +42,18 @@
 -- 0. Timezone
 --
 -- Times below are local wall-clock as written on paper. occurred_at is
--- timestamptz, so they need a zone to become instants. Change this one string
--- if the log was not kept in Eastern time — it is the only place it appears.
+-- timestamptz, so they need a zone to become instants.
+--
+-- The zone is written out literally in TWO places — the timeslot insert in
+-- section 4, and the read-back query in section 5. If the log was not kept in
+-- Eastern time, change both:
+--
+--   grep -n "America/New_York" this-file.sql
+--
+-- It was a psql \set variable until it met the Supabase SQL Editor, which does
+-- not support backslash meta-commands. Two literals that must agree is the
+-- lesser evil against a file that cannot be pasted where it is actually run.
 -- ---------------------------------------------------------------------------
-
-\set log_tz 'America/New_York'
--- Supabase SQL Editor does not support \set. If you are pasting into the
--- editor rather than running through psql, delete the line above and replace
--- :'log_tz' with the literal 'America/New_York' — two occurrences, one in
--- section 4 and one in the read-back query in section 5.
 
 
 -- ---------------------------------------------------------------------------
@@ -70,21 +80,29 @@ end $$;
 
 
 -- ---------------------------------------------------------------------------
--- 2. The importing device
+-- 2. The logging device
 --
--- timeslot.logged_by is not-null and on delete restrict, so these rows need a
--- device and that device can never be deleted afterwards. A dedicated one is
--- more honest than borrowing a phone's id: these moments were logged on paper,
--- not by either handset, and the day view will say so.
+-- The owner's own phone, by his instruction — not a synthetic "Paper log"
+-- device. These rows will therefore be attributed to that handset in the day
+-- view, exactly as if he had typed them.
+--
+-- The provenance signal moves entirely to `updated_by = 'paper-log-import'`,
+-- which the app never writes, so it stays exact. `device` no longer carries it.
+--
+-- Nothing is inserted here: this row already exists, written by the app when
+-- the device was named. Verified rather than upserted, so a typo'd id fails
+-- with a readable message instead of a foreign-key violation 80 rows later.
 -- ---------------------------------------------------------------------------
 
-insert into public.device (id, name, created_at, updated_at, updated_by)
-values (
-  '6817e81c-9899-4394-8f8e-a1a949e2d562',
-  'Paper log',
-  now(), now(), 'paper-log-import'
-)
-on conflict (id) do nothing;
+do $$
+begin
+  if not exists (
+    select 1 from public.device where id = 'e04c268a-1fd8-4819-9001-f539d17a64f6'
+  ) then
+    raise exception
+      'device e04c268a-1fd8-4819-9001-f539d17a64f6 not found — check the id, or name the device in the app first';
+  end if;
+end $$;
 
 
 -- ---------------------------------------------------------------------------
@@ -221,7 +239,12 @@ insert into import_slot (k, at, note) values
 ('0903-2235', '2026-09-03 22:35', null),
 -- 9/4
 ('0904-0325', '2026-09-04 03:25', null),
-('0904-0520', '2026-09-04 05:20', null);
+('0904-0520', '2026-09-04 05:20', null),
+('0904-0935', '2026-09-04 09:35', null),
+('0904-1332', '2026-09-04 13:32', null),
+('0904-1654', '2026-09-04 16:54', null),
+('0904-2007', '2026-09-04 20:07', null),
+('0904-2350', '2026-09-04 23:50', 'Milk struck through and rewritten as a two-source split. The struck original is scribbled out and not recoverable from the photograph; only the correction is imported (D-003).');
 
 
 -- 3b. Feeds -----------------------------------------------------------------
@@ -306,7 +329,14 @@ insert into import_feed (k, ml, src, note) values
 ('0903-2235', 60, 'unknown', null),
 
 ('0904-0325', 60, 'breast_milk', null),
-('0904-0520', 60, 'unknown', null);
+('0904-0520', 60, 'unknown', null),
+('0904-0935', 60, 'breast_milk', null),   -- 60(B) + 15(F)
+('0904-0935', 15, 'formula', null),
+('0904-1332', 60, 'unknown', null),
+('0904-1654', 60, 'breast_milk', null),
+('0904-2007', 60, 'unknown', null),
+('0904-2350', 55, 'breast_milk', 'Written over a struck-through value. Reads 55(B) + 10(F); the 55 is the least certain digit on the page.'),
+('0904-2350', 10, 'formula', null);
 
 
 -- 3c. Diapers ---------------------------------------------------------------
@@ -383,7 +413,12 @@ insert into import_diaper (k, pee, poop, colour, consistency, note) values
 ('0903-1920', false, true,  null,     null,     null),
 
 ('0904-0325', false, true,  null,     null,     'little'),
-('0904-0520', false, true,  'yellow', null,     null);
+('0904-0520', false, true,  'yellow', null,     null),
+('0904-0935', true,  false, null,     null,     null),
+('0904-1332', true,  false, null,     null,     null),
+('0904-1654', false, true,  null,     null,     'little'),
+('0904-2007', false, true,  'yellow', null,     null),
+('0904-2350', true,  false, null,     null,     null);
 
 
 -- 3d. Everything else -------------------------------------------------------
@@ -407,8 +442,8 @@ insert into public.timeslot
 select
   s.id,
   '94c55231-e3dd-46d0-8567-fa8d0b90d809',
-  '6817e81c-9899-4394-8f8e-a1a949e2d562',
-  s.at at time zone :'log_tz',
+  'e04c268a-1fd8-4819-9001-f539d17a64f6',
+  s.at at time zone 'America/New_York',
   null,
   now(), now(), 'paper-log-import',
   s.note
@@ -453,9 +488,13 @@ begin
   end if;
 end $$;
 
--- Read this back against the transcription before trusting it.
+drop table import_slot, import_feed, import_diaper, import_other;
+
+-- Read this back against the transcription before trusting it. Deliberately
+-- the LAST statement in the script: the SQL Editor shows one result grid, so
+-- anything after this would hide it.
 select
-  (t.occurred_at at time zone :'log_tz')::date              as day,
+  (t.occurred_at at time zone 'America/New_York')::date              as day,
   count(distinct t.id)                                       as moments,
   count(*) filter (where e.type = 'feed')                    as feeds,
   sum(e.volume_ml) filter (where e.type = 'feed')            as ml,
@@ -468,7 +507,7 @@ where t.updated_by = 'paper-log-import'
 group by 1
 order by 1;
 
--- Expected totals — 75 moments, 71 feeds, 3523 mL, 39 pee, 23 poop, 1 other:
+-- Expected totals — 80 moments, 78 feeds, 3843 mL, 42 pee, 25 poop, 1 other:
 --
 --   day         moments feeds    ml  pee poop other
 --   2026-08-26        4     3   101    1    2     0
@@ -480,12 +519,10 @@ order by 1;
 --   2026-09-01        8     8   470    6    1     0
 --   2026-09-02       10     8   420    5    6     0
 --   2026-09-03        8     8   420    3    4     1
---   2026-09-04        2     2   120    0    2     0
+--   2026-09-04        7     9   440    3    4     0
 --
 -- 8/29 and 8/30 really do have no poop at all — that is the page, not a
 -- dropped row. 8/30 is short two moments; see section 6.
-
-drop table import_slot, import_feed, import_diaper, import_other;
 
 
 -- ---------------------------------------------------------------------------
@@ -512,13 +549,13 @@ drop table import_slot, import_feed, import_diaper, import_other;
 --   values
 --     (gen_random_uuid(),
 --      '94c55231-e3dd-46d0-8567-fa8d0b90d809',
---      '6817e81c-9899-4394-8f8e-a1a949e2d562',
+--      'e04c268a-1fd8-4819-9001-f539d17a64f6',
 --      timestamp '2026-08-30 15:00' at time zone 'America/New_York',   -- <-- 13:00 or 15:00
 --      now(), now(), 'paper-log-import',
 --      'Hour digit overwritten on paper and minutes absent; time chosen by reading the original page.'),
 --     (gen_random_uuid(),
 --      '94c55231-e3dd-46d0-8567-fa8d0b90d809',
---      '6817e81c-9899-4394-8f8e-a1a949e2d562',
+--      'e04c268a-1fd8-4819-9001-f539d17a64f6',
 --      timestamp '2026-08-30 19:00' at time zone 'America/New_York',   -- <-- 17:00 or 19:00
 --      now(), now(), 'paper-log-import',
 --      'Hour digit overwritten on paper and minutes absent; time chosen by reading the original page.')
@@ -539,11 +576,12 @@ drop table import_slot, import_feed, import_diaper, import_other;
 -- ---------------------------------------------------------------------------
 -- 7. ROLLBACK
 --
--- Events cascade from timeslot, so deleting the timeslots is enough for the
--- log itself. The device is left in place: on delete restrict would block it
--- anyway while rows exist, and once they are gone it is one harmless row that
--- keeps the import's provenance readable.
+-- Events cascade from timeslot, so one statement is the whole undo. It is
+-- filtered on updated_by, never on a date range or on logged_by — the device
+-- is the owner's real phone and most of its rows are genuine app entries that
+-- this must not touch.
+--
+-- Nothing deletes from `device`. There is no import-created device any more.
 -- ---------------------------------------------------------------------------
 
 -- delete from public.timeslot where updated_by = 'paper-log-import';
--- delete from public.device   where updated_by = 'paper-log-import';
