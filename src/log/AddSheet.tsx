@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { logMoment, updateMoment } from '../moments'
 import type { Moment } from '../types'
 import { setEntryInProgress } from '../updates'
+import { markOverlay } from '../overlay'
 import {
   blocksFromMoment,
   canSave,
@@ -74,7 +75,11 @@ export function AddSheet({
   // and discard what is being typed.
   useEffect(() => {
     setEntryInProgress(true)
-    return () => setEntryInProgress(false)
+    markOverlay(true)
+    return () => {
+      setEntryInProgress(false)
+      markOverlay(false)
+    }
   }, [])
 
   function add(type: BlockType) {

@@ -72,36 +72,29 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**Uncommitted: the end time on the home list, plus a shell hardening — and one
-thing that needs checking on the phone.**
+**Uncommitted: the tab bar no longer covers the save button (D-028), plus the
+end-time fix and shell hardening from the same batch.**
 
-*End time.* The home list had its own `time()` formatter that only ever read
-`occurred_at`, so a period logged there showed as a single time until you opened
-the day view. It uses `timeCell` now, the same function the day table uses, and
-`hhmm` is exported so the status-row clock shares one formatter too — the local
-one had drifted. `scripts/verify-period-row.mts` logs a period and asserts both
-screens print `HH:MM–HH:MM` **and agree with each other**; the same shape of bug
-as the swipe, where the two lists quietly diverged.
+The bar became a flex row at the bottom of the shell rather than a fixed overlay,
+and a sheet scrolled to its end put the save button at 756–812 inside the bar's
+band of 740–844 — 56px of overlap on a 56px button, so an edit could not be saved
+at all. It is hidden behind every full-screen overlay now: the add/edit sheet,
+the period picker, the confirm sheet. `src/overlay.ts` is a counted store, so a
+confirm sheet opened over a picker cannot leave the bar hidden when one closes.
 
-*Shell hardening.* The flex-column change made `.log` and `.day` scrollers by
-hand, which left `.welcome`, the spike page and `/touch` as plain `main`
-elements inside an `overflow: hidden` shell — anything taller than the viewport
-would have been clipped with no way to reach it. The rule is now on
-`#root > main`, with `-webkit-overflow-scrolling: touch` and
-`overscroll-behavior-y: contain`. `.welcome` lost its `min-height: 100dvh`,
-which had been forcing it taller than its own scroll box.
+Also in this batch: the home list shows an end time (it had its own formatter
+reading only `occurred_at`), and `#root > main` is the scroller so `.welcome`,
+the spike page and `/touch` are not clipped by the shell.
 
-**Needs a check on the real phone: does the list scroll?** The shell change moved
-the scroll container from the document to `main`. Chromium scrolls it correctly —
-`verify-swipe` asserts both screens scroll and by how much — but repeated
-attempts to confirm it in the Simulator failed, first because injected touch may
-not drive a nested scroller and then because the Simulator stopped exposing a
-window to System Events at all. **This is unconfirmed on iOS, and a list that
-cannot scroll would hide every older entry.** If it does not scroll, the shell is
-the cause and the fix is not another guess — it is to give the tab bar its own
-non-scrolling row and let the document scroll behind it.
+`scripts/verify-overlay.mts` asserts the bar disappears for all three overlays,
+comes back afterwards, and — the check that matters — that **save is fully on
+screen and the topmost element at its own centre**. 206 checks.
 
-197 checks pass.
+**Still unconfirmed on the phone: does the list scroll?** The shell moved the
+scroll container from the document to `main`. Chromium scrolls it and
+`verify-swipe` asserts both screens do, but the Simulator would not scroll it
+under injected touch and then stopped exposing a window at all, so the two causes
+were never separated. A list that cannot scroll hides every older entry.
 
 ## Open threads
 

@@ -5,6 +5,7 @@ import { Icon } from './log/Icon'
 import { LogScreen } from './log/LogScreen'
 import { Welcome } from './log/Welcome'
 import SpikePage from './spike/SpikePage'
+import { useOverlayOpen } from './overlay'
 import TouchProbe from './probe/TouchProbe'
 import { getDevices } from './db'
 import { startSync, subscribe, syncState } from './sync'
@@ -27,6 +28,7 @@ export default function App() {
   // opening the app must not create an identity.
   const [hasDevice, setHasDevice] = useState(() => getDeviceId() !== null)
   const [adding, setAdding] = useState(false)
+  const overlay = useOverlayOpen()
   const [saved, setSaved] = useState(0)
 
   useEffect(() => {
@@ -69,8 +71,10 @@ export default function App() {
     <>
       {screen === 'log' ? <LogScreen key={saved} /> : <DayScreen key={saved} />}
 
-      {/* The FAB lives in the tab bar, raised and centred, so logging is
-          reachable from either screen without it floating over the content. */}
+      {/* Only on the two main screens. The bar navigates between log and day;
+          a sheet is neither, and as a flex row at the bottom of the shell it
+          landed on top of the save button rather than behind it. */}
+      {!overlay && (
       <nav className="tabs">
         <button
           type="button"
@@ -99,6 +103,7 @@ export default function App() {
           <Icon name="calendar_month" size={24} />
         </button>
       </nav>
+      )}
 
       {adding && (
         <AddSheet

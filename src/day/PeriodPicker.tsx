@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Icon } from '../log/Icon'
+import { markOverlay } from '../overlay'
 import { pad2 as pad, shiftIso as shift, type Range } from './period'
 
 // The period picker from the Phone prototype's day view. The app shipped the
@@ -32,6 +33,11 @@ export function PeriodPicker({
   const [from, setFrom] = useState<string | null>(initial?.from ?? null)
   const [to, setTo] = useState<string | null>(initial?.to ?? null)
   const [ym, setYm] = useState((initial?.from ?? today).slice(0, 7))
+
+  useEffect(() => {
+    markOverlay(true)
+    return () => markOverlay(false)
+  }, [])
 
   const year = Number(ym.slice(0, 4))
   const month = Number(ym.slice(5, 7))

@@ -637,3 +637,26 @@ floating it over the last row of the day table. The prototype centres all three
 and sizes the FAB up instead (72px against 56px), with the bar at 10/18/22px.
 Page bottom padding grew to match the taller bar — verified as 33px of clearance
 below the last row on both screens, rather than by eye.
+
+---
+
+## D-028 — The tab bar belongs to the two main screens only
+
+It is hidden whenever a full-screen overlay is open: the add/edit sheet, the
+period picker, the delete confirm sheet.
+
+**Why this needed deciding rather than patching.** Once the shell became a flex
+column (see `docs/status.md`), the bar stopped being a fixed overlay and became a
+row at the bottom of the column. A sheet scrolled to its end then put the save
+button at 756–812 inside the bar's band of 740–844 — **56px of overlap on a 56px
+button** — and an edit could not be saved at all.
+
+Growing the sheet's bottom padding past the bar's height would have hidden the
+symptom. The bar navigates between *log* and *day*; a sheet is neither, so it has
+no business being on screen at all while one is open. That also removes the whole
+question of which paints on top, which is not worth relying on across browsers.
+
+**How.** `src/overlay.ts` is a counted store — every overlay marks itself on
+mount and unmarks on unmount, and `App` reads it through `useSyncExternalStore`.
+Counted rather than boolean so a confirm sheet opened over a picker cannot leave
+the bar hidden when only one of them closes.

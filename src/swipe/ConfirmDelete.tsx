@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { Icon } from '../log/Icon'
+import { markOverlay } from '../overlay'
 
 /**
  * Q-012: the design's confirm sheet, chosen over D-025's undo toast.
@@ -15,6 +17,11 @@ export function ConfirmDelete({
   onKeep: () => void
   onDelete: () => void
 }) {
+  useEffect(() => {
+    markOverlay(true)
+    return () => markOverlay(false)
+  }, [])
+
   return (
     <div className="confirm-scrim" onClick={onKeep}>
       <div
