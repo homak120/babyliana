@@ -34,13 +34,35 @@ const lastNight = withHourMinute(23, 45, t(0, 30))
 check('typing 23:45 at 00:30 means LAST night, not tonight',
   lastNight.getDate() === 2 && lastNight.getHours() === 23, show(lastNight))
 
-const soon = withHourMinute(9, 0, t(8, 0))
-check('a time later today is read as yesterday — a moment cannot be in the future',
-  soon.getDate() === 2, show(soon))
+// Far enough ahead to only mean last night: at 08:00, 20:00 is twelve hours off.
+const lastEvening = withHourMinute(20, 0, t(8, 0))
+check('a time far ahead of now is read as yesterday',
+  lastEvening.getDate() === 2, show(lastEvening))
 
 const nudge = withHourMinute(8, 0, t(8, 0))
 check('nudging to the current minute does not jump a day',
   nudge.getDate() === 3, show(nudge))
+
+// The bug the owner hit: a sleep logged at 09:40, minute nudged twice, landed on
+// yesterday. One minute of tolerance meant any forward correction moved the day.
+const forward = withHourMinute(9, 42, t(9, 40))
+check('nudging a couple of minutes forward stays on today',
+  forward.getDate() === 3 && forward.getHours() === 9 && forward.getMinutes() === 42, show(forward))
+
+const anHourOn = withHourMinute(9, 0, t(8, 0))
+check('and so does an hour ahead — visible and fixable, unlike a 23-hour jump',
+  anHourOn.getDate() === 3, show(anHourOn))
+
+// The second bug: editing an older moment anchored to today, so changing its
+// minute dragged it forward by however many days had passed.
+const old = t(4, 10, 1)
+const edited = withHourMinute(4, 15, t(9, 40), old)
+check('editing an older moment keeps its own day',
+  edited.getDate() === 1 && edited.getHours() === 4 && edited.getMinutes() === 15, show(edited))
+
+const oldLate = withHourMinute(23, 30, t(9, 40), old)
+check('and a late time on an older moment does not fall back a day either',
+  oldLate.getDate() === 1 && oldLate.getHours() === 23, show(oldLate))
 
 const ago = minutesAgo(45, t(0, 20))
 check('an offset across midnight goes to yesterday',

@@ -99,9 +99,6 @@ export async function logMoment(input: NewMoment): Promise<Moment> {
     ...events.map((e) => ({ table: 'event' as const, rowId: e.id, op: 'put' as const })),
   ])
 
-  // Logging anything else means she woke up. Closing the open sleep here rather
-  // than asking is the whole point: at 4am you log the feed, not the waking.
-  await closeOpenSleep(new Date(timeslot.occurred_at), timeslot.id)
   return moment
 }
 
@@ -111,6 +108,12 @@ export async function logMoment(input: NewMoment): Promise<Moment> {
  * Skips `exceptId` so a sleep does not close itself in the same save, and skips
  * sleeps that started *after* the new entry — backdating an old feed should not
  * reach forward and end tonight's sleep.
+ *
+ * **Called from the save path, deliberately not from `logMoment`.** It writes to
+ * a row the caller did not create, and burying that inside the primitive meant
+ * anything that logged a moment — the verify suites among them — silently
+ * mutated unrelated data. `verify-s2` syncs the live database first, so running
+ * the test suite could have ended a real sleep that was in progress.
  */
 export async function closeOpenSleep(at: Date, exceptId?: string) {
   const before = (await db.getMoments()).filter(

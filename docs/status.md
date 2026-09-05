@@ -72,27 +72,31 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**Uncommitted: day/night mascot sets and the two-page welcome (D-030), on top of
-the sleep work (D-029).**
+**Uncommitted: sleep's colours, a live-data hazard, and the wrong-date bug
+(D-031).**
 
-The day set is the plush rather than the girl — a different character, not a
-recolour — chosen by the same clock that picks the palette. The welcome now opens
-on a gate asking for a secret code, then the name page.
+*Wrong date.* Logging a sleep filed it on the wrong day, and there were two
+causes in `withHourMinute`. It anchored to **today** rather than to the moment
+being edited, so changing an older entry's minute dragged it to today. And its
+future tolerance was **one minute**, so nudging a time two minutes forward read
+as "the future" and filed it a day earlier. Six hours now, and the fall-back rule
+only applies to a moment being logged today.
 
-**Two things to know about the gate.** It is a doormat, not a lock: the repo is
-public and the bundle carries the code in plain text, so it stops a stranger who
-finds the URL and nobody else. And **its photograph is a real photograph of Liana**,
-which arrived in a later drop of the package. It shows before the code is
-entered, so it is what anyone holding the URL sees; that was raised and is the
-owner's decision. WebP with a JPEG fallback — PNG cost 1.8MB for the same
-picture — and both kept out of the precache. See D-030.
+This reverses what `verify-s5` asserted — "a moment cannot be in the future". The
+reasoning is in D-031: being an hour early is visible and one tap to fix, where a
+23-hour jump is neither.
 
-Adding the gate stalled all seven browser suites at once, since each
-bootstrapped by filling the name field. `scripts/ui.mts` owns that path now.
+*Colours.* The sleep bubble had no `.bubble.sleep` rule and fell through to the
+default; its block header kept the milk red. Both peri now, and `verify-sleep`
+checks all four types as a set.
 
-**243 checks.** `verify-welcome.mts` covers both gate outcomes and asserts the
-two art sets resolve to different files, pinning the clock so the theme is
-deterministic.
+*The hazard.* `verify-s2` failed on an outbox count only in the full run. Not
+flaky: `logMoment` called `closeOpenSleep`, s2 syncs the **live** database first,
+and the newest row there was a real open sleep — so **running `npm run verify`
+could have ended a sleep in progress on the owner's own log.** The close runs
+from the save path now.
+
+254 checks.
 
 ## Open threads
 
@@ -136,7 +140,14 @@ Both notebook photographs read at full resolution and transcribed: 8/26–9/4, 8
 moments, 78 feeds, 3843 mL, 42 pee, 25 poop, one `other`. Three of those days
 postdate the baseline. Output is `supabase/imports/2026-09-05_paper-log-backfill.sql`
 — staging tables shaped to be diffed against the photographs line by line, then
-mechanical inserts. **Uncommitted, and never executed against a database.**
+mechanical inserts. Uncommitted, but **executed end to end on PostgreSQL 16**
+against a throwaway database built from the real migration — 80 timeslots, 144
+events, guard and rollback both exercised.
+
+`logged_by` is the owner's own device by his instruction, not a synthetic "Paper
+log" one, so provenance rests entirely on `updated_by = 'paper-log-import'` —
+which the app never writes, so it stays exact. The rollback filters on that and
+nothing else.
 
 The 9/4 column was cut short in the original photograph and read as two rows; the
 owner supplied a closer crop showing seven. Worth remembering as a transcription

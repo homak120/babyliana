@@ -687,6 +687,13 @@ At 4am you log the feed, not the waking. This too is scoped to the most recent
 timeslot: reaching back to stamp an end on an older sleep would be inventing
 data.
 
+**That close runs from the save path, not from `logMoment`.** It writes to a row
+its caller never named, and burying that in the write primitive meant anything
+logging a moment mutated unrelated data — `verify-s2` syncs the live database
+first, so **running the test suite could have ended a real sleep in progress.**
+It surfaced as an unstable outbox count and was a genuine hazard, not a flaky
+test. Primitives write what they are given; product rules belong above them.
+
 **The derived text is not stored.** The design writes `sleeping…` and
 `slept 1h 20m` into the entry's note. We compute both from `occurred_at` and
 `ended_at` at render time, so the note stays what the user typed and editing a
@@ -748,3 +755,29 @@ by hand.
 **Consequence for the suites.** Seven browser suites bootstrapped by filling the
 name field, and all of them stalled on page one at once. `scripts/ui.mts` now
 owns that path, so the next change to first-run costs one edit rather than seven.
+
+---
+
+## D-031 — A typed time keeps its own day
+
+Two bugs in `withHourMinute`, both filing entries on the wrong date, both found
+because the owner logged a sleep and it landed on the wrong day.
+
+**The day comes from the moment being edited, not from today.** It always
+anchored to the current date, so opening a feed from three days ago and nudging
+its minute dragged it to today. Silent, and worse the older the entry.
+
+**A time slightly ahead of now no longer falls back a day.** The tolerance was
+**one minute**: at 09:40, nudging the minute to 09:42 read as "the future", so it
+filed the entry on *yesterday* at 09:42. Any forward correction moved the day.
+
+The rule this protects is real — 23:45 typed at 00:30 means last night — but it
+needs a gap, not a hair. Six hours keeps the midnight case (23 hours ahead) and
+leaves ordinary correction alone.
+
+**This reverses a decision the tests encoded.** `verify-s5` asserted "a time
+later today is read as yesterday — a moment cannot be in the future". Strictly
+true, and wrong in practice: at 08:00, reading a typed 09:00 as *yesterday*
+09:00 moves it 23 hours to avoid being one hour ahead. A slightly future time is
+visible on the screen and takes one tap to fix; a 23-hour error is neither.
+The falling-back rule now applies only to a moment being logged today.

@@ -420,8 +420,13 @@ body {
   cursor: pointer;
 }
 
+/* One fill and ink per type, straight from the prototype's own table:
+   milk rose, diaper mint, sleep peri, other lavender. Sleep was added as a
+   block and a bubble without its pair, so it fell through to the bare .bubble
+   default and came out the wrong colour. */
 .bubble.milk { background: var(--roseFill); color: var(--roseInk); }
 .bubble.diaper { background: var(--mintFill); color: var(--mintInk); }
+.bubble.sleep { background: var(--periFill); color: var(--periInk); }
 .bubble.other { background: var(--lavFill); color: var(--lavInk); }
 
 .save {
@@ -435,6 +440,7 @@ body {
 /* --- diaper block ---------------------------------------------------------- */
 
 .block.diaper header { color: var(--mintInk); }
+.block.sleepblock header { color: var(--periInk); }
 
 .toggles { display: flex; gap: 0.625rem; }
 

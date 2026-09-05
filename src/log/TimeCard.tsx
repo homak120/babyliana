@@ -85,7 +85,8 @@ export function TimeCard({
   const [expanded, setExpanded] = useState(false)
 
   const setStart = (h: number, m: number) => {
-    const next = withHourMinute(h, m, new Date())
+    // `start` is the anchor: editing an older moment keeps its own day.
+    const next = withHourMinute(h, m, new Date(), start)
     onChange(next, end ? resolveEnd(next, end) : null)
   }
   const setEnd = (h: number, m: number) => {

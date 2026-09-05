@@ -36,6 +36,40 @@ await p.waitForTimeout(300)
 check('a quick icon pre-adds its block', (await p.locator('.milkblock').count()) === 1, 'milk block open')
 check('and the others are still offered', await p.getByRole('button', { name: /\+ .*diaper/ }).isVisible(), 'diaper bubble')
 check('sleep is a bubble now, not an "other"', await p.getByRole('button', { name: /\+ .*sleep/ }).isVisible(), 'sleep bubble')
+// Every bubble carries its type's own fill and ink, from the prototype's table:
+// milk rose, diaper mint, sleep peri, other lavender. Checked as a set rather
+// than one at a time — sleep was added without its pair and fell through to the
+// bare .bubble default, which is exactly what a per-type check would miss next
+// time. Tokens are resolved through a probe element because the theme, and so
+// the literal rgb, switches by clock.
+const token = (name: string) =>
+  p.evaluate((n) => {
+    const el = document.createElement('span')
+    el.style.color = `var(${n})`
+    document.body.appendChild(el)
+    const c = getComputedStyle(el).color
+    el.remove()
+    return c
+  }, name)
+
+for (const [type, fill, ink] of [
+  ['milk', '--roseFill', '--roseInk'],
+  ['diaper', '--mintFill', '--mintInk'],
+  ['sleep', '--periFill', '--periInk'],
+  ['other', '--lavFill', '--lavInk'],
+] as const) {
+  const got = await p.evaluate((t) => {
+    const el = document.querySelector(`.bubble.${t}`)
+    if (!el) return null
+    const cs = getComputedStyle(el)
+    return { bg: cs.backgroundColor, fg: cs.color }
+  }, type)
+  if (got === null) { check(`${type} bubble is offered`, false, 'missing'); continue }
+  check(`${type} bubble takes its own colours`,
+    got.bg === (await token(fill)) && got.fg === (await token(ink)),
+    `${got.bg} on ${got.fg}`)
+}
+
 await p.getByRole('button', { name: 'close' }).click()
 await p.waitForTimeout(300)
 

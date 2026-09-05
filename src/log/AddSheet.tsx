@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { logMoment, updateMoment } from '../moments'
+import { closeOpenSleep, logMoment, updateMoment } from '../moments'
 import type { Moment } from '../types'
 import { setEntryInProgress } from '../updates'
 import { markOverlay } from '../overlay'
@@ -134,7 +134,11 @@ export function AddSheet({
         ),
       })
     } else {
-      await logMoment(payload)
+      const m = await logMoment(payload)
+      // Logging anything else means she woke. Doing it here rather than inside
+      // logMoment keeps that primitive from touching rows its caller never
+      // named — see closeOpenSleep's note.
+      await closeOpenSleep(new Date(m.timeslot.occurred_at), m.timeslot.id)
     }
     setSaving(false)
     onSaved()
