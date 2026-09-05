@@ -20,6 +20,21 @@ Editor, paste each file in order, run it.
 
 That is the whole schema. There is nothing else to run.
 
+## `imports/` — one-off data, not schema
+
+Scripts that put rows in rather than tables. They are **not** migrations, are not
+part of rebuilding from empty, and are not safe to re-run blindly — each carries
+its own guard.
+
+| File | What it does |
+| --- | --- |
+| `imports/2026-09-05_paper-log-backfill.sql` | The ten photographed days of the paper log — 80 timeslots, 144 events — as staging tables that can be diffed against the photographs, then mechanical inserts. Guarded against a second run, with a rollback that filters on `updated_by = 'paper-log-import'` and nothing else |
+
+**The backfill is not the coverage run**, and says so in its own header. It proves
+the schema can hold the paper log. The gate in
+`.specify/memory/coverage-requirement.md` asks whether the *app* can capture it
+at 4am with thumbs, which no script can answer.
+
 ## The baby row
 
 One row in `baby` for Liana. It can go in through the REST API with the anon key

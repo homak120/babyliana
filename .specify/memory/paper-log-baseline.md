@@ -7,6 +7,21 @@ was coming.
 
 Where this document and any other document disagree, this one wins.
 
+**Scope note, 2026-09-05.** The photographs in `.specify/memory/paper-log/` run
+to **2026-09-04** — three days past what is written up below. Those days were
+read and transcribed for the backfill script
+(`supabase/imports/2026-09-05_paper-log-backfill.sql`) and carry at least one
+thing this document never saw: `Nasal` written in the Pee/Poop column on 9/3,
+which is neither a feed nor a diaper. Four marks across 8/30, 8/31 and 9/1 are
+genuinely unreadable and were left as holes rather than guesses — `docs/status.md`
+§ Open threads lists them.
+
+**This document has deliberately not been widened from that transcription.** It
+is the authority because the real user wrote it from the page; a transcription
+promoted into it would quietly make the transcription the authority instead.
+Extending it is a re-read of the photographs, and it is the owner's. Until then,
+read the sections below as covering 8/26–9/1 and no further.
+
 ## Structure as written
 
 Four columns, hand-ruled:
@@ -150,7 +165,13 @@ These are derived from the log, not chosen:
 5. Poop needs colour and consistency. It is already being recorded by hand.
 6. Every entry needs a free-text escape hatch. Paper has one by nature; the app
    must supply one deliberately.
-7. Sleep is a type to support, not a type to feature. See `docs/decisions.md` D-010.
+7. Sleep is a type to support, not a type to feature. See `docs/decisions.md`
+   D-013 — the specific decision, not D-010, which this line cited for its first
+   week. **Overtaken 2026-09-05 by D-029:** sleep is featured now, on its own
+   bubble and block, by the design's choice rather than by anything on this page.
+   The finding above is unchanged and still true — zero sleep entries in seven
+   days — and the promotion is therefore an addition to the paper, not a reading
+   of it.
 8. Volume entry must accept any integer. Presets and steppers are an accelerator
    layered on top, never the only path.
 9. Blank and unknown are distinct in both storage and display. "No feed" and "a

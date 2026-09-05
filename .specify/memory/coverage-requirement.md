@@ -50,8 +50,14 @@ the app's equivalent of paper accepting a stray scribble.
 
 ## How to test it
 
-Take the photographed log. Enter all seven days into the app. If any entry
-cannot be represented faithfully, the app is not ready.
+Take the photographed log. Enter **all ten days** into the app — the photographs
+run 8/26 through 9/4, three days past what `paper-log-baseline.md` writes up. If
+any entry cannot be represented faithfully, the app is not ready.
+
+**Four marks cannot be read at all** — two overwritten hours on 8/30, one
+ambiguous milk cell on 9/1, and 8/31's out-of-order `12:40`. They are holes in
+the source, not failures of the app; skip them and do not let them fail the test.
+`docs/status.md` § Open threads describes each.
 
 **"Faithfully" means every fact is represented, not every glyph reproduced.**
 The one deliberate divergence is time: `04:?` becomes an ordinary time, because

@@ -7,9 +7,9 @@ Expect to rename. Keep the name out of anything expensive to change.
 
 ## What this is
 
-A PWA — a web app installed to the iPhone home screen — that records feeds and
-diaper changes and syncs live between both parents' phones. It exists to replace
-a paper log currently kept at the bedside.
+A PWA — a web app installed to the iPhone home screen — that records feeds,
+diaper changes and sleep, and syncs live between both parents' phones. It exists
+to replace a paper log currently kept at the bedside.
 
 Not an App Store app. No Apple Developer account. No native code. Running cost: $0.
 
@@ -28,6 +28,9 @@ cannot go stale.
 | `docs/tasks.md` | Task list, by phase, with owner |
 | `docs/open-questions.md` | Deliberately unanswered. Do not guess these |
 | `.specify/memory/` | Spec artifacts agents read |
+| `.specify/memory/paper-log-baseline.md` | The primary requirements document. Wins where documents disagree |
+| `supabase/` | Schema as versioned SQL, plus one-off import scripts |
+| `scripts/` | The `npm run verify` suites, and `scripts/ios/` for real touch |
 | `CLAUDE.md` | Agent orientation |
 
 ## The one thing to understand first

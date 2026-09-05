@@ -101,9 +101,10 @@ as a smoke test.
 
 ## Phase 7 — Visual identity & polish
 
-**Largely delivered by the second design handoff, 2026-09-04.** The four mascot
-states, the welcome art and the app icon all arrived as finished assets and are
-shipped. What remains in this phase is the owner's judgement — Q-003 on the
+**Largely delivered by the second design handoff, 2026-09-04, and extended by a
+third delivery on 2026-09-05.** The four mascot states, the welcome art and the
+app icon all arrived as finished assets and are shipped — two full sets deep now,
+day and night, switched by clock, with a photograph gate before the welcome. What remains in this phase is the owner's judgement — Q-003 on the
 mascot's identity and the rights caution attached to it, and Q-008 on the name —
 not production work.
 
@@ -123,9 +124,11 @@ Real 3am shifts. Runs until you have used it on enough of your own night shifts
 to know what breaks — that is a condition, not a duration, and no tooling
 substitutes for it.
 
-- Run the coverage checklist: enter all seven photographed days
+- Run the coverage checklist: enter all ten photographed days — 8/26 to 9/4
 - Fix what breaks before anyone else sees it
-- Note which secondary types you actually reach for — this decides promotion
+- Note which secondary types you actually reach for — this decides promotion.
+  Sleep is no longer among them: D-029 promoted it by design rather than by
+  observed use, which Q-006 records as a departure rather than an answer
 - Kill criteria check
 
 ## Phase 9 — Reveal

@@ -24,20 +24,30 @@ suites.
 What exists: local-first writes to IndexedDB that never block on the network,
 push-then-reconcile sync with Supabase, the home screen (mascot artwork by
 derived state, elapsed hero, totals, recent list), the day table with a date
-strip and period picker, the add/edit sheet with milk, diaper, other and notes,
-swipe-to-edit-and-delete on both lists behind a confirm sheet, name entry, theme
-by clock, and an offline-capable PWA at 874 KiB precached.
+strip and period picker, the add/edit sheet with milk, diaper, **sleep**, other
+and notes, swipe-to-edit-and-delete on both lists behind a confirm sheet, a
+photograph gate before the welcome, name entry, two mascot sets and a theme
+switched by clock, and an offline-capable PWA at 24 entries / 1012.76 KiB
+precached.
 
-**What is left is mostly not code.** Three build items remain, and the rest is
-the owner's judgement — see *Next action*.
+**Sleep is a first-class type** as of the third design delivery — its own bubble,
+its own block, a quick icon that becomes a live "end sleep" pill while one is
+running, and an open sleep expressed as a missing end time rather than a flag.
+D-029 has the reasoning; it amends D-013, which had sleep supported but not
+featured.
+
+**What is left is mostly not code.** Two build items remain — export and a
+settings screen — and the rest is the owner's judgement. See *Next action*.
 
 ## Next action
 
-**1. The coverage run. This is the gate and it is the owner's.** Enter all seven
+**1. The coverage run. This is the gate and it is the owner's.** Enter the
 photographed days from `.specify/memory/paper-log/` into the app on the phone,
-against the checklist in `coverage-requirement.md`. Not in a script — the point
-is thumbs, at speed, in the dark. If something cannot be entered, that finding
-outranks any further polish. It is the single biggest open item in the project.
+against the checklist in `coverage-requirement.md`. **Ten days, not seven** — the
+photographs run 8/26–9/4, three days past what the baseline covers. Not in a
+script — the point is thumbs, at speed, in the dark. If something cannot be
+entered, that finding outranks any further polish. It is the single biggest open
+item in the project.
 
 **2. Two build items, both small, both `CC`:**
 
@@ -49,8 +59,9 @@ outranks any further polish. It is the single biggest open item in the project.
 
 **3. Three owner decisions, none blocking:** Q-003 (mascot identity and the
 rights caution), Q-008 (the final name, which gets dearer with every asset
-carrying it), Q-006 (which secondary types earned promotion — answered by the
-solo run, not by thinking).
+carrying it), Q-006 (which of the *remaining* secondary types earned promotion —
+sleep already went, by design in D-029 rather than by the solo run; weight,
+temperature, supplements and spit-up are still answered by use, not by thinking).
 
 **4. Q-004 runs itself.** Whether Safari evicts IndexedDB on a backgrounded
 phone. The clock is running; nobody needs to do anything.
@@ -59,10 +70,13 @@ phone. The clock is running; nobody needs to do anything.
 
 Read `CLAUDE.md` first, then this file. Beyond that:
 
-- **`npm run verify`** is the gate: typecheck, nine data-layer suites, then three
-  browser suites (`verify-swipe`, `verify-period`, `verify-hero`) that serve
-  their own build. Two suites hit the **live** database and delete only ids they
-  created in that run — never widen one to a filter.
+- **`npm run verify`** is the gate: typecheck, the nine data-layer suites
+  (`verify-s1`…`s9`), a build, then **eight** browser suites against it —
+  `swipe`, `period`, `hero`, `milk`, `period-row`, `overlay`, `sleep`, `welcome`.
+  Seventeen in total. The browser eight serve their own build and touch no
+  database, so they are the cheap ones to run on a UI change. Two of the
+  data-layer suites hit the **live** database and delete only ids they created in
+  that run — never widen one to a filter.
 - **`scripts/ios/`** drives the iOS Simulator with real touch, and
   `measure-screenshot.mts` measures a screenshot the owner sends. Both exist
   because this project has repeatedly shipped fixes that passed on desktop and
@@ -73,9 +87,14 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**Nothing uncommitted.** The sleep colours, the live-data hazard and the
-wrong-date bug (D-031) that sat here went out in `ad2ccce`; this section had not
-been cleared after them. The tab bar's bottom gap followed in its own commit.
+**Nothing uncommitted.** The working tree is clean as of the documentation sweep
+below.
+
+Worth knowing why this section was wrong twice in one day: it named the sleep
+colours, the live-data hazard and D-031 long after `ad2ccce` shipped them,
+because clearing it is a separate act from doing the work. **If you are finishing
+a session, clear this before you commit, not after** — the commit that empties
+the tree is the same commit that should empty this list.
 
 ## Open threads
 
@@ -101,8 +120,14 @@ Noticed, not blocking, no owner yet.
   covers 8/26–9/1; the photographs also carry 9/2, 9/3 and 9/4. Those days
   introduce at least one thing the baseline never saw — `Nasal` written in the
   Pee/Poop column on 9/3, which is neither a feed nor a diaper and lands on
-  `other`. Worth a baseline pass, since the baseline is the authority and is now
-  narrower than its own source.
+  `other`.
+
+  **The baseline now says so, in a dated note at its head, and nothing more.**
+  Extending its tables is a re-read of the photographs against the authority
+  document, not a doc edit, and it is the owner's — an agent widening the primary
+  requirements document from its own transcription would make the transcription
+  the authority. The note names the gap so a cold reader cannot mistake the
+  document for complete.
 - **No Spec Kit scaffold.** `.specify/memory/` follows the convention but there
   is no `constitution.md`, no scripts, no templates. The non-negotiables in
   `CLAUDE.md` are effectively the constitution. If Phase 5 intends to run real
@@ -113,13 +138,45 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
+### 2026-09-05 (later) — the tab bar's bottom gap, and a documentation sweep
+
+The bar's bottom padding was `max(22px, env(safe-area-inset-bottom))` — 34pt on a
+notched phone, on top of the inner margin that 40–56px rounded targets already
+give their 20px icons. It discounts the inset by 16pt now, so 18pt on the phone.
+**Invisible off-device**: the inset is 0 in every desktop browser, so before and
+after render identically in the suites that would otherwise have caught it.
+Committed as `5fca772` after the eight browser suites passed.
+
+Then a sweep for stale prose, which found more than the tab bar did. Six
+documents disagreed with the code:
+
+- *In flight* still listed three items that shipped in `ad2ccce`, and Position
+  claimed 187 checks across twelve suites against an actual 254 across seventeen,
+  and 874 KiB precached against 1012.76.
+- **Sleep's promotion (D-029) had not reached any document outside
+  `decisions.md`.** D-013 said sleep was supported but not featured; the baseline
+  drew the same implication and cited D-010 for it; Q-006 still listed sleep as a
+  candidate for promotion; the README described an app that records feeds and
+  diaper changes. Each now points at D-029, and Q-006 covers only the four types
+  that are genuinely still open.
+- The coverage run is **ten photographed days, not seven**, in three documents
+  that all said seven.
+- `supabase/README.md` documented `migrations/` and not `imports/`, so the
+  backfill script existed with no entry in the file that tells you what to run.
+
+The pattern worth keeping: **every one of these was a document that was correct
+when written.** Nothing was wrong at the time. They went stale because a decision
+landed in `decisions.md` and stopped there, which is the failure mode a document
+set has instead of a bug.
+
 ### 2026-09-05 — the paper log transcribed, and a backfill script that is not the gate
 
 Both notebook photographs read at full resolution and transcribed: 8/26–9/4, 80
 moments, 78 feeds, 3843 mL, 42 pee, 25 poop, one `other`. Three of those days
 postdate the baseline. Output is `supabase/imports/2026-09-05_paper-log-backfill.sql`
 — staging tables shaped to be diffed against the photographs line by line, then
-mechanical inserts. Uncommitted, but **executed end to end on PostgreSQL 16**
+mechanical inserts. Committed in `5682ef3`, and **executed end to end on
+PostgreSQL 16**
 against a throwaway database built from the real migration — 80 timeslots, 144
 events, guard and rollback both exercised.
 
@@ -180,29 +237,3 @@ one came from believing a document or a desktop browser over the phone:
 Simulator, which iOS turns into genuine touches, and a screenshot measurer.
 "103.7pt against an expected 56" is what turned a vague complaint into a bug;
 eyeballing had already produced one wrong answer.
-
-### 2026-09-03 — Phase 6 built end to end; swipe fixed for real touch
-
-S0 through S9 all landed. The app is usable: local write, sync, home, day,
-edit, delete, undo, name entry, theme by clock.
-
-The last bug is the one worth remembering. Swipe-to-reveal passed an end-to-end
-test and did nothing on the owner's iPhone. The test drove it with a mouse,
-which sends pointer events a phone never sends. The real cause was that React
-attaches `touchmove` passively, so a handler there cannot call
-`preventDefault` — and without that, iOS arbitrates the gesture as a scroll and
-cancels the pointer before a horizontal swipe engages. Listeners are now native
-with `{ passive: false }`. `scripts/shoot.mts` sets `hasTouch` from now on, so
-this class of bug surfaces in a screenshot run instead of on the phone.
-
-The broader lesson, which cost several rounds this phase: a passing test of the
-wrong input proves nothing. Several CSS "fixes" were also verified by reading
-the file rather than the rendered result, and one `.replace()` silently matched
-nothing while I reported a match. Measure computed styles in the browser.
-
-Three fixes went out before one worked, and only the second mattered — see
-*In flight*. The rule that came out of it: a synthetic-event test cannot prove a
-touch gesture, because arbitration is exactly what synthetic events skip. Use
-`scripts/ios/` instead.
-
-The first (d9c3bad) also went in without consent.

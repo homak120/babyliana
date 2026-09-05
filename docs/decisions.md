@@ -253,6 +253,14 @@ day-boundary attribution when a sleep crosses midnight (D-015). Adding the type
 to the registry costs nothing. Handling it correctly in the derived views does.
 Either accept that knowingly, or leave the type out until Q-006 promotes it.
 
+**Amended 2026-09-05 by D-029: sleep is featured now.** Not because Q-006 closed
+— the solo run has not happened — but because the third design delivery put it on
+the primary surface, and the interval cost this decision priced was paid rather
+than avoided. What stands is the reasoning: the paper log still contains zero
+sleep entries, so this remains a type the design chose rather than one the
+baseline demanded. If the solo run says nobody reaches for it, that is a real
+finding and not a contradiction.
+
 ---
 
 ## D-014 — Milk in millilitres, `B` = breast milk, `F` = formula

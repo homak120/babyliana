@@ -36,10 +36,19 @@ recovery plan and the export becomes mandatory rather than prudent.
 
 ### Q-006 — Which secondary event types get promoted?
 
-Sleep, weight, temperature, supplements, spit-up all exist in the registry. Some
-may deserve the primary surface.
+Weight, temperature, supplements and spit-up exist in the registry. Some may
+deserve the primary surface.
 
 **Closed by:** Phase 8 solo run — observed use, not prediction (D-013).
+
+**2026-09-05 — sleep left this list without waiting for the answer.** The third
+design delivery promoted it, and D-029 accepted: its own bubble, its own block, a
+quick icon in the bar. So one type was decided by design rather than by observed
+use, which is exactly what this question was written to avoid. Recorded plainly
+rather than tidied away — the paper log still contains zero sleep entries, and if
+the solo run finds nobody reaches for it, that is a finding about the promotion.
+The four types above are untouched by this and still close the way the question
+says.
 
 ---
 

@@ -122,11 +122,26 @@ when". Read that first; this list is the checklist view of the same thing.
       and its `more` pill (D-027), totals recalculated over whatever period is on
       screen, the tab bar matched to the prototype, the app shell rebuilt as a
       flex column, and the mascot artwork wired in
+- [x] **CC** Post-slice work from the *third* design delivery: sleep promoted to a
+      first-class type with its own bubble and block, an open sleep expressed as
+      a missing end time, a contextual tab bar whose sleep icon becomes a live
+      "end sleep" pill (D-029), two mascot sets switched by clock, and a
+      photograph gate before the welcome
+- [x] **CC** A typed time keeps its own day (D-031) — `withHourMinute` anchored
+      to today rather than to the moment being edited, so editing an older entry
+      dragged it forward; and a one-minute future tolerance filed a time nudged
+      two minutes ahead a day early
 
-- [ ] **H** Run the coverage checklist: enter all seven photographed days. This
-      is the gate into Phase 7, not a formality. **It is the single biggest
-      open item in the project** — everything else on this list is either the
-      owner's judgement or small
+- [ ] **H** Run the coverage checklist: enter all **ten** photographed days —
+      8/26 to 9/4, three of them past what the baseline writes up. This is the
+      gate into Phase 7, not a formality. **It is the single biggest open item in
+      the project** — everything else on this list is either the owner's
+      judgement or small
+- [x] **CC** Transcribe the photographed days and backfill them into Supabase —
+      `supabase/imports/2026-09-05_paper-log-backfill.sql`, 80 timeslots and 144
+      events, executed end to end against a throwaway database. **Explicitly not
+      a substitute for the line above**: it proves the schema holds the data, not
+      that the app can capture it with thumbs at 4am
 
 ### Before reveal, not before MVP
 
@@ -163,7 +178,8 @@ the owner's judgement, not production work.
       (settled, awake, hungry, sleeping), with the *logged* flash reusing awake.
       Descriptive throughout; nothing evaluative
 - [x] **H/CD** Asset production — a consistent set supplied and shipped as WebP
-      with PNG fallbacks
+      with PNG fallbacks, two sets deep (day and night, switched by clock), plus
+      the welcome gate photograph
 - [x] **CD** App icon — replaced from the second handoff. The icon is the plush,
       not the character. Launch experience still open
 - [x] **CC** Implement the visual identity — artwork wired to derived state,
@@ -174,8 +190,10 @@ the owner's judgement, not production work.
 ## Phase 8 — Solo run
 
 - [ ] **H** Use it on your own night shifts, until you know what breaks
-- [ ] **H** Run the coverage checklist — enter all seven photographed days
-- [ ] **H** Note which secondary types you actually reach for
+- [ ] **H** Run the coverage checklist — enter all ten photographed days
+- [ ] **H** Note which secondary types you actually reach for. Q-006, now
+      covering weight, temperature, supplements and spit-up — sleep left the list
+      early, by design in D-029 rather than by observed use
 - [ ] **CC** Fix what broke
 - [ ] **H** Kill criteria check
 

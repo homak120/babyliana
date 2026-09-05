@@ -209,8 +209,9 @@ a deploy reaches it without reinstalling.
 ## Then: run the coverage checklist
 
 `coverage-requirement.md` is the acceptance test, and it is a real one: enter all
-seven photographed days. If any entry cannot be represented faithfully, the app
-is not ready — regardless of how good the parts that do work are.
+**ten** photographed days — 8/26 to 9/4, three of them past what the baseline
+writes up. If any entry cannot be represented faithfully, the app is not ready —
+regardless of how good the parts that do work are.
 
 That is the gate into Phase 7, not a formality.
 
