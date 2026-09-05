@@ -81,9 +81,11 @@ on a gate asking for a secret code, then the name page.
 
 **Two things to know about the gate.** It is a doormat, not a lock: the repo is
 public and the bundle carries the code in plain text, so it stops a stranger who
-finds the URL and nobody else. And **its photograph is missing** — the design
-leads with `assets/liana-photo.png`, which the prototype references but the
-package never shipped; the welcome art stands in until the real file arrives.
+finds the URL and nobody else. And **its photograph is a real photograph of Liana**,
+which arrived in a later drop of the package. It shows before the code is
+entered, so it is what anyone holding the URL sees; that was raised and is the
+owner's decision. WebP with a JPEG fallback — PNG cost 1.8MB for the same
+picture — and both kept out of the precache. See D-030.
 
 Adding the gate stalled all seven browser suites at once, since each
 bootstrapped by filling the name field. `scripts/ui.mts` owns that path now.
@@ -130,11 +132,16 @@ fourth. This is orientation, not history. `git log` is the history.
 
 ### 2026-09-05 — the paper log transcribed, and a backfill script that is not the gate
 
-Both notebook photographs read at full resolution and transcribed: 8/26–9/4, 75
-moments, 71 feeds, 3523 mL, 39 pee, 23 poop, one `other`. Three of those days
+Both notebook photographs read at full resolution and transcribed: 8/26–9/4, 80
+moments, 78 feeds, 3843 mL, 42 pee, 25 poop, one `other`. Three of those days
 postdate the baseline. Output is `supabase/imports/2026-09-05_paper-log-backfill.sql`
 — staging tables shaped to be diffed against the photographs line by line, then
-mechanical inserts.
+mechanical inserts. **Uncommitted, and never executed against a database.**
+
+The 9/4 column was cut short in the original photograph and read as two rows; the
+owner supplied a closer crop showing seven. Worth remembering as a transcription
+failure mode — the missing rows looked like the end of the page, not like
+missing data, so nothing flagged them.
 
 **The script is deliberately not a substitute for the coverage run**, and says so
 in its own header. It proves the schema can hold the data. The gate asks whether

@@ -744,21 +744,36 @@ body {
 
 /* --- welcome, page one: the gate ------------------------------------------- */
 
-/* The handoff's gate leads with a 330px photograph of Liana
-   (`assets/liana-photo.png`), which was referenced by the prototype but not
-   shipped with the package. The welcome art stands in on the ground colour
-   until the photograph arrives — see D-030. */
+/* Full-bleed, 330px, fading into the ground — the shape the handoff draws, even
+   though the photograph it wants was never shipped. See D-030.
+
+   It escapes .welcome's 1.625rem padding with negative margins rather than by
+   restructuring the column, which keeps the rest of the page aligned. */
 .gatephoto {
-  align-self: center;
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 13.75rem;
+  position: relative;
+  height: 330px;
   flex: none;
-  margin-bottom: 0.5rem;
-  border-radius: 1.75rem;
-  background: var(--card);
+  margin: calc(-3rem - env(safe-area-inset-top)) -1.625rem 0.25rem;
   overflow: hidden;
+}
+
+.gatephoto img {
+  width: 100%;
+  height: 100%;
+  /* A photograph fills the block. The framing keeps her face clear of the
+     gradient below, which is what the object-position is for. */
+  object-fit: cover;
+  object-position: 50% 32%;
+  display: block;
+}
+
+/* The fade the design puts over the photo, so it dissolves into the copy
+   below rather than ending on a hard edge. */
+.gatephoto::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 55%, var(--bg) 100%);
 }
 
 .gate h1 { font-size: 2rem; }

@@ -55,7 +55,12 @@ export default defineConfig({
         // The 1024 icon is the same story: the manifest references it, install
         // happens online, and it is 840KB.
         globIgnores: [
+          // Every mascot fallback, including the -day set and the gate photo's
+          // JPEG. The earlier list named only the night set by hand and silently
+          // stopped covering the rest as art was added.
           'assets/{settled,awake,hungry,sleeping,home}-*.png',
+          'assets/{settled,awake,hungry,sleeping}-day-*.png',
+          'assets/gate-*.jpg',
           'pwa-1024x1024.png',
         ],
         // The app must open with no signal, and the font carries the product's

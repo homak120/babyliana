@@ -731,10 +731,19 @@ per install, before any identity exists, and no event has ever been logged behin
 it. The code lives in one named constant in `Welcome.tsx` so changing it is a
 one-line edit.
 
-**The gate's photograph is missing.** The design leads with a 330px photograph
-of Liana, `assets/liana-photo.png`, which the prototype references but the
-package does not ship. The welcome art stands in on a card until the real file
-arrives.
+**The gate leads with a photograph of Liana**, `assets/liana-photo.png`, which
+was absent from the first drop of this package and arrived in a later one.
+
+It renders **before** the code is entered, so it is what anyone holding the URL
+sees — the gate protects the log, not the picture. Raised with the owner and his
+call: use it as designed. Worth restating here so a later session does not
+"discover" it as a bug and quietly move it behind the gate.
+
+Shipped as WebP with a **JPEG** fallback, not PNG: it is a photograph, and PNG
+cost 1.8MB against 258KB for the same picture. Both are excluded from the
+offline precache, along with the `-day` set, which the earlier `globIgnores` list
+had silently stopped covering as new art was added — it named only the night set
+by hand.
 
 **Consequence for the suites.** Seven browser suites bootstrapped by filling the
 name field, and all of them stalled on page one at once. `scripts/ui.mts` now

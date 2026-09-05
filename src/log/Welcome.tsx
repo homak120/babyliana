@@ -2,6 +2,10 @@ import { useState } from 'react'
 import { createThisDevice } from '../moments'
 import { Icon } from './Icon'
 import { Mascot } from './Mascot'
+import gateWebp from '../assets/mascot/gate.webp'
+// JPEG, not PNG: it is a photograph, and the PNG fallback was 1.8MB against
+// 258KB for the same picture.
+import gateJpg from '../assets/mascot/gate.jpg'
 
 // Shown once, when this device has no name yet.
 //
@@ -61,8 +65,16 @@ export function Welcome({ onDone }: { onDone: () => void }) {
   if (!passed) {
     return (
       <main className="welcome gate">
+        {/* The photograph the design asks for, `assets/liana-photo.png`, which
+            arrived in a later drop of the same package.
+
+            It renders before the code is entered, so it is what anyone holding
+            the URL sees. That is deliberate and the owner's call — see D-030. */}
         <div className="gatephoto">
-          <Mascot state="settled" size={168} welcome />
+          <picture>
+            <source srcSet={gateWebp} type="image/webp" />
+            <img src={gateJpg} alt="" />
+          </picture>
         </div>
 
         <p className="kickerup">hello there</p>

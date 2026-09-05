@@ -45,6 +45,24 @@ check('the welcome opens on the gate', await p.locator('.gate').isVisible(), 'pa
 check('and not on the name page yet', (await p.getByPlaceholder('Anya').count()) === 0, 'name not shown')
 check('the button waits for a long-enough code', await p.locator('.save').isDisabled(), 'disabled')
 
+// The gate showed the same art as the name page once, which made both pages of
+// the welcome look identical.
+const art = await p.evaluate(() => {
+  const gate = document.querySelector('.gatephoto source') as HTMLSourceElement
+  const box = (document.querySelector('.gatephoto') as HTMLElement).getBoundingClientRect()
+  return { src: gate.srcset, w: Math.round(box.width), h: Math.round(box.height), top: Math.round(box.top) }
+})
+check('the gate has its own art', /gate/.test(art.src), art.src.split('/').pop() ?? '')
+const fit = await p.evaluate(() => {
+  const cs = getComputedStyle(document.querySelector('.gatephoto img')!)
+  return `${cs.objectFit} ${cs.objectPosition}`
+})
+// A photograph fills the block; the earlier stand-in was a transparent asset
+// and had to be contained.
+check('the photo fills the block', fit.startsWith('cover'), fit)
+check('and it is a full-bleed hero', art.w === 390 && art.h === 330 && art.top <= 0,
+  `${art.w}x${art.h} at y ${art.top}`)
+
 await p.locator('#code').fill('1234')
 await p.locator('.save').click()
 await p.waitForTimeout(300)
