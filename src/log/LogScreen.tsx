@@ -351,7 +351,7 @@ export function LogScreen({ onEndOpen }: {
             {target && (
               <div className="wakeline">
                 <Icon name="alarm" size={14} />
-                <span>wake ~{hhmm(target.toISOString())}</span>
+                <span>by {hhmm(target.toISOString())}</span>
                 <em>{targetText(target, now)}</em>
               </div>
             )}

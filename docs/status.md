@@ -65,7 +65,11 @@ both, so this is a daylight distinction.
 **The top card carries a target wake time and a bottle prompt, and three
 secondary types take a value** — all D-036. The target is the last feed plus three hours, four when
 that feed landed between 22:00 and 06:00; it is flat, deliberately *not* the
-mascot's split, and hidden while a feed is running. `weight`, `temperature` and
+mascot's split, and hidden while a feed is running. **It is a ceiling, not an
+appointment** — the mascot's *hungry* is the floor, and holding the ceiling
+still is what makes the room between them vary by source. The line reads
+**`by 15:00 · 1h 15m left`**, and `1h 10m past` once there is none. D-036,
+sharpened 2026-09-06. `weight`, `temperature` and
 `supplement` now have inputs behind `other` — kg typed into the schema's grams,
 °F, and a what/how-much pair that **arrives filled in with `Vitamin D` /
 `1 drop`** — and they read back on both the day table and the home list, the
@@ -135,6 +139,23 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
+**The target reads as a ceiling now, in words as well as in reasoning.** D-036's target section gains the floor-and-ceiling argument — why
+*hungry* and the target wake time are the two ends of one range rather than two
+answers to one question, and why the ceiling must stay flat. It exists because a
+proposal to give the target the mascot's breast / formula split has now been
+reached for twice, on the grounds that the card "contradicts itself" for 75
+minutes after a breast feed. That 75 minutes is the window, and the entry says
+so.
+
+**The wording followed it.** `wake ~15:00 · in 1h 15m` is an appointment;
+`by 15:00 · 1h 15m left` is a ceiling. `src/derive.ts` (`targetText`) and the
+`.wakeline` span in `src/log/LogScreen.tsx`, plus two reworded checks in
+`verify-s3`. Past the ceiling it says `1h 10m past` — not `over` or `late`,
+which carry a verdict, and not `ago`, which described the clock time rather than
+the room. `verify-hero` asserts geometry and not text, so it needed no change
+and passes: the line renders `by 20:53 · 3h 00m left` on one row, ending 322px
+against a 337px limit. The new wording is **shorter** than what it replaced.
+
 **The sheet is one tile per thing** — D-038. Milk no longer repeats, because
 the milk card already holds both parts of a split feed and has its own `+` for
 the second. Weight, temperature and supplement came out of `other` and each has
@@ -196,7 +217,7 @@ saying so is the rule that was skipped.
 
 **Everything through the mascot's source split is pushed** (`e7ddf40`).
 
-**Uncommitted: D-036, in two halves.**
+**D-036 is pushed, in two halves** — `020b3ce` and the commits after it.
 
 1. **The secondary fields** — `src/log/drafts.ts` (`OtherDraft`'s four fields,
    `kgToGrams`, `gramsToKg`), `src/log/OtherBlock.tsx`, `src/log/log.css`,
@@ -207,7 +228,7 @@ saying so is the rule that was skipped.
    `.wakeline` on the card, its CSS, fourteen checks in `verify-s3` and six in
    `verify-hero`.
 
-**Also uncommitted, and nobody asked for it:** a fix in `verify-period`.
+**Also pushed, and nobody asked for it:** a fix in `verify-period`.
 `preset fills the span` counted `.cal.between` in the opening month only, and on
 the 6th "last 7 days" starts on the 31st — an edge with nothing between it and
 the month's end. It went red on the date rolling over, on `HEAD`, before any of
@@ -301,7 +322,51 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-06 (latest) — a red dot that was not offline
+### 2026-09-06 (latest) — the target is a ceiling, not an appointment
+
+A reasoning session. Nothing in `src/` moved, and nothing needed to.
+
+**The question was whether the target wake time should follow the mascot's
+breast / formula split (D-035).** Laid out on a timeline it looks like it
+should: after a breast feed the card draws Liana *hungry* at 1h 45m while the
+wake line still reads `in 1h 15m`, so for 75 minutes one card appears to make
+two claims. After formula the same overlap is 30 minutes. Framed that way the
+split reads as the obvious fix.
+
+**The owner's framing dissolved it.** The target is a **ceiling** — the time not
+to go past — and *hungry* is a **floor**, the earliest she is ready. Feeling
+hungry is not the same as needing to eat this minute: a baby sleeping deeply can
+be left a while longer, and the target is what says how much longer. The two are
+the ends of one range, not two answers to one question, and the 75 minutes is
+the window rather than a contradiction.
+
+**Which inverts the conclusion.** If the ceiling followed the floor, the room
+between them would be a fixed width and the target would stop saying anything
+the mascot had not already said. Held flat it varies — 75 minutes after breast
+milk, 30 after everything else — and that variation is the whole of its value.
+**Splitting the target would flatten it.**
+
+**D-036 now carries all of it**, including the tone guard: a ceiling is a thing
+that can be passed, and the line still only says how far past, with no alarm and
+no view about it. The entry says out loud that this proposal has been reached
+for twice and why it is wrong, so a third pass finds the argument instead of
+re-deriving it.
+
+**Then the wording followed, in the same session.** `wake ~15:00 · in 1h 15m`
+is an appointment — a thing scheduled to happen, counted down to. It now reads
+`by 15:00 · 1h 15m left`: same instant, same number, and the only change is
+which question it answers. `wake ~` was a small untruth besides, since the app
+has no idea when she wakes and the tilde was carrying that.
+
+**Past the ceiling it says `1h 10m past`.** Not `over` or `late`, which carry a
+verdict the mascot is already held away from, and not `ago`, which belonged to
+the appointment reading. `targetText` in `src/derive.ts`, the `.wakeline` span
+in `LogScreen.tsx`, and two reworded checks in `verify-s3`. `verify-hero` reads
+geometry rather than text so it needed no edit — and it passes, with the line
+one row and 15px inside the card, because the new wording is shorter than the
+old.
+
+### 2026-09-06 — a red dot that was not offline
 
 The owner saw the sync icon red on the second phone, with internet working, and
 asked whether something recent had caused it. It had.
@@ -401,46 +466,3 @@ red on the date rolling to the 6th — on `HEAD`, before any change here. It
 counted `.cal.between` in the opening month only, and "last 7 days" from the 6th
 starts on the 31st, which leaves nothing between it and the month's end. It
 counts across both visible months now. Flagged rather than folded in silently.
-
-### 2026-09-05 — hungry is two clocks now, not one
-
-`mascotState` moved the hungry threshold from 240 minutes to 180. Awake still
-starts at 120, so the awake band is now 2–3h rather than 2–4h, and the night
-override (night theme plus a gap over an hour reads as *sleeping*) is untouched,
-so the change is only visible in daylight.
-
-**The insights watch list's feed-gap flag followed, from 5h to 3h.** The two now
-sit on one number: three hours since a feed is what the app calls long, whether
-it is describing this moment on the home screen or counting a past day on the
-report. D-032 carries a dated amendment, because the decision named 5h and the
-count of rules — four, still four — is what that entry is guarding.
-
-**The gap flag will fire much more often now.** The comparison is `>= 180`, so a
-feed every three hours on the dot flags, and that is an ordinary newborn rhythm.
-This is the same always-on-warning problem D-032's measured note already records
-for the wet-diaper rule, now on a second rule. The owner set the number with the
-mascot's use of it in view; the lever if it is ever tuned is the boundary itself,
-since `> 180` would exempt the exact three-hour case.
-
-Three checks guard the new boundaries: hungry at 180 and awake at 179 in
-`verify-s3`, and a three-hour gap flagging in `verify-insights`, whose quiet
-fixture moved to a 2h 30m rhythm because a 3h one is no longer quiet.
-
-**Then the flat number split in two.** Breast milk empties faster than formula,
-so the mascot now runs on the last feed's source: 90/120 after breast milk,
-120/180 after everything else. D-035 has the table and the reasoning.
-
-**"Everything else" is wide on purpose, and the case to know is the mixed
-feed.** `25 mL breast + 45 mL formula` is one moment with two feed events, and it
-takes the *slower* clock — only an all-breast moment gets the faster one.
-Formula, a feed with no source, and a moment with no feed at all land there too,
-so a log that never records a source behaves exactly as it did before. Erring
-long means the app is late to say hungry rather than early.
-
-`feedKind` is the whole rule and it reads the moment the card already had, so
-nothing new is stored and nothing new is asked of the person logging.
-
-**The insights gap flag did not follow the split** and is still a flat 3h. It
-counts a past day's largest gap without asking what was in the bottle; giving it
-a source would mean deciding what a mixed day is measured against, which nobody
-has asked for.

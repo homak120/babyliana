@@ -1125,6 +1125,61 @@ owner chose that with the split in front of him. The two answer different
 questions — the target is what he is aiming at, the mascot's *hungry* is a
 description of the baby — and they are allowed to disagree on the same card.
 
+**Sharpened 2026-09-06 — the target is a ceiling, not an appointment.** *Answer
+different questions* was as far as this entry went, and it is too loose to
+defend the flat number. The owner's own framing is tighter: the two numbers are
+the ends of one range.
+
+| | What it is | Direction |
+| --- | --- | --- |
+| The mascot's *hungry* | earliest — she is ready | a **floor** |
+| The target wake time | latest — do not go past | a **ceiling** |
+
+Hungry is not an instruction to feed her now. A baby sleeping deeply can be left
+a while longer, and the target is what says how much longer. Between the floor
+and the ceiling is the parent's judgement; the card's job is to show where the
+two ends are, not to close the gap.
+
+**Which is why the ceiling must not follow the source.** If it moved with the
+floor, the room between them would be a fixed width and the target would have
+stopped saying anything the mascot did not already say. Held flat, that room
+varies — which is the whole of its value:
+
+| Last feed | Floor (*hungry*) | Ceiling (target) | Room to wait |
+| --- | --- | --- | --- |
+| Breast milk | +1h 45m | +3h | **75 min** |
+| Everything else | +2h 30m | +3h | **30 min** |
+
+After breast milk she signals earlier, so there is more room to let her sleep;
+after formula she signals later, so there is less. That difference is *produced*
+by the ceiling staying still. **Splitting the target would flatten it.**
+
+**So the overlap is not a bug, and an agent will read it as one.** From 1h 45m
+after a breast feed the card draws Liana hungry while the wake line still says
+`in 1h 15m`, and that looks like one card making two claims. It is not — it is
+the window, and it is the answer to the only question being asked at that
+moment: how long can I leave her? A proposal to close that gap by giving the
+target a breast / formula split has already been reached for twice on those
+grounds. It is wrong for the reason above, and this paragraph exists to stop a
+third.
+
+**The tone rule is untouched by the reframing.** A ceiling is a thing that can
+be passed, and the line still only says how far past it is — no alarm, no
+colour change, no view about it (CLAUDE.md). *Do not go past* is the model the
+number is built on, not a sentence the app is allowed to say.
+
+**The wording followed, the same day.** The line read `wake ~15:00 · in 1h 15m`,
+which is an appointment: a thing scheduled to happen at 15:00, counted down to.
+It now reads `by 15:00 · 1h 15m left`. Same instant, same number, and the only
+change is which question it answers — *how long can I leave her* rather than
+*when does she wake*. `wake ~` was also a small untruth in its own right: the
+app has no idea when she wakes, and the tilde was carrying that.
+
+**Past the ceiling it says `1h 10m past`** — not `over`, not `late`, not `ago`.
+`ago` belonged to the appointment reading and describes the clock time rather
+than the room; `over` and `late` both carry a verdict, which is the line the
+mascot is already held to. `past` is the distance and nothing else.
+
 **The window is judged on the last feed's own clock time, not on the target it
 produces.** A feed knows which side of ten o'clock it happened on the moment it
 is logged, so the answer never changes underneath a card already showing it.

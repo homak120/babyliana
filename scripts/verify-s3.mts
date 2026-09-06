@@ -161,8 +161,14 @@ check('a night target crosses into the next day',
 check('no feed yet has no target', targetWake(null) === null)
 
 const aim = new Date(2026, 8, 3, 17, 0)
-check('how far off, ahead', targetText(aim, new Date(2026, 8, 3, 16, 20)) === 'in 40m')
-check('how far off, behind', targetText(aim, new Date(2026, 8, 3, 18, 10)) === '1h 10m ago')
+// Worded as a ceiling, not an appointment: how much room is left, and how far
+// past it once there is none. `past` rather than `over` or `late` — the line
+// reports the clock and has no view about it.
+check('how much room is left', targetText(aim, new Date(2026, 8, 3, 16, 20)) === '40m left',
+  String(targetText(aim, new Date(2026, 8, 3, 16, 20))))
+check('how far past once there is none',
+  targetText(aim, new Date(2026, 8, 3, 18, 10)) === '1h 10m past',
+  String(targetText(aim, new Date(2026, 8, 3, 18, 10))))
 check('and on the minute', targetText(aim, aim) === 'now')
 check('nothing to say without a target', targetText(null) === null)
 

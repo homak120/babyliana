@@ -132,17 +132,22 @@ export function bottleDue(target: Date | null, now = new Date()): boolean {
 }
 
 /**
- * `in 40m`, `1h 10m ago`, `now`. A distance and nothing else.
+ * `40m left`, `1h 10m past`, `now`. A distance and nothing else.
  *
- * Past the target it still only says how far past. The tone rule holds here as
- * much as it does on the mascot: the card reports the clock, it does not have
- * an opinion about a feed that has not happened yet.
+ * Worded as a ceiling rather than an appointment (D-036): the target is the
+ * time not to go past, so what is worth saying is how much room is left — the
+ * question actually being asked while she sleeps through the window is *how
+ * long can I leave her*, and `in 40m` answers a different one.
+ *
+ * **`past`, not `over` or `late`.** The tone rule holds here as much as it does
+ * on the mascot: a ceiling is a thing that can be passed, and the line reports
+ * that it was without having a view about it.
  */
 export function targetText(target: Date | null, now = new Date()): string | null {
   if (!target) return null
   const mins = Math.round((target.getTime() - now.getTime()) / 60000)
   if (mins === 0) return 'now'
-  return mins > 0 ? `in ${formatElapsed(mins)}` : `${formatElapsed(-mins)} ago`
+  return mins > 0 ? `${formatElapsed(mins)} left` : `${formatElapsed(-mins)} past`
 }
 
 export type Totals = {
