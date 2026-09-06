@@ -215,7 +215,7 @@ export function mascotState(
   if (asleep) return 'sleeping'
   const gap = minutesSinceFeed ?? 0
   if (theme === 'night' && gap > 60) return 'sleeping'
-  if (gap >= 240) return 'hungry'
+  if (gap >= 180) return 'hungry'
   if (gap >= 120) return 'awake'
   return 'settled'
 }

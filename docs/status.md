@@ -18,7 +18,7 @@ Last updated: 2026-09-05
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0–6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. 377 checks pass across twenty suites.
+delivered by the second design handoff. 379 checks pass across twenty suites.
 **No schema change — `0001` is still the whole schema.**
 
 What exists: local-first writes to IndexedDB that never block on the network,
@@ -47,6 +47,7 @@ digit typed replaces, so it costs nothing to disagree with; `+ milk` inside the
 sheet still starts blank, because a feed added by hand is as often the paper's
 `?`. The report screen's date strip now stops at three day pills, so `more` — the
 only route to an older day — is on screen rather than off the right-hand edge.
+**Liana reads *hungry* at three hours since the last feed**, not four.
 
 **Sleep is a first-class type** as of the third design delivery — its own bubble,
 its own block, a quick icon that becomes a live "end sleep" pill while one is
@@ -110,13 +111,12 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**Everything through the end-time `now` default is pushed** (`b59e5aa`).
+**Everything through the quick feed's 60 mL and the shortened date strip is
+pushed** (`098e346`).
 
-**Uncommitted: the quick feed's 60 mL of formula and the shortened date strip.**
-`src/log/drafts.ts` (`quickMilk`, `MilkPart.preset`), `src/log/MilkBlock.tsx`
-(the first digit replaces a suggested volume), `src/log/AddSheet.tsx`,
-`src/day/DayScreen.tsx` (`QUICK_DAYS`), and checks in `verify-s4` and
-`verify-feed`. Nothing else.
+**Uncommitted: the hungry threshold at three hours.** `src/derive.ts`
+(`mascotState`, `gap >= 180`) and the two checks that guard it in
+`scripts/verify-s3.mts`. Nothing else.
 
 **The date strip's cap has no browser check**, and deliberately: proving it
 needs entries on four separate days, and the only way to backdate through the UI
@@ -192,7 +192,20 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-05 (latest) — a filled-in quick feed, and a date strip that stops
+### 2026-09-05 (latest) — hungry at three hours
+
+`mascotState` moved the hungry threshold from 240 minutes to 180. Awake still
+starts at 120, so the awake band is now 2–3h rather than 2–4h, and the night
+override (night theme plus a gap over an hour reads as *sleeping*) is untouched,
+so the change is only visible in daylight.
+
+Nothing else moved. The insights watch list's 5h feed-gap flag is a separate,
+counted threshold under D-032 and was deliberately left where it is — the mascot
+describes the moment, the flag counts a day.
+
+Two checks in `verify-s3` guard the new boundary: hungry at 180, awake at 179.
+
+### 2026-09-05 — a filled-in quick feed, and a date strip that stops
 
 Two things the owner hit in use, both about the cost of a default.
 
@@ -214,7 +227,7 @@ days through the UI is not possible — the time card backdates to yesterday at
 the furthest — and a check that cannot see the case it guards is worse than the
 constant it would be watching.
 
-### 2026-09-05 (earlier) — an end time that means now
+### 2026-09-05 (earliest) — an end time that means now
 
 Tapping *end time — optional* stamped `start + 30 min`, which is a guess dressed
 as a default: every period then had to be corrected, and a 30-minute sleep or
@@ -232,24 +245,3 @@ than inventing a 23-hour period. Four checks in `verify-s5` cover those.
 The end pill carries `aria-label="end now"` so it does not collide with the start
 row's `now` under Playwright's strict mode — the same trap two visible "end
 sleep" controls sprang last session.
-
-### 2026-09-05 (earliest) — the watch list, measured against the real log
-
-D-032 now records what the insights watch list actually does when the ten
-transcribed paper-log days are behind it: **six flags across seven days, five of
-them the same rule.** The log records 3–5 wet nappies most days against a
-threshold of 6, so on real data the card is close to permanently lit. The sixth,
-a 10h feed gap on 8/30, was an artifact of the two unreadable rows commented out
-of the backfill — a rule firing on a hole in the *record* looks identical to one
-firing on a hole in the *feeding*. Nothing was changed; the thresholds are the
-owner's.
-
-**The process lesson is the one to keep.** The insights screen shipped correctly,
-and then the summary suggested loading real data into a scratch project as
-something for the owner to run. That produced a throwaway script, three rounds of
-explaining a file that changed nothing, and no code. His words: *"as human, it is
-hard for me to keep watching each single that you try to do or suggest to do."*
-**Finish the ask, state what changed, stop.** Incomplete verification gets closed
-silently or named in one sentence — it does not become a task for him. The right
-fix here was a realistic fixture in `verify-insights` from the start, which would
-have caught the misfiring thresholds in the gate instead of in a screenshot.
