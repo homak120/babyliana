@@ -25,6 +25,17 @@ const dayPill = (d: Date) =>
 
 const ALL = 'all' as const
 
+/**
+ * How many day pills the strip offers before `more` takes over.
+ *
+ * It used to offer every day that had entries, which pushed the picker off the
+ * right-hand edge of the strip as soon as the log was a week old — the one
+ * control that reaches an older day was the one you had to scroll to find. Three
+ * is the most recent day and the two before it, which is what a phone-width
+ * strip holds beside `all days` and `more`.
+ */
+const QUICK_DAYS = 3
+
 function ModePills({
   mode,
   onMode,
@@ -134,7 +145,7 @@ export function DayScreen() {
         >
           all days
         </button>
-        {(days.length ? days : [new Date()]).map((d) => (
+        {(days.length ? days.slice(0, QUICK_DAYS) : [new Date()]).map((d) => (
           <button
             type="button"
             key={+d}

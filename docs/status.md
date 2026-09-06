@@ -18,7 +18,7 @@ Last updated: 2026-09-05
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0–6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. 371 checks pass across twenty suites.
+delivered by the second design handoff. 377 checks pass across twenty suites.
 **No schema change — `0001` is still the whole schema.**
 
 What exists: local-first writes to IndexedDB that never block on the network,
@@ -41,7 +41,12 @@ same rule as sleep — D-033, which records that a first pass added an
 already carries the end time for every type (D-020). Milk also reads in words
 now: `25 mL breast + 45 mL formula`, not `25(B) + 45(F)` (D-034). **Adding an
 end time by hand now defaults to the clock**, not to a guessed half hour, and the
-end row carries its own `now` pill beside the `+30 min` offsets.
+end row carries its own `now` pill beside the `+30 min` offsets. **The bar's
+bottle opens on 60 mL of formula**, already filled in — a suggestion the first
+digit typed replaces, so it costs nothing to disagree with; `+ milk` inside the
+sheet still starts blank, because a feed added by hand is as often the paper's
+`?`. The report screen's date strip now stops at three day pills, so `more` — the
+only route to an older day — is on screen rather than off the right-hand edge.
 
 **Sleep is a first-class type** as of the third design delivery — its own bubble,
 its own block, a quick icon that becomes a live "end sleep" pill while one is
@@ -105,12 +110,18 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**§11 and §12, committed but not pushed** (`a2cb0cb`, amended), plus this file
-and `docs/decisions.md`, where D-032 gained a measurement of what the watch list
-does on the real log. **Also uncommitted: the end-time `now` default** —
-`src/log/time.ts` (`endNow`), `src/log/TimeCard.tsx`, four checks in
-`verify-s5`. Nothing else — the insights screen itself is pushed
-(`b725da1`, `0584b57`).
+**Everything through the end-time `now` default is pushed** (`b59e5aa`).
+
+**Uncommitted: the quick feed's 60 mL of formula and the shortened date strip.**
+`src/log/drafts.ts` (`quickMilk`, `MilkPart.preset`), `src/log/MilkBlock.tsx`
+(the first digit replaces a suggested volume), `src/log/AddSheet.tsx`,
+`src/day/DayScreen.tsx` (`QUICK_DAYS`), and checks in `verify-s4` and
+`verify-feed`. Nothing else.
+
+**The date strip's cap has no browser check**, and deliberately: proving it
+needs entries on four separate days, and the only way to backdate through the UI
+is the time card, which reaches yesterday at best. `QUICK_DAYS` is one constant
+in `DayScreen`; the suites cover the strip's behaviour, not its length.
 
 **Read D-033 before touching any of it.** The first pass followed the prototype
 and added an `event.in_progress` column with a migration behind it. The owner
@@ -181,7 +192,29 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-05 (latest) — an end time that means now
+### 2026-09-05 (latest) — a filled-in quick feed, and a date strip that stops
+
+Two things the owner hit in use, both about the cost of a default.
+
+**The bar's bottle opens on 60 mL of formula.** It used to open blank, which is
+right for `+ milk` — a feed entered by hand is as often the paper's `?` — and
+wrong for the quick icon, whose whole point is the commonest feed at two taps.
+The 60 is a *suggestion*: `MilkPart.preset` marks it, and the first digit typed
+replaces it rather than appending, so a 45 mL feed cannot become 604. Without
+that flag the prepopulation would have made every non-60 feed cost two
+backspaces, which is worse than the blank it replaced.
+
+**The date strip stops at three day pills.** It offered one per day with
+entries, so a fortnight of use pushed `more` off the right-hand edge — and
+`more` is the only route to a day older than the pills. Three is the most recent
+day and the two before it.
+
+Left undone on purpose: no browser check on the cap. Producing four distinct
+days through the UI is not possible — the time card backdates to yesterday at
+the furthest — and a check that cannot see the case it guards is worse than the
+constant it would be watching.
+
+### 2026-09-05 (earlier) — an end time that means now
 
 Tapping *end time — optional* stamped `start + 30 min`, which is a guess dressed
 as a default: every period then had to be corrected, and a 30-minute sleep or
@@ -200,7 +233,7 @@ The end pill carries `aria-label="end now"` so it does not collide with the star
 row's `now` under Playwright's strict mode — the same trap two visible "end
 sleep" controls sprang last session.
 
-### 2026-09-05 (earlier) — the watch list, measured against the real log
+### 2026-09-05 (earliest) — the watch list, measured against the real log
 
 D-032 now records what the insights watch list actually does when the ten
 transcribed paper-log days are behind it: **six flags across seven days, five of
@@ -220,45 +253,3 @@ hard for me to keep watching each single that you try to do or suggest to do."*
 silently or named in one sentence — it does not become a task for him. The right
 fix here was a realistic fixture in `verify-insights` from the start, which would
 have caught the misfiring thresholds in the gate instead of in a screenshot.
-
-### 2026-09-05 (earliest) — feeds run live, and a column that should never have been
-
-§11 and §12, the last two items in the third handoff's `CHANGES.md`. The build
-reads like sleep because it *is* sleep: `ongoingFeed` differs from `ongoingSleep`
-by one event type. An end-feed pill in the bar, a `feedline` on the card, a
-`feeding` mascot state ahead of `sleeping`, `fed 25 min` on the row and in the
-day table, and milk spelt out in words everywhere it is printed.
-
-**The session's real content was a wrong turn.** The prototype keeps a
-`feeding: true` flag on the entry, and I followed it — an `event.in_progress`
-column, a migration, a toggle in the milk block, and a long argument in D-033 for
-why the flag was unavoidable. It was avoidable. The owner's answer was one line:
-the timeslot already has the end time, so handle it the same as sleep. He was
-right, and the argument I had built was for a problem the model does not have.
-All of it is rolled back; the schema is untouched at `0001`.
-
-Two things worth carrying forward, both now written down where they will be
-found:
-
-- **The prototype is authority on interaction, not on the data model.** It is a
-  design artefact and its storage shape is incidental. Where the two disagree the
-  model wins — the first paragraph of D-033 says so, because this is the second
-  time a handoff detail has been followed further than it earned.
-- **Migration numbers are spent even when the file is deleted.**
-  `0002_seed_household.sql` was run on 2026-09-03 and dropped from the repo the
-  same day, so `ls` shows the slot free and it is not. Numbering a new migration
-  `0002` made "have you run 0002?" unanswerable and cost several rounds to
-  untangle. `supabase/README.md` records it; number from
-  `git log --all --diff-filter=AD -- supabase/migrations/`.
-
-**The rollback then surfaced something the flag had been hiding.** `verify-hero`
-started failing: it logs two feeds in a row, and the second had nowhere to go,
-because the first was open and the bar had turned the bottle into the end-feed
-pill. I removed the swap; the owner put it back, which is right — the pill is the
-app asking you to close the feed, and `+` still reaches every type. `verify-hero`
-logs a diaper for its second entry now, which is all that test ever needed.
-
-The asymmetry that does survive is the auto-close. A running sleep is closed by the next
-entry, because at 4am you log the feed and not the waking. A running feed is not,
-because the next diaper says nothing about when the bottle finished, and an
-invented duration is unrecoverable under D-003.

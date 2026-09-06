@@ -42,6 +42,21 @@ await p.getByLabel('log a feed').click()
 await p.waitForTimeout(300)
 check('the milk block carries no in-progress control of its own',
   (await p.locator('.stillfeeding').count()) === 0, 'the time card owns the end time')
+
+// The quick bottle arrives filled in — the commonest feed at two taps — and the
+// 60 is a suggestion rather than a claim: the first digit typed replaces it, so
+// a 45 mL feed never becomes 604.
+const part1 = p.getByLabel('part 1')
+check('the quick bottle opens on 60 mL of formula',
+  (await part1.innerText()).trim() === '60'
+    && await part1.evaluate((el) => el.classList.contains('formula')),
+  (await part1.innerText()).trim())
+await typeVolume('4')
+check('and the first digit typed replaces the suggestion',
+  (await part1.innerText()).trim() === '4', (await part1.innerText()).trim())
+// The backspace key is an aria-hidden icon, so it has no accessible name — it
+// is the last key on the pad.
+await p.locator('.keypad button').last().click()
 await typeVolume('60')
 await p.getByRole('button', { name: 'save', exact: true }).click()
 await p.waitForTimeout(900)

@@ -4,7 +4,12 @@ import type { DraftEntry, EventType, Moment, PoopColour, PoopConsistency, Source
 // component files so those export components only — and because the "does this
 // block say anything" rules are logic worth testing on their own.
 
-export type MilkPart = { volume: number | null; source: Source }
+/**
+ * `preset` marks a volume the app suggested rather than one a person entered —
+ * the quick bottle's 60 mL. The first digit typed replaces it instead of being
+ * appended to it, so the suggestion never costs a tap to get rid of.
+ */
+export type MilkPart = { volume: number | null; source: Source; preset?: boolean }
 
 /**
  * One card, up to two parts.
@@ -30,6 +35,20 @@ export type DiaperDraft = {
 }
 
 export const newMilk = (): MilkDraft => ({ parts: [{ volume: null, source: 'unknown' }], active: 0 })
+
+/**
+ * What the bar's bottle opens with: 60 mL of formula, already filled in.
+ *
+ * The quick icon exists to make the commonest feed a two-tap entry, and the
+ * commonest feed has a volume and a source. It is a suggestion, not a claim —
+ * the first digit typed replaces the 60, and the source toggles off — so it
+ * costs nothing to disagree with. `+ milk` inside the sheet still starts blank,
+ * because a feed added by hand is as often the paper's `?` as it is 60.
+ */
+export const quickMilk = (): MilkDraft => ({
+  parts: [{ volume: 60, source: 'formula', preset: true }],
+  active: 0,
+})
 
 /**
  * A new diaper block starts as a pee.

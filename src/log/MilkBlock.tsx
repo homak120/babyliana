@@ -55,11 +55,13 @@ export function MilkBlock({
     }
     if (key === '⌫') {
       const next = part.volume === null ? null : Math.floor(part.volume / 10)
-      return setPart({ volume: next === 0 ? null : next })
+      return setPart({ volume: next === 0 ? null : next, preset: false })
     }
-    const next = (part.volume ?? 0) * 10 + Number(key)
+    // A suggested volume is replaced by the first digit, not appended to: the
+    // quick bottle's 60 must not turn 45 into 604.
+    const next = part.preset ? Number(key) : (part.volume ?? 0) * 10 + Number(key)
     if (next > 999) return
-    setPart({ volume: next })
+    setPart({ volume: next, preset: false })
   }
 
   const toggle = (s: MilkDraft['parts'][number]['source']) =>
@@ -70,7 +72,7 @@ export function MilkBlock({
   const scrub = (e: ReactPointerEvent<HTMLDivElement>) => {
     const r = e.currentTarget.getBoundingClientRect()
     const pct = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width))
-    setPart({ volume: Math.max(1, Math.round(pct * SCRUB_MAX)) })
+    setPart({ volume: Math.max(1, Math.round(pct * SCRUB_MAX)), preset: false })
   }
 
   return (

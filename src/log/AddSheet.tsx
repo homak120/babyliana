@@ -10,6 +10,7 @@ import {
   newMilk,
   newOther,
   newSleep,
+  quickMilk,
   toEntries,
   type Block,
   type DiaperDraft,
@@ -79,7 +80,13 @@ export function AddSheet({
     editing
       ? blocksFromMoment(editing)
       : opensWith
-        ? [{ key: crypto.randomUUID(), type: opensWith, draft: emptyDraft(opensWith) } as Block]
+        // The bar's bottle opens on a filled-in feed; `+ milk` inside the
+        // sheet still starts blank. See `quickMilk`.
+        ? [{
+          key: crypto.randomUUID(),
+          type: opensWith,
+          draft: opensWith === 'milk' ? quickMilk() : emptyDraft(opensWith),
+        } as Block]
         : [],
   )
   const [saving, setSaving] = useState(false)

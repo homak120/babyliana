@@ -11,7 +11,7 @@ const store = new Map<string, string>([['babyliana.device_id', '00000000-0000-40
 } as Storage
 
 import type { Block } from '../src/log/drafts.ts'
-const { canSave, newDiaper, newMilk, toEntries, blockIsEmpty } = await import(
+const { canSave, newDiaper, newMilk, quickMilk, toEntries, blockIsEmpty } = await import(
   '../src/log/drafts.ts'
 )
 const { createThisDevice, logMoment, getMoments } = await import('../src/moments.ts')
@@ -35,6 +35,18 @@ const diaper = (d: Partial<ReturnType<typeof newDiaper>> = {}): Block =>
 // --- the default, which is grounded in the real log -------------------------
 check('a new diaper block starts as a pee', newDiaper().pee && !newDiaper().poop)
 check('so the commonest change is savable with zero extra taps', canSave([diaper()]))
+
+// --- what the bar's bottle opens with ---------------------------------------
+// The quick icon is for the commonest feed, so it arrives filled in. `+ milk`
+// inside the sheet does not — a feed added by hand is as often the paper's `?`.
+const quick = quickMilk().parts[0]
+check('the quick bottle opens on 60 mL of formula',
+  quick.volume === 60 && quick.source === 'formula', `${quick.volume} ${quick.source}`)
+check('and it is marked as a suggestion, so the first digit typed replaces it',
+  quick.preset === true)
+check('while + milk still starts blank', newMilk().parts[0].volume === null)
+check('a suggested feed saves as a real one',
+  one({ key: 'm', type: 'milk', draft: quickMilk() }).volume_ml === 60)
 
 // --- save gating ------------------------------------------------------------
 check('nothing selected cannot be saved', !canSave([]))
