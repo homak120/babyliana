@@ -384,11 +384,12 @@ export function LogScreen({ onEndOpen }: {
             {/* Its own row rather than folded into the one above: the wake time
                 and the prompt are two independent facts, and this card already
                 stacks lines this way for a running feed and an open sleep.
-                `local_drink` is the app's milk icon everywhere else, which is
-                what ties the prompt to what it is asking for. */}
+                The drawn bottle rather than `local_drink`, which is a paper cup
+                with a straw: the prompt is asking for a bottle specifically, and
+                this is the same glyph the end-feed control wears. */}
             {prepping && (
               <div className="prepline">
-                <Icon name="local_drink" size={14} />
+                <BottleIcon size={14} />
                 <span>make a bottle</span>
               </div>
             )}

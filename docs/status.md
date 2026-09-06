@@ -151,6 +151,15 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
+**The `make a bottle` prompt wears the drawn bottle, in lavender.** It was
+`local_drink` — the paper cup with a straw — in `--roseDeep`, which is the
+colour D-038 already moved the end-feed control off for reading as an alert. The
+prompt is a suggestion with nothing wrong behind it, so it takes the same
+lavender and the same `BottleIcon` the end-feed pill wears. `src/log/LogScreen.tsx`
+and the `.prepline` rule in `src/log/log.css`. No test changed: `verify-hero`
+asserts the prompt's count, text and geometry, not its glyph, and its five
+prompt checks pass.
+
 **The clock-format toggle — D-041.** A new `src/timeformat.ts`
 holds the preference (localStorage, cached, and guarded so the Node suites that
 import `cells.ts` do not fall over on a missing `localStorage`); `hhmm` and
@@ -175,13 +184,22 @@ a new overlap case. **The target stays hidden while a feed runs** — it no long
 has to be, since the ceiling is settled from the feed's first second, and the
 owner kept it hidden as a choice. D-036's paragraph says so.
 
-**`verify-period` still has five failures, and they are not from any of this.** Confirmed by
-stashing and rebuilding: identical on `HEAD`. All five are the D-037 day-swipe
-checks, and they start from `two days to move between — 2 pills including "all
-days"` — the suite is only getting one day with entries, so everything
-downstream of it fails too. Same class as the date-rollover break fixed on the
-6th. Untouched, because nobody asked and it is a suite fault rather than an app
-one — but `npm run verify` is red until someone does.
+**`verify-period`'s five failures are a clock, not a bug — diagnosed
+2026-09-06.** All five are the D-037 day-swipe checks, cascading from `two days
+to move between — 2 pills`. The suite makes its second day by editing an entry's
+hour to `23`, expecting `withHourMinute` to read that as *last night* and file it
+on yesterday. That only happens past `FUTURE_TOLERANCE_MS`, which is **six
+hours** (`src/log/time.ts:40`) — so hour 23 backdates only when the clock reads
+earlier than about 17:00. The suite's guard is `getHours() < 21`, which is the
+wrong number: **run in the morning it passes, run in the evening five checks
+fail.**
+
+**The app is right and the tolerance is deliberate** — it stops a small forward
+nudge from yanking an entry back a day. Proven not to be this session's doing by
+building `f3bca01` in a worktree and getting the same five, and probed directly:
+at 18:40 the edit saved as `23:40` today, which is exactly what a six-hour
+tolerance is for. **Left alone because nobody asked** — the fix is the guard's
+number, not the app.
 
 **The target reads as a ceiling now, in words as well as in reasoning.** D-036's target section gains the floor-and-ceiling argument — why
 *hungry* and the target wake time are the two ends of one range rather than two
@@ -226,16 +244,18 @@ the stretch), a filter on the bubbling `transitionend`, and a timeout fallback
 because `prefers-reduced-motion` removes the transition that lands the page.
 D-037 has all three.
 
-**`0005` puts the metric columns back, and it is the one thing here that needs
-running.** `0004` dropped `event.grams` and `event.celsius` ahead of the deploy
+**`0005` is applied — checked 2026-09-06 against the live database**, where
+`grams` and `celsius` both resolve and a made-up column name errors, so the
+probe means something. Nothing further is needed, and the second phone drains on
+its next foreground. What follows is why it existed; it is history now, not a
+to-do. `0004` dropped `event.grams` and `event.celsius` ahead of the deploy
 that stops naming them, on the assumption that both phones would update. The
 second phone did not, and showed a **red sync dot on a working network** — the
 app paints `offline` and `error` the same colour, so a failing upsert is
 indistinguishable from a dead network at a glance. That phone is failing every
 push and holding its writes in the outbox.
 
-**Paste `0005_restore_metric_columns.sql` into the SQL Editor.** It is the only
-repair that reaches a device nobody can touch: the server starts accepting the
+**It was the only repair that reaches a device nobody can touch:** the server starts accepting the
 old build's rows again and that phone drains on its next foreground, unattended.
 A deploy would fix only the phones that took it. Nothing is lost meanwhile — the
 outbox is durable.
@@ -366,7 +386,25 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-06 (latest) — the target is a ceiling, not an appointment
+### 2026-09-06 (latest) — the prompt stops looking like a warning
+
+The owner asked for the milk icon on the top card's `make a bottle` line to
+become a bottle, and for the red to go.
+
+Both were already-decided arguments applied to a line that had missed them.
+The glyph was `local_drink`, which D-038 records as reading like a milk *cup* —
+the drawn `BottleIcon` exists precisely because Material Symbols has no bottle.
+The colour was `--roseDeep`, which the same entry moved the end-feed control
+away from for reading as an alert. The prompt is a suggestion fifteen minutes
+ahead of a ceiling, with nothing wrong behind it, so it now matches the
+end-feed control on both counts and stays distinct from the amber wake line
+above it.
+
+`verify-hero` needed no edit and passes: it reads the prompt's count, text and
+geometry rather than its icon, and the line still lands one row and inside the
+card at 328 against a 337 limit.
+
+### 2026-09-06 — the target is a ceiling, not an appointment
 
 A reasoning session. Nothing in `src/` moved, and nothing needed to.
 
@@ -493,65 +531,3 @@ sync.
 **Nothing in `src/` changed.** The current build is already correct — it stopped
 naming the columns in `93cb7aa`. The mismatch is entirely between the database
 and an old client, so the database is where it is repaired.
-
-### 2026-09-06 — the numbers he had and the app did not
-
-**Three secondary types take a value now** (D-036). `weight` is typed in kg and
-stored in the schema's existing `grams` — 3.4 in, 3400 down — `temperature` is
-one °C field, and `supplement` asks what and how much, both free text because
-"1 drop" is a real answer and not a number. `spit up` and `something else` still
-carry nothing; neither has a value to capture.
-
-Blank still saves and still reads as the bare word, which is the milk volume's
-`?` rule applied to a weighing nobody caught in time. Every field is a **string**
-until save: a number input eats the point in "3." as fast as it is typed, which
-passes every unit test and is unusable in the hand, so `verify-other` — a new
-browser suite — types a decimal into a real one.
-
-**The read-back was in two places and only one of them knew.** The home list had
-its own inline copy printing the bare type name, so a weight read `weight` there
-and `weight 3.4 kg` in the day table. Both go through `otherLabel` now. That is
-the same split that once hid an end time from this list.
-
-**The top card carries a target wake time**: last feed plus three hours, four
-when the feed landed between 22:00 and 06:00. Flat, and deliberately *not* the
-mascot's breast/formula split — the owner chose that with the split in front of
-him, and the two answer different questions. The window is judged on the feed's
-own clock time rather than on the target it produces, or a 21:00 feed's target
-would depend on the target. Hidden while a feed runs, because it counts from
-where a feed ends.
-
-**Q-006 was overtaken again**, and it is noted there rather than tidied away:
-three of its four remaining types got an input because the owner asked, not
-because the solo run found anything. `spit up` is the one still open.
-
-**Both themes draw the night mascot set** as of 2026-09-06 — the owner trying
-one character across a whole day. `DAY_ART_IN_USE` in `src/log/Mascot.tsx` is
-the flag, and it is `false`. **Nothing about the day set was removed**: `DAY` is
-still built from its own eight files, they still import and still ship, and
-flipping that one constant restores the old behaviour. `verify-welcome`'s three
-art checks were inverted to assert the switch is off rather than that the day
-art is gone, and they invert back with it.
-
-**The app icon is the v2 art.** The whole `public/` set replaced from
-`app_icon_babyliana/` — 180, 512 and 1024 as supplied, 192 and 32 resized from
-them — full-bleed on white, no config change beyond comments. **An installed
-PWA does not pick up a new icon on its own**: iOS snapshots the tile at add
-time, so the home screen only changes after removing and re-adding it. Watched
-that happen on the Simulator, where a webclip kept an icon two generations old
-while Safari's own share sheet showed the new one correctly.
-
-**Then the Simulator earned its keep again.** Run on the phone, the kg field was
-two lines — `3.4` above, `kg` beneath. `.otherfield > span` was outspecifying
-`.fieldbox` and killing the flex row, because the label span and the field box
-are both direct span children. Chromium fitted both on one line anyway, so
-`verify-other` was green through the whole thing; putting the bug back
-afterwards confirmed the suite still passes with it in. The check added for it
-is a guard on the rule, not evidence about a phone. **That distinction is the
-lesson, and it is now the fourth instance of it.**
-
-**One thing nobody asked for.** `verify-period`'s `preset fills the span` went
-red on the date rolling to the 6th — on `HEAD`, before any change here. It
-counted `.cal.between` in the opening month only, and "last 7 days" from the 6th
-starts on the 31st, which leaves nothing between it and the month's end. It
-counts across both visible months now. Flagged rather than folded in silently.
