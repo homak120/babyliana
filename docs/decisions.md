@@ -973,11 +973,17 @@ source:
 
 | Last feed | awake | hungry |
 | --- | --- | --- |
-| Breast milk | 90 min | 120 min |
-| Everything else | 120 min | 180 min |
+| Breast milk | 90 min | 105 min |
+| Everything else | 120 min | 150 min |
 
-The owner set both pairs. The second row is unchanged from what shipped — this
-adds a faster clock rather than moving the existing one.
+The owner set every number here. **Both hungry lines moved on 2026-09-06**, from
+120 and 180 to 105 and 150; the awake pair is unchanged. What that does is
+shorten the awake band on breast to fifteen minutes, so after breast milk she
+passes through *awake* quickly and spends most of the gap reading *hungry*.
+
+One consequence worth having written down: the two clocks are now far enough
+apart that the same elapsed number can land two states apart. At 105 minutes
+breast is already hungry while formula has not yet reached awake.
 
 **"Everything else" is the conservative default, and it is deliberately wide.**
 Formula, a feed with no source recorded, a moment with no feed in it at all, and
@@ -989,8 +995,8 @@ the right way round for a state a parent may act on.
 
 `feedKind` in `src/derive.ts` is the whole rule, and it takes the same moment the
 card already uses for the last feed — nothing new is stored, and nothing new is
-asked of the person logging. A feed logged without a source keeps behaving
-exactly as it did before this entry.
+asked of the person logging. A feed logged without a source needs no more than
+it ever did; it simply sits in the slower row.
 
 **What did not change.** The night override still outranks both clocks: night
 theme plus a gap over an hour reads as *sleeping* whatever the source, so this is

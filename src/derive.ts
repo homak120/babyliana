@@ -258,11 +258,11 @@ export type MascotState = 'settled' | 'awake' | 'hungry' | 'feeding' | 'sleeping
 
 /**
  * How long a feed of each kind holds, in minutes: awake first, then hungry.
- * Breast milk runs 30 and 60 minutes ahead of the rest.
+ * Breast milk runs 30 minutes ahead of the rest on awake and 45 on hungry.
  */
 const HOLDS: Record<FeedKind, { awake: number; hungry: number }> = {
-  breast: { awake: 90, hungry: 120 },
-  other: { awake: 120, hungry: 180 },
+  breast: { awake: 90, hungry: 105 },
+  other: { awake: 120, hungry: 150 },
 }
 
 /**

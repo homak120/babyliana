@@ -86,20 +86,29 @@ check('yesterday excluded — day boundary is midnight local', t.ml === 70)
 // The default kind is 'other' — formula, mixed, or a feed with no source on it.
 check('settled under two hours', mascotState(60, 'day') === 'settled')
 check('awake at two hours', mascotState(120, 'day') === 'awake')
-check('hungry at three', mascotState(180, 'day') === 'hungry')
-check('awake just under three', mascotState(179, 'day') === 'awake')
+check('hungry at 2h 30m', mascotState(150, 'day') === 'hungry')
+check('awake just under it', mascotState(149, 'day') === 'awake')
 check('sleeping at night overrides hungry', mascotState(300, 'night') === 'sleeping')
 check('logged wins over everything for its moment', mascotState(300, 'day', true) === 'logged')
 check('no feed yet is settled, not hungry', mascotState(null, 'day') === 'settled')
 
-// Breast milk runs half an hour ahead on awake and an hour ahead on hungry.
+// Breast milk runs 30 minutes ahead on awake and 45 on hungry.
 const br = (mins: number) => mascotState(mins, 'day', false, false, false, 'breast')
 check('breast: settled under 90 minutes', br(89) === 'settled')
 check('breast: awake at 90 minutes', br(90) === 'awake')
-check('breast: hungry at two hours', br(120) === 'hungry')
-check('breast: still awake just under two hours', br(119) === 'awake')
-check('the same 120 minutes is awake on formula and hungry on breast',
+check('breast: hungry at 1h 45m', br(105) === 'hungry')
+check('breast: still awake just under it', br(104) === 'awake')
+// The two clocks are far enough apart that the same elapsed number lands two
+// states apart in places: at 105 minutes breast is already hungry while formula
+// has not even reached awake.
+check('105 minutes is settled on formula and hungry on breast',
+  mascotState(105, 'day') === 'settled' && br(105) === 'hungry')
+check('and by two hours formula is only awake',
   mascotState(120, 'day') === 'awake' && br(120) === 'hungry')
+check('breast is hungry across the whole of formula\'s awake band',
+  [120, 135, 149].every((m) => br(m) === 'hungry' && mascotState(m, 'day') === 'awake'))
+check('and they agree again once both are past their line',
+  [150, 200].every((m) => br(m) === 'hungry' && mascotState(m, 'day') === 'hungry'))
 check('night still overrides the breast clock too',
   mascotState(150, 'night', false, false, false, 'breast') === 'sleeping')
 

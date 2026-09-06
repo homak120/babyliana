@@ -18,7 +18,7 @@ Last updated: 2026-09-06
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0–6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. 449 checks pass across twenty-one suites.
+delivered by the second design handoff. 452 checks pass across twenty-one suites.
 **No schema change — `0001` is still the whole schema.**
 
 What exists: local-first writes to IndexedDB that never block on the network,
@@ -51,10 +51,10 @@ digit typed replaces, so it costs nothing to disagree with; `+ milk` inside the
 sheet still starts blank, because a feed added by hand is as often the paper's
 `?`. The report screen's date strip now stops at three day pills, so `more` — the
 only route to an older day — is on screen rather than off the right-hand edge.
-**Liana's clock now depends on what the last feed was** — D-035. After breast
-milk she reads *awake* at 90 minutes and *hungry* at two hours; after formula, a
-mixed feed, or a feed with no source, it is two hours and three. The night
-override sits above both, so this is a daylight distinction.
+**Liana's clock depends on what the last feed was** — D-035. After breast milk
+she reads *awake* at 90 minutes and *hungry* at 105; after formula, a mixed
+feed, or a feed with no source, it is 120 and 150. The night override sits above
+both, so this is a daylight distinction.
 
 **The top card carries a target wake time, and three secondary types take a
 value** — both D-036. The target is the last feed plus three hours, four when
