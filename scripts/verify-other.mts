@@ -58,17 +58,34 @@ check('a decimal point survives being typed',
 
 const fits = await p.evaluate(() => {
   const box = document.querySelector('.fieldbox') as HTMLElement
+  const input = box.querySelector('input') as HTMLElement
+  const unit = box.querySelector('i') as HTMLElement
   const sheet = document.querySelector('.sheet') as HTMLElement
   const r = box.getBoundingClientRect()
+  const ri = input.getBoundingClientRect(), ru = unit.getBoundingClientRect()
   return {
     tall: Math.round(r.height),
     inside: Math.round(r.right) <= Math.round(sheet.getBoundingClientRect().right),
     overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    // The unit beside the number, not under it. Centres, not tops: the input is
+    // 46px tall and the unit is a 13px glyph, so their tops legitimately differ.
+    sameRow: Math.abs((ri.top + ri.height / 2) - (ru.top + ru.height / 2)) < 6
+      && Math.round(ru.left) >= Math.round(ri.right) - 1,
   }
 })
 check('the field is a thumb-sized target inside the sheet',
   fits.tall >= 44 && fits.inside && fits.overflow === 0,
   `${fits.tall}px tall, ${fits.overflow}px page overflow`)
+// This asserts the intended layout, but be clear about what it is worth: with
+// the bug in place — `.otherfield > span` outspecifying `.fieldbox` and killing
+// the flex row — **Chromium still passes this check**. It gives the input a
+// narrow enough default that the unit fits beside it anyway. iOS Safari gives it
+// a wider one and wrapped "kg" underneath, and the Simulator is what found it.
+// Kept as a regression guard on the rule, not as proof the rule holds on a
+// phone. That is `scripts/ios/`, and this is the fourth time that has been true.
+check('the unit sits beside the number, on one row',
+  fits.sameRow && fits.tall <= 60,
+  `${fits.tall}px tall, same row: ${fits.sameRow}`)
 
 await p.getByRole('button', { name: 'save', exact: true }).click()
 await p.waitForTimeout(800)

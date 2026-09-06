@@ -73,7 +73,7 @@ export function OtherBlock({
         <div className="otherfields">
           {fields.map((f) => (
             <label key={f.key} className="otherfield">
-              <span>{f.label}</span>
+              <span className="fieldname">{f.label}</span>
               <span className="fieldbox">
                 <input
                   // Text, not number: a number input eats the decimal point

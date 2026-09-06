@@ -23,16 +23,25 @@ export default defineConfig({
         name: 'BabyLiana',
         short_name: 'BabyLiana',
         description: 'Newborn activity log',
-        // The design's day ground, matching the icon's own pink-lilac. These
-        // colour the splash and the browser chrome, not the app — which still
-        // switches to the night surface by clock once it is running.
+        // The design's day ground. These colour the splash and the browser
+        // chrome, not the app — which still switches to the night surface by
+        // clock once it is running. The icon's own ground is plain white as of
+        // the v2 art, half a shade off this; on the splash it reads as one
+        // surface, and matching them would mean moving the app's `--bg`.
         theme_color: '#fdf7f2',
         background_color: '#fdf7f2',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
-        // Liana as the design drew her, resized from the 1024 as the handoff
-        // instructs. These replaced a placeholder that was shipping instead.
+        // The v2 icon set, supplied at 1024 / 512 / 180 and full-bleed on white
+        // — both platforms apply their own mask, so nothing here is
+        // pre-rounded. 192 and 32 are resized from the 1024 and the 512.
+        //
+        // The `maskable` entry is honest for iOS and optimistic for Android:
+        // the art reaches close to the edges, and an adaptive launcher can crop
+        // the outer 18%. Shipping a real Android foreground layer means the art
+        // at 66% on a white plate, which nobody has asked for — this is an iOS
+        // home screen (D-001).
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },

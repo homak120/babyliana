@@ -18,7 +18,7 @@ Last updated: 2026-09-06
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0–6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. 448 checks pass across twenty-one suites.
+delivered by the second design handoff. 449 checks pass across twenty-one suites.
 **No schema change — `0001` is still the whole schema.**
 
 What exists: local-first writes to IndexedDB that never block on the network,
@@ -27,8 +27,12 @@ derived state, elapsed hero, totals, recent list), the day table with a date
 strip and period picker, the add/edit sheet with milk, diaper, **sleep**, other
 and notes, swipe-to-edit-and-delete on both lists behind a confirm sheet, a
 photograph gate before the welcome, name entry, two mascot sets and a theme
-switched by clock, and an offline-capable PWA at 24 entries / 1012.76 KiB
-precached.
+switched by clock, and an offline-capable PWA at 24 entries / 1284.22 KiB
+precached. **The app icon is the v2 art** as of 2026-09-06 — the whole
+`public/` set replaced, full-bleed on white, no config change beyond comments.
+The precache grew 271 KiB with it: the 512 is 435 KB where the old one was 243,
+and it is in the bundle where the 1024 is already excluded for being large and
+only needed at install.
 
 **Feeds now run live too** — §11 and §12 of `CHANGES.md`, the last two items.
 A feed with no end time reads as running: the bar's bottle becomes the handoff's
@@ -142,6 +146,17 @@ the month's end. It went red on the date rolling over, on `HEAD`, before any of
 this session's changes touched anything. It now counts across both visible
 months.
 
+**And one bug the Simulator found that the browser suite could not.** The kg
+field rendered as two lines on iOS — `3.4` above, `kg` beneath — because
+`.otherfield > span` outspecified `.fieldbox` and killed the flex row. The label
+span and the field box are both direct span children. Renamed to
+`.otherfield > .fieldname`; not `.fieldlabel`, which the welcome gate already
+owns. **Chromium passes `verify-other` either way** — it gives the input a
+narrower default and fits the unit beside it regardless — so the new "on one
+row" check is a guard on the rule, not proof it holds on a phone. Confirmed by
+putting the bug back and watching the suite stay green. Fourth time `scripts/ios/`
+has caught what desktop could not.
+
 Nothing else.
 
 **The date strip's cap has no browser check**, and deliberately: proving it
@@ -248,6 +263,23 @@ where a feed ends.
 **Q-006 was overtaken again**, and it is noted there rather than tidied away:
 three of its four remaining types got an input because the owner asked, not
 because the solo run found anything. `spit up` is the one still open.
+
+**The app icon is the v2 art.** The whole `public/` set replaced from
+`app_icon_babyliana/` — 180, 512 and 1024 as supplied, 192 and 32 resized from
+them — full-bleed on white, no config change beyond comments. **An installed
+PWA does not pick up a new icon on its own**: iOS snapshots the tile at add
+time, so the home screen only changes after removing and re-adding it. Watched
+that happen on the Simulator, where a webclip kept an icon two generations old
+while Safari's own share sheet showed the new one correctly.
+
+**Then the Simulator earned its keep again.** Run on the phone, the kg field was
+two lines — `3.4` above, `kg` beneath. `.otherfield > span` was outspecifying
+`.fieldbox` and killing the flex row, because the label span and the field box
+are both direct span children. Chromium fitted both on one line anyway, so
+`verify-other` was green through the whole thing; putting the bug back
+afterwards confirmed the suite still passes with it in. The check added for it
+is a guard on the rule, not evidence about a phone. **That distinction is the
+lesson, and it is now the fourth instance of it.**
 
 **One thing nobody asked for.** `verify-period`'s `preset fills the span` went
 red on the date rolling to the 6th — on `HEAD`, before any change here. It
