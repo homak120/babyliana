@@ -1309,3 +1309,63 @@ quietly beside the periwinkle end-sleep button rather than shouting past it.
 Weight and temperature take amber, supplement keeps lavender. Seven bubbles with
 seven colours would have made a row that no longer reads at a glance, so the
 three that came out of `other` share its half of the palette.
+
+---
+
+## D-039 — The schema is additive-only; a column is never dropped
+
+**Supersedes the ordering rule in `supabase/README.md`**, which said dropping a
+column was safe as long as it happened *after* every phone was on code that had
+stopped naming it. That rule is sound and unenforceable, and `0004` is the proof.
+
+`0004` dropped `event.grams` and `event.celsius` — dead since `0003` replaced
+them with `pounds` and `fahrenheit`, never having held a single value. It ran
+before the deploy rather than after it, which the commit and the README both
+recorded as a known window that would close as each phone updated.
+
+It did not close. Later the same day the owner found the second phone showing a
+red sync dot, on a working network, and **could not reach that device to update
+it.**
+
+**Why the ordering was never enough.** It assumes every client can be brought
+forward on demand. Nothing here can bring one forward:
+
+- the service worker updates lazily and only when the app is visible and not
+  mid-entry (`registerType: 'prompt'` in `vite.config.ts`; the add sheet holds
+  the update open — `src/updates.ts`),
+- there is no forced update, no kill switch, and no login to gate one behind
+  (a login is a non-negotiable *no* — `CLAUDE.md`), and
+- the second phone belongs to the other parent. "Open the app so it updates" is
+  a message that may be read in the morning.
+
+So "after both phones are on the new build" is not a step. It is a hope with no
+observable moment, and a drop run against it is a coin toss whose losing side is
+a phone that quietly stops syncing.
+
+**What it costs when it loses.** Sync pushes whole rows, so a client naming a
+column that no longer exists fails every upsert. `push()` returns false, and
+because the outbox is now non-empty the reconcile is skipped — by design, so the
+wholesale replace cannot erase unpushed writes (`src/sync.ts`). The phone shows
+red and holds everything locally. Nothing is lost, the outbox is durable, but a
+3am feed logged on that phone is invisible to the other parent, which is the one
+job two-device sync has.
+
+**And the red is ambiguous, which is the part that cost the diagnosis.**
+`.sync.offline` and `.sync.error` are the same colour, so a schema mismatch is
+indistinguishable from a dead network at a glance. The owner reasonably read it
+as being offline, and was not.
+
+**The rule.** Additive only. Never drop a column, never narrow a type, never add
+a constraint an older row could fail. A superseded column is left in place,
+nullable, commented dead, and forgotten. Two nulls on a table projected at 5 MB
+a year, against a 500 MB free tier, is not a cost worth a phone's sync.
+
+**Why the fix was a migration and not a deploy.** `0005` restores both columns.
+It is the only repair that works on a device nobody can touch: the server starts
+accepting the old build's rows again, and that phone drains its outbox on its
+next foreground with nobody doing anything to it. A deploy would have fixed only
+the phones that took it — the ones that were never broken.
+
+**Reversal condition.** A client that can be proven current — a version check
+the server can see, or a client that refuses to sync until it has updated.
+Neither exists, and neither is worth building to reclaim a nullable column.

@@ -161,15 +161,24 @@ the stretch), a filter on the bubbling `transitionend`, and a timeout fallback
 because `prefers-reduced-motion` removes the transition that lands the page.
 D-037 has all three.
 
-**`0004` is applied and the columns are gone** — confirmed against the live
-database, where `grams` and `celsius` now return `42703` and `pounds` /
-`fahrenheit` still return rows. It ran **before** the code that stops sending
-them was deployed, which is the reverse of the order `supabase/README.md` asks
-for. **Open the app on both phones.** Until each one picks up the new build it
-is still naming a column that no longer exists, so its upserts fail and its
-writes sit in the outbox. Nothing is lost — the outbox is durable and drains
-once client and schema agree — but a moment logged on an un-updated phone will
-not reach the other one until the app is reopened.
+**`0005` puts the metric columns back, and it is the one thing here that needs
+running.** `0004` dropped `event.grams` and `event.celsius` ahead of the deploy
+that stops naming them, on the assumption that both phones would update. The
+second phone did not, and showed a **red sync dot on a working network** — the
+app paints `offline` and `error` the same colour, so a failing upsert is
+indistinguishable from a dead network at a glance. That phone is failing every
+push and holding its writes in the outbox.
+
+**Paste `0005_restore_metric_columns.sql` into the SQL Editor.** It is the only
+repair that reaches a device nobody can touch: the server starts accepting the
+old build's rows again and that phone drains on its next foreground, unattended.
+A deploy would fix only the phones that took it. Nothing is lost meanwhile — the
+outbox is durable.
+
+**The rule changed with it — D-039. The schema is additive-only now.** No
+column is ever dropped or narrowed again, because "after every phone has
+updated" is not an observable moment when the service worker updates lazily,
+there is no forced update, and one of the phones belongs to the other parent.
 
 **Weight and temperature are US units.** `0003` adds `event.pounds` and
 `event.fahrenheit`, and **it is already applied** — confirmed against the live
@@ -292,7 +301,46 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-06 (latest) — the numbers he had and the app did not
+### 2026-09-06 (latest) — a red dot that was not offline
+
+The owner saw the sync icon red on the second phone, with internet working, and
+asked whether something recent had caused it. It had.
+
+**Red is two states wearing one colour.** `.sync.offline` and `.sync.error`
+share `var(--accent)` in `log.css`, and `offline` is only ever set from
+`navigator.onLine` — so on a working network, red means `error`, which is a
+failing push and not a network at all. The dot cannot tell them apart and
+neither could the owner.
+
+**The cause was `0004`.** It dropped `event.grams` and `event.celsius` before
+the build that stops naming them had reached both phones. The un-updated phone
+sends two columns that no longer exist, every upsert fails, `push()` returns
+false, and the reconcile is skipped while the outbox is non-empty — so it holds
+its writes and shows red. The window that both the commit and
+`supabase/README.md` described as temporary did not close, because **the owner
+cannot reach that device.**
+
+**The fix is a migration, not a deploy** — `0005_restore_metric_columns.sql`,
+which puts both columns back nullable and dead. A deploy only fixes phones that
+take it, which are the ones that were never broken; restoring the columns fixes
+the broken one from the server side, and it drains on its next foreground with
+nobody touching it. Restored to `0001`'s shapes — `integer` with the positive
+check, `numeric(3,1)` — because the point is to accept exactly what the old
+build sends.
+
+**And the ordering rule was retired for a stronger one — D-039.** Additive only:
+no column is ever dropped, narrowed, or given a constraint an older row could
+fail. "After every phone has updated" is not a step, because the service worker
+updates lazily, there is no forced update, no login to gate one behind, and one
+phone belongs to the other parent. A dead nullable column costs nothing against
+a 500 MB tier holding a projected 5 MB a year; a dropped one costs a phone's
+sync.
+
+**Nothing in `src/` changed.** The current build is already correct — it stopped
+naming the columns in `93cb7aa`. The mismatch is entirely between the database
+and an old client, so the database is where it is repaired.
+
+### 2026-09-06 — the numbers he had and the app did not
 
 **Three secondary types take a value now** (D-036). `weight` is typed in kg and
 stored in the schema's existing `grams` — 3.4 in, 3400 down — `temperature` is
@@ -396,25 +444,3 @@ nothing new is stored and nothing new is asked of the person logging.
 counts a past day's largest gap without asking what was in the bottle; giving it
 a source would mean deciding what a mixed day is measured against, which nobody
 has asked for.
-
-### 2026-09-05 (earliest) — a filled-in quick feed, and a date strip that stops
-
-Two things the owner hit in use, both about the cost of a default.
-
-**The bar's bottle opens on 60 mL of formula.** It used to open blank, which is
-right for `+ milk` — a feed entered by hand is as often the paper's `?` — and
-wrong for the quick icon, whose whole point is the commonest feed at two taps.
-The 60 is a *suggestion*: `MilkPart.preset` marks it, and the first digit typed
-replaces it rather than appending, so a 45 mL feed cannot become 604. Without
-that flag the prepopulation would have made every non-60 feed cost two
-backspaces, which is worse than the blank it replaced.
-
-**The date strip stops at three day pills.** It offered one per day with
-entries, so a fortnight of use pushed `more` off the right-hand edge — and
-`more` is the only route to a day older than the pills. Three is the most recent
-day and the two before it.
-
-Left undone on purpose: no browser check on the cap. Producing four distinct
-days through the UI is not possible — the time card backdates to yesterday at
-the furthest — and a check that cannot see the case it guards is worse than the
-constant it would be watching.
