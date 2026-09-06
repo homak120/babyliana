@@ -113,15 +113,36 @@ export function DayScreen() {
   // deliberately not one day, so stepping has no meaning there and the gesture
   // is simply not attached.
   const page = useRef<HTMLElement>(null)
+  // `enter` is the direction the new day arrives from, and `turn` forces the
+  // wrapper to remount so the animation replays. Only a swipe sets them — a
+  // date pill changes the day without a slide, because there was no gesture to
+  // continue.
+  const [enter, setEnter] = useState<'older' | 'newer' | null>(null)
+  const [turn, setTurn] = useState(0)
   const step = useCallback((delta: number) => {
     const next = stepDay(days, selected, delta)
-    if (next) setDay(next)
+    if (!next) return
+    setEnter(delta > 0 ? 'older' : 'newer')
+    setTurn((n) => n + 1)
+    setDay(next)
   }, [days, selected])
-  usePageSwipe(page, {
+  const swipeable = mode === 'log' && !showingAll && !range
+  const dx = usePageSwipe(page, {
     onNext: () => step(1),
     onPrev: () => step(-1),
-    enabled: mode === 'log' && !showingAll && !range,
+    enabled: swipeable,
   })
+
+  // What the page actually does under the thumb. Damped rather than
+  // one-to-one — the content is not being dragged somewhere, it is showing that
+  // the gesture registered — and clamped hard when there is no day that way, so
+  // the edge of the log is something you feel rather than read.
+  const canGo = (delta: number) => stepDay(days, selected, delta) !== null
+  const damped = dx === 0 || !swipeable
+    ? 0
+    : canGo(dx < 0 ? 1 : -1)
+      ? Math.max(-96, Math.min(96, dx * 0.42))
+      : Math.max(-18, Math.min(18, dx * 0.12))
 
   // Insights shares only the mode pills with the read-back — no date strip, no
   // picked period, no totals row. Returning early keeps that honest instead of
@@ -170,6 +191,19 @@ export function DayScreen() {
         </button>
       </div>
 
+      {/* The part that moves. The mode pills and the date strip are chrome and
+          stay put; what slides is the day being read. */}
+      <div
+        key={turn}
+        className={`daypage${enter ? ` in-${enter}` : ''}`}
+        style={{
+          transform: damped ? `translateX(${damped}px)` : undefined,
+          // Only while the finger is down. A transition during the drag lags
+          // behind the thumb; without one, letting go would snap rather than
+          // spring back.
+          transition: dx === 0 ? undefined : 'none',
+        }}
+      >
       <p className="daylabel">
         {range ? rangeLabel(range) : showingAll ? 'all days' : dayPill(selected)}
       </p>
@@ -204,6 +238,7 @@ export function DayScreen() {
             allDeviceIds={devices.map((d) => d.id)}
           />
         ))}
+      </div>
       </div>
 
       {picking && (

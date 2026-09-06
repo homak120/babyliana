@@ -1197,11 +1197,31 @@ component, where `days[here + 1]` reads as the opposite of what it does.
 insights mode are deliberately not one day, so the listeners are not attached at
 all rather than attached and ignored.
 
-**Nothing moves under the thumb.** `SwipeRow` drags its content because what it
-reveals sits behind the row; here the page is replaced outright, so a transform
-would animate something about to be thrown away. Every moving part is another
-thing that works on a desktop and not on a phone, and this project has paid that
-bill four times.
+**The page moves under the thumb, and the new day slides in.** It shipped
+without any of that — the argument was that a day change is instant, so a
+transform would animate something about to be replaced — and the owner asked for
+the movement the same day. He is right about what it buys: a gesture with no
+feedback is one you cannot tell you have started, and the threshold is
+invisible.
+
+What moves is the day being read — the label, the totals, the table. The mode
+pills and the date strip are chrome and hold still. The drag is **damped**
+(0.42, capped at 96px) rather than one-to-one, because the content is not being
+dragged anywhere; it is showing that the gesture registered. **At either end of
+the log it barely gives** — 0.12, capped at 18px — so the first and last day are
+something you feel rather than read. Letting go short of the threshold springs
+back; committing remounts the wrapper and plays a 200ms slide from the side the
+content was already travelling. `prefers-reduced-motion` turns all of it off and
+the day simply arrives.
+
+**Adding it broke the gesture, in a way worth recording.** Callers pass inline
+arrows for `onPrev`/`onNext`, which are new objects every render. That was
+harmless while the hook rendered nothing — but reporting the live offset
+re-renders on every `touchmove`, so an effect keyed on those callbacks tore
+itself down and re-attached mid-drag, losing the gesture's start point. The
+swipe then did nothing at all. They live in a ref now and the effect depends on
+neither. `verify-period` caught it, which is the only reason it is a footnote
+rather than a bug report from a phone.
 
 **What it does share with `SwipeRow` is the gesture rules**, which took four
 attempts to get right on iOS: native listeners rather than React's, because

@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 
 /** Horizontal travel before a swipe counts as one. */
 const COMMIT_AT = 60
@@ -21,10 +21,11 @@ const DECIDE_AT = 10
  * what the page is showing, and there is nothing underneath to reveal. The
  * gesture rules are shared, the movement is not.
  *
- * Nothing moves under the thumb. A day change is instantaneous, so a transform
- * would be animating a page that is about to be replaced — and the one thing
- * this project has learnt about gestures on iOS is that every moving part is
- * another thing to get wrong on a device but not on a desktop.
+ * **Returns the live horizontal offset** so the caller can move something with
+ * the finger, and 0 the moment the touch ends. What moves, how far, and whether
+ * it resists is the caller's business — this only reports the drag. The day
+ * view damps it and clamps it hard at the ends, so the page barely gives when
+ * there is no day to step to.
  *
  * `enabled` is false wherever stepping has no meaning — `all days`, a picked
  * period, the insights mode — and the listeners are simply not attached.
@@ -38,10 +39,25 @@ export function usePageSwipe(
     onNext: () => void
     enabled?: boolean
   },
-) {
+): number {
+  const [dx, setDx] = useState(0)
+
+  /**
+   * The callbacks live in a ref so the effect does not depend on them.
+   *
+   * Callers pass inline arrows, which are new objects on every render. That was
+   * harmless while this hook rendered nothing — but reporting `dx` re-renders
+   * on every touchmove, so an effect keyed on the callbacks tore itself down
+   * and re-attached mid-drag, losing the gesture's start point. The swipe then
+   * did nothing at all, and only did nothing *after* the animation was added,
+   * which is a nasty thing to debug backwards.
+   */
+  const cbs = useRef({ onPrev, onNext })
+  cbs.current = { onPrev, onNext }
+
   useEffect(() => {
     const el = ref.current
-    if (!el || !enabled) return
+    if (!el || !enabled) { setDx(0); return }
     let from: { x: number; y: number } | null = null
     let axis: 'x' | 'y' | null = null
 
@@ -73,20 +89,22 @@ export function usePageSwipe(
       // is the belt to that pair of braces, and it is what stops iOS turning a
       // horizontal drag into a back-navigation swipe.
       e.preventDefault()
+      setDx(mx)
     }
 
     const up = (e: TouchEvent) => {
       if (axis === 'x' && from) {
         const t = e.changedTouches[0]
         const mx = t.clientX - from.x
-        if (mx <= -COMMIT_AT) onNext()
-        else if (mx >= COMMIT_AT) onPrev()
+        if (mx <= -COMMIT_AT) cbs.current.onNext()
+        else if (mx >= COMMIT_AT) cbs.current.onPrev()
       }
       from = null
       axis = null
+      setDx(0)
     }
 
-    const cancel = () => { from = null; axis = null }
+    const cancel = () => { from = null; axis = null; setDx(0) }
 
     el.addEventListener('touchstart', down, { passive: true })
     // Not passive: `move` calls preventDefault, and React attaches touchmove
@@ -100,5 +118,7 @@ export function usePageSwipe(
       el.removeEventListener('touchend', up)
       el.removeEventListener('touchcancel', cancel)
     }
-  }, [ref, onPrev, onNext, enabled])
+  }, [ref, enabled])
+
+  return dx
 }

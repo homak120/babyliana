@@ -59,6 +59,38 @@
   color: var(--muted);
 }
 
+/* The swiped part: the day label, the totals and the table. The mode pills and
+   the date strip sit outside it and stay put, so the chrome holds still while
+   the day being read moves. */
+.daypage {
+  /* Springs back when the finger lifts short of the threshold. Suppressed
+     inline while the drag is live, or it would lag behind the thumb. */
+  transition: transform 0.18s ease-out;
+}
+
+/* On a committed swipe the wrapper remounts and one of these plays. Left is
+   older, so an older day arrives from the right — the direction the content
+   was already travelling. */
+.daypage.in-older { animation: dayInOlder 0.2s ease-out; }
+.daypage.in-newer { animation: dayInNewer 0.2s ease-out; }
+
+@keyframes dayInOlder {
+  from { transform: translateX(26%); opacity: 0.35; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes dayInNewer {
+  from { transform: translateX(-26%); opacity: 0.35; }
+  to { transform: none; opacity: 1; }
+}
+
+/* Whoever asked not to see this, does not. The day still changes; it simply
+   arrives instead of sliding. */
+@media (prefers-reduced-motion: reduce) {
+  .daypage,
+  .daypage.in-older,
+  .daypage.in-newer { transition: none; animation: none; }
+}
+
 .table { margin-top: 0.5rem; }
 
 .thead,

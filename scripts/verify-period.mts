@@ -135,12 +135,59 @@ if (!room) {
   check('two days to move between', pills >= 3, `${pills} pills including "all days"`)
 
   const start = await label()
+
+  // --- the page moves under the thumb ---
+  //
+  // Mid-drag, before the finger lifts. The offset is damped rather than
+  // one-to-one, so this asserts a direction and a ceiling, not a number.
+  const holdAt = async (dx: number) => {
+    const y = 520, x0 = dx < 0 ? 300 : 90
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y }] })
+    for (let i = 1; i <= 10; i++) {
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchMove', touchPoints: [{ x: x0 + (dx * i) / 10, y }],
+      })
+    }
+    await p.waitForTimeout(120)
+    const shift = await p.evaluate(() =>
+      new DOMMatrix(getComputedStyle(document.querySelector('.daypage')!).transform).m41)
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await p.waitForTimeout(400)
+    return Math.round(shift)
+  }
+
+  const heldLeft = await holdAt(-140)
+  check('the page follows the thumb, damped', heldLeft < -20 && heldLeft > -96,
+    `${heldLeft}px for a 140px drag`)
+  check('and springs back when the day did not change',
+    Math.round(await p.evaluate(() =>
+      new DOMMatrix(getComputedStyle(document.querySelector('.daypage')!).transform).m41)) === 0,
+    'back to 0')
+
+  // Nothing older than the oldest, and the page says so by barely giving.
+  await p.locator('.daypill').last().click().catch(() => {})
+  await p.waitForTimeout(300)
+  const atOldest = (await p.locator('.daypill.on').count()) === 1
+  if (atOldest) {
+    const heldAtEnd = await holdAt(-140)
+    check('at the end of the log the page barely gives',
+      heldAtEnd > -20, `${heldAtEnd}px for the same 140px drag`)
+  }
+  await p.locator('.daypill').nth(1).click()
+  await p.waitForTimeout(300)
+
   await swipe(-160)
   const older = await label()
   check('a left swipe steps to the older day', older !== start, `${start} -> ${older}`)
+  check('and the new day slides in from the side it came from',
+    (await p.locator('.daypage.in-older').count()) === 1,
+    (await p.locator('.daypage').getAttribute('class')) ?? 'no wrapper')
 
   await swipe(160)
   check('a right swipe comes back', (await label()) === start, `${older} -> ${await label()}`)
+  check('and slides in from the other side',
+    (await p.locator('.daypage.in-newer').count()) === 1,
+    (await p.locator('.daypage').getAttribute('class')) ?? 'no wrapper')
 
   await swipe(160)
   check('and stops at the most recent day', (await label()) === start,
