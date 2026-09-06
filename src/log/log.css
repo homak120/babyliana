@@ -193,6 +193,21 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* The bottle prompt, under the target. Rose rather than the wake line's amber:
+   it is about milk, and every other milk thing on this screen is rose. */
+.prepline {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.3125rem;
+  color: var(--roseDeep);
+}
+
+.prepline span {
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
 .endfeedmini,
 .endsleepmini {
   width: 30px;

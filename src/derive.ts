@@ -104,6 +104,34 @@ export function targetWake(lastFeedEnd: Date | null): Date | null {
 }
 
 /**
+ * How long before the target the bottle prompt goes up.
+ *
+ * Fifteen minutes is roughly what warming one takes, which is the whole reason
+ * the prompt exists: knowing the feed is due is not the same as having the
+ * bottle ready when it is.
+ */
+const PREP_LEAD_MINUTES = 15
+
+/**
+ * Whether to say *make a bottle*.
+ *
+ * From fifteen minutes before the target **onwards** — it does not stop at the
+ * target. A prompt that clears exactly when the feed comes due would vanish at
+ * the moment it is most wanted.
+ *
+ * Nothing clears it explicitly, and nothing needs to: the target is derived
+ * from the last feed, so logging one pushes the target three or four hours out
+ * and this falls false on the same render. No flag, no stored state — the same
+ * rule the open-feed and open-sleep states already follow (D-033).
+ *
+ * False with no target at all, which includes while a feed is running.
+ */
+export function bottleDue(target: Date | null, now = new Date()): boolean {
+  if (!target) return false
+  return now.getTime() >= target.getTime() - PREP_LEAD_MINUTES * 60_000
+}
+
+/**
  * `in 40m`, `1h 10m ago`, `now`. A distance and nothing else.
  *
  * Past the target it still only says how far past. The tone rule holds here as

@@ -2,6 +2,7 @@
 // they are what the whole screen is for. Pure functions, no browser needed.
 import type { Moment } from '../src/types.ts'
 import {
+  bottleDue,
   feedKind,
   formatElapsed,
   lastFeedAt,
@@ -164,6 +165,27 @@ check('how far off, ahead', targetText(aim, new Date(2026, 8, 3, 16, 20)) === 'i
 check('how far off, behind', targetText(aim, new Date(2026, 8, 3, 18, 10)) === '1h 10m ago')
 check('and on the minute', targetText(aim, aim) === 'now')
 check('nothing to say without a target', targetText(null) === null)
+
+// --- the bottle prompt ------------------------------------------------------
+// Up from 15 minutes before the target and onwards, not just until it.
+const at17 = new Date(2026, 8, 3, 17, 0)
+const clock = (h: number, m = 0) => new Date(2026, 8, 3, h, m)
+
+check('quiet 16 minutes out', !bottleDue(at17, clock(16, 44)))
+check('up 15 minutes out', bottleDue(at17, clock(16, 45)))
+check('still up on the target itself', bottleDue(at17, clock(17, 0)))
+check('and still up well past it', bottleDue(at17, clock(19, 30)))
+check('nothing to say with no target', !bottleDue(null, clock(17, 0)))
+
+// Nothing clears it explicitly. Logging a feed moves the target three or four
+// hours out, and that is what takes the line down — no flag, no stored state.
+const afterAFeedAt1730 = targetWake(clock(17, 30))!
+check('logging a feed takes the prompt down with it',
+  !bottleDue(afterAFeedAt1730, clock(17, 31)),
+  `${hhmm_(afterAFeedAt1730)} target`)
+check('and it comes back 15 minutes before the new one',
+  bottleDue(afterAFeedAt1730, clock(20, 15)),
+  `${hhmm_(afterAFeedAt1730)} target`)
 
 // --- theme -----------------------------------------------------------------
 check('night at 22:00', themeFor(new Date(2026, 8, 3, 22)) === 'night')

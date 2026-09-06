@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
+  bottleDue,
   feedDuration,
   feedKind,
   formatElapsed,
@@ -200,6 +201,10 @@ export function LogScreen({ onEndOpen }: {
   // measured from where the feed *ends*, so during it the line would show a
   // number that moves every tick and is wrong the moment the feed is closed.
   const target = feeding ? null : targetWake(lastFeedEnd)
+  // Display only. It says the bottle is worth starting; it does not know
+  // whether one was, and there is nothing to dismiss — logging the feed moves
+  // the target and takes the line with it.
+  const prepping = bottleDue(target, now)
   // The total, not the breakdown. With the unit and the source word on every
   // part (§12), "25 mL breast + 45 mL formula" is far past what a one-line
   // figure slot holds — so these two leads print one number.
@@ -347,6 +352,18 @@ export function LogScreen({ onEndOpen }: {
                 <Icon name="alarm" size={14} />
                 <span>wake ~{hhmm(target.toISOString())}</span>
                 <em>{targetText(target, now)}</em>
+              </div>
+            )}
+
+            {/* Its own row rather than folded into the one above: the wake time
+                and the prompt are two independent facts, and this card already
+                stacks lines this way for a running feed and an open sleep.
+                `local_drink` is the app's milk icon everywhere else, which is
+                what ties the prompt to what it is asking for. */}
+            {prepping && (
+              <div className="prepline">
+                <Icon name="local_drink" size={14} />
+                <span>make a bottle</span>
               </div>
             )}
           </div>

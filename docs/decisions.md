@@ -1080,3 +1080,30 @@ rail chooses which summary the card leads with and this is wanted under all of
 them. Descriptive as everything else on that card: the clock time and how far
 off it is, with no view about it — past the target it still only says how far
 past.
+
+### Amended 2026-09-06 — a bottle prompt under the target
+
+A second line, **make a bottle**, appears fifteen minutes before the target and
+sits under the wake time. Fifteen is roughly what warming one takes, which is
+the point: knowing the feed is due is not the same as having the bottle ready
+when it is.
+
+**It does not clear at the target — it clears when a feed is logged.** A prompt
+that vanished exactly when the feed came due would go at the moment it is most
+wanted. And nothing clears it explicitly: the target is derived from the last
+feed, so logging one pushes the target hours out and the line falls away on the
+same render. No flag, no stored state, the same rule the open feed and the open
+sleep already follow (D-033).
+
+**Its own row rather than folded into the wake line.** The two are independent
+facts, and the card already stacks lines this way for a running feed and an open
+sleep. It takes `local_drink`, the app's milk icon everywhere else, and the rose
+accent that goes with it — the wake line keeps amber.
+
+**Display only.** It is a reminder, not a record: there is nothing to tap,
+nothing to dismiss, and the app never learns whether a bottle was made. That is
+what keeps it on the right side of the tone rule — it names a task at a time,
+and has no opinion about whether anyone did it.
+
+**Where it is silent.** With no target at all, which includes while a feed is
+running — the same condition that hides the wake line.

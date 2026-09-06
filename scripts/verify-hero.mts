@@ -176,6 +176,70 @@ const wake = await p.evaluate(() => {
 check('and stays inside the card', wake.right <= wake.limit,
   `ends ${wake.right} vs limit ${wake.limit}`)
 
+// --- the bottle prompt ---
+//
+// Nothing to prepare yet: the feed above is minutes old, so the target is
+// hours out.
+check('no bottle prompt hours ahead of the target',
+  (await p.locator('.prepline').count()) === 0,
+  `${await p.locator('.prepline').count()} prompt(s)`)
+
+// Walk the feed back four hours so the target has passed. Editing the entry
+// rather than logging another one, because the prompt reads the *latest* feed
+// and a backdated second one would not be it.
+const cdp = await ctx.newCDPSession(p)
+const feedRow = p.locator('.row.swipeable').nth(1)
+const rbox = (await feedRow.boundingBox())!
+const ry = rbox.y + rbox.height / 2, rx = rbox.x + rbox.width - 30
+await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: rx, y: ry }] })
+for (let i = 1; i <= 14; i++) {
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove', touchPoints: [{ x: rx - (150 * i) / 14, y: ry }],
+  })
+}
+await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+await p.waitForTimeout(400)
+await p.locator('.rowwrap').nth(1).locator('.act.edit').click()
+await p.waitForTimeout(400)
+// The first `.timestepper` is the hour; both steppers label their buttons the
+// same way, so scope it rather than matching on the name.
+const hourDown = p.locator('.timestepper').first().getByLabel('down')
+for (let i = 0; i < 4; i++) { await hourDown.click(); await p.waitForTimeout(120) }
+await p.getByRole('button', { name: 'save changes', exact: true }).click()
+await p.waitForTimeout(900)
+
+check('the prompt is up once the target is inside 15 minutes',
+  (await p.locator('.prepline').count()) === 1,
+  (await p.locator('.prepline').innerText().catch(() => 'absent')).replace(/\n/g, ' '))
+
+// Under every lead, like the wake line it sits below, and inside the card.
+for (const label of ['combined view', 'mascot view', 'elapsed view'] as const) {
+  await p.getByLabel(label).click()
+  await p.waitForTimeout(200)
+  const seen = await p.locator('.prepline').count()
+  const over = await p.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  )
+  check(`the prompt is under ${label}`, seen === 1 && over === 0,
+    `${seen} prompt(s), ${over}px overflow`)
+}
+
+const prep = await p.evaluate(() => {
+  const el = document.querySelector('.prepline') as HTMLElement
+  const wakeEl = document.querySelector('.wakeline') as HTMLElement
+  const card = document.querySelector('.herocard') as HTMLElement
+  const pad = parseFloat(getComputedStyle(card).paddingRight)
+  return {
+    right: Math.round(el.getBoundingClientRect().right),
+    limit: Math.round(card.getBoundingClientRect().right - pad),
+    below: el.getBoundingClientRect().top >= wakeEl.getBoundingClientRect().bottom - 1,
+    lines: Math.round(el.getBoundingClientRect().height / 18),
+  }
+})
+check('it sits below the wake line, on one row, inside the card',
+  prep.below && prep.right <= prep.limit && prep.lines <= 1,
+  `ends ${prep.right} vs ${prep.limit}, ${prep.lines} line(s), below: ${prep.below}`)
+
 await b.close()
 stop()
 console.log(fail === 0 ? '\n  hero fits' : `\n  ${fail} FAILED`)
