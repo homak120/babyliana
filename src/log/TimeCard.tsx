@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Icon } from './Icon'
 import {
   COLLAPSED_OFFSETS, END_OFFSETS, HOLD_MS, MINUTE_OFFSETS,
-  formatDuration, minutesAfter, minutesAgo, pad, resolveEnd,
+  endNow, formatDuration, minutesAfter, minutesAgo, pad, resolveEnd,
   stepFor, withHourMinute, wrapHour, wrapMinute,
 } from './time'
 
@@ -139,7 +139,7 @@ export function TimeCard({
       {end === null ? (
         <button
           type="button" className="pill addend"
-          onClick={() => onChange(start, minutesAfter(start, 30))}
+          onClick={() => onChange(start, endNow(start))}
         >
           <Icon name="add" size={16} /> end time — optional
         </button>
@@ -166,6 +166,12 @@ export function TimeCard({
           </div>
 
           <div className="shortcuts">
+            <button
+              type="button" className="pill" aria-label="end now"
+              onClick={() => onChange(start, endNow(start))}
+            >
+              <Icon name="schedule" size={14} /> now
+            </button>
             {END_OFFSETS.map((o) => (
               <button
                 type="button" key={o} className="pill"

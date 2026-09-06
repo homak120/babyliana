@@ -11,7 +11,7 @@ const store = new Map<string, string>([['babyliana.device_id', '00000000-0000-40
 } as Storage
 
 import {
-  formatDuration, minutesAfter, minutesAgo, resolveEnd, stepFor,
+  endNow, formatDuration, minutesAfter, minutesAgo, resolveEnd, stepFor,
   withHourMinute, wrapHour, wrapMinute, HOLD_ACCELERATE_AFTER,
 } from '../src/log/time.ts'
 
@@ -80,6 +80,26 @@ check('an end before its start crosses midnight rather than being rejected',
   `${show(overnight)} ${formatDuration(t(23,0), overnight)}`)
 
 check('the database constraint would have refused that', t(1, 30) < t(23, 0))
+
+// --- "now" as an end time ---------------------------------------------------
+// Adding an end time defaults to the clock, not to a guessed length, and the
+// pill beside it says the same thing a second time for a feed that has run on.
+const endedNow = endNow(t(19, 0), t(19, 25))
+check('an end time added at 19:25 is 19:25, not a guess',
+  endedNow.getDate() === 3 && formatDuration(t(19, 0), endedNow) === '25 min', show(endedNow))
+
+const wokeAt = endNow(new Date(2026, 8, 2, 23, 0), t(7, 0))
+check('ending a sleep begun last night at 23:00 lands on this morning',
+  wokeAt.getDate() === 3 && wokeAt.getHours() === 7, show(wokeAt))
+
+const oldMoment = endNow(new Date(2026, 7, 30, 21, 0), t(7, 0))
+check('and a moment from days ago ends on its OWN day, not today',
+  oldMoment.getMonth() === 7 && oldMoment.getDate() === 31 && oldMoment.getHours() === 7,
+  show(oldMoment))
+
+const ahead = endNow(t(19, 30), t(19, 25))
+check('a start typed slightly ahead clamps rather than inventing a 23h period',
+  ahead.getTime() === t(19, 30).getTime(), show(ahead))
 
 check('duration under an hour reads in minutes',
   formatDuration(t(19, 0), minutesAfter(t(19, 0), 25)) === '25 min')

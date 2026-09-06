@@ -91,3 +91,19 @@ export function resolveEnd(start: Date, end: Date): Date {
   next.setDate(next.getDate() + 1)
   return next
 }
+
+/**
+ * The end time meant by "now", for a moment that may not be today.
+ *
+ * Anchored to the start's day for the same reason `withHourMinute` is: ending a
+ * period logged three days ago means that day's clock, not this instant. Landing
+ * before the start then reads as a period that ran past midnight — a sleep begun
+ * at 23:00 and ended at 07:00 is exactly the case — so it moves to the next day.
+ * A start that is itself in the future has no such reading, and clamps to the
+ * start rather than inventing a 23-hour period.
+ */
+export function endNow(start: Date, now = new Date()): Date {
+  const at = withHourMinute(now.getHours(), now.getMinutes(), now, start)
+  if (at.getTime() >= start.getTime()) return at
+  return start.getTime() <= now.getTime() ? resolveEnd(start, at) : new Date(start)
+}
