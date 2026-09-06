@@ -36,7 +36,8 @@ const moment = (
     id: crypto.randomUUID(), timeslot_id: 'x', type: 'feed', note: null,
     recorded_at: occurred, updated_at: occurred, updated_by: null,
     volume_ml: null, source: null, pee: null, poop: null,
-    poop_colour: null, poop_consistency: null, grams: null, celsius: null,
+    poop_colour: null, poop_consistency: null, pounds: null, fahrenheit: null,
+    grams: null, celsius: null,
     supplement_name: null, amount: null, severity: null, ...e,
   })) as Moment['events'],
 })

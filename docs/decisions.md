@@ -1022,10 +1022,10 @@ identical rows behind `other`, with the answer "pick one, write the rest in the
 note" — which was right when nothing could be counted and wrong once he wanted
 to record a weight.
 
-- **Weight is typed in kg, stored in grams.** `3.4` in the box, `grams = 3400`
-  in the row. A scale and a health visitor both say 3.4, and the schema's column
-  did not have to move.
-- **Temperature is °C**, one field.
+- **Weight is typed as a decimal number of pounds; temperature is °F.**
+  Amended 2026-09-06 — see below. It shipped as kg into the schema's `grams`
+  and °C, which was the model's unit rather than the user's.
+- **Temperature is one field.**
 - **Supplement asks two things** — what, and how much — both free text, because
   "1 drop" and "0.5 mL" are both real answers and neither is a number. **Both
   arrive filled in with `Vitamin D` / `1 drop`** (2026-09-06): it is the one
@@ -1065,6 +1065,48 @@ both the day table and the home screen's recent list print. The list had its own
 inline copy that printed the bare type name, so a weight read `weight` there and
 `weight 3.4 kg` in the table — the same split that once hid an end time from
 this list until `timeCell` replaced its local formatter.
+
+### Amended 2026-09-06 — weight and temperature are US units
+
+The app is used in the US. A scale reads pounds and a thermometer reads
+Fahrenheit, and converting in your head at 4am is exactly the cost this app
+exists to remove. Migration **`0003`** adds `event.pounds` and
+`event.fahrenheit`.
+
+**The columns store what is typed; no conversion at the edges.** The other way —
+keep `grams`/`celsius` and convert on save and display — needs no migration, and
+was rejected because it rounds: 98.7°F stores as 37.1°C and reads back as
+98.8°F. A recorded reading that changes when you look at it is the failure D-020
+exists to prevent, one fact being right in one view and wrong in another.
+
+**`pounds`, not `ounces`.** The owner's first answer named ounces, on the
+assumption of two boxes — `7` and `4`. He then chose a **single decimal field**
+instead, and pounds is what makes that lossless: `7.25` in, `7.25` stored, `7.25`
+back when the entry is reopened, and `7 lb 4 oz` on the row. Whole ounces as the
+stored unit would round a typed `7.3` to 117 oz and hand back `7.3125`.
+
+**The lb + oz form is display only.** `poundsToLbOz` rounds to whole ounces —
+a scale says 4 oz, not 4.0 — carries sixteen into the pound rather than printing
+`7 lb 16 oz`, and drops the ounces entirely on an exact pound.
+
+**`fahrenheit` is `numeric(4,1)`**, not the `(3,1)` the celsius column used.
+That caps at 99.9, so the old column could not have held an ordinary 100.4
+reading even renamed.
+
+**The migration is additive and the old columns stay.** Two phones run this app
+and the service worker updates lazily, so during a rollout one of them is still
+on code that writes `grams`. Dropping it would break that phone's sync until it
+happened to update. Nothing reads or writes the pair after this; dropping them
+is a separate, later, deliberate step. A weight written before `0003` would
+therefore read back as the bare word `weight` rather than a number in the wrong
+unit. **No such row exists**: the database held 88 feeds, 78 diapers, 13 sleeps
+and one `other` when this was written, and not a single weight or temperature.
+The old columns are being kept for the rollout, not for data.
+
+**This blocks a deploy, which is what `supabase/README.md` warned about and this
+is the first time it has come true.** Sync pushes whole rows, so the migration
+has to run in the SQL Editor *before* the code that writes these columns is
+deployed. `verify-s2` and `verify-s8` are red until it does, by design.
 
 ### The target for the next feed
 

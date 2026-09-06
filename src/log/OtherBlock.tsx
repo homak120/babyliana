@@ -12,11 +12,13 @@ import { newOther, OTHER_TYPES, pickOther, type OtherDraft } from './drafts'
 // something else have no value to capture and still write into the note.
 
 /** What each kind asks for. Nothing here for the two that carry no value. */
-type Field = { key: 'kg' | 'celsius' | 'supplementName' | 'supplementAmount'; label: string; unit?: string; placeholder?: string; numeric?: boolean }
+type Field = { key: 'lb' | 'fahrenheit' | 'supplementName' | 'supplementAmount'; label: string; unit?: string; placeholder?: string; numeric?: boolean }
 
 const FIELDS: Partial<Record<string, Field[]>> = {
-  weight: [{ key: 'kg', label: 'weight', unit: 'kg', placeholder: '3.4', numeric: true }],
-  temperature: [{ key: 'celsius', label: 'temperature', unit: '°C', placeholder: '36.8', numeric: true }],
+  // Pounds as a decimal, one field. The row reads it back as `7 lb 4 oz` —
+  // which is how a scale says it — but nobody wants two boxes to fill at 4am.
+  weight: [{ key: 'lb', label: 'weight', unit: 'lb', placeholder: '7.25', numeric: true }],
+  temperature: [{ key: 'fahrenheit', label: 'temperature', unit: '°F', placeholder: '98.6', numeric: true }],
   supplement: [
     { key: 'supplementName', label: 'what', placeholder: 'vitamin D' },
     { key: 'supplementAmount', label: 'how much', placeholder: '1 drop' },

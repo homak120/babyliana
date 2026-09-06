@@ -13,7 +13,7 @@ const store = new Map<string, string>([['babyliana.device_id', '00000000-0000-40
 
 import type { Block } from '../src/log/drafts.ts'
 const {
-  blocksFromMoment, canSave, gramsToKg, kgToGrams, newDiaper, newOther, pickOther,
+  blocksFromMoment, canSave, newDiaper, newOther, pickOther, poundsToLbOz,
   toEntries, OTHER_TYPES, SUPPLEMENT_PRESET,
 } = await import('../src/log/drafts.ts')
 const { createThisDevice, logMoment, getMoments } = await import('../src/moments.ts')
@@ -44,23 +44,40 @@ check('it becomes an entry of that type', one(other('weight')).type === 'weight'
 const withFields = (kind: string, fields: Record<string, string>): Block =>
   ({ key: 'o', type: 'other', draft: { ...newOther(), kind: kind as never, ...fields } })
 
-check('kg is typed and grams is stored', kgToGrams('3.4') === 3400)
-check('a whole number of kg still works', kgToGrams('4') === 4000)
-check('grams round rather than truncate', kgToGrams('3.4567') === 3457)
-check('a blank weight is null, not zero', kgToGrams('') === null)
-check('so is something that is not a number', kgToGrams('abc') === null)
-check('half-typed reads as the digits so far', kgToGrams('3.') === 3000)
-check('grams come back as kg for editing', gramsToKg(3400) === '3.4')
-
-const weighed = one(withFields('weight', { kg: '3.4' }))
-check('a weight entry carries grams', weighed.grams === 3400, String(weighed.grams))
-const unweighed = one(withFields('weight', { kg: '' }))
+// Pounds are stored exactly as typed (0003); the lb + oz form is display only,
+// so a weight reopened for editing shows the number that was entered.
+const weighed = one(withFields('weight', { lb: '7.25' }))
+check('a weight entry carries the pounds as typed', weighed.pounds === 7.25, String(weighed.pounds))
+check('a whole number of pounds works', one(withFields('weight', { lb: '8' })).pounds === 8)
+check('a blank weight is null, not zero', one(withFields('weight', { lb: '' })).pounds === null)
+check('so is something that is not a number',
+  one(withFields('weight', { lb: 'abc' })).pounds === null)
+check('half-typed reads as the digits so far',
+  one(withFields('weight', { lb: '7.' })).pounds === 7)
 check('a weight with no number is still savable and still a weight',
-  canSave([withFields('weight', { kg: '' })]) && unweighed.grams === null)
+  canSave([withFields('weight', { lb: '' })])
+    && one(withFields('weight', { lb: '' })).type === 'weight')
+// `grams` is not in DraftEntry any more, so a draft cannot even name it. The
+// column still exists in the table for a phone on older code; nothing here
+// writes it.
+check('the superseded column is not something a draft can carry',
+  !Object.keys(weighed).includes('grams'))
 
-const temp = one(withFields('temperature', { celsius: '36.8' }))
-check('a temperature entry carries celsius', temp.celsius === 36.8, String(temp.celsius))
-check('a decimal point is not lost', one(withFields('temperature', { celsius: '37.05' })).celsius === 37.05)
+check('pounds read back the way a scale says it', poundsToLbOz(7.25) === '7 lb 4 oz',
+  poundsToLbOz(7.25))
+check('exact pounds drop the ounces', poundsToLbOz(8) === '8 lb', poundsToLbOz(8))
+check('ounces are whole, rounded', poundsToLbOz(7.3) === '7 lb 5 oz', poundsToLbOz(7.3))
+// 7.97 lb is 15.52 oz, which rounds to 16 — that must carry into the pound
+// rather than print "7 lb 16 oz".
+check('sixteen ounces carry into the pound', poundsToLbOz(7.97) === '8 lb', poundsToLbOz(7.97))
+check('and under an ounce is just the pounds', poundsToLbOz(7.01) === '7 lb', poundsToLbOz(7.01))
+
+const temp = one(withFields('temperature', { fahrenheit: '98.6' }))
+check('a temperature entry carries fahrenheit', temp.fahrenheit === 98.6, String(temp.fahrenheit))
+check('a fever reading fits, where celsius(3,1) could not hold it',
+  one(withFields('temperature', { fahrenheit: '100.4' })).fahrenheit === 100.4)
+check('a decimal point is not lost',
+  one(withFields('temperature', { fahrenheit: '99.05' })).fahrenheit === 99.05)
 
 const supp = one(withFields('supplement', { supplementName: ' vitamin D ', supplementAmount: '1 drop' }))
 check('a supplement carries its name, trimmed', supp.supplement_name === 'vitamin D', String(supp.supplement_name))
@@ -105,12 +122,13 @@ check('a reopened supplement is not marked a suggestion',
   JSON.stringify(reopenedSupp.draft))
 
 // --- a value survives being reopened for editing ----------------------------
-const logged = await logMoment({ entries: [one(withFields('weight', { kg: '3.4' }))] })
+const logged = await logMoment({ entries: [one(withFields('weight', { lb: '7.25' }))] })
 const reopened = blocksFromMoment(logged)
 check('reopening a weight fills the field back in',
-  reopened[0].type === 'other' && reopened[0].draft.kg === '3.4',
+  reopened[0].type === 'other' && reopened[0].draft.lb === '7.25',
   JSON.stringify(reopened[0].draft))
-check('and saves back to the same grams', one(reopened[0]).grams === 3400)
+check('and saves back to the same number, with no drift',
+  one(reopened[0]).pounds === 7.25)
 
 const suppSaved = await logMoment({
   entries: [one(withFields('supplement', { supplementName: 'vitamin D', supplementAmount: '1 drop' }))],

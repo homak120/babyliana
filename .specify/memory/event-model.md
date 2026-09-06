@@ -89,8 +89,9 @@ human-readable summary of the same thing.
 | `poop` | diaper | Boolean. Both may be true on one change |
 | `poop_colour` | diaper | yellow / green / brown / dark / other |
 | `poop_consistency` | diaper | liquid / soft / seedy / firm / other |
-| `grams` | weight | |
-| `celsius` | temperature | |
+| `pounds` | weight | Decimal pounds as typed. Reads back as `7 lb 4 oz` |
+| `fahrenheit` | temperature | |
+| `grams`, `celsius` | — | Superseded by the pair above in `0003`. Kept so a phone on older code keeps syncing; nothing reads them |
 | `supplement_name`, `amount` | supplement | |
 | `severity` | spit_up | Or just use `note` |
 | — | other | No columns of its own. `note` carries it |
@@ -235,6 +236,16 @@ create table if not exists public.event (
   -- shaped like a normal body-temperature range is a step toward the
   -- normal-range judgement CLAUDE.md rules out, and catching typos is not worth
   -- that.
+  -- US units as of migration 0003. `pounds` is a decimal number of pounds, as
+  -- typed; the lb + oz form is display only, so a weight reopened for editing
+  -- shows the number that was entered and re-saving it cannot drift.
+  pounds        numeric(5,2) check (pounds is null or pounds > 0),
+  -- numeric(4,1), not the (3,1) the celsius column used: that caps at 99.9 and
+  -- could not hold an ordinary 100.4 reading.
+  fahrenheit    numeric(4,1) check (fahrenheit is null or fahrenheit > 0),
+
+  -- Superseded by the pair above. Still here because 0003 is additive: two
+  -- phones run this app and one of them is on older code during a rollout.
   grams         integer check (grams is null or grams > 0),
   celsius       numeric(3,1),
 

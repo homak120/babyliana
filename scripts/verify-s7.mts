@@ -32,7 +32,8 @@ const ev = (e: Partial<Moment['events'][number]>) => ({
   id: `e${n++}`, timeslot_id: 't', type: 'feed', note: null,
   recorded_at: '', updated_at: '', updated_by: null,
   volume_ml: null, source: null, pee: null, poop: null,
-  poop_colour: null, poop_consistency: null, grams: null, celsius: null,
+  poop_colour: null, poop_consistency: null, pounds: null, fahrenheit: null,
+  grams: null, celsius: null,
   supplement_name: null, amount: null, severity: null, ...e,
 }) as Moment['events'][number]
 
@@ -126,11 +127,11 @@ check('and leaves sleep alone', otherCell([ev({ type: 'sleep' })]) === null)
 
 // The three that carry a value read it back on the row (D-036) — an input the
 // table never showed would be write-only.
-check('a weight reads back in kg',
-  otherCell([ev({ type: 'weight', grams: 3400 })]) === 'weight 3.4 kg',
-  String(otherCell([ev({ type: 'weight', grams: 3400 })])))
+check('a weight reads back as lb and oz',
+  otherCell([ev({ type: 'weight', pounds: 7.25 })]) === 'weight 7 lb 4 oz',
+  String(otherCell([ev({ type: 'weight', pounds: 7.25 })])))
 check('a temperature reads back with its unit',
-  otherCell([ev({ type: 'temperature', celsius: 36.8 })]) === 'temperature 36.8°C')
+  otherCell([ev({ type: 'temperature', fahrenheit: 98.6 })]) === 'temperature 98.6°F')
 check('a supplement reads back name then amount',
   otherCell([ev({ type: 'supplement', supplement_name: 'vitamin D', amount: '1 drop' })])
     === 'supplement vitamin D 1 drop')
@@ -139,9 +140,14 @@ check('a supplement with only a name says just that',
     === 'supplement vitamin D')
 check('a blank value falls back to the bare name, like a ? volume',
   otherCell([ev({ type: 'weight' })]) === 'weight')
+// A weight written before 0003 has grams and no pounds. Nothing reads grams
+// any more, so it falls back to the bare name rather than printing a number in
+// the wrong unit.
+check('a pre-0003 weight reads as the bare name, not as pounds',
+  otherCell([ev({ type: 'weight', grams: 3400 })]) === 'weight')
 check('two secondary entries still join with a middot',
-  otherCell([ev({ type: 'weight', grams: 3400 }), ev({ type: 'spit_up' })])
-    === 'weight 3.4 kg · spit up')
+  otherCell([ev({ type: 'weight', pounds: 7.25 }), ev({ type: 'spit_up' })])
+    === 'weight 7 lb 4 oz · spit up')
 
 // --- sleep ------------------------------------------------------------------
 const sleepy = (occurred: string, endedAt: string | null): Moment => {

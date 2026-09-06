@@ -100,13 +100,15 @@ export const OTHER_TYPES: { kind: EventType; label: string }[] = [
  * cannot hold it — it would eat the decimal point as fast as it was tapped.
  * Parsing happens once, on save.
  *
- * Weight is typed in **kg** and stored in the schema's `grams` (D-036): a scale
- * and a health visitor both say 3.4, and nothing underneath had to change.
+ * Weight is typed as a decimal number of **pounds** and temperature in **°F**,
+ * both stored as typed (migration 0003). The row reads the weight back as
+ * `7 lb 4 oz`; the conversion is display only, so a weight reopened for editing
+ * shows the number that was entered and re-saving it cannot drift.
  */
 export type OtherDraft = {
   kind: EventType | null
-  kg: string
-  celsius: string
+  lb: string
+  fahrenheit: string
   supplementName: string
   supplementAmount: string
   /**
@@ -148,14 +150,20 @@ export function pickOther(value: OtherDraft, kind: EventType): OtherDraft {
   }
 }
 
-/** `3.4` → 3400. Blank, or anything that is not a number, stays null. */
-export function kgToGrams(kg: string): number | null {
-  const n = Number.parseFloat(kg)
-  return Number.isFinite(n) ? Math.round(n * 1000) : null
+/**
+ * `7.25` → `7 lb 4 oz`, for reading a stored weight back.
+ *
+ * Whole ounces, rounded — a scale reads 4 oz, not 4.0. Sixteen rounds up into
+ * the next pound rather than printing `7 lb 16 oz`, which is the one case a
+ * naive `Math.round` gets visibly wrong. Exact pounds drop the ounces
+ * altogether: `7 lb`, not `7 lb 0 oz`.
+ */
+export function poundsToLbOz(pounds: number): string {
+  const oz = Math.round(pounds * 16)
+  const lb = Math.floor(oz / 16)
+  const rest = oz % 16
+  return rest === 0 ? `${lb} lb` : `${lb} lb ${rest} oz`
 }
-
-/** 3400 → `3.4`, for the sheet reopened on an existing weight. */
-export const gramsToKg = (grams: number): string => String(grams / 1000)
 
 const numberOrNull = (v: string): number | null => {
   const n = Number.parseFloat(v)
@@ -177,7 +185,7 @@ export type SleepDraft = Record<string, never>
 export const newSleep = (): SleepDraft => ({})
 
 export const newOther = (): OtherDraft => ({
-  kind: null, kg: '', celsius: '', supplementName: '', supplementAmount: '',
+  kind: null, lb: '', fahrenheit: '', supplementName: '', supplementAmount: '',
 })
 
 /**
@@ -242,8 +250,10 @@ export function toEntries(b: Block): DraftEntry[] {
   }
   if (b.type === 'sleep') return [{ type: 'sleep' }]
   const d = b.draft
-  if (d.kind === 'weight') return [{ type: 'weight', grams: kgToGrams(d.kg) }]
-  if (d.kind === 'temperature') return [{ type: 'temperature', celsius: numberOrNull(d.celsius) }]
+  if (d.kind === 'weight') return [{ type: 'weight', pounds: numberOrNull(d.lb) }]
+  if (d.kind === 'temperature') {
+    return [{ type: 'temperature', fahrenheit: numberOrNull(d.fahrenheit) }]
+  }
   if (d.kind === 'supplement') {
     return [{
       type: 'supplement',
@@ -297,8 +307,8 @@ export function blocksFromMoment(m: Moment): Block[] {
         key, ids: [e.id], type: 'other',
         draft: {
           kind: e.type,
-          kg: e.grams === null ? '' : gramsToKg(e.grams),
-          celsius: e.celsius === null ? '' : String(e.celsius),
+          lb: e.pounds === null ? '' : String(e.pounds),
+          fahrenheit: e.fahrenheit === null ? '' : String(e.fahrenheit),
           supplementName: e.supplement_name ?? '',
           supplementAmount: e.amount ?? '',
         },

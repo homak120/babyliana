@@ -9,7 +9,7 @@ import { enterApp } from './ui.mts'
 // the day table rather than being write-only.
 //
 // The decimal is the one worth a browser. A number-typed input drops the "." in
-// "3." as fast as it is entered, which passes every unit test ever written for
+// "7." as fast as it is entered, which passes every unit test ever written for
 // it and is unusable in the hand.
 const PORT = 4200
 const server = spawn('npx', ['vite', 'preview', '--port', String(PORT)], { stdio: 'ignore', detached: true })
@@ -46,14 +46,14 @@ await p.waitForTimeout(200)
 check('picking weight reveals one field',
   (await p.locator('.otherfield').count()) === 1,
   `${await p.locator('.otherfield').count()} field(s)`)
-check('and it is labelled in kg',
-  (await p.locator('.fieldbox i').innerText()) === 'kg',
+check('and it is labelled in lb',
+  (await p.locator('.fieldbox i').innerText()) === 'lb',
   await p.locator('.fieldbox i').innerText())
 
-await p.getByLabel('weight', { exact: true }).fill('3.4')
+await p.getByLabel('weight', { exact: true }).fill('7.25')
 await p.waitForTimeout(150)
 check('a decimal point survives being typed',
-  (await p.getByLabel('weight', { exact: true }).inputValue()) === '3.4',
+  (await p.getByLabel('weight', { exact: true }).inputValue()) === '7.25',
   await p.getByLabel('weight', { exact: true }).inputValue())
 
 const fits = await p.evaluate(() => {
@@ -89,8 +89,9 @@ check('the unit sits beside the number, on one row',
 
 await p.getByRole('button', { name: 'save', exact: true }).click()
 await p.waitForTimeout(800)
-check('the weight reads back on the log, in kg',
-  (await p.locator('.row').first().innerText()).includes('3.4 kg'),
+// Typed as a decimal, read back the way a scale says it.
+check('the weight reads back on the log as lb and oz',
+  (await p.locator('.row').first().innerText()).includes('7 lb 4 oz'),
   (await p.locator('.row').first().innerText()).replace(/\n/g, ' '))
 
 // --- reopening keeps it ---
@@ -116,8 +117,8 @@ await swipeOpen()
 // so by-name matching opens the name prompt instead of the entry.
 await p.locator('.rowactions .act.edit').first().click()
 await p.waitForTimeout(400)
-check('reopening the entry fills the field back in',
-  (await p.getByLabel('weight', { exact: true }).inputValue()) === '3.4',
+check('reopening the entry fills the decimal back in, not the lb/oz form',
+  (await p.getByLabel('weight', { exact: true }).inputValue()) === '7.25',
   await p.getByLabel('weight', { exact: true }).inputValue())
 
 // Switching type clears what the old one held — a 3.4 must not be filed as a
@@ -129,6 +130,9 @@ await p.waitForTimeout(200)
 check('unpicking a type clears its value',
   (await p.getByLabel('temperature', { exact: true }).inputValue()) === '',
   `"${await p.getByLabel('temperature', { exact: true }).inputValue()}"`)
+check('and temperature is labelled in °F',
+  (await p.locator('.fieldbox i').innerText()) === '°F',
+  await p.locator('.fieldbox i').innerText())
 
 // --- supplement asks two things ---
 await p.getByRole('button', { name: 'temperature', exact: true }).click()

@@ -1,4 +1,5 @@
 import { feedDuration, sameDay, sleepDuration } from '../derive'
+import { poundsToLbOz } from '../log/drafts'
 import type { LogEvent, Moment } from '../types'
 
 // How a moment renders as a paper row. Kept out of the component because the
@@ -118,8 +119,9 @@ export function diaperCell(events: LogEvent[]): string | null {
  */
 export function otherLabel(e: LogEvent): string {
   const name = e.type.replace('_', ' ')
-  if (e.type === 'weight' && e.grams !== null) return `${name} ${e.grams / 1000} kg`
-  if (e.type === 'temperature' && e.celsius !== null) return `${name} ${e.celsius}°C`
+  // Typed as a decimal, read back the way a scale says it (0003).
+  if (e.type === 'weight' && e.pounds !== null) return `${name} ${poundsToLbOz(e.pounds)}`
+  if (e.type === 'temperature' && e.fahrenheit !== null) return `${name} ${e.fahrenheit}°F`
   if (e.type === 'supplement') {
     const said = [e.supplement_name, e.amount].filter(Boolean).join(' ')
     return said ? `${name} ${said}` : name

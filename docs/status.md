@@ -18,8 +18,14 @@ Last updated: 2026-09-06
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0–6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. 477 checks pass across twenty-one suites.
-**No schema change — `0001` is still the whole schema.**
+delivered by the second design handoff. 483 checks pass across twenty-one suites.
+
+**`0003_us_units.sql` is applied.** The first schema change since `0001`. The
+owner ran it in the SQL Editor before the code that writes `pounds` and
+`fahrenheit` was pushed, which is the order `supabase/README.md` requires —
+sync pushes whole rows, so a client that knows a column the database does not
+stops draining its outbox, quietly. `verify-s2` and `verify-s8` went red in
+between and green after, which is them doing their job.
 
 What exists: local-first writes to IndexedDB that never block on the network,
 push-then-reconcile sync with Supabase, the home screen (mascot artwork by
@@ -61,8 +67,9 @@ secondary types take a value** — all D-036. The target is the last feed plus t
 that feed landed between 22:00 and 06:00; it is flat, deliberately *not* the
 mascot's split, and hidden while a feed is running. `weight`, `temperature` and
 `supplement` now have inputs behind `other` — kg typed into the schema's grams,
-°C, and a what/how-much pair that **arrives filled in with `Vitamin D` /
-`1 drop`** — and they read back on both the day table and the home list. **`make a bottle`** goes up fifteen minutes before the target, on its
+°F, and a what/how-much pair that **arrives filled in with `Vitamin D` /
+`1 drop`** — and they read back on both the day table and the home list, the
+weight as `7 lb 4 oz`. **`make a bottle`** goes up fifteen minutes before the target, on its
 own row under the wake line, and clears when a feed is logged rather than when
 the target passes. Display only: nothing to tap, nothing stored.
 
@@ -127,6 +134,20 @@ Read `CLAUDE.md` first, then this file. Beyond that:
   draws 44px in a 100×96 slot. Following the prose broke the layout twice.
 
 ## In flight
+
+**Weight and temperature are US units.** `0003` adds `event.pounds` and
+`event.fahrenheit`, and **it is already applied** — confirmed against the live
+database, where selecting the two columns returns rows and a made-up column name
+errors. Nothing writes `grams` or `celsius` any more; the old columns stay so a
+phone on older code keeps syncing through the rollout. D-036 carries the
+reasoning, including why the column is `pounds` rather than the `ounces` first
+named.
+
+**There was never any weight or temperature data.** The database held 88 feeds,
+78 diapers, 13 sleeps and one `other` when this landed. A `weight` chip on the
+iOS Simulator's home screen was mistaken for a real row and reported as one; it
+lived only in that simulator's IndexedDB and had never synced. Checked before
+saying so is the rule that was skipped.
 
 **Everything through the mascot's source split is pushed** (`e7ddf40`).
 

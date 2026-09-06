@@ -17,6 +17,7 @@ Editor, paste each file in order, run it.
 | File | What it does | When |
 | --- | --- | --- |
 | `migrations/0001_initial_schema.sql` | Drops the spike table, creates the three tables, RLS, grants, realtime | Once. Safe to re-run |
+| `migrations/0003_us_units.sql` | Adds `event.pounds` and `event.fahrenheit`; comments the superseded `grams` and `celsius` | **Before deploying the version that writes them.** Additive and `if not exists`, so safe to re-run |
 
 **There is no `0002`, and the number is burned.** `0002_seed_household.sql`
 existed on 2026-09-03 and was **run against the database** before `0b14b40`
@@ -28,7 +29,8 @@ was numbered `0002`, and "0002 was run long ago" and "0002 has never been run"
 were both true about different files. **Number from the git history, not from
 what is on disk** — `git log --all --diff-filter=AD -- supabase/migrations/`
 lists the deleted ones too. That migration was then dropped altogether; the
-schema is still `0001` and nothing else has ever needed to run.
+migration numbered `0003` is the next one that ever needed to run, and it skips
+`0002` for exactly that reason.
 
 **When one is ever added, order matters against the app, not just against the
 other files.** Sync pushes whole local rows, so a client that knows about a
@@ -37,6 +39,13 @@ draining — quietly, because push returns false and the reconcile is skipped wh
 writes are pending. Run the migration **before** deploying the version that
 writes it. `verify-s2` and `verify-s8` are the two suites that would tell you,
 because they are the two that hit the live database.
+
+**`0003` is the first time this has actually happened.** It is additive on
+purpose — the old `grams` and `celsius` columns stay — because two phones run
+this app and the service worker updates lazily, so during a rollout one of them
+is still on code that writes the old pair. Dropping them would break that
+phone's sync until it happened to update. Dropping them is a separate, later,
+deliberate step.
 
 ## `imports/` — one-off data, not schema
 

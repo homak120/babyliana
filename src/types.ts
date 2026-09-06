@@ -69,7 +69,16 @@ export type LogEvent = {
   poop_colour: PoopColour | null
   poop_consistency: PoopConsistency | null
 
-  // weight / temperature
+  // weight / temperature, in US units as of migration 0003. `pounds` is a
+  // decimal number of pounds as typed and reads back as `7 lb 4 oz`.
+  pounds: number | null
+  fahrenheit: number | null
+
+  /**
+   * Superseded by `pounds` and `fahrenheit`. The columns still exist so a phone
+   * on older code keeps syncing (0003 is additive); nothing reads them, and
+   * nothing new is written to them.
+   */
   grams: number | null
   celsius: number | null
 
@@ -94,8 +103,8 @@ export type DraftEntry = Partial<
     | 'poop'
     | 'poop_colour'
     | 'poop_consistency'
-    | 'grams'
-    | 'celsius'
+    | 'pounds'
+    | 'fahrenheit'
     | 'supplement_name'
     | 'amount'
     | 'severity'
