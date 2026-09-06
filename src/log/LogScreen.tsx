@@ -28,6 +28,7 @@ import { getMoments, removeMoment, renameThisDevice } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
 import type { Device, Moment } from '../types'
 import { AddSheet } from './AddSheet'
+import { BottleIcon } from './BottleIcon'
 import { EndSleepIcon } from './EndSleepIcon'
 import { Icon } from './Icon'
 import { Mascot } from './Mascot'
@@ -292,7 +293,7 @@ export function LogScreen({ onEndOpen }: {
                       aria-label="end feed"
                       onClick={onEndOpen}
                     >
-                      <Icon name="timer_off" size={18} />
+                      <BottleIcon size={18} />
                     </button>
                   </div>
                 )}

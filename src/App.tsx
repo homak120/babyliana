@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { forgetDevice, getDeviceId } from './device-id'
 import { DayScreen } from './day/DayScreen'
+import { BottleIcon } from './log/BottleIcon'
 import { EndSleepIcon } from './log/EndSleepIcon'
 import { Icon } from './log/Icon'
 import { LogScreen } from './log/LogScreen'
@@ -136,7 +137,7 @@ export default function App() {
                   onClick={endOpen}
                   aria-label="end feed"
                 >
-                  <Icon name="timer_off" size={20} />
+                  <BottleIcon size={20} />
                   {feedDuration(feeding.timeslot.occurred_at, now)}
                 </button>
               ) : (

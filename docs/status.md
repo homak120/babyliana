@@ -18,7 +18,7 @@ Last updated: 2026-09-06
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0–6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. 495 checks pass across twenty-one suites.
+delivered by the second design handoff. 506 checks pass across twenty-one suites.
 
 **`0003_us_units.sql` is applied.** The first schema change since `0001`. The
 owner ran it in the SQL Editor before the code that writes `pounds` and
@@ -134,6 +134,15 @@ Read `CLAUDE.md` first, then this file. Beyond that:
   draws 44px in a 100×96 slot. Following the prose broke the layout twice.
 
 ## In flight
+
+**The sheet is one tile per thing** — D-038. Milk no longer repeats, because
+the milk card already holds both parts of a split feed and has its own `+` for
+the second. Weight, temperature and supplement came out of `other` and each has
+a bubble and a tile, the way sleep did; what is left behind `other` is `spit up`
+and `something else`, neither of which carries a value. The end-feed control is
+a **drawn bottle** — Material Symbols has no baby bottle, so it joins
+`EndSleepIcon` as the second hand-drawn glyph — in **lavender**, not the rose
+that read as an alert.
 
 **The day view swipes between days now, and not into a row** — D-037, amending
 D-025. Editing and deleting are the home screen's alone; the read-back spends

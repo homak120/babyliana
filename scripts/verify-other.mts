@@ -2,11 +2,14 @@ import { spawn } from 'node:child_process'
 import { chromium, devices } from 'playwright'
 import { enterApp } from './ui.mts'
 
-// Three of the five secondary types carry a field now (D-036), and the logic is
-// covered in verify-s6. What is checked here is the part a data-layer suite
-// cannot see: that the field renders where the thumb expects it, that a decimal
-// point survives being typed on a touch keypad, and that the value reads back on
-// the day table rather than being write-only.
+// Weight, temperature and supplement each have a tile of their own now (D-038),
+// beside milk, diaper and sleep. They used to be three of five rows behind
+// `other`, which meant three taps to reach a thing that captures a number.
+//
+// The logic is covered in verify-s6. What is checked here is the part a
+// data-layer suite cannot see: that each tile renders where the thumb expects
+// it, that a decimal point survives being typed on a touch keypad, that a used
+// bubble goes away, and that the values read back rather than being write-only.
 //
 // The decimal is the one worth a browser. A number-typed input drops the "." in
 // "7." as fast as it is entered, which passes every unit test ever written for
@@ -31,24 +34,30 @@ await enterApp(p)
 
 let fail = 0
 const check = (l: string, ok: boolean, d: string) => { if (!ok) fail++; console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${l} — ${d}`) }
+const bubble = (label: string) => p.getByRole('button', { name: new RegExp(`\\+ .*${label}$`) })
+const row = () => p.locator('.row').first().innerText()
 
-// --- the block opens as five rows and nothing else ---
+// --- every type is one tap from the sheet -----------------------------------
 await p.getByLabel('log a moment').click()
-await p.getByRole('button', { name: '+ other', exact: true }).click()
 await p.waitForTimeout(300)
-check('five types, no fields until one is picked',
-  (await p.locator('.otherrow').count()) === 5 && (await p.locator('.otherfields').count()) === 0,
-  `${await p.locator('.otherrow').count()} rows, ${await p.locator('.otherfields').count()} field groups`)
+const offered = await p.locator('.bubble').evaluateAll(
+  (els) => els.map((e) => e.className.replace('bubble ', '')).join(','),
+)
+check('all seven types are offered as tiles',
+  offered === 'milk,diaper,sleep,weight,temperature,supplement,other', offered)
 
-// --- weight ---
-await p.getByRole('button', { name: 'weight', exact: true }).click()
-await p.waitForTimeout(200)
-check('picking weight reveals one field',
-  (await p.locator('.otherfield').count()) === 1,
-  `${await p.locator('.otherfield').count()} field(s)`)
+// --- weight -----------------------------------------------------------------
+await bubble('weight').click()
+await p.waitForTimeout(250)
+check('the weight tile has one field',
+  (await p.locator('.block.weight .otherfield').count()) === 1,
+  `${await p.locator('.block.weight .otherfield').count()} field(s)`)
 check('and it is labelled in lb',
   (await p.locator('.fieldbox i').innerText()) === 'lb',
   await p.locator('.fieldbox i').innerText())
+check('its bubble is gone once the tile exists',
+  (await p.locator('.bubble.weight').count()) === 0,
+  `${await p.locator('.bubble.weight').count()} weight bubbles`)
 
 await p.getByLabel('weight', { exact: true }).fill('7.25')
 await p.waitForTimeout(150)
@@ -67,8 +76,8 @@ const fits = await p.evaluate(() => {
     tall: Math.round(r.height),
     inside: Math.round(r.right) <= Math.round(sheet.getBoundingClientRect().right),
     overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-    // The unit beside the number, not under it. Centres, not tops: the input is
-    // 46px tall and the unit is a 13px glyph, so their tops legitimately differ.
+    // Centres, not tops: the input is 46px tall and the unit is a 13px glyph,
+    // so their tops legitimately differ.
     sameRow: Math.abs((ri.top + ri.height / 2) - (ru.top + ru.height / 2)) < 6
       && Math.round(ru.left) >= Math.round(ri.right) - 1,
   }
@@ -77,76 +86,74 @@ check('the field is a thumb-sized target inside the sheet',
   fits.tall >= 44 && fits.inside && fits.overflow === 0,
   `${fits.tall}px tall, ${fits.overflow}px page overflow`)
 // This asserts the intended layout, but be clear about what it is worth: with
-// the bug in place — `.otherfield > span` outspecifying `.fieldbox` and killing
-// the flex row — **Chromium still passes this check**. It gives the input a
-// narrow enough default that the unit fits beside it anyway. iOS Safari gives it
-// a wider one and wrapped "kg" underneath, and the Simulator is what found it.
-// Kept as a regression guard on the rule, not as proof the rule holds on a
-// phone. That is `scripts/ios/`, and this is the fourth time that has been true.
+// the bug it was written for — `.otherfield > span` outspecifying `.fieldbox`
+// and killing the flex row — **Chromium still passes**. It gives the input a
+// narrow enough default that the unit fits beside it anyway. iOS Safari gives
+// it a wider one and wrapped the unit underneath, and the Simulator is what
+// found it. A regression guard on the rule, not proof it holds on a phone.
 check('the unit sits beside the number, on one row',
   fits.sameRow && fits.tall <= 60,
   `${fits.tall}px tall, same row: ${fits.sameRow}`)
 
+// --- temperature, in the same moment ----------------------------------------
+await bubble('temp').click()
+await p.waitForTimeout(250)
+check('temperature is its own tile beside the weight',
+  (await p.locator('.block.weight').count()) === 1
+    && (await p.locator('.block.temperature').count()) === 1,
+  `${await p.locator('.block.weight').count()} weight, ${await p.locator('.block.temperature').count()} temp`)
+await p.getByLabel('temperature', { exact: true }).fill('98.6')
+check('and is labelled in °F',
+  (await p.locator('.block.temperature .fieldbox i').innerText()) === '°F',
+  await p.locator('.block.temperature .fieldbox i').innerText())
+
 await p.getByRole('button', { name: 'save', exact: true }).click()
-await p.waitForTimeout(800)
+await p.waitForTimeout(900)
 // Typed as a decimal, read back the way a scale says it.
 check('the weight reads back on the log as lb and oz',
-  (await p.locator('.row').first().innerText()).includes('7 lb 4 oz'),
-  (await p.locator('.row').first().innerText()).replace(/\n/g, ' '))
+  (await row()).includes('7 lb 4 oz'), (await row()).replace(/\n/g, ' '))
+check('and the temperature with its unit',
+  (await row()).includes('98.6°F'), (await row()).replace(/\n/g, ' '))
 
-// --- reopening keeps it ---
-// The row opens for editing behind a swipe, not a tap — the same gesture
-// verify-swipe guards, driven through CDP because Playwright's mouse does not
-// produce the touch events the row listens for.
+// --- reopening keeps the decimal, not the lb/oz form ------------------------
 const cdp = await ctx.newCDPSession(p)
-async function swipeOpen() {
-  const box = (await p.locator('.row.swipeable').first().boundingBox())!
-  const y = box.y + box.height / 2, x0 = box.x + box.width - 30
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y }] })
-  for (let i = 1; i <= 14; i++) {
-    await cdp.send('Input.dispatchTouchEvent', {
-      type: 'touchMove', touchPoints: [{ x: x0 - (150 * i) / 14, y }],
-    })
-  }
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
-  await p.waitForTimeout(400)
+const box = (await p.locator('.row.swipeable').first().boundingBox())!
+const y = box.y + box.height / 2, x0 = box.x + box.width - 30
+await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y }] })
+for (let i = 1; i <= 14; i++) {
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove', touchPoints: [{ x: x0 - (150 * i) / 14, y }],
+  })
 }
-await swipeOpen()
-// `.rowactions .edit`, not the button named "edit": the status row's
-// name-this-phone control is also called edit and comes first in the document,
-// so by-name matching opens the name prompt instead of the entry.
-await p.locator('.rowactions .act.edit').first().click()
+await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
 await p.waitForTimeout(400)
-check('reopening the entry fills the decimal back in, not the lb/oz form',
+// `.rowactions .edit`, not the button named "edit": the status row's
+// name-this-phone control is also called edit and comes first in the document.
+await p.locator('.rowactions .act.edit').first().click()
+await p.waitForTimeout(500)
+check('reopening fills the decimal back in, not the lb/oz form',
   (await p.getByLabel('weight', { exact: true }).inputValue()) === '7.25',
   await p.getByLabel('weight', { exact: true }).inputValue())
+check('and reopens as tiles, not as an "other" list',
+  (await p.locator('.block.weight').count()) === 1
+    && (await p.locator('.block.temperature').count()) === 1
+    && (await p.locator('.otherlist').count()) === 0,
+  `${await p.locator('.otherlist').count()} type lists`)
+await p.getByRole('button', { name: 'close' }).click()
+await p.waitForTimeout(400)
 
-// Switching type clears what the old one held — a 3.4 must not be filed as a
-// temperature by two taps.
-await p.getByRole('button', { name: 'weight', exact: true }).click()
-await p.waitForTimeout(200)
-await p.getByRole('button', { name: 'temperature', exact: true }).click()
-await p.waitForTimeout(200)
-check('unpicking a type clears its value',
-  (await p.getByLabel('temperature', { exact: true }).inputValue()) === '',
-  `"${await p.getByLabel('temperature', { exact: true }).inputValue()}"`)
-check('and temperature is labelled in °F',
-  (await p.locator('.fieldbox i').innerText()) === '°F',
-  await p.locator('.fieldbox i').innerText())
-
-// --- supplement asks two things ---
-await p.getByRole('button', { name: 'temperature', exact: true }).click()
-await p.waitForTimeout(150)
-await p.getByRole('button', { name: 'supplement', exact: true }).click()
-await p.waitForTimeout(200)
-check('supplement asks what and how much',
-  (await p.locator('.otherfield').count()) === 2,
-  `${await p.locator('.otherfield').count()} field(s)`)
-
-// It arrives filled in with the daily vitamin D — the one supplement this app
-// is used for, the same two words and dose every time.
+// --- supplement arrives filled in -------------------------------------------
+await p.getByLabel('log a moment').click()
+await p.waitForTimeout(300)
+await bubble('supplement').click()
+await p.waitForTimeout(250)
 const what = p.getByLabel('what', { exact: true })
 const howMuch = p.getByLabel('how much', { exact: true })
+check('supplement asks what and how much',
+  (await p.locator('.block.supplement .otherfield').count()) === 2,
+  `${await p.locator('.block.supplement .otherfield').count()} field(s)`)
+// The daily vitamin D is the one this app is used for — the same two words and
+// the same dose every time, so typing them is pure cost.
 check('and both arrive filled in',
   (await what.inputValue()) === 'Vitamin D' && (await howMuch.inputValue()) === '1 drop',
   `"${await what.inputValue()}" / "${await howMuch.inputValue()}"`)
@@ -160,31 +167,29 @@ await p.keyboard.type('iron')
 check('typing over it replaces rather than appends',
   (await what.inputValue()) === 'iron', await what.inputValue())
 
-// Back to the suggestion, and save it untouched — the two-tap case the prefill
-// exists for.
-await p.getByRole('button', { name: 'supplement', exact: true }).click()
-await p.waitForTimeout(150)
-await p.getByRole('button', { name: 'supplement', exact: true }).click()
-await p.waitForTimeout(200)
-check('unpicking and picking again brings the suggestion back',
-  (await p.getByLabel('what', { exact: true }).inputValue()) === 'Vitamin D',
-  await p.getByLabel('what', { exact: true }).inputValue())
+await p.getByRole('button', { name: 'save', exact: true }).click()
+await p.waitForTimeout(900)
+check('it reads back on the row',
+  (await row()).includes('iron 1 drop'), (await row()).replace(/\n/g, ' '))
 
-// "save changes", not "save" — this sheet was opened on an existing entry.
-await p.getByRole('button', { name: 'save changes', exact: true }).click()
-await p.waitForTimeout(800)
-check('the untouched suggestion reads back on the row',
-  (await p.locator('.row').first().innerText()).includes('Vitamin D 1 drop'),
-  (await p.locator('.row').first().innerText()).replace(/\n/g, ' '))
-
-// --- spit up still carries nothing ---
+// --- what is left behind `other` --------------------------------------------
 await p.getByLabel('log a moment').click()
-await p.getByRole('button', { name: '+ other', exact: true }).click()
-await p.getByRole('button', { name: 'spit up', exact: true }).click()
+await p.waitForTimeout(300)
+await bubble('other').click()
+await p.waitForTimeout(250)
+const rows = await p.locator('.otherrow').evaluateAll((els) => els.map((e) => e.textContent).join(','))
+check('only the two valueless types are left behind other',
+  rows === 'spit up,something else', rows)
+await p.locator('.otherrow').first().click()
 await p.waitForTimeout(200)
-check('the two that carry no value still show no fields',
+check('and picking one shows no fields',
   (await p.locator('.otherfields').count()) === 0,
-  `${await p.locator('.otherfields').count()} field group(s)`)
+  `${await p.locator('.otherfields').count()} field groups`)
+// `other` is the one bubble that repeats: a moment can carry a spit-up and a
+// something-else at once, and neither has a tile.
+check('the other bubble stays, because it repeats',
+  (await p.locator('.bubble.other').count()) === 1,
+  `${await p.locator('.bubble.other').count()} other bubbles`)
 
 await b.close()
 stop()

@@ -77,26 +77,28 @@ export const milkIsEmpty = (_d: MilkDraft) => false
 export const diaperIsEmpty = (d: DiaperDraft) => !d.pee && !d.poop
 
 /**
- * The low-frequency types, kept off the main surface on purpose (D-010).
+ * What is left behind `other` — the two types that carry no value of their own.
  *
- * Three of them now carry their own fields — weight, temperature and
- * supplement, on the owner's call (D-036). The other two still say "pick one,
- * write the rest in the note", which for `spit up` and `something else` remains
- * the honest answer: neither has a value to capture.
+ * Weight, temperature and supplement used to be here. They have their own
+ * bubbles and their own blocks now (D-038), because they each capture something
+ * and a type buried in a list of five was the wrong shape for that. Sleep left
+ * the same way, earlier and for the same reason.
+ *
+ * What remains is the escape hatch proper: pick one, write the rest in the
+ * note. Neither has a value to capture, so neither wants a field.
  */
 export const OTHER_TYPES: { kind: EventType; label: string }[] = [
-  // Sleep is no longer here: it earned its own block and its own bubble.
-  { kind: 'weight', label: 'weight' },
-  { kind: 'temperature', label: 'temperature' },
-  { kind: 'supplement', label: 'supplement' },
   { kind: 'spit_up', label: 'spit up' },
   { kind: 'other', label: 'something else' },
 ]
 
+export type OtherDraft = { kind: EventType | null }
+
 /**
- * Every field is a **string**, including the two numbers.
+ * The three that carry a value. Every field is a **string**, including the two
+ * numbers.
  *
- * `3.` is a legal thing to be halfway through typing, and a number-typed state
+ * `7.` is a legal thing to be halfway through typing, and a number-typed state
  * cannot hold it — it would eat the decimal point as fast as it was tapped.
  * Parsing happens once, on save.
  *
@@ -105,50 +107,38 @@ export const OTHER_TYPES: { kind: EventType; label: string }[] = [
  * `7 lb 4 oz`; the conversion is display only, so a weight reopened for editing
  * shows the number that was entered and re-saving it cannot drift.
  */
-export type OtherDraft = {
-  kind: EventType | null
-  lb: string
-  fahrenheit: string
-  supplementName: string
-  supplementAmount: string
-  /**
-   * The supplement fields hold a suggestion nobody has touched yet.
-   *
-   * The same idea as `MilkPart.preset` and for the same reason: a prefill only
-   * earns its place if disagreeing with it is free. Focusing a field while this
-   * is set selects what is in it, so the first character typed replaces the
-   * whole suggestion instead of landing in the middle of it. Any edit clears
-   * the flag.
-   */
-  preset?: boolean
-}
+export type WeightDraft = { lb: string }
+export type TemperatureDraft = { fahrenheit: string }
 
 /**
- * What picking `supplement` arrives with, already filled in.
+ * `preset` marks a suggestion nobody has touched yet — the same idea as
+ * `MilkPart.preset`, and for the same reason: a prefill only earns its place if
+ * disagreeing with it is free. Focusing a field while this is set selects what
+ * is in it, so the first character typed replaces the whole suggestion instead
+ * of landing in the middle of it. Any edit clears the flag.
+ */
+export type SupplementDraft = { name: string; amount: string; preset?: boolean }
+
+/**
+ * What a new supplement block arrives with, already filled in.
  *
  * The daily vitamin D is the supplement this app is actually used for, and it
  * is the same two words and the same dose every time — so typing them is pure
  * cost. Same argument as the quick bottle's 60 mL: a suggestion, not a claim.
+ *
+ * Weight and temperature get no prefill, deliberately — there is no number that
+ * is right more often than any other, and a wrong one saved by accident is a
+ * false reading rather than a mild annoyance.
  */
 export const SUPPLEMENT_PRESET = { name: 'Vitamin D', amount: '1 drop' }
 
-/**
- * Picking a type. `supplement` comes filled in; the other four stay blank.
- *
- * Weight and temperature get no prefill, deliberately — there is no number
- * that is right more often than any other, and a wrong one saved by accident
- * is a false reading rather than a mild annoyance.
- */
-export function pickOther(value: OtherDraft, kind: EventType): OtherDraft {
-  if (kind !== 'supplement') return { ...value, kind, preset: false }
-  return {
-    ...value,
-    kind,
-    supplementName: SUPPLEMENT_PRESET.name,
-    supplementAmount: SUPPLEMENT_PRESET.amount,
-    preset: true,
-  }
-}
+export const newWeight = (): WeightDraft => ({ lb: '' })
+export const newTemperature = (): TemperatureDraft => ({ fahrenheit: '' })
+export const newSupplement = (): SupplementDraft => ({
+  name: SUPPLEMENT_PRESET.name,
+  amount: SUPPLEMENT_PRESET.amount,
+  preset: true,
+})
 
 /**
  * `7.25` → `7 lb 4 oz`, for reading a stored weight back.
@@ -184,17 +174,9 @@ export type SleepDraft = Record<string, never>
 
 export const newSleep = (): SleepDraft => ({})
 
-export const newOther = (): OtherDraft => ({
-  kind: null, lb: '', fahrenheit: '', supplementName: '', supplementAmount: '',
-})
+export const newOther = (): OtherDraft => ({ kind: null })
 
-/**
- * Nothing picked yet says nothing.
- *
- * A *picked* type with no number in it still says something, and stays savable:
- * a weight nobody read off the scale in time is the same shape as the paper's
- * `?` volume, and the app has never required a value it could record as blank.
- */
+/** Nothing picked yet says nothing. */
 export const otherIsEmpty = (d: OtherDraft) => d.kind === null
 
 /**
@@ -213,17 +195,27 @@ export type Block =
   | { key: string; ids?: string[]; type: 'milk'; draft: MilkDraft }
   | { key: string; ids?: string[]; type: 'diaper'; draft: DiaperDraft }
   | { key: string; ids?: string[]; type: 'sleep'; draft: SleepDraft }
+  | { key: string; ids?: string[]; type: 'weight'; draft: WeightDraft }
+  | { key: string; ids?: string[]; type: 'temperature'; draft: TemperatureDraft }
+  | { key: string; ids?: string[]; type: 'supplement'; draft: SupplementDraft }
   | { key: string; ids?: string[]; type: 'other'; draft: OtherDraft }
 
+/**
+ * Only `milk`, `diaper` and `other` can say nothing.
+ *
+ * The rest say everything by being there — a sleep block is a sleep, and a
+ * weight block is a weighing whether or not anyone caught the number. A blank
+ * value is the paper's `?`: it happened, the figure is unknown. Requiring one
+ * would make the app unable to record something the paper does.
+ */
 export const blockIsEmpty = (b: Block) =>
   b.type === 'milk'
     ? milkIsEmpty(b.draft)
     : b.type === 'diaper'
       ? diaperIsEmpty(b.draft)
-      // Sleep says everything just by being there.
-      : b.type === 'sleep'
-        ? false
-        : otherIsEmpty(b.draft)
+      : b.type === 'other'
+        ? otherIsEmpty(b.draft)
+        : false
 
 /** Save needs at least one block, and every block has to say something. */
 export const canSave = (blocks: Block[]) =>
@@ -249,21 +241,20 @@ export function toEntries(b: Block): DraftEntry[] {
     }]
   }
   if (b.type === 'sleep') return [{ type: 'sleep' }]
-  const d = b.draft
-  if (d.kind === 'weight') return [{ type: 'weight', pounds: numberOrNull(d.lb) }]
-  if (d.kind === 'temperature') {
-    return [{ type: 'temperature', fahrenheit: numberOrNull(d.fahrenheit) }]
+  if (b.type === 'weight') return [{ type: 'weight', pounds: numberOrNull(b.draft.lb) }]
+  if (b.type === 'temperature') {
+    return [{ type: 'temperature', fahrenheit: numberOrNull(b.draft.fahrenheit) }]
   }
-  if (d.kind === 'supplement') {
+  if (b.type === 'supplement') {
     return [{
       type: 'supplement',
-      supplement_name: textOrNull(d.supplementName),
-      amount: textOrNull(d.supplementAmount),
+      supplement_name: textOrNull(b.draft.name),
+      amount: textOrNull(b.draft.amount),
     }]
   }
   // The two that have no value to carry — spit up, and something else. Their
   // detail lives in the moment's note, as it always has.
-  return [{ type: d.kind! }]
+  return [{ type: b.draft.kind! }]
 }
 
 /**
@@ -302,17 +293,25 @@ export function blocksFromMoment(m: Moment): Block[] {
       })
     } else if (e.type === 'sleep') {
       blocks.push({ key, ids: [e.id], type: 'sleep', draft: {} })
-    } else {
+    } else if (e.type === 'weight') {
       blocks.push({
-        key, ids: [e.id], type: 'other',
-        draft: {
-          kind: e.type,
-          lb: e.pounds === null ? '' : String(e.pounds),
-          fahrenheit: e.fahrenheit === null ? '' : String(e.fahrenheit),
-          supplementName: e.supplement_name ?? '',
-          supplementAmount: e.amount ?? '',
-        },
+        key, ids: [e.id], type: 'weight',
+        draft: { lb: e.pounds === null ? '' : String(e.pounds) },
       })
+    } else if (e.type === 'temperature') {
+      blocks.push({
+        key, ids: [e.id], type: 'temperature',
+        draft: { fahrenheit: e.fahrenheit === null ? '' : String(e.fahrenheit) },
+      })
+    } else if (e.type === 'supplement') {
+      // No `preset`: reopening is a restore, not a suggestion. Setting it would
+      // make the first tap in the field select and wipe what is stored there.
+      blocks.push({
+        key, ids: [e.id], type: 'supplement',
+        draft: { name: e.supplement_name ?? '', amount: e.amount ?? '' },
+      })
+    } else {
+      blocks.push({ key, ids: [e.id], type: 'other', draft: { kind: e.type } })
     }
   }
   return blocks

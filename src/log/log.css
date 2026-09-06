@@ -223,7 +223,11 @@ body {
   cursor: pointer;
 }
 
-.endfeedmini { background: var(--roseFill); color: var(--roseDeep); }
+/* Lavender, not rose. Rose is the app's milk colour and reads as an alert at
+   button size on a cream card — the owner's word for it was red. Lavender is
+   still in the milk family (it is the breast tag) and sits quietly beside the
+   periwinkle end-sleep button rather than shouting past it. */
+.endfeedmini { background: var(--lavFill); color: var(--lavInk); }
 
 /* The combined lead: how long ago and how much, on one line. Smaller than
    `.elapsed` because it carries roughly twice the characters in the same
@@ -597,6 +601,34 @@ body {
 .bubble.diaper { background: var(--mintFill); color: var(--mintInk); }
 .bubble.sleep { background: var(--periFill); color: var(--periInk); }
 .bubble.other { background: var(--lavFill); color: var(--lavInk); }
+
+/* The three that came out of `other` (D-038) keep its lavender: they are still
+   the secondary half of the sheet, and giving each a colour of its own would
+   have made seven competing chips out of a row that reads at a glance. Amber
+   marks weight and temperature apart from the pair that stayed lavender. */
+.bubble.weight,
+.bubble.temperature { background: var(--amberFill); color: var(--amberInk); }
+.bubble.supplement { background: var(--lavFill); color: var(--lavInk); }
+
+.block.weight header,
+.block.temperature header { color: var(--amberInk); }
+.block.supplement header { color: var(--lavInk); }
+
+/* The field takes the tile's own colour rather than the lavender it inherited
+   from the `other` block it used to live in. A tile whose header and whose one
+   input disagree reads as two things. */
+.block.weight .fieldbox,
+.block.temperature .fieldbox { background: var(--amberFill); }
+.block.weight .fieldbox i,
+.block.temperature .fieldbox i { color: var(--amberInk); }
+/* Zen Maru Gothic is a Japanese face and has no Latin-width degree sign, so
+   "°F" falls back to a font that sets it full-width and it reads as "° F" —
+   close enough to a typo to notice. A system stack for this one glyph pair
+   fixes it; the unit is two characters and inherits its size and colour, so
+   nothing about the tile's voice changes. */
+.block.temperature .fieldbox i { font-family: ui-sans-serif, system-ui, sans-serif; }
+.block.weight .fieldname,
+.block.temperature .fieldname { color: var(--amberInk); }
 
 .save {
   width: 100%; min-height: 3.5rem; border: none; border-radius: 999px;

@@ -238,7 +238,8 @@
   white-space: nowrap;
 }
 
-.tabs .endfeed { background: var(--roseFill); color: var(--roseDeep); }
+/* Lavender for the same reason as `.endfeedmini` — see log.css. */
+.tabs .endfeed { background: var(--lavFill); color: var(--lavInk); }
 
 /* The day screen is a read-back and carries no add actions at all. */
 .tabs .backpill {

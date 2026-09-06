@@ -13,8 +13,8 @@ const store = new Map<string, string>([['babyliana.device_id', '00000000-0000-40
 
 import type { Block } from '../src/log/drafts.ts'
 const {
-  blocksFromMoment, canSave, newDiaper, newOther, pickOther, poundsToLbOz,
-  toEntries, OTHER_TYPES, SUPPLEMENT_PRESET,
+  blocksFromMoment, canSave, newDiaper, newOther, newSupplement, newTemperature, newWeight,
+  poundsToLbOz, toEntries, OTHER_TYPES, SUPPLEMENT_PRESET,
 } = await import('../src/log/drafts.ts')
 const { createThisDevice, logMoment, getMoments } = await import('../src/moments.ts')
 
@@ -30,19 +30,27 @@ const other = (kind: string | null): Block =>
 await createThisDevice('Test')
 
 // --- the other block --------------------------------------------------------
-// Sleep left this list when it earned its own block and its own bubble; the
-// rest of the schema's secondary types still live behind `other`.
-check('every secondary type in the schema is reachable',
-  OTHER_TYPES.map((t) => t.kind).join() === 'weight,temperature,supplement,spit_up,other')
-check('sleep is no longer buried in the other list',
-  !OTHER_TYPES.some((t) => t.kind === 'sleep'))
+// Sleep left this list when it earned its own block and its own bubble, and
+// weight, temperature and supplement followed for the same reason (D-038).
+// What is left has no value to capture.
+check('only the two valueless types are left behind other',
+  OTHER_TYPES.map((t) => t.kind).join() === 'spit_up,other',
+  OTHER_TYPES.map((t) => t.kind).join())
+for (const gone of ['sleep', 'weight', 'temperature', 'supplement']) {
+  check(`${gone} is not buried in the other list`,
+    !OTHER_TYPES.some((t) => t.kind === gone))
+}
 check('nothing picked cannot be saved', !canSave([other(null)]))
-check('picking one can', canSave([other('weight')]))
-check('it becomes an entry of that type', one(other('weight')).type === 'weight')
+check('picking one can', canSave([other('spit_up')]))
+check('it becomes an entry of that type', one(other('spit_up')).type === 'spit_up')
 
-// --- the three that carry a value now (D-036) -------------------------------
-const withFields = (kind: string, fields: Record<string, string>): Block =>
-  ({ key: 'o', type: 'other', draft: { ...newOther(), kind: kind as never, ...fields } })
+// --- the three with tiles of their own (D-036, D-038) -----------------------
+const withFields = (kind: string, fields: Record<string, string>): Block => {
+  const base = kind === 'weight' ? newWeight()
+    : kind === 'temperature' ? newTemperature()
+      : newSupplement()
+  return { key: 'o', type: kind as never, draft: { ...base, ...fields } as never }
+}
 
 // Pounds are stored exactly as typed (0003); the lb + oz form is display only,
 // so a weight reopened for editing shows the number that was entered.
@@ -78,65 +86,60 @@ check('a fever reading fits, where the old numeric(3,1) could not hold it',
 check('a decimal point is not lost',
   one(withFields('temperature', { fahrenheit: '99.05' })).fahrenheit === 99.05)
 
-const supp = one(withFields('supplement', { supplementName: ' vitamin D ', supplementAmount: '1 drop' }))
+const supp = one(withFields('supplement', { name: ' vitamin D ', amount: '1 drop' }))
 check('a supplement carries its name, trimmed', supp.supplement_name === 'vitamin D', String(supp.supplement_name))
 check('and its amount', supp.amount === '1 drop', String(supp.amount))
 check('a supplement with only a name keeps the amount null',
-  one(withFields('supplement', { supplementName: 'vitamin D' })).amount === null)
+  one(withFields('supplement', { name: 'vitamin D', amount: '' })).amount === null)
 
 // The two that carry nothing still carry nothing — their detail is the note.
 check('spit up takes no fields', Object.keys(one(other('spit_up'))).join() === 'type')
 check('nor does something else', Object.keys(one(other('other'))).join() === 'type')
 
-// --- picking supplement arrives filled in -----------------------------------
-const picked = pickOther(newOther(), 'supplement')
+// --- a new supplement block arrives filled in -------------------------------
+const picked = newSupplement()
 check('supplement comes with the usual name and dose',
-  picked.supplementName === SUPPLEMENT_PRESET.name
-    && picked.supplementAmount === SUPPLEMENT_PRESET.amount,
-  `${picked.supplementName} / ${picked.supplementAmount}`)
+  picked.name === SUPPLEMENT_PRESET.name && picked.amount === SUPPLEMENT_PRESET.amount,
+  `${picked.name} / ${picked.amount}`)
 check('and it is marked a suggestion, not an entry', picked.preset === true)
 check('so it saves as typed if nobody disagrees',
-  one({ key: 'o', type: 'other', draft: picked }).supplement_name === 'Vitamin D')
+  one({ key: 'o', type: 'supplement', draft: picked }).supplement_name === 'Vitamin D')
 check('and clearing it is still allowed',
-  one({ key: 'o', type: 'other',
-    draft: { ...picked, supplementName: '', supplementAmount: '', preset: false } })
+  one({ key: 'o', type: 'supplement', draft: { name: '', amount: '', preset: false } })
     .supplement_name === null)
 
-for (const kind of ['weight', 'temperature', 'spit_up', 'other']) {
-  const other_ = pickOther(newOther(), kind as never)
-  check(`${kind} stays blank and unmarked`,
-    other_.supplementName === '' && other_.supplementAmount === '' && !other_.preset)
-}
+check('weight starts blank', newWeight().lb === '')
+check('temperature starts blank', newTemperature().fahrenheit === '')
 
 // Reopening an existing supplement is a restore, not a suggestion — the flag
 // must not come back on, or the first tap in the field would wipe what is
 // stored there.
 const storedSupp = await logMoment({
-  entries: [one(withFields('supplement', { supplementName: 'iron', supplementAmount: '2 mL' }))],
+  entries: [one(withFields('supplement', { name: 'iron', amount: '2 mL' }))],
 })
 const reopenedSupp = blocksFromMoment(storedSupp)[0]
 check('a reopened supplement is not marked a suggestion',
-  reopenedSupp.type === 'other' && !reopenedSupp.draft.preset
-    && reopenedSupp.draft.supplementName === 'iron',
+  reopenedSupp.type === 'supplement' && !reopenedSupp.draft.preset
+    && reopenedSupp.draft.name === 'iron',
   JSON.stringify(reopenedSupp.draft))
 
 // --- a value survives being reopened for editing ----------------------------
 const logged = await logMoment({ entries: [one(withFields('weight', { lb: '7.25' }))] })
 const reopened = blocksFromMoment(logged)
 check('reopening a weight fills the field back in',
-  reopened[0].type === 'other' && reopened[0].draft.lb === '7.25',
+  reopened[0].type === 'weight' && reopened[0].draft.lb === '7.25',
   JSON.stringify(reopened[0].draft))
 check('and saves back to the same number, with no drift',
   one(reopened[0]).pounds === 7.25)
 
 const suppSaved = await logMoment({
-  entries: [one(withFields('supplement', { supplementName: 'vitamin D', supplementAmount: '1 drop' }))],
+  entries: [one(withFields('supplement', { name: 'vitamin D', amount: '1 drop' }))],
 })
 const suppBack = blocksFromMoment(suppSaved)[0]
 check('reopening a supplement fills both fields back in',
-  suppBack.type === 'other'
-    && suppBack.draft.supplementName === 'vitamin D'
-    && suppBack.draft.supplementAmount === '1 drop',
+  suppBack.type === 'supplement'
+    && suppBack.draft.name === 'vitamin D'
+    && suppBack.draft.amount === '1 drop',
   JSON.stringify(suppBack.draft))
 
 // --- the note ---------------------------------------------------------------

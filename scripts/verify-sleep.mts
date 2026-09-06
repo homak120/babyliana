@@ -36,6 +36,18 @@ await p.waitForTimeout(300)
 check('a quick icon pre-adds its block', (await p.locator('.milkblock').count()) === 1, 'milk block open')
 check('and the others are still offered', await p.getByRole('button', { name: /\+ .*diaper/ }).isVisible(), 'diaper bubble')
 check('sleep is a bubble now, not an "other"', await p.getByRole('button', { name: /\+ .*sleep/ }).isVisible(), 'sleep bubble')
+// One milk tile per moment (D-038). The card holds both parts of a split feed
+// and has its own `+` for the second, so a second tile would be a second way to
+// say the same thing.
+check('the milk bubble is gone once a milk block exists',
+  (await p.locator('.bubble.milk').count()) === 0,
+  `${await p.locator('.bubble.milk').count()} milk bubbles`)
+
+// Back to an empty sheet, where every bubble is on offer, for the colour set.
+await p.getByRole('button', { name: 'close' }).click()
+await p.waitForTimeout(300)
+await p.getByLabel('log a moment').click()
+await p.waitForTimeout(300)
 // Every bubble carries its type's own fill and ink, from the prototype's table:
 // milk rose, diaper mint, sleep peri, other lavender. Checked as a set rather
 // than one at a time — sleep was added without its pair and fell through to the
@@ -56,6 +68,10 @@ for (const [type, fill, ink] of [
   ['milk', '--roseFill', '--roseInk'],
   ['diaper', '--mintFill', '--mintInk'],
   ['sleep', '--periFill', '--periInk'],
+  // The three that came out of `other` (D-038).
+  ['weight', '--amberFill', '--amberInk'],
+  ['temperature', '--amberFill', '--amberInk'],
+  ['supplement', '--lavFill', '--lavInk'],
   ['other', '--lavFill', '--lavInk'],
 ] as const) {
   const got = await p.evaluate((t) => {

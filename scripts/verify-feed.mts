@@ -72,16 +72,33 @@ check('the bottle is replaced by the end-feed pill',
 const pill = await p.evaluate(() => {
   const el = document.querySelector('.endfeed') as HTMLElement
   const cs = getComputedStyle(el)
+  const probe = document.createElement('span')
+  probe.style.color = 'var(--lavInk)'
+  document.body.appendChild(probe)
+  const lav = getComputedStyle(probe).color
+  probe.remove()
   return {
     display: cs.display, bg: cs.backgroundColor,
     h: Math.round(el.getBoundingClientRect().height),
-    icon: el.querySelector('.icon')?.textContent ?? '',
+    // A drawn bottle, not a Material ligature: nothing in the set is a baby
+    // bottle, and `timer_off` — then `local_drink` — both read as something
+    // else (D-038). Its own element, like the hand-drawn end-sleep moon.
+    paths: el.querySelector('svg')?.querySelectorAll('path').length ?? 0,
+    ligature: el.querySelector('.icon')?.textContent ?? '',
+    lav,
+    fg: cs.color,
   }
 })
 check('laid out as the prototype draws it',
-  pill.display === 'flex' && pill.h === 40 && pill.bg !== 'rgba(0, 0, 0, 0)'
-  && pill.icon === 'timer_off',
-  `${pill.display}, ${pill.h}px, ${pill.bg}, ${pill.icon}`)
+  pill.display === 'flex' && pill.h === 40 && pill.bg !== 'rgba(0, 0, 0, 0)',
+  `${pill.display}, ${pill.h}px, ${pill.bg}`)
+check('it carries the drawn bottle, not a Material glyph',
+  pill.paths === 5 && pill.ligature === '',
+  `${pill.paths} paths, ligature "${pill.ligature}"`)
+// Lavender, not the rose it shipped in. Rose is the milk colour and reads as an
+// alert at button size — the owner's word for it was red.
+check('and it is not the rose it shipped in', pill.fg === pill.lav,
+  `${pill.fg} vs lavender ${pill.lav}`)
 check('and carries the running duration',
   /\d+ min$/.test((await p.locator('.endfeed').innerText()).replace(/\n/g, ' ').trim()),
   (await p.locator('.endfeed').innerText()).replace(/\n/g, ' '))

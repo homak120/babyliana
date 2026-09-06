@@ -10,15 +10,22 @@ import {
   newMilk,
   newOther,
   newSleep,
+  newSupplement,
+  newTemperature,
+  newWeight,
   quickMilk,
   toEntries,
   type Block,
   type DiaperDraft,
   type MilkDraft,
   type OtherDraft,
+  type SupplementDraft,
+  type TemperatureDraft,
+  type WeightDraft,
 } from './drafts'
 import { DiaperBlock } from './DiaperBlock'
 import { Icon } from './Icon'
+import { FieldBlock } from './FieldBlock'
 import { MilkBlock } from './MilkBlock'
 import { OtherBlock } from './OtherBlock'
 import { SleepBlock } from './SleepBlock'
@@ -36,18 +43,28 @@ import { TimeCard } from './TimeCard'
 
 type BlockType = Block['type']
 
+/**
+ * `repeats` is whether the bubble stays after it has been used.
+ *
+ * **Nothing repeats but `other`.** Milk used to, on the reading that D-019's
+ * split feed is two milk blocks — but the milk card holds two parts and has its
+ * own `+` for the second, so one tile already captures the whole feed. Two milk
+ * tiles was a second way to say the same thing, and the one that made the
+ * moment harder to read back. `other` is the exception because a moment can
+ * carry a spit-up and a something-else at once, and neither has a tile.
+ */
 const AVAILABLE: { type: BlockType; label: string; icon: string; repeats: boolean }[] = [
-  // Milk repeats, and has to: under D-019 a split feed is two milk blocks in
-  // one moment. The handoff says a bubble disappears once added, but it was
-  // written when a split feed was one block with two halves — so that rule
-  // holds for the others and not for this one.
-  { type: 'milk', label: 'milk', icon: 'local_drink', repeats: true },
+  { type: 'milk', label: 'milk', icon: 'local_drink', repeats: false },
   // One change is one change; pee and poop are flags on it, not two entries.
   { type: 'diaper', label: 'diaper', icon: 'water_drop', repeats: false },
-  // Sleep sits with the other two rather than behind `other`, where it used to
-  // be — it is one of the three things that actually happen all night.
+  // Sleep sits with the first two rather than behind `other`, where it used to
+  // be — it is one of the three things that actually happen all night (D-029).
   { type: 'sleep', label: 'sleep', icon: 'bedtime', repeats: false },
-  // A moment might carry a sleep and a weight, so this repeats too.
+  // The three that came out of `other` for the same reason (D-038): each
+  // captures a value, and a type buried in a list of five was the wrong shape.
+  { type: 'weight', label: 'weight', icon: 'monitor_weight', repeats: false },
+  { type: 'temperature', label: 'temp', icon: 'thermostat', repeats: false },
+  { type: 'supplement', label: 'supplement', icon: 'medication', repeats: false },
   { type: 'other', label: 'other', icon: 'more_horiz', repeats: true },
 ]
 
@@ -55,7 +72,10 @@ const emptyDraft = (type: BlockType) =>
   type === 'milk' ? newMilk()
     : type === 'diaper' ? newDiaper()
       : type === 'sleep' ? newSleep()
-        : newOther()
+        : type === 'weight' ? newWeight()
+          : type === 'temperature' ? newTemperature()
+            : type === 'supplement' ? newSupplement()
+              : newOther()
 
 export function AddSheet({
   onClose,
@@ -117,7 +137,10 @@ export function AddSheet({
     ])
   }
 
-  const update = (i: number, draft: MilkDraft | DiaperDraft | OtherDraft) =>
+  const update = (
+    i: number,
+    draft: MilkDraft | DiaperDraft | OtherDraft | WeightDraft | TemperatureDraft | SupplementDraft,
+  ) =>
     setBlocks((prev) =>
       prev.map((p, j) => (j === i ? ({ ...p, draft } as Block) : p)),
     )
@@ -192,6 +215,14 @@ export function AddSheet({
           />
         ) : b.type === 'sleep' ? (
           <SleepBlock key={b.key} onRemove={() => remove(i)} />
+        ) : b.type === 'weight' || b.type === 'temperature' || b.type === 'supplement' ? (
+          <FieldBlock
+            key={b.key}
+            kind={b.type}
+            value={b.draft}
+            onChange={(d) => update(i, d)}
+            onRemove={() => remove(i)}
+          />
         ) : (
           <OtherBlock
             key={b.key}

@@ -1234,3 +1234,56 @@ the page so iOS does not claim the drag for its own back-navigation first.
 **The date strip keeps its own drags.** It scrolls sideways, and reaching `more`
 means dragging it. It carries `data-noswipe` and the hook ignores any touch that
 starts inside it.
+
+---
+
+## D-038 — One tile per thing, and a bottle that looks like a bottle
+
+Three changes to *what just happened*, all the owner's, all the same shape: the
+sheet should say one thing per tile.
+
+### One milk tile
+
+The milk bubble used to repeat. The reading was that D-019's split feed is two
+milk blocks in one moment — but the milk card holds **two parts and has its own
+`+`** for the second, so one tile already captures the whole feed. A second tile
+was a second way to say the same thing, and the one that made the moment harder
+to read back.
+
+Nothing else repeats either, except `other`: a moment can carry a spit-up and a
+something-else at once and neither has a tile of its own.
+
+### Weight, temperature and supplement each get a tile
+
+They were three of five rows behind `other`, which meant three taps to reach a
+thing that captures a value. Sleep left that list for the same reason (D-029),
+and this is the same move on the same argument.
+
+What is left behind `other` is the escape hatch proper — `spit up` and
+`something else` — neither of which has a value to capture. `OtherDraft` is back
+to carrying just the kind; the three that carry fields have drafts of their own,
+which is what made `blockIsEmpty` honest: **only milk, diaper and `other` can
+say nothing.** The rest say everything by being there, exactly as sleep does.
+
+One component with three configurations, not three files. They differ only in
+what they ask for. The single-field tiles do not print a field name — the header
+already says `weight`, and repeating it 40px below is the same word twice — and
+supplement does, because `what` and `how much` are the only thing telling its
+two boxes apart.
+
+### A bottle that looks like a bottle
+
+The end-feed control wore `timer_off`, then `local_drink` — a paper cup with a
+straw, which the owner read as a milk *cup*. Material Symbols has bar glasses
+and a coffee cup and **no baby bottle**, so it is drawn, like `EndSleepIcon`
+before it and for the same reason. Same contract: 2px stroke, `currentColor`,
+so it inherits whatever its button sets.
+
+**And it is lavender now, not rose.** Rose is the app's milk colour and at
+button size on a cream card it reads as an alert — the owner's word for it was
+red. Lavender is still in the milk family (it is the breast tag) and sits
+quietly beside the periwinkle end-sleep button rather than shouting past it.
+
+Weight and temperature take amber, supplement keeps lavender. Seven bubbles with
+seven colours would have made a row that no longer reads at a glance, so the
+three that came out of `other` share its half of the palette.
