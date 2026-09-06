@@ -139,13 +139,38 @@ check('supplement asks what and how much',
   (await p.locator('.otherfield').count()) === 2,
   `${await p.locator('.otherfield').count()} field(s)`)
 
-await p.getByLabel('what', { exact: true }).fill('vitamin D')
-await p.getByLabel('how much', { exact: true }).fill('1 drop')
+// It arrives filled in with the daily vitamin D — the one supplement this app
+// is used for, the same two words and dose every time.
+const what = p.getByLabel('what', { exact: true })
+const howMuch = p.getByLabel('how much', { exact: true })
+check('and both arrive filled in',
+  (await what.inputValue()) === 'Vitamin D' && (await howMuch.inputValue()) === '1 drop',
+  `"${await what.inputValue()}" / "${await howMuch.inputValue()}"`)
+
+// A suggestion only earns its place if disagreeing with it is free: focusing
+// selects what is there, so the first character typed replaces the whole thing
+// rather than landing inside "Vitamin D". Typed through the keyboard rather
+// than `fill`, which would replace regardless and prove nothing.
+await what.click()
+await p.keyboard.type('iron')
+check('typing over it replaces rather than appends',
+  (await what.inputValue()) === 'iron', await what.inputValue())
+
+// Back to the suggestion, and save it untouched — the two-tap case the prefill
+// exists for.
+await p.getByRole('button', { name: 'supplement', exact: true }).click()
+await p.waitForTimeout(150)
+await p.getByRole('button', { name: 'supplement', exact: true }).click()
+await p.waitForTimeout(200)
+check('unpicking and picking again brings the suggestion back',
+  (await p.getByLabel('what', { exact: true }).inputValue()) === 'Vitamin D',
+  await p.getByLabel('what', { exact: true }).inputValue())
+
 // "save changes", not "save" — this sheet was opened on an existing entry.
 await p.getByRole('button', { name: 'save changes', exact: true }).click()
 await p.waitForTimeout(800)
-check('both read back on the row',
-  (await p.locator('.row').first().innerText()).includes('vitamin D 1 drop'),
+check('the untouched suggestion reads back on the row',
+  (await p.locator('.row').first().innerText()).includes('Vitamin D 1 drop'),
   (await p.locator('.row').first().innerText()).replace(/\n/g, ' '))
 
 // --- spit up still carries nothing ---

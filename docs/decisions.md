@@ -1027,7 +1027,19 @@ to record a weight.
   did not have to move.
 - **Temperature is °C**, one field.
 - **Supplement asks two things** — what, and how much — both free text, because
-  "1 drop" and "0.5 mL" are both real answers and neither is a number.
+  "1 drop" and "0.5 mL" are both real answers and neither is a number. **Both
+  arrive filled in with `Vitamin D` / `1 drop`** (2026-09-06): it is the one
+  supplement this app is used for, the same two words and the same dose every
+  time, so typing them is pure cost. A suggestion, not a claim — `preset` marks
+  it and focusing a field selects what is in it, so the first character typed
+  replaces the whole thing rather than landing inside "Vitamin D". Reopening a
+  stored supplement never sets that flag; there the value is a record, and a
+  tap in the field must not wipe it.
+- **Weight and temperature get no prefill**, deliberately. There is no number
+  that is right more often than any other, and one saved by accident is a false
+  reading rather than a mild annoyance. The quick bottle's 60 mL survives the
+  same test because a volume typed over costs one digit; a body temperature
+  nobody noticed was wrong costs more.
 - **`spit up` and `something else` still carry nothing.** Neither has a value to
   capture; their detail is the moment's note, exactly as before.
 

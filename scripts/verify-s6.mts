@@ -13,7 +13,8 @@ const store = new Map<string, string>([['babyliana.device_id', '00000000-0000-40
 
 import type { Block } from '../src/log/drafts.ts'
 const {
-  blocksFromMoment, canSave, gramsToKg, kgToGrams, newDiaper, newOther, toEntries, OTHER_TYPES,
+  blocksFromMoment, canSave, gramsToKg, kgToGrams, newDiaper, newOther, pickOther,
+  toEntries, OTHER_TYPES, SUPPLEMENT_PRESET,
 } = await import('../src/log/drafts.ts')
 const { createThisDevice, logMoment, getMoments } = await import('../src/moments.ts')
 
@@ -70,6 +71,38 @@ check('a supplement with only a name keeps the amount null',
 // The two that carry nothing still carry nothing — their detail is the note.
 check('spit up takes no fields', Object.keys(one(other('spit_up'))).join() === 'type')
 check('nor does something else', Object.keys(one(other('other'))).join() === 'type')
+
+// --- picking supplement arrives filled in -----------------------------------
+const picked = pickOther(newOther(), 'supplement')
+check('supplement comes with the usual name and dose',
+  picked.supplementName === SUPPLEMENT_PRESET.name
+    && picked.supplementAmount === SUPPLEMENT_PRESET.amount,
+  `${picked.supplementName} / ${picked.supplementAmount}`)
+check('and it is marked a suggestion, not an entry', picked.preset === true)
+check('so it saves as typed if nobody disagrees',
+  one({ key: 'o', type: 'other', draft: picked }).supplement_name === 'Vitamin D')
+check('and clearing it is still allowed',
+  one({ key: 'o', type: 'other',
+    draft: { ...picked, supplementName: '', supplementAmount: '', preset: false } })
+    .supplement_name === null)
+
+for (const kind of ['weight', 'temperature', 'spit_up', 'other']) {
+  const other_ = pickOther(newOther(), kind as never)
+  check(`${kind} stays blank and unmarked`,
+    other_.supplementName === '' && other_.supplementAmount === '' && !other_.preset)
+}
+
+// Reopening an existing supplement is a restore, not a suggestion — the flag
+// must not come back on, or the first tap in the field would wipe what is
+// stored there.
+const storedSupp = await logMoment({
+  entries: [one(withFields('supplement', { supplementName: 'iron', supplementAmount: '2 mL' }))],
+})
+const reopenedSupp = blocksFromMoment(storedSupp)[0]
+check('a reopened supplement is not marked a suggestion',
+  reopenedSupp.type === 'other' && !reopenedSupp.draft.preset
+    && reopenedSupp.draft.supplementName === 'iron',
+  JSON.stringify(reopenedSupp.draft))
 
 // --- a value survives being reopened for editing ----------------------------
 const logged = await logMoment({ entries: [one(withFields('weight', { kg: '3.4' }))] })

@@ -1,5 +1,5 @@
 import { Icon } from './Icon'
-import { OTHER_TYPES, type OtherDraft } from './drafts'
+import { newOther, OTHER_TYPES, pickOther, type OtherDraft } from './drafts'
 
 // The escape hatch, and the thing that lets the app fully replace the pen rather
 // than nearly replace it. Kept off the main surface on purpose (D-010): a
@@ -57,11 +57,10 @@ export function OtherBlock({
             aria-pressed={value.kind === t.kind}
             // Unpicking clears the fields with it. Keeping a weight around
             // under a deselected row is how a 3.4 ends up filed as a
-            // temperature two taps later.
+            // temperature two taps later. Picking fills `supplement` in and
+            // leaves the rest blank — see `pickOther`.
             onClick={() => onChange(
-              value.kind === t.kind
-                ? { kind: null, kg: '', celsius: '', supplementName: '', supplementAmount: '' }
-                : { ...value, kind: t.kind },
+              value.kind === t.kind ? newOther() : pickOther(value, t.kind),
             )}
           >
             {t.label}
@@ -84,7 +83,11 @@ export function OtherBlock({
                   value={value[f.key]}
                   placeholder={f.placeholder}
                   aria-label={f.label}
-                  onChange={(e) => onChange({ ...value, [f.key]: e.target.value })}
+                  // While the value is still the untouched suggestion, focusing
+                  // selects it, so the first character typed replaces the whole
+                  // thing rather than landing inside "Vitamin D".
+                  onFocus={(e) => { if (value.preset) e.currentTarget.select() }}
+                  onChange={(e) => onChange({ ...value, [f.key]: e.target.value, preset: false })}
                 />
                 {f.unit && <i>{f.unit}</i>}
               </span>
@@ -92,8 +95,13 @@ export function OtherBlock({
           ))}
           {/* Blank is allowed and means what it means everywhere else here —
               it happened, the number is not known. Same rule as the milk
-              volume's `?`. */}
-          <p className="opt">leave it blank if you did not catch the number.</p>
+              volume's `?`. Supplement says something different because it
+              arrives filled in and the other two do not. */}
+          <p className="opt">
+            {value.kind === 'supplement'
+              ? 'the usual, already filled in. change it or clear it.'
+              : 'leave it blank if you did not catch the number.'}
+          </p>
         </div>
       )}
     </section>

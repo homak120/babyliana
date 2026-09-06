@@ -109,6 +109,43 @@ export type OtherDraft = {
   celsius: string
   supplementName: string
   supplementAmount: string
+  /**
+   * The supplement fields hold a suggestion nobody has touched yet.
+   *
+   * The same idea as `MilkPart.preset` and for the same reason: a prefill only
+   * earns its place if disagreeing with it is free. Focusing a field while this
+   * is set selects what is in it, so the first character typed replaces the
+   * whole suggestion instead of landing in the middle of it. Any edit clears
+   * the flag.
+   */
+  preset?: boolean
+}
+
+/**
+ * What picking `supplement` arrives with, already filled in.
+ *
+ * The daily vitamin D is the supplement this app is actually used for, and it
+ * is the same two words and the same dose every time — so typing them is pure
+ * cost. Same argument as the quick bottle's 60 mL: a suggestion, not a claim.
+ */
+export const SUPPLEMENT_PRESET = { name: 'Vitamin D', amount: '1 drop' }
+
+/**
+ * Picking a type. `supplement` comes filled in; the other four stay blank.
+ *
+ * Weight and temperature get no prefill, deliberately — there is no number
+ * that is right more often than any other, and a wrong one saved by accident
+ * is a false reading rather than a mild annoyance.
+ */
+export function pickOther(value: OtherDraft, kind: EventType): OtherDraft {
+  if (kind !== 'supplement') return { ...value, kind, preset: false }
+  return {
+    ...value,
+    kind,
+    supplementName: SUPPLEMENT_PRESET.name,
+    supplementAmount: SUPPLEMENT_PRESET.amount,
+    preset: true,
+  }
 }
 
 /** `3.4` → 3400. Blank, or anything that is not a number, stays null. */

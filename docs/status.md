@@ -18,7 +18,7 @@ Last updated: 2026-09-06
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0–6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. 465 checks pass across twenty-one suites.
+delivered by the second design handoff. 477 checks pass across twenty-one suites.
 **No schema change — `0001` is still the whole schema.**
 
 What exists: local-first writes to IndexedDB that never block on the network,
@@ -61,8 +61,8 @@ secondary types take a value** — all D-036. The target is the last feed plus t
 that feed landed between 22:00 and 06:00; it is flat, deliberately *not* the
 mascot's split, and hidden while a feed is running. `weight`, `temperature` and
 `supplement` now have inputs behind `other` — kg typed into the schema's grams,
-°C, and a what/how-much pair — and they read back on both the day table and the
-home list. **`make a bottle`** goes up fifteen minutes before the target, on its
+°C, and a what/how-much pair that **arrives filled in with `Vitamin D` /
+`1 drop`** — and they read back on both the day table and the home list. **`make a bottle`** goes up fifteen minutes before the target, on its
 own row under the wake line, and clears when a feed is logged rather than when
 the target passes. Display only: nothing to tap, nothing stored.
 
