@@ -264,6 +264,14 @@ where a feed ends.
 three of its four remaining types got an input because the owner asked, not
 because the solo run found anything. `spit up` is the one still open.
 
+**Both themes draw the night mascot set** as of 2026-09-06 — the owner trying
+one character across a whole day. `DAY_ART_IN_USE` in `src/log/Mascot.tsx` is
+the flag, and it is `false`. **Nothing about the day set was removed**: `DAY` is
+still built from its own eight files, they still import and still ship, and
+flipping that one constant restores the old behaviour. `verify-welcome`'s three
+art checks were inverted to assert the switch is off rather than that the day
+art is gone, and they invert back with it.
+
 **The app icon is the v2 art.** The whole `public/` set replaced from
 `app_icon_babyliana/` — 180, 512 and 1024 as supplied, 192 and 32 resized from
 them — full-bleed on white, no config change beyond comments. **An installed

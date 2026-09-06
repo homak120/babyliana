@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import { chromium, devices } from 'playwright'
 
-// The welcome is two pages: a gate, then the name. And the mascot art is one of
+// The welcome is two pages: a gate, then the name. And the mascot art was one of
 // two sets, chosen by the clock — the day set is the plush, the night set is
 // the girl.
 const PORT = 4197
@@ -81,7 +81,12 @@ await p.getByPlaceholder('Anya').fill('Anya')
 await p.getByRole('button', { name: 'start logging' }).click()
 await p.waitForTimeout(600)
 const daySrc = await srcOf()
-check('the day theme uses the -day art', /-day/.test(daySrc), daySrc.split('/').pop() ?? '')
+// Both themes draw the night set while `DAY_ART_IN_USE` is false — the owner is
+// trying one character across the whole day. This asserts the switch is off
+// rather than that the day art is gone: nothing was deleted, and the day set
+// comes back by flipping that one flag, at which point these three checks
+// invert back to what they said before.
+check('the day theme draws the night art too', !/-day/.test(daySrc), daySrc.split('/').pop() ?? '')
 await ctx.close()
 
 const night = await fresh(23)
@@ -92,8 +97,8 @@ await night.p.getByPlaceholder('Anya').fill('Anya')
 await night.p.getByRole('button', { name: 'start logging' }).click()
 await night.p.waitForTimeout(600)
 const nightSrc = await night.p.evaluate(() => (document.querySelector('.mascot source') as HTMLSourceElement).srcset)
-check('the night theme uses the other set', !/-day/.test(nightSrc), nightSrc.split('/').pop() ?? '')
-check('the two sets are different files', daySrc !== nightSrc, 'distinct')
+check('the night theme uses the night art', !/-day/.test(nightSrc), nightSrc.split('/').pop() ?? '')
+check('and both themes land on the same file', daySrc === nightSrc, `${daySrc} vs ${nightSrc}`)
 await night.ctx.close()
 
 await b.close()

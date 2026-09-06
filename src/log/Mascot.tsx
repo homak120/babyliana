@@ -27,6 +27,18 @@ import homePng from '../assets/mascot/home.png'
 // Her states stay derived and descriptive only. She never nags.
 
 /**
+ * **Both themes draw the night set for now** — the owner's call on 2026-09-06,
+ * to see how one character reads across a whole day before deciding whether the
+ * plush comes back.
+ *
+ * Nothing about the day set has been removed, and that is the point: `DAY`
+ * below is still built from its own eight files, they are still imported and
+ * still ship, and flipping this to `true` is the whole of restoring it. A look
+ * being tried, not a decision taken.
+ */
+const DAY_ART_IN_USE = false
+
+/**
  * Two sets, one per theme. `logged` reuses the awake art, as the handoff says.
  *
  * The day set is not a recolour — it is a different character, the plush, drawn
@@ -71,7 +83,10 @@ export function Mascot({
    */
   theme?: Theme
 }) {
-  const set = (theme ?? themeFor()) === 'night' ? NIGHT : DAY
+  // The theme still decides the palette; it only decides the art while the day
+  // set is switched on.
+  const daytime = (theme ?? themeFor()) === 'day'
+  const set = DAY_ART_IN_USE && daytime ? DAY : NIGHT
   const art = set[welcome ? 'home' : state]
   const asleep = state === 'sleeping'
 
