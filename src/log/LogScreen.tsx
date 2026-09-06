@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   feedDuration,
+  feedKind,
   formatElapsed,
   lastFeedAt,
   lastFeedMoment,
@@ -180,13 +181,17 @@ export function LogScreen({ onEndOpen }: {
   // fail its own "started at or before now" test until the next tick.
   const asleep = ongoingSleep(moments)
   const feeding = ongoingFeed(moments)
-  const state = mascotState(since, theme, justLogged, asleep !== null, feeding !== null)
-
   // The combined and mascot leads print the last feed itself, not just how long
   // ago it was: its volume as the paper writes it, its clock time, and who
   // logged it. An em dash where there is nothing yet, same as the elapsed lead.
-  const elapsedText = formatElapsed(since)
   const lastFeed = lastFeedMoment(moments)
+  // Breast milk holds for less time than formula, so that same feed's source
+  // also sets which thresholds the state runs on.
+  const state = mascotState(
+    since, theme, justLogged, asleep !== null, feeding !== null, feedKind(lastFeed),
+  )
+
+  const elapsedText = formatElapsed(since)
   // The total, not the breakdown. With the unit and the source word on every
   // part (§12), "25 mL breast + 45 mL formula" is far past what a one-line
   // figure slot holds — so these two leads print one number.

@@ -104,14 +104,19 @@ const g = build(gapDay)
 check('the longest within-day feed gap is found',
   g.worstGapMins === 330, String(g.worstGapMins))
 check('the gap is attributed to its own day', g.worstGapDay === '9/6', g.worstGapDay)
-check('a 5h+ gap raises a flag', g.flags.some((f) => f.key === 'gap'))
+check('a 3h+ gap raises a flag', g.flags.some((f) => f.key === 'gap'))
 check('the gap flag names the duration and the day',
   g.flags.some((f) => f.text === '5h 30m between feeds on 9/6'),
   JSON.stringify(g.flags.map((f) => f.text)))
 
-const tightDay = [at(6, 8, 0, [feed()]), at(6, 11, 0, [feed()]), at(6, 14, 0, [feed()])]
-check('a 3h rhythm raises no gap flag',
+// The threshold matches the mascot's hungry line at 180 minutes, so a feed
+// every three hours on the dot does flag. Only a tighter rhythm stays quiet.
+const tightDay = [at(6, 8, 0, [feed()]), at(6, 10, 30, [feed()]), at(6, 13, 0, [feed()])]
+check('a 2h 30m rhythm raises no gap flag',
   !build(tightDay).flags.some((f) => f.key === 'gap'))
+const onTheLine = [at(6, 8, 0, [feed()]), at(6, 11, 0, [feed()])]
+check('a gap of exactly three hours does flag',
+  build(onTheLine).flags.some((f) => f.key === 'gap'))
 
 // --- the 6-a-day wet rule ---------------------------------------------------
 

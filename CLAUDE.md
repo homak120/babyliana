@@ -102,7 +102,7 @@ This app is used by parents of a newborn, often at 4am, often exhausted.
 - No growth percentiles. Nothing comparing this baby to a population.
 - **Narrowed by D-032:** the insights screen may flag four fixed, counted
   thresholds — under 6 wet diapers on a complete day, over 24h since a poop, a
-  5h+ feed gap, today projecting 20%+ under average. The owner chose this with
+  3h+ feed gap, today projecting 20%+ under average. The owner chose this with
   the older, broader rule in front of him. It is not an oversight and does not
   license a fifth rule. Read D-032 before adding one.
 

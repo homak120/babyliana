@@ -810,7 +810,7 @@ visible in `src/report/insights.ts`:
 
 - a complete day with fewer than 6 wet diapers
 - more than 24h since the last poop
-- a within-day gap of 5h or more between feeds
+- a within-day gap of 3h or more between feeds (was 5h — see the amendment below)
 - today projecting 20% or more under the running average
 
 Plus the wet-diaper average rendered against the same 6-a-day mark.
@@ -854,6 +854,25 @@ the thresholds are the owner's, and because the next person to look at this card
 should not have to rediscover it. If it is ever tuned, the cheapest levers are
 the threshold itself, or requiring a minimum number of diaper entries before a
 day is eligible for the wet rule at all.
+
+### Amended 2026-09-05 — the feed gap moved to 3h
+
+**The gap rule now fires at 180 minutes, not 300.** The owner's call, made
+alongside the same move on the mascot's *hungry* state, and the two now sit on
+one number: three hours since a feed is what the app treats as long, whether it
+is describing this moment on the home screen or counting a past day on the
+report.
+
+**This makes the gap rule fire far more often, by design.** A feed every three
+hours on the dot flags — the comparison is `>= 180`, matching the mascot — and
+newborn feeding at that interval is ordinary, so on a typical day this rule is
+now closer to lit than to quiet. That is the same *always-on warning* failure the
+measured note above describes for the wet-diaper rule, arriving on a second rule.
+It is not an oversight: the owner set the number knowing the mascot uses it. If
+it is tuned again, the boundary itself is the lever — `> 180` would exempt the
+exact three-hour rhythm and change the character of the rule considerably.
+
+**The count of rules is unchanged.** Still four, still fixed, still no fifth.
 
 ---
 
@@ -944,3 +963,41 @@ those two take a new `milkTotal` — one figure, `70 mL`, or `90 + ? mL` where a
 part was unknown. Carrying the unknown rather than dropping it keeps `90 + ?`
 distinct from `90`, which is the same distinction the column exists to preserve.
 
+---
+
+## D-035 — The mascot's clock depends on what the last feed was
+
+Breast milk empties faster than formula, so *"three hours since a feed"* means
+two different things depending on the feed. The mascot's thresholds now split by
+source:
+
+| Last feed | awake | hungry |
+| --- | --- | --- |
+| Breast milk | 90 min | 120 min |
+| Everything else | 120 min | 180 min |
+
+The owner set both pairs. The second row is unchanged from what shipped — this
+adds a faster clock rather than moving the existing one.
+
+**"Everything else" is the conservative default, and it is deliberately wide.**
+Formula, a feed with no source recorded, a moment with no feed in it at all, and
+— the case worth naming — a **mixed feed**. `25 mL breast + 45 mL formula`
+(D-034) is one moment carrying two feed events, and it reads as *other*: only a
+moment whose every feed part is breast milk gets the faster clock. Erring toward
+the longer hold means the app is late to say hungry rather than early, which is
+the right way round for a state a parent may act on.
+
+`feedKind` in `src/derive.ts` is the whole rule, and it takes the same moment the
+card already uses for the last feed — nothing new is stored, and nothing new is
+asked of the person logging. A feed logged without a source keeps behaving
+exactly as it did before this entry.
+
+**What did not change.** The night override still outranks both clocks: night
+theme plus a gap over an hour reads as *sleeping* whatever the source, so this is
+a daylight distinction. The states themselves are untouched, and so is the tone
+rule — *hungry* remains descriptive, and she still does not nag.
+
+**The insights feed-gap flag did not follow this split.** It stays at a flat 3h
+(D-032, as amended). That rule counts a past day's largest gap without asking
+what was in the bottle, and giving it a source would mean deciding what a day of
+mixed feeding is measured against — a question nobody has asked yet.

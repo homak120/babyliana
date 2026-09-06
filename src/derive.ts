@@ -41,6 +41,25 @@ export function lastFeedMoment(moments: Moment[]): Moment | null {
   return feeds.reduce((a, b) => (at(a) >= at(b) ? a : b))
 }
 
+/**
+ * Which clock the mascot runs on. Breast milk empties faster than formula, so
+ * the same elapsed number means something different depending on what the last
+ * feed was.
+ *
+ * `'other'` is the conservative default and covers everything that is not
+ * unambiguously breast: formula, a mixed feed, and a feed logged with no source
+ * at all. Only an all-breast moment reads as `'breast'` — a `25 mL breast +
+ * 45 mL formula` moment (D-034) has formula in it and takes the longer timings.
+ */
+export type FeedKind = 'breast' | 'other'
+
+export function feedKind(m: Moment | null): FeedKind {
+  if (!m) return 'other'
+  const feeds = m.events.filter((e) => e.type === 'feed')
+  if (feeds.length === 0) return 'other'
+  return feeds.every((e) => e.source === 'breast_milk') ? 'breast' : 'other'
+}
+
 export function minutesSince(at: Date | null, now = new Date()): number | null {
   if (!at) return null
   return Math.max(0, Math.floor((now.getTime() - at.getTime()) / 60000))
@@ -194,9 +213,21 @@ export function themeFor(now = new Date()): Theme {
 export type MascotState = 'settled' | 'awake' | 'hungry' | 'feeding' | 'sleeping' | 'logged'
 
 /**
+ * How long a feed of each kind holds, in minutes: awake first, then hungry.
+ * Breast milk runs 30 and 60 minutes ahead of the rest.
+ */
+const HOLDS: Record<FeedKind, { awake: number; hungry: number }> = {
+  breast: { awake: 90, hungry: 120 },
+  other: { awake: 120, hungry: 180 },
+}
+
+/**
  * Derived, never set — and descriptive, never evaluative. Sleepy, awake,
  * hungry; never sad, worried or disappointed. An app that appears to disapprove
  * of a late feed lands very differently than intended (CLAUDE.md).
+ *
+ * The thresholds depend on what the last feed was (`HOLDS`), so the same
+ * elapsed number can read settled after formula and awake after breast milk.
  */
 export function mascotState(
   minutesSinceFeed: number | null,
@@ -204,6 +235,7 @@ export function mascotState(
   justLogged = false,
   asleep = false,
   feeding = false,
+  kind: FeedKind = 'other',
 ): MascotState {
   if (justLogged) return 'logged'
   // Feeding outranks sleeping: the feed is what is happening right now, and a
@@ -215,7 +247,8 @@ export function mascotState(
   if (asleep) return 'sleeping'
   const gap = minutesSinceFeed ?? 0
   if (theme === 'night' && gap > 60) return 'sleeping'
-  if (gap >= 180) return 'hungry'
-  if (gap >= 120) return 'awake'
+  const holds = HOLDS[kind]
+  if (gap >= holds.hungry) return 'hungry'
+  if (gap >= holds.awake) return 'awake'
   return 'settled'
 }

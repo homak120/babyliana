@@ -2,6 +2,7 @@
 // they are what the whole screen is for. Pure functions, no browser needed.
 import type { Moment } from '../src/types.ts'
 import {
+  feedKind,
   formatElapsed,
   lastFeedAt,
   mascotState,
@@ -80,6 +81,7 @@ check('pee and poop counted separately', t.pee === 2 && t.poop === 1, `${t.pee}/
 check('yesterday excluded — day boundary is midnight local', t.ml === 70)
 
 // --- mascot ----------------------------------------------------------------
+// The default kind is 'other' — formula, mixed, or a feed with no source on it.
 check('settled under two hours', mascotState(60, 'day') === 'settled')
 check('awake at two hours', mascotState(120, 'day') === 'awake')
 check('hungry at three', mascotState(180, 'day') === 'hungry')
@@ -87,6 +89,44 @@ check('awake just under three', mascotState(179, 'day') === 'awake')
 check('sleeping at night overrides hungry', mascotState(300, 'night') === 'sleeping')
 check('logged wins over everything for its moment', mascotState(300, 'day', true) === 'logged')
 check('no feed yet is settled, not hungry', mascotState(null, 'day') === 'settled')
+
+// Breast milk runs half an hour ahead on awake and an hour ahead on hungry.
+const br = (mins: number) => mascotState(mins, 'day', false, false, false, 'breast')
+check('breast: settled under 90 minutes', br(89) === 'settled')
+check('breast: awake at 90 minutes', br(90) === 'awake')
+check('breast: hungry at two hours', br(120) === 'hungry')
+check('breast: still awake just under two hours', br(119) === 'awake')
+check('the same 120 minutes is awake on formula and hungry on breast',
+  mascotState(120, 'day') === 'awake' && br(120) === 'hungry')
+check('night still overrides the breast clock too',
+  mascotState(150, 'night', false, false, false, 'breast') === 'sleeping')
+
+// --- what the last feed was ------------------------------------------------
+const breastFeed = moment(at(15, 0), [{ type: 'feed', volume_ml: 60, source: 'breast_milk' }])
+const formulaFeed = moment(at(15, 0), [{ type: 'feed', volume_ml: 60, source: 'formula' }])
+const splitFeed = moment(at(15, 0), [
+  { type: 'feed', volume_ml: 25, source: 'breast_milk' },
+  { type: 'feed', volume_ml: 45, source: 'formula' },
+])
+const unmarkedFeed = moment(at(15, 0), [{ type: 'feed', volume_ml: 60 }])
+const diaperOnly = moment(at(15, 0), [{ type: 'diaper', pee: true }])
+check('an all-breast feed is breast', feedKind(breastFeed) === 'breast')
+check('formula is other', feedKind(formulaFeed) === 'other')
+check('a split feed with formula in it is other, not breast',
+  feedKind(splitFeed) === 'other')
+check('a feed with no source is other', feedKind(unmarkedFeed) === 'other')
+check('a moment with no feed is other', feedKind(diaperOnly) === 'other')
+check('nothing logged yet is other', feedKind(null) === 'other')
+check('two breast parts in one moment are still breast',
+  feedKind(moment(at(15, 0), [
+    { type: 'feed', volume_ml: 25, source: 'breast_milk' },
+    { type: 'feed', volume_ml: 20, source: 'breast_milk' },
+  ])) === 'breast')
+check('a breast feed alongside a diaper is still breast',
+  feedKind(moment(at(15, 0), [
+    { type: 'feed', volume_ml: 60, source: 'breast_milk' },
+    { type: 'diaper', pee: true },
+  ])) === 'breast')
 
 // --- theme -----------------------------------------------------------------
 check('night at 22:00', themeFor(new Date(2026, 8, 3, 22)) === 'night')

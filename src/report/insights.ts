@@ -231,7 +231,7 @@ export function buildInsights(moments: Moment[], span: Span, now = new Date()) {
   if (sincePoopMins !== null && sincePoopMins > 1440) {
     flags.push({ key: 'poop', icon: 'cookie', text: `no poop for ${hm(sincePoopMins)}` })
   }
-  if (worstGap && worstGap.maxFeedGap >= 300) {
+  if (worstGap && worstGap.maxFeedGap >= 180) {
     flags.push({
       key: 'gap',
       icon: 'schedule',

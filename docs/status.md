@@ -18,7 +18,7 @@ Last updated: 2026-09-05
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0–6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. 379 checks pass across twenty suites.
+delivered by the second design handoff. 394 checks pass across twenty suites.
 **No schema change — `0001` is still the whole schema.**
 
 What exists: local-first writes to IndexedDB that never block on the network,
@@ -47,7 +47,10 @@ digit typed replaces, so it costs nothing to disagree with; `+ milk` inside the
 sheet still starts blank, because a feed added by hand is as often the paper's
 `?`. The report screen's date strip now stops at three day pills, so `more` — the
 only route to an older day — is on screen rather than off the right-hand edge.
-**Liana reads *hungry* at three hours since the last feed**, not four.
+**Liana's clock now depends on what the last feed was** — D-035. After breast
+milk she reads *awake* at 90 minutes and *hungry* at two hours; after formula, a
+mixed feed, or a feed with no source, it is two hours and three. The night
+override sits above both, so this is a daylight distinction.
 
 **Sleep is a first-class type** as of the third design delivery — its own bubble,
 its own block, a quick icon that becomes a live "end sleep" pill while one is
@@ -111,12 +114,19 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**Everything through the quick feed's 60 mL and the shortened date strip is
-pushed** (`098e346`).
+**Everything through the mascot's three-hour hungry line is pushed** (`7757ed7`).
 
-**Uncommitted: the hungry threshold at three hours.** `src/derive.ts`
-(`mascotState`, `gap >= 180`) and the two checks that guard it in
-`scripts/verify-s3.mts`. Nothing else.
+**Uncommitted: two rounds on the same subject, neither pushed.**
+
+1. The insights feed-gap flag moved from 5h to 3h — `src/report/insights.ts`
+   (`maxFeedGap >= 180`), its checks in `scripts/verify-insights.mts`, the
+   threshold named in `CLAUDE.md`, and a dated amendment on D-032.
+2. The mascot's thresholds split by source — `src/derive.ts` (`feedKind`,
+   `HOLDS`, `mascotState`'s sixth argument), the call in
+   `src/log/LogScreen.tsx`, fourteen checks in `scripts/verify-s3.mts`, and
+   D-035.
+
+Nothing else.
 
 **The date strip's cap has no browser check**, and deliberately: proving it
 needs entries on four separate days, and the only way to backdate through the UI
@@ -192,18 +202,48 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-05 (latest) — hungry at three hours
+### 2026-09-05 (latest) — hungry is two clocks now, not one
 
 `mascotState` moved the hungry threshold from 240 minutes to 180. Awake still
 starts at 120, so the awake band is now 2–3h rather than 2–4h, and the night
 override (night theme plus a gap over an hour reads as *sleeping*) is untouched,
 so the change is only visible in daylight.
 
-Nothing else moved. The insights watch list's 5h feed-gap flag is a separate,
-counted threshold under D-032 and was deliberately left where it is — the mascot
-describes the moment, the flag counts a day.
+**The insights watch list's feed-gap flag followed, from 5h to 3h.** The two now
+sit on one number: three hours since a feed is what the app calls long, whether
+it is describing this moment on the home screen or counting a past day on the
+report. D-032 carries a dated amendment, because the decision named 5h and the
+count of rules — four, still four — is what that entry is guarding.
 
-Two checks in `verify-s3` guard the new boundary: hungry at 180, awake at 179.
+**The gap flag will fire much more often now.** The comparison is `>= 180`, so a
+feed every three hours on the dot flags, and that is an ordinary newborn rhythm.
+This is the same always-on-warning problem D-032's measured note already records
+for the wet-diaper rule, now on a second rule. The owner set the number with the
+mascot's use of it in view; the lever if it is ever tuned is the boundary itself,
+since `> 180` would exempt the exact three-hour case.
+
+Three checks guard the new boundaries: hungry at 180 and awake at 179 in
+`verify-s3`, and a three-hour gap flagging in `verify-insights`, whose quiet
+fixture moved to a 2h 30m rhythm because a 3h one is no longer quiet.
+
+**Then the flat number split in two.** Breast milk empties faster than formula,
+so the mascot now runs on the last feed's source: 90/120 after breast milk,
+120/180 after everything else. D-035 has the table and the reasoning.
+
+**"Everything else" is wide on purpose, and the case to know is the mixed
+feed.** `25 mL breast + 45 mL formula` is one moment with two feed events, and it
+takes the *slower* clock — only an all-breast moment gets the faster one.
+Formula, a feed with no source, and a moment with no feed at all land there too,
+so a log that never records a source behaves exactly as it did before. Erring
+long means the app is late to say hungry rather than early.
+
+`feedKind` is the whole rule and it reads the moment the card already had, so
+nothing new is stored and nothing new is asked of the person logging.
+
+**The insights gap flag did not follow the split** and is still a flat 3h. It
+counts a past day's largest gap without asking what was in the bottle; giving it
+a source would mean deciding what a mixed day is measured against, which nobody
+has asked for.
 
 ### 2026-09-05 — a filled-in quick feed, and a date strip that stops
 
