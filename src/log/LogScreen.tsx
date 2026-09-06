@@ -11,13 +11,16 @@ import {
   ongoingSleep,
   sameDay,
   sleepDuration,
+  targetText,
+  targetWake,
   themeFor,
   totalsFor,
   type MascotState,
 } from '../derive'
 import { getDevices } from '../db'
 import {
-  avatarClass, describeMoment, feedCell, hhmm, milkCell, milkTotal, sleepCell, timeCell,
+  avatarClass, describeMoment, feedCell, hhmm, milkCell, milkTotal, otherLabel, sleepCell,
+  timeCell,
 } from '../day/cells'
 import { getDeviceId } from '../device-id'
 import { getMoments, removeMoment, renameThisDevice } from '../moments'
@@ -174,7 +177,8 @@ export function LogScreen({ onEndOpen }: {
   }, [theme])
 
   const shown = moments
-  const since = minutesSince(lastFeedAt(moments), now)
+  const lastFeedEnd = lastFeedAt(moments)
+  const since = minutesSince(lastFeedEnd, now)
   const totals = totalsFor(moments, now)
   // A logged, still-open sleep beats the night-plus-long-gap guess. Not passed
   // the ticking `now`: it moves every 30s, and a sleep logged just now would
@@ -192,6 +196,10 @@ export function LogScreen({ onEndOpen }: {
   )
 
   const elapsedText = formatElapsed(since)
+  // What the next feed is aimed at. Hidden while one is running: the target is
+  // measured from where the feed *ends*, so during it the line would show a
+  // number that moves every tick and is wrong the moment the feed is closed.
+  const target = feeding ? null : targetWake(lastFeedEnd)
   // The total, not the breakdown. With the unit and the source word on every
   // part (§12), "25 mL breast + 45 mL formula" is far past what a one-line
   // figure slot holds — so these two leads print one number.
@@ -329,6 +337,18 @@ export function LogScreen({ onEndOpen }: {
                 </p>
               </>
             )}
+
+            {/* Outside the three leads on purpose: the rail chooses which
+                summary the card leads with, and the target is wanted under all
+                of them. Descriptive, like everything else on this card — the
+                clock time and how far off it is, and no view about it. */}
+            {target && (
+              <div className="wakeline">
+                <Icon name="alarm" size={14} />
+                <span>wake ~{hhmm(target.toISOString())}</span>
+                <em>{targetText(target, now)}</em>
+              </div>
+            )}
           </div>
         </section>
       </div>
@@ -419,11 +439,16 @@ export function LogScreen({ onEndOpen }: {
                       </span>
                     ) : null
                   })()}
+                  {/* `otherLabel`, not the bare type name: a weight logged
+                      here read as "weight" while the day table read
+                      "weight 3.4 kg", which is the same split that hid an end
+                      time from this list until timeCell replaced its local
+                      formatter. */}
                   {m.events
                     .filter((e) => e.type !== 'feed' && e.type !== 'diaper' && e.type !== 'sleep')
                     .map((e) => (
                       <span className="chip-lav" key={e.id}>
-                        {e.type.replace('_', ' ')}
+                        {otherLabel(e)}
                       </span>
                     ))}
                 </span>

@@ -12,9 +12,9 @@ const store = new Map<string, string>([['babyliana.device_id', '00000000-0000-40
 } as Storage
 
 import type { Block } from '../src/log/drafts.ts'
-const { canSave, newDiaper, newOther, toEntries, OTHER_TYPES } = await import(
-  '../src/log/drafts.ts'
-)
+const {
+  blocksFromMoment, canSave, gramsToKg, kgToGrams, newDiaper, newOther, toEntries, OTHER_TYPES,
+} = await import('../src/log/drafts.ts')
 const { createThisDevice, logMoment, getMoments } = await import('../src/moments.ts')
 
 const one = (b: Block) => toEntries(b)[0]
@@ -38,6 +38,56 @@ check('sleep is no longer buried in the other list',
 check('nothing picked cannot be saved', !canSave([other(null)]))
 check('picking one can', canSave([other('weight')]))
 check('it becomes an entry of that type', one(other('weight')).type === 'weight')
+
+// --- the three that carry a value now (D-036) -------------------------------
+const withFields = (kind: string, fields: Record<string, string>): Block =>
+  ({ key: 'o', type: 'other', draft: { ...newOther(), kind: kind as never, ...fields } })
+
+check('kg is typed and grams is stored', kgToGrams('3.4') === 3400)
+check('a whole number of kg still works', kgToGrams('4') === 4000)
+check('grams round rather than truncate', kgToGrams('3.4567') === 3457)
+check('a blank weight is null, not zero', kgToGrams('') === null)
+check('so is something that is not a number', kgToGrams('abc') === null)
+check('half-typed reads as the digits so far', kgToGrams('3.') === 3000)
+check('grams come back as kg for editing', gramsToKg(3400) === '3.4')
+
+const weighed = one(withFields('weight', { kg: '3.4' }))
+check('a weight entry carries grams', weighed.grams === 3400, String(weighed.grams))
+const unweighed = one(withFields('weight', { kg: '' }))
+check('a weight with no number is still savable and still a weight',
+  canSave([withFields('weight', { kg: '' })]) && unweighed.grams === null)
+
+const temp = one(withFields('temperature', { celsius: '36.8' }))
+check('a temperature entry carries celsius', temp.celsius === 36.8, String(temp.celsius))
+check('a decimal point is not lost', one(withFields('temperature', { celsius: '37.05' })).celsius === 37.05)
+
+const supp = one(withFields('supplement', { supplementName: ' vitamin D ', supplementAmount: '1 drop' }))
+check('a supplement carries its name, trimmed', supp.supplement_name === 'vitamin D', String(supp.supplement_name))
+check('and its amount', supp.amount === '1 drop', String(supp.amount))
+check('a supplement with only a name keeps the amount null',
+  one(withFields('supplement', { supplementName: 'vitamin D' })).amount === null)
+
+// The two that carry nothing still carry nothing — their detail is the note.
+check('spit up takes no fields', Object.keys(one(other('spit_up'))).join() === 'type')
+check('nor does something else', Object.keys(one(other('other'))).join() === 'type')
+
+// --- a value survives being reopened for editing ----------------------------
+const logged = await logMoment({ entries: [one(withFields('weight', { kg: '3.4' }))] })
+const reopened = blocksFromMoment(logged)
+check('reopening a weight fills the field back in',
+  reopened[0].type === 'other' && reopened[0].draft.kg === '3.4',
+  JSON.stringify(reopened[0].draft))
+check('and saves back to the same grams', one(reopened[0]).grams === 3400)
+
+const suppSaved = await logMoment({
+  entries: [one(withFields('supplement', { supplementName: 'vitamin D', supplementAmount: '1 drop' }))],
+})
+const suppBack = blocksFromMoment(suppSaved)[0]
+check('reopening a supplement fills both fields back in',
+  suppBack.type === 'other'
+    && suppBack.draft.supplementName === 'vitamin D'
+    && suppBack.draft.supplementAmount === '1 drop',
+  JSON.stringify(suppBack.draft))
 
 // --- the note ---------------------------------------------------------------
 const noted = await logMoment({

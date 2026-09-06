@@ -34,6 +34,13 @@ await p.waitForTimeout(600)
 let fail = 0
 const check = (l: string, ok: boolean, d: string) => { if (!ok) fail++; console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${l} — ${d}`) }
 
+// That feed has no end time, so it is running. The next-feed target is measured
+// from where a feed *ends*, so while one is open the line is hidden rather than
+// showing a number that moves every tick and is wrong the moment it closes.
+check('no target while a feed is running',
+  (await p.locator('.wakeline').count()) === 0 && (await p.locator('.endfeedmini').count()) === 1,
+  `${await p.locator('.wakeline').count()} wake line(s)`)
+
 // Every shape formatElapsed can produce, longest last.
 //
 // The class is toggled here as well as the text, because the component sizes
@@ -133,6 +140,41 @@ check('the lead survives a save', (await p.locator('.mascotword').count()) === 1
   `${await p.locator('.mascotword').count()} mascot lead(s) after saving`)
 await p.getByLabel('elapsed view').click()
 await p.waitForTimeout(200)
+
+// --- the target for the next feed ---
+//
+// The diaper logged above stopped the feed reading as running — anything
+// logged after an open period ends it as the latest moment (D-033) — so the
+// target is back.
+check('the target is there once no feed is running',
+  (await p.locator('.wakeline').count()) === 1,
+  (await p.locator('.wakeline').innerText().catch(() => 'absent')).replace(/\n/g, ' '))
+
+// It sits outside the three leads, so it is under all of them.
+for (const label of ['combined view', 'mascot view', 'elapsed view'] as const) {
+  await p.getByLabel(label).click()
+  await p.waitForTimeout(200)
+  const seen = await p.locator('.wakeline').count()
+  const over = await p.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  )
+  check(`the target is under ${label}`, seen === 1 && over === 0,
+    `${seen} wake line(s), ${over}px overflow`)
+}
+
+// The card is narrow enough that this line is where a long one would push the
+// page sideways — the same trap the elapsed figure fell into.
+const wake = await p.evaluate(() => {
+  const el = document.querySelector('.wakeline') as HTMLElement
+  const card = document.querySelector('.herocard') as HTMLElement
+  const pad = parseFloat(getComputedStyle(card).paddingRight)
+  return {
+    right: Math.round(el.getBoundingClientRect().right),
+    limit: Math.round(card.getBoundingClientRect().right - pad),
+  }
+})
+check('and stays inside the card', wake.right <= wake.limit,
+  `ends ${wake.right} vs limit ${wake.limit}`)
 
 await b.close()
 stop()

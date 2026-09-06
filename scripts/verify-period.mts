@@ -47,10 +47,18 @@ await p.waitForTimeout(200)
 // "last 7 days" straddles two months, so only one edge is in the visible grid.
 check('today preset exists', await p.getByRole('button', { name: 'today', exact: true }).isVisible(), 'first preset')
 check('preset marks an edge', (await p.locator('.cal.edge').count()) >= 1, `${await p.locator('.cal.edge').count()} edge(s) in view`)
-check('preset fills the span', (await p.locator('.cal.between').count()) > 0, `${await p.locator('.cal.between').count()} days between`)
+// Counted across *both* visible months rather than the first one alone. On the
+// 6th of a month "last 7 days" starts on the 31st of the one before, which is
+// its own last day — so the opening grid holds an edge and nothing between it
+// and the month's end, and a check that looked only there went red on a date
+// change rather than on a regression.
+const betweenFirst = await p.locator('.cal.between').count()
 await p.getByLabel('next month').click()
 await p.waitForTimeout(200)
 check('other edge is next month', (await p.locator('.cal.edge').count()) >= 1, 'found after paging')
+const betweenSecond = await p.locator('.cal.between').count()
+check('preset fills the span', betweenFirst + betweenSecond > 0,
+  `${betweenFirst} + ${betweenSecond} days between`)
 check('apply enabled', await p.locator('.apply').isEnabled(), await p.locator('.apply').innerText())
 await p.locator('.apply').click()
 await p.waitForTimeout(400)

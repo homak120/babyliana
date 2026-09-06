@@ -108,13 +108,32 @@ export function diaperCell(events: LogEvent[]): string | null {
   return bits.length ? bits.join(' · ') : null
 }
 
+/**
+ * What one secondary entry reads as, value and all.
+ *
+ * The three types that carry a field (D-036) print it; the two that do not
+ * still print their bare name, exactly as every one of them did before. A field
+ * left blank falls back to the name too — a weight nobody caught is still a
+ * weighing, the same way a `?` volume is still a feed.
+ */
+export function otherLabel(e: LogEvent): string {
+  const name = e.type.replace('_', ' ')
+  if (e.type === 'weight' && e.grams !== null) return `${name} ${e.grams / 1000} kg`
+  if (e.type === 'temperature' && e.celsius !== null) return `${name} ${e.celsius}°C`
+  if (e.type === 'supplement') {
+    const said = [e.supplement_name, e.amount].filter(Boolean).join(' ')
+    return said ? `${name} ${said}` : name
+  }
+  return name
+}
+
 /** Anything that is neither a feed, a change, nor a sleep — sleep has its own. */
 export function otherCell(events: LogEvent[]): string | null {
   const rest = events.filter(
     (e) => e.type !== 'feed' && e.type !== 'diaper' && e.type !== 'sleep',
   )
   if (rest.length === 0) return null
-  return rest.map((e) => e.type.replace('_', ' ')).join(' · ')
+  return rest.map(otherLabel).join(' · ')
 }
 
 /**

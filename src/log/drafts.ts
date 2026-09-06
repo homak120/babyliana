@@ -79,11 +79,10 @@ export const diaperIsEmpty = (d: DiaperDraft) => !d.pee && !d.poop
 /**
  * The low-frequency types, kept off the main surface on purpose (D-010).
  *
- * None of them gets its own fields. The design's answer is "pick one, write the
- * rest in the note", which is also the honest one: Q-006 decides by observed use
- * in Phase 8 which of these deserves a proper input, and building five of them
- * now would be inventing requirements. The schema's `grams` and `celsius`
- * columns stay unused until a type is promoted.
+ * Three of them now carry their own fields — weight, temperature and
+ * supplement, on the owner's call (D-036). The other two still say "pick one,
+ * write the rest in the note", which for `spit up` and `something else` remains
+ * the honest answer: neither has a value to capture.
  */
 export const OTHER_TYPES: { kind: EventType; label: string }[] = [
   // Sleep is no longer here: it earned its own block and its own bubble.
@@ -94,7 +93,39 @@ export const OTHER_TYPES: { kind: EventType; label: string }[] = [
   { kind: 'other', label: 'something else' },
 ]
 
-export type OtherDraft = { kind: EventType | null }
+/**
+ * Every field is a **string**, including the two numbers.
+ *
+ * `3.` is a legal thing to be halfway through typing, and a number-typed state
+ * cannot hold it — it would eat the decimal point as fast as it was tapped.
+ * Parsing happens once, on save.
+ *
+ * Weight is typed in **kg** and stored in the schema's `grams` (D-036): a scale
+ * and a health visitor both say 3.4, and nothing underneath had to change.
+ */
+export type OtherDraft = {
+  kind: EventType | null
+  kg: string
+  celsius: string
+  supplementName: string
+  supplementAmount: string
+}
+
+/** `3.4` → 3400. Blank, or anything that is not a number, stays null. */
+export function kgToGrams(kg: string): number | null {
+  const n = Number.parseFloat(kg)
+  return Number.isFinite(n) ? Math.round(n * 1000) : null
+}
+
+/** 3400 → `3.4`, for the sheet reopened on an existing weight. */
+export const gramsToKg = (grams: number): string => String(grams / 1000)
+
+const numberOrNull = (v: string): number | null => {
+  const n = Number.parseFloat(v)
+  return Number.isFinite(n) ? n : null
+}
+
+const textOrNull = (v: string): string | null => v.trim() || null
 
 /**
  * Sleep carries nothing of its own.
@@ -108,9 +139,17 @@ export type SleepDraft = Record<string, never>
 
 export const newSleep = (): SleepDraft => ({})
 
-export const newOther = (): OtherDraft => ({ kind: null })
+export const newOther = (): OtherDraft => ({
+  kind: null, kg: '', celsius: '', supplementName: '', supplementAmount: '',
+})
 
-/** Nothing picked yet says nothing. */
+/**
+ * Nothing picked yet says nothing.
+ *
+ * A *picked* type with no number in it still says something, and stays savable:
+ * a weight nobody read off the scale in time is the same shape as the paper's
+ * `?` volume, and the app has never required a value it could record as blank.
+ */
 export const otherIsEmpty = (d: OtherDraft) => d.kind === null
 
 /**
@@ -165,8 +204,19 @@ export function toEntries(b: Block): DraftEntry[] {
     }]
   }
   if (b.type === 'sleep') return [{ type: 'sleep' }]
-  // `other` carries nothing but its type — the moment's note holds the detail.
-  return [{ type: b.draft.kind! }]
+  const d = b.draft
+  if (d.kind === 'weight') return [{ type: 'weight', grams: kgToGrams(d.kg) }]
+  if (d.kind === 'temperature') return [{ type: 'temperature', celsius: numberOrNull(d.celsius) }]
+  if (d.kind === 'supplement') {
+    return [{
+      type: 'supplement',
+      supplement_name: textOrNull(d.supplementName),
+      amount: textOrNull(d.supplementAmount),
+    }]
+  }
+  // The two that have no value to carry — spit up, and something else. Their
+  // detail lives in the moment's note, as it always has.
+  return [{ type: d.kind! }]
 }
 
 /**
@@ -206,7 +256,16 @@ export function blocksFromMoment(m: Moment): Block[] {
     } else if (e.type === 'sleep') {
       blocks.push({ key, ids: [e.id], type: 'sleep', draft: {} })
     } else {
-      blocks.push({ key, ids: [e.id], type: 'other', draft: { kind: e.type } })
+      blocks.push({
+        key, ids: [e.id], type: 'other',
+        draft: {
+          kind: e.type,
+          kg: e.grams === null ? '' : gramsToKg(e.grams),
+          celsius: e.celsius === null ? '' : String(e.celsius),
+          supplementName: e.supplement_name ?? '',
+          supplementAmount: e.amount ?? '',
+        },
+      })
     }
   }
   return blocks

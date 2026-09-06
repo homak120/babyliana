@@ -1001,3 +1001,76 @@ rule — *hungry* remains descriptive, and she still does not nag.
 (D-032, as amended). That rule counts a past day's largest gap without asking
 what was in the bottle, and giving it a source would mean deciding what a day of
 mixed feeding is measured against — a question nobody has asked yet.
+
+---
+
+## D-036 — Three of the secondary types take a value; the target is a flat number
+
+Two owner calls from the same session, unrelated except that both are numbers he
+had in his head and the app did not.
+
+### The fields
+
+`weight`, `temperature` and `supplement` now have inputs. They used to be five
+identical rows behind `other`, with the answer "pick one, write the rest in the
+note" — which was right when nothing could be counted and wrong once he wanted
+to record a weight.
+
+- **Weight is typed in kg, stored in grams.** `3.4` in the box, `grams = 3400`
+  in the row. A scale and a health visitor both say 3.4, and the schema's column
+  did not have to move.
+- **Temperature is °C**, one field.
+- **Supplement asks two things** — what, and how much — both free text, because
+  "1 drop" and "0.5 mL" are both real answers and neither is a number.
+- **`spit up` and `something else` still carry nothing.** Neither has a value to
+  capture; their detail is the moment's note, exactly as before.
+
+**Blank is allowed and means what it means everywhere else here.** A picked type
+with no number saves, and reads back as the bare word — the same rule the milk
+volume's `?` has always had (D-018). Requiring a value would make the app unable
+to record a weighing where nobody caught the number, which is a thing that
+happens.
+
+**Every field is held as a string until save.** `3.` is a legal thing to be
+halfway through typing and a number-typed input eats the decimal point as fast
+as it is entered — a failure that passes every unit test and is unusable in the
+hand. `verify-other` types a decimal into a real browser for that reason.
+
+**This is Q-006 being answered by decision rather than by the solo run**, which
+is the second time that has happened (sleep was the first, D-029). Recorded
+plainly: three of the four remaining types got an input because the owner asked
+for one, not because observed use asked for it. `spit up` is still open, and the
+question still closes the way it says.
+
+**The read-back lives in one place.** `otherLabel` in `src/day/cells.ts` is what
+both the day table and the home screen's recent list print. The list had its own
+inline copy that printed the bare type name, so a weight read `weight` there and
+`weight 3.4 kg` in the table — the same split that once hid an end time from
+this list until `timeCell` replaced its local formatter.
+
+### The target for the next feed
+
+The top card carries a **target wake time**: the last feed plus three hours, or
+plus four when that feed landed between 22:00 and 06:00.
+
+**Flat, and deliberately not the mascot's breast / formula split (D-035).** The
+owner chose that with the split in front of him. The two answer different
+questions — the target is what he is aiming at, the mascot's *hungry* is a
+description of the baby — and they are allowed to disagree on the same card.
+
+**The window is judged on the last feed's own clock time, not on the target it
+produces.** A feed knows which side of ten o'clock it happened on the moment it
+is logged, so the answer never changes underneath a card already showing it.
+Deriving it from the target would make a 21:00 feed's target depend on the
+target: +3h lands at midnight, which is inside the window, which would argue
+for +4h.
+
+**It is hidden while a feed is running.** The target counts from where a feed
+*ends*, so during one the line would show a number that ticks and is wrong the
+moment the feed closes.
+
+**It sits outside the three leads**, under whichever one is showing, because the
+rail chooses which summary the card leads with and this is wanted under all of
+them. Descriptive as everything else on that card: the clock time and how far
+off it is, with no view about it — past the target it still only says how far
+past.

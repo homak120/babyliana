@@ -50,6 +50,14 @@ the solo run finds nobody reaches for it, that is a finding about the promotion.
 The four types above are untouched by this and still close the way the question
 says.
 
+**2026-09-06 — three more were answered by decision, not by use.** D-036 gives
+`weight`, `temperature` and `supplement` real inputs: kg into the schema's
+grams, °C, and a what/how-much pair. That is the owner asking for them, not
+observed use asking for them, and it is the second time this question has been
+overtaken — recorded rather than tidied away, for the same reason as the sleep
+note above. **`spit up` is the one still open**, and it still closes the way this
+question says.
+
 ---
 
 ### Q-008 — Final name

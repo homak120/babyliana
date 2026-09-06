@@ -110,7 +110,9 @@ when". Read that first; this list is the checklist view of the same thing.
       when poop is on. New blocks default to pee, per the real log
 - [x] **S5** Time entry — steppers with hold-to-repeat, offset pills, direct
       numeric entry, optional end time. Backdating and periods both work
-- [x] **S6** Notes and the `other` type — the escape hatch
+- [x] **S6** Notes and the `other` type — the escape hatch. **Extended 2026-09-06
+      (D-036):** weight, temperature and supplement carry their own inputs; the
+      other two still write into the note
 - [x] **S7** The day view — the paper-shaped table, date printed once per day,
       date strip, and the tab bar now that there are two screens
 - [x] **S8** Edit and delete — swipe reveals both, on the home list as well as

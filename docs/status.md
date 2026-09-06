@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-05
+Last updated: 2026-09-06
 
 ---
 
@@ -18,7 +18,7 @@ Last updated: 2026-09-05
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0–6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. 394 checks pass across twenty suites.
+delivered by the second design handoff. 448 checks pass across twenty-one suites.
 **No schema change — `0001` is still the whole schema.**
 
 What exists: local-first writes to IndexedDB that never block on the network,
@@ -51,6 +51,14 @@ only route to an older day — is on screen rather than off the right-hand edge.
 milk she reads *awake* at 90 minutes and *hungry* at two hours; after formula, a
 mixed feed, or a feed with no source, it is two hours and three. The night
 override sits above both, so this is a daylight distinction.
+
+**The top card carries a target wake time, and three secondary types take a
+value** — both D-036. The target is the last feed plus three hours, four when
+that feed landed between 22:00 and 06:00; it is flat, deliberately *not* the
+mascot's split, and hidden while a feed is running. `weight`, `temperature` and
+`supplement` now have inputs behind `other` — kg typed into the schema's grams,
+°C, and a what/how-much pair — and they read back on both the day table and the
+home list.
 
 **Sleep is a first-class type** as of the third design delivery — its own bubble,
 its own block, a quick icon that becomes a live "end sleep" pill while one is
@@ -95,11 +103,11 @@ phone. The clock is running; nobody needs to do anything.
 Read `CLAUDE.md` first, then this file. Beyond that:
 
 - **`npm run verify`** is the gate: typecheck, **ten** data-layer suites
-  (`verify-s1`…`s9` plus `insights`), a build, then **ten** browser suites
+  (`verify-s1`…`s9` plus `insights`), a build, then **eleven** browser suites
   against it — `swipe`, `period`, `hero`, `milk`, `period-row`, `overlay`,
-  `sleep`, `feed`, `welcome`, `report`. Twenty in total. The browser ten serve
-  their own build and touch no database, so they are the cheap ones to run on a
-  UI change. Two of the data-layer suites — `s2` and `s8` — hit the **live**
+  `sleep`, `feed`, `welcome`, `report`, `other`. Twenty-one in total. The browser
+  eleven serve their own build and touch no database, so they are the cheap ones
+  to run on a UI change. Two of the data-layer suites — `s2` and `s8` — hit the **live**
   database and delete only ids they created in that run; never widen one to a
   filter. **Those two are the ones that go red when the schema and the app
   disagree** — which is how a stray column got caught on 2026-09-05 before it
@@ -114,17 +122,25 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**Everything through the mascot's three-hour hungry line is pushed** (`7757ed7`).
+**Everything through the mascot's source split is pushed** (`e7ddf40`).
 
-**Uncommitted: two rounds on the same subject, neither pushed.**
+**Uncommitted: D-036, in two halves.**
 
-1. The insights feed-gap flag moved from 5h to 3h — `src/report/insights.ts`
-   (`maxFeedGap >= 180`), its checks in `scripts/verify-insights.mts`, the
-   threshold named in `CLAUDE.md`, and a dated amendment on D-032.
-2. The mascot's thresholds split by source — `src/derive.ts` (`feedKind`,
-   `HOLDS`, `mascotState`'s sixth argument), the call in
-   `src/log/LogScreen.tsx`, fourteen checks in `scripts/verify-s3.mts`, and
-   D-035.
+1. **The secondary fields** — `src/log/drafts.ts` (`OtherDraft`'s four fields,
+   `kgToGrams`, `gramsToKg`), `src/log/OtherBlock.tsx`, `src/log/log.css`,
+   `src/day/cells.ts` (`otherLabel`, now shared), `src/log/LogScreen.tsx`'s
+   recent list, twenty-four checks in `verify-s6`, six in `verify-s7`, and a
+   **new browser suite, `verify-other`**, wired into `npm run verify`.
+2. **The target wake time** — `src/derive.ts` (`targetWake`, `targetText`), the
+   `.wakeline` on the card, its CSS, fourteen checks in `verify-s3` and six in
+   `verify-hero`.
+
+**Also uncommitted, and nobody asked for it:** a fix in `verify-period`.
+`preset fills the span` counted `.cal.between` in the opening month only, and on
+the 6th "last 7 days" starts on the 31st — an edge with nothing between it and
+the month's end. It went red on the date rolling over, on `HEAD`, before any of
+this session's changes touched anything. It now counts across both visible
+months.
 
 Nothing else.
 
@@ -202,7 +218,44 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-05 (latest) — hungry is two clocks now, not one
+### 2026-09-06 (latest) — the numbers he had and the app did not
+
+**Three secondary types take a value now** (D-036). `weight` is typed in kg and
+stored in the schema's existing `grams` — 3.4 in, 3400 down — `temperature` is
+one °C field, and `supplement` asks what and how much, both free text because
+"1 drop" is a real answer and not a number. `spit up` and `something else` still
+carry nothing; neither has a value to capture.
+
+Blank still saves and still reads as the bare word, which is the milk volume's
+`?` rule applied to a weighing nobody caught in time. Every field is a **string**
+until save: a number input eats the point in "3." as fast as it is typed, which
+passes every unit test and is unusable in the hand, so `verify-other` — a new
+browser suite — types a decimal into a real one.
+
+**The read-back was in two places and only one of them knew.** The home list had
+its own inline copy printing the bare type name, so a weight read `weight` there
+and `weight 3.4 kg` in the day table. Both go through `otherLabel` now. That is
+the same split that once hid an end time from this list.
+
+**The top card carries a target wake time**: last feed plus three hours, four
+when the feed landed between 22:00 and 06:00. Flat, and deliberately *not* the
+mascot's breast/formula split — the owner chose that with the split in front of
+him, and the two answer different questions. The window is judged on the feed's
+own clock time rather than on the target it produces, or a 21:00 feed's target
+would depend on the target. Hidden while a feed runs, because it counts from
+where a feed ends.
+
+**Q-006 was overtaken again**, and it is noted there rather than tidied away:
+three of its four remaining types got an input because the owner asked, not
+because the solo run found anything. `spit up` is the one still open.
+
+**One thing nobody asked for.** `verify-period`'s `preset fills the span` went
+red on the date rolling to the 6th — on `HEAD`, before any change here. It
+counted `.cal.between` in the opening month only, and "last 7 days" from the 6th
+starts on the 31st, which leaves nothing between it and the month's end. It
+counts across both visible months now. Flagged rather than folded in silently.
+
+### 2026-09-05 — hungry is two clocks now, not one
 
 `mascotState` moved the hungry threshold from 240 minutes to 180. Awake still
 starts at 120, so the awake band is now 2–3h rather than 2–4h, and the night
@@ -245,7 +298,7 @@ counts a past day's largest gap without asking what was in the bottle; giving it
 a source would mean deciding what a mixed day is measured against, which nobody
 has asked for.
 
-### 2026-09-05 — a filled-in quick feed, and a date strip that stops
+### 2026-09-05 (earliest) — a filled-in quick feed, and a date strip that stops
 
 Two things the owner hit in use, both about the cost of a default.
 
@@ -266,22 +319,3 @@ Left undone on purpose: no browser check on the cap. Producing four distinct
 days through the UI is not possible — the time card backdates to yesterday at
 the furthest — and a check that cannot see the case it guards is worse than the
 constant it would be watching.
-
-### 2026-09-05 (earliest) — an end time that means now
-
-Tapping *end time — optional* stamped `start + 30 min`, which is a guess dressed
-as a default: every period then had to be corrected, and a 30-minute sleep or
-feed that was never checked is indistinguishable from a real one. It defaults to
-the clock now, and the end row gained a `now` pill of its own so a period that
-has run on closes in one tap, the same gesture the start row already offers.
-
-`endNow` lives in `time.ts` with the rest of the arithmetic, and it is anchored
-to the **start's day** for the same reason `withHourMinute` is: ending a moment
-logged three days ago means that day's clock, not this instant. Landing before
-the start reads as a period across midnight — 23:00 to 07:00 is the case that
-matters — except when the start is itself in the future, where it clamps rather
-than inventing a 23-hour period. Four checks in `verify-s5` cover those.
-
-The end pill carries `aria-label="end now"` so it does not collide with the start
-row's `now` under Playwright's strict mode — the same trap two visible "end
-sleep" controls sprang last session.

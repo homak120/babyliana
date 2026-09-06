@@ -7,6 +7,8 @@ import {
   lastFeedAt,
   mascotState,
   minutesSince,
+  targetText,
+  targetWake,
   themeFor,
   totalsFor,
 } from '../src/derive.ts'
@@ -127,6 +129,32 @@ check('a breast feed alongside a diaper is still breast',
     { type: 'feed', volume_ml: 60, source: 'breast_milk' },
     { type: 'diaper', pee: true },
   ])) === 'breast')
+
+// --- the target for the next feed -------------------------------------------
+// A flat 3h, 4h overnight, and deliberately NOT the mascot's breast/formula
+// split — the owner set it that way with the split in front of him.
+const wake = (h: number, m = 0) => targetWake(new Date(2026, 8, 3, h, m))!
+const hhmm_ = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+
+check('three hours in the daytime', hhmm_(wake(14)) === '17:00', hhmm_(wake(14)))
+check('four hours from 22:00', hhmm_(wake(23)) === '03:00', hhmm_(wake(23)))
+check('22:00 itself is already the night window', hhmm_(wake(22)) === '02:00')
+check('21:59 is not', hhmm_(wake(21, 59)) === '00:59', hhmm_(wake(21, 59)))
+check('05:59 is still the night window', hhmm_(wake(5, 59)) === '09:59', hhmm_(wake(5, 59)))
+check('06:00 is back to three hours', hhmm_(wake(6)) === '09:00', hhmm_(wake(6)))
+check('the window is judged on the feed, not on the target it produces',
+  // 21:00 + 3h lands at midnight, inside the window — which must not then
+  // make it a 4h target.
+  hhmm_(wake(21)) === '00:00', hhmm_(wake(21)))
+check('a night target crosses into the next day',
+  wake(23).getDate() === 4, String(wake(23).getDate()))
+check('no feed yet has no target', targetWake(null) === null)
+
+const aim = new Date(2026, 8, 3, 17, 0)
+check('how far off, ahead', targetText(aim, new Date(2026, 8, 3, 16, 20)) === 'in 40m')
+check('how far off, behind', targetText(aim, new Date(2026, 8, 3, 18, 10)) === '1h 10m ago')
+check('and on the minute', targetText(aim, aim) === 'now')
+check('nothing to say without a target', targetText(null) === null)
 
 // --- theme -----------------------------------------------------------------
 check('night at 22:00', themeFor(new Date(2026, 8, 3, 22)) === 'night')

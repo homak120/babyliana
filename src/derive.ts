@@ -73,6 +73,50 @@ export function formatElapsed(minutes: number | null): string {
   return h === 0 ? `${m}m` : `${h}h ${String(m).padStart(2, '0')}m`
 }
 
+/**
+ * The overnight window the longer target runs in — 22:00 up to 06:00.
+ *
+ * Judged on the **last feed's own clock time**, not on the target it produces.
+ * A feed knows which side of ten o'clock it happened on the moment it is
+ * logged, so the answer never changes underneath a card that is already
+ * showing it; deriving the window from the target instead would make a 21:30
+ * feed's target depend on the target.
+ */
+const NIGHT_TARGET = { from: 22, to: 6 }
+
+/**
+ * When the next feed is aimed at: three hours after the last one, four
+ * overnight.
+ *
+ * A flat number, deliberately — it does **not** follow the mascot's breast /
+ * formula split (D-035). The owner set it that way with the split in front of
+ * him: this is the target he is aiming at, and the mascot's *hungry* is a
+ * description of the baby, so the two are allowed to disagree.
+ *
+ * Measured from where `lastFeedAt` measures — the end of the feed where there
+ * is one — so the target and the elapsed hero count from the same instant.
+ */
+export function targetWake(lastFeedEnd: Date | null): Date | null {
+  if (!lastFeedEnd) return null
+  const h = lastFeedEnd.getHours()
+  const overnight = h >= NIGHT_TARGET.from || h < NIGHT_TARGET.to
+  return new Date(lastFeedEnd.getTime() + (overnight ? 4 : 3) * 3_600_000)
+}
+
+/**
+ * `in 40m`, `1h 10m ago`, `now`. A distance and nothing else.
+ *
+ * Past the target it still only says how far past. The tone rule holds here as
+ * much as it does on the mascot: the card reports the clock, it does not have
+ * an opinion about a feed that has not happened yet.
+ */
+export function targetText(target: Date | null, now = new Date()): string | null {
+  if (!target) return null
+  const mins = Math.round((target.getTime() - now.getTime()) / 60000)
+  if (mins === 0) return 'now'
+  return mins > 0 ? `in ${formatElapsed(mins)}` : `${formatElapsed(-mins)} ago`
+}
+
 export type Totals = {
   feeds: number
   ml: number

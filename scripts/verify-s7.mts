@@ -124,6 +124,25 @@ check('the other cell carries the secondary types',
   otherCell([ev({ type: 'spit_up' })]) === 'spit up')
 check('and leaves sleep alone', otherCell([ev({ type: 'sleep' })]) === null)
 
+// The three that carry a value read it back on the row (D-036) — an input the
+// table never showed would be write-only.
+check('a weight reads back in kg',
+  otherCell([ev({ type: 'weight', grams: 3400 })]) === 'weight 3.4 kg',
+  String(otherCell([ev({ type: 'weight', grams: 3400 })])))
+check('a temperature reads back with its unit',
+  otherCell([ev({ type: 'temperature', celsius: 36.8 })]) === 'temperature 36.8°C')
+check('a supplement reads back name then amount',
+  otherCell([ev({ type: 'supplement', supplement_name: 'vitamin D', amount: '1 drop' })])
+    === 'supplement vitamin D 1 drop')
+check('a supplement with only a name says just that',
+  otherCell([ev({ type: 'supplement', supplement_name: 'vitamin D' })])
+    === 'supplement vitamin D')
+check('a blank value falls back to the bare name, like a ? volume',
+  otherCell([ev({ type: 'weight' })]) === 'weight')
+check('two secondary entries still join with a middot',
+  otherCell([ev({ type: 'weight', grams: 3400 }), ev({ type: 'spit_up' })])
+    === 'weight 3.4 kg · spit up')
+
 // --- sleep ------------------------------------------------------------------
 const sleepy = (occurred: string, endedAt: string | null): Moment => {
   const m = mom(occurred, [ev({ type: 'sleep' })])

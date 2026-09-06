@@ -167,6 +167,32 @@ body {
 }
 .feedline span { color: var(--roseDeep); }
 
+/* The target for the next feed, under whichever lead is showing. Wraps rather
+   than truncates: the rail leaves this column about six characters at the hero
+   size, and "wake ~17:00 · in 1h 10m" does not fit on one of them. */
+.wakeline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 0.375rem;
+  margin-top: 0.4375rem;
+  color: var(--amberInk);
+}
+
+.wakeline span {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.wakeline em {
+  font-style: normal;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .endfeedmini,
 .endsleepmini {
   width: 30px;
@@ -730,6 +756,56 @@ body {
 }
 
 .otherrow.on { background: var(--lavFill); color: var(--lavInk); }
+
+/* The fields the picked type asks for. Sits under the five rows rather than
+   inside the one that was tapped: a row that changes height when selected moves
+   the four below it out from under the thumb that just picked it. */
+.otherfields { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+
+.otherfield { display: block; }
+
+.otherfield > span {
+  display: block;
+  font-size: 0.6875rem;
+  color: var(--lavInk);
+  margin-bottom: 0.25rem;
+}
+
+.fieldbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--lavFill);
+  border-radius: 1rem;
+  padding: 0 0.875rem;
+}
+
+.fieldbox input {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.875rem;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+  padding: 0;
+}
+
+.fieldbox input::placeholder { color: var(--muted); font-weight: 400; }
+
+.fieldbox i {
+  font-style: normal;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--lavInk);
+  flex: none;
+}
+
+.otherfields .opt { margin: 0.125rem 0 0; }
 
 .notecard { margin: 1.25rem 0; }
 
