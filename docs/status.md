@@ -57,6 +57,12 @@ digit typed replaces, so it costs nothing to disagree with; `+ milk` inside the
 sheet still starts blank, because a feed added by hand is as often the paper's
 `?`. The report screen's date strip now stops at three day pills, so `more` — the
 only route to an older day — is on screen rather than off the right-hand edge.
+**Times can read `9:09 PM`** — D-041. An icon beside the status row's clock
+toggles the whole app between 24-hour and 12-hour: the status clock, the
+target, the home list and the day table, because `hhmm` is the only formatter.
+24-hour stays the default and the choice is per-phone, in localStorage, never
+synced.
+
 **"The last feed" is when it started** — D-040. `lastFeedAt` returns
 `occurred_at` and no longer prefers `ended_at`, so the elapsed hero, the
 mascot's thresholds and the target all count from the feed's beginning. Feeding
@@ -145,6 +151,21 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
+**The clock-format toggle — D-041.** A new `src/timeformat.ts`
+holds the preference (localStorage, cached, and guarded so the Node suites that
+import `cells.ts` do not fall over on a missing `localStorage`); `hhmm` and
+`timeCell` take the format as a defaulted parameter; `LogScreen` holds it in
+state too, so a save remounting the screen does not lose it. Ten checks in
+`verify-s7` for the formatter, six in `verify-period-row` for the toggle and
+both screens, one in `verify-hero` for the card.
+
+**Both tight spots were measured, not assumed.** The day table's 62px time
+column already wrapped `18:23–18:53` onto two lines and wraps the 12-hour one
+onto the same two — 42px either way. The wake line at 12-hour ends **exactly**
+on the card's inner edge, 337 against a 337 limit; it wraps rather than
+truncates, so a longer case takes a second line instead of overflowing, but
+there is no slack left on that line.
+
 **The last feed is now its start time — D-040.** `lastFeedAt`
 returns `occurred_at`; `lastFeedMoment` orders by the same field, so a top-up
 logged inside a long breast feed reads as the later one. `src/derive.ts`,
@@ -154,7 +175,7 @@ a new overlap case. **The target stays hidden while a feed runs** — it no long
 has to be, since the ceiling is settled from the feed's first second, and the
 owner kept it hidden as a choice. D-036's paragraph says so.
 
-**`verify-period` has five failures, and they are not from this.** Confirmed by
+**`verify-period` still has five failures, and they are not from any of this.** Confirmed by
 stashing and rebuilding: identical on `HEAD`. All five are the D-037 day-swipe
 checks, and they start from `two days to move between — 2 pills including "all
 days"` — the suite is only getting one day with entries, so everything
@@ -410,6 +431,29 @@ choice now rather than a limitation, and D-036 records the difference.
 checks, stemming from the suite seeing one day with entries instead of two.
 Confirmed pre-existing by stashing this session's changes and rebuilding.
 Flagged rather than folded in.
+
+**Then a clock-format toggle — D-041.** An icon beside the status row's clock
+switches the app between `21:09` and `9:09 PM`. It reaches every time in the
+app by changing one function, because `hhmm` has been the only formatter since
+the home list's private one was removed. 24-hour stays the default — the paper
+log is written in it, and the day table is read beside photographs of the page.
+
+**Two things it could have broken, both measured rather than assumed.** The day
+table's time column is a fixed 62px, and it already wrapped the 24-hour period
+onto two lines; the 12-hour one wraps onto the same two. The wake line ends
+exactly on the card's inner edge at 12-hour — 337 against 337 — and wraps rather
+than truncates, so it cannot push the page sideways, but nothing longer will
+fit on one line.
+
+**The preference is Node-safe on purpose.** `cells.ts` is imported by the
+data-layer suites, which have no `localStorage`; an unguarded read there would
+have taken `verify-s7` down. And the format is a defaulted *parameter* rather
+than a read inside `hhmm`, so the suites check midnight, noon and the padding
+without setting state behind the module.
+
+**It is the second control in the status row that a settings screen would
+hold**, after the name button. Not an argument against building that screen —
+a list of what goes in it.
 
 ### 2026-09-06 — a red dot that was not offline
 

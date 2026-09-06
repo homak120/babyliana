@@ -1,4 +1,5 @@
 import { feedDuration, sameDay, sleepDuration } from '../derive'
+import { timeFormat, type TimeFormat } from '../timeformat'
 import { poundsToLbOz } from '../log/drafts'
 import type { LogEvent, Moment } from '../types'
 
@@ -7,17 +8,35 @@ import type { LogEvent, Moment } from '../types'
 // that is easier to check against real entries here than by eye.
 
 const pad = (n: number) => String(n).padStart(2, '0')
-/** 24-hour HH:MM. The one time formatter in the app — the home list used to
- *  have its own and drifted from this one. */
-export const hhmm = (iso: string) => {
+/**
+ * `21:09`, or `9:09 PM` when the phone is set to 12-hour (D-041).
+ *
+ * The one time formatter in the app — the home list used to have its own and
+ * drifted from this one — so the toggle reaches every clock time by changing
+ * this alone: the status row, the target, the home list and the day table.
+ *
+ * The hour is padded at 24h and not at 12h, which is how each is written:
+ * `09:05` against `9:05 AM`. Minutes are padded in both.
+ *
+ * `format` is a parameter with a default rather than a straight read, so the
+ * suites can check both without touching a preference behind the module.
+ */
+export const hhmm = (iso: string, format: TimeFormat = timeFormat()) => {
   const d = new Date(iso)
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+  const m = pad(d.getMinutes())
+  if (format === '24h') return `${pad(d.getHours())}:${m}`
+  const h = d.getHours()
+  // Midnight and noon are the cases a modulo alone gets wrong: 0 and 12 both
+  // read as 12, on opposite sides of the meridiem.
+  return `${h % 12 === 0 ? 12 : h % 12}:${m} ${h < 12 ? 'AM' : 'PM'}`
 }
 
-/** `21:09`, or `19:00–21:30` when the moment is a period. */
-export function timeCell(m: Moment): string {
-  const start = hhmm(m.timeslot.occurred_at)
-  return m.timeslot.ended_at ? `${start}–${hhmm(m.timeslot.ended_at)}` : start
+/** `21:09`, or `19:00–21:30` when the moment is a period. Both ends in
+ *  whichever format is set — `7:00 PM–9:30 PM` reads long, and the day table's
+ *  time column is sized for it. */
+export function timeCell(m: Moment, format: TimeFormat = timeFormat()): string {
+  const start = hhmm(m.timeslot.occurred_at, format)
+  return m.timeslot.ended_at ? `${start}–${hhmm(m.timeslot.ended_at, format)}` : start
 }
 
 /** `breast` / `formula`, or nothing at all where the source was not marked. */

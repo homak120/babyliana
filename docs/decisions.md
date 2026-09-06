@@ -1473,3 +1473,67 @@ more recent feed by start and the older one by end. The later start wins, and
 **What did not change.** `ended_at` keeps every other job it has — the open-feed
 and open-sleep states (D-033), the feed duration on the row, the day table's
 `20:57–21:20`. This is only about which instant "the last feed" names.
+
+---
+
+## D-041 — A clock-format toggle in the status row, and one formatter behind it
+
+An icon beside the status row's clock switches every time in the app between
+`21:09` and `9:09 PM`. **24-hour is the default** and stays it: the paper log is
+written in 24-hour, and the day table is read side by side with photographs of
+it.
+
+**It reaches everything, because there is only one formatter.** `hhmm` in
+`day/cells.ts` was already the single time formatter — the home list once had
+its own and drifted — so teaching that one function the format switches the
+status clock, the target's `by 15:00`, the last-feed line, the home list and
+the day table together. Nothing else needed to know.
+
+**`format` is a parameter with a default, not a read inside the function.**
+`hhmm(iso)` uses the preference; `hhmm(iso, '12h')` does not. That is what lets
+`verify-s7` check midnight, noon and the padding without setting a preference
+behind the module and hoping the next suite resets it.
+
+**It is a preference of the phone in your hand.** localStorage, never synced,
+never on the server — the same place and the same reasoning as the lead rail
+and the device id (`event-model.md` § Where each fact lives). Two phones may
+disagree about the format and neither is wrong.
+
+**The cache exists because `hhmm` is called once per row.** A day table is long,
+so the stored value is read once and held in the module rather than hit per
+cell. `setTimeFormat` updates the cache before it writes, so the re-render that
+follows already sees the new value.
+
+**And it has to survive Node.** `cells.ts` is imported by the data-layer suites,
+which have no `localStorage` at all, so the accessor is guarded rather than
+assumed. Without that, adding a preference to the formatter would have taken
+`verify-s7` down with it.
+
+**The state is held in the component as well as in storage**, for the same
+reason the lead rail is: `LogScreen` is remounted by `key={saved}` on every
+save, so what React state buys is the re-render that repaints every clock at
+once. `verify-period-row` logs a moment after toggling and checks the format is
+still 12-hour on the other side of the remount.
+
+### The two places it could have broken, both measured
+
+- **The day table's time column is a fixed 62px.** `6:23 PM–6:53 PM` is four
+  characters longer than `18:23–18:53` — but that column already wrapped the
+  24-hour period onto two lines, and the 12-hour one wraps onto the same two.
+  42px in both, no page overflow, so the paper-shaped table keeps its shape.
+- **The wake line is the narrowest thing on the top card.** At 12-hour it ends
+  exactly on the card's inner edge — 337 against a 337 limit — which is as tight
+  as it goes without crossing. It cannot overflow: `.wakeline` wraps rather than
+  truncates, so a longer case (`by 12:26 AM · 4h 00m left`) takes a second line
+  instead of pushing the page sideways. Both are checked in `verify-hero`.
+
+**Midnight and noon are the cases the arithmetic gets wrong.** `0` and `12` both
+read as 12, on opposite sides of the meridiem, and a bare `h % 12` prints `0:05
+AM`. Six checks in `verify-s7` pin the boundaries: `12:05 AM`, `12:00 PM`,
+`11:59 AM`, `11:59 PM`. The hour is padded at 24-hour and not at 12-hour —
+`09:05` against `9:05 AM` — because that is how each is written.
+
+**This is the second control living in the status row because there is no
+settings screen.** The name button was the first, and its comment says the same
+thing. Neither is an argument against the settings screen; both are what it will
+hold when it exists.

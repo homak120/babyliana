@@ -176,6 +176,29 @@ const wake = await p.evaluate(() => {
 check('and stays inside the card', wake.right <= wake.limit,
   `ends ${wake.right} vs limit ${wake.limit}`)
 
+// `by 9:23 PM` is four characters longer than `by 21:23`, on the line that is
+// already the narrowest thing on this card (D-041). Measured, then switched
+// back, because everything below this reads 24-hour times.
+await p.getByLabel('show 12-hour times').click()
+await p.waitForTimeout(250)
+const wake12 = await p.evaluate(() => {
+  const el = document.querySelector('.wakeline') as HTMLElement
+  const card = document.querySelector('.herocard') as HTMLElement
+  const pad = parseFloat(getComputedStyle(card).paddingRight)
+  return {
+    text: el.innerText.replace(/\n/g, ' '),
+    right: Math.round(el.getBoundingClientRect().right),
+    limit: Math.round(card.getBoundingClientRect().right - pad),
+    over: Math.round(document.documentElement.scrollWidth - document.documentElement.clientWidth),
+  }
+})
+check('the target holds a 12-hour time too',
+  /\d{1,2}:\d{2}\s*(AM|PM)/.test(wake12.text)
+  && wake12.right <= wake12.limit && wake12.over === 0,
+  `${wake12.text} — ends ${wake12.right} vs limit ${wake12.limit}, ${wake12.over}px overflow`)
+await p.getByLabel('show 24-hour times').click()
+await p.waitForTimeout(250)
+
 // --- the bottle prompt ---
 //
 // Nothing to prepare yet: the feed above is minutes old, so the target is

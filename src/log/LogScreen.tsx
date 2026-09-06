@@ -24,6 +24,7 @@ import {
   timeCell,
 } from '../day/cells'
 import { getDeviceId } from '../device-id'
+import { setTimeFormat, timeFormat } from '../timeformat'
 import { getMoments, removeMoment, renameThisDevice } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
 import type { Device, Moment } from '../types'
@@ -133,6 +134,10 @@ export function LogScreen({ onEndOpen }: {
 }) {
   const [moments, setMoments] = useState<Moment[]>([])
   const [lead, setLead] = useState<Lead>(storedLead)
+  // Held as state as well as in localStorage for the same reason the lead is:
+  // this screen is remounted on every save, and `hhmm` reads the stored value,
+  // so what state buys is the re-render that repaints every clock time at once.
+  const [clock, setClock] = useState(timeFormat)
   const [devices, setDevices] = useState<Device[]>([])
   const [sheet, setSheet] = useState(false)
   const [sync_, setSync] = useState(syncState())
@@ -223,7 +228,23 @@ export function LogScreen({ onEndOpen }: {
       <div className="statusrow">
         <span>
           <Icon name={theme === 'night' ? 'bedtime' : 'wb_sunny'} size={15} />
-          {hhmm(now.toISOString())}
+          {hhmm(now.toISOString(), clock)}
+          {/* Beside the clock it changes, so what it does needs no label. It
+              reaches every time in the app, not just this one — `hhmm` is the
+              only formatter (D-041) — and the label names the format being
+              switched *to*, which is what a screen reader should announce. */}
+          <button
+            type="button"
+            className="fmtbtn"
+            aria-label={clock === '24h' ? 'show 12-hour times' : 'show 24-hour times'}
+            onClick={() => {
+              const next = clock === '24h' ? '12h' : '24h'
+              setTimeFormat(next)
+              setClock(next)
+            }}
+          >
+            <Icon name="history_toggle_off" size={15} />
+          </button>
         </span>
         <span className="whos">
           {devices.filter((d) => d.name).map((d) => (
@@ -330,7 +351,7 @@ export function LogScreen({ onEndOpen }: {
                 </p>
                 <p className="leadsub">
                   {lastFeed
-                    ? `at ${hhmm(lastFeed.timeslot.occurred_at)}${lastBy ? ` · logged by ${lastBy}` : ''}`
+                    ? `at ${hhmm(lastFeed.timeslot.occurred_at, clock)}${lastBy ? ` · logged by ${lastBy}` : ''}`
                     : 'nothing logged yet'}
                 </p>
               </>
@@ -355,7 +376,7 @@ export function LogScreen({ onEndOpen }: {
             {target && (
               <div className="wakeline">
                 <Icon name="alarm" size={14} />
-                <span>by {hhmm(target.toISOString())}</span>
+                <span>by {hhmm(target.toISOString(), clock)}</span>
                 <em>{targetText(target, now)}</em>
               </div>
             )}
@@ -429,7 +450,7 @@ export function LogScreen({ onEndOpen }: {
                     21:37–23:37 where there is one. The home list had its own
                     formatter that only ever read occurred_at, so an end time
                     logged here was invisible until you opened the day view. */}
-                <time>{timeCell(m)}</time>
+                <time>{timeCell(m, clock)}</time>
                 <span className="chips">
                   {feeds && (
                     <span className="chip-rose">

@@ -969,6 +969,21 @@ body {
   padding: 0.5rem;
 }
 
+/* Sits inside the status row's first span, beside the clock it changes. Sized
+   and dimmed like `.namebtn` so the row keeps one weight — this is a control
+   you reach for rarely, not a thing to notice at 4am. */
+.fmtbtn {
+  border: none;
+  background: none;
+  color: var(--muted);
+  padding: 0;
+  margin-left: 0.125rem;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
 .namebtn {
   border: none;
   background: none;

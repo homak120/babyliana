@@ -17,7 +17,7 @@
 import type { Moment } from '../src/types.ts'
 import {
   chronological, dateCell, daysWithEntries, diaperCell, feedCell, initialOf, milkCell, milkTotal,
-  otherCell, srcWord, timeCell,
+  hhmm, otherCell, srcWord, timeCell,
 } from '../src/day/cells.ts'
 import { stepDay } from '../src/day/period.ts'
 import { feedDuration, mascotState, ongoingFeed, ongoingSleep, sleepDuration } from '../src/derive.ts'
@@ -117,6 +117,24 @@ const period: Moment = JSON.parse(JSON.stringify(day[0]))
 period.timeslot.occurred_at = at(19, 0)
 period.timeslot.ended_at = at(21, 30)
 check('a period prints both ends', timeCell(period) === '19:00–21:30')
+
+// --- 12-hour times (D-041) --------------------------------------------------
+// The format is passed rather than read, so these check the formatter and not
+// a preference set behind the module. 24h stays the default everywhere.
+check('midnight is 12 AM, not 0', hhmm(at(0, 5), '12h') === '12:05 AM')
+check('noon is 12 PM, not 0', hhmm(at(12, 0), '12h') === '12:00 PM')
+check('half past midnight is still AM', hhmm(at(0, 30), '12h') === '12:30 AM')
+check('the last minute of the morning', hhmm(at(11, 59), '12h') === '11:59 AM')
+check('the afternoon subtracts twelve', hhmm(at(13, 5), '12h') === '1:05 PM')
+check('the last minute of the day', hhmm(at(23, 59), '12h') === '11:59 PM')
+check('the hour is not padded at 12h', hhmm(at(9, 5), '12h') === '9:05 AM')
+check('but it is at 24h', hhmm(at(9, 5), '24h') === '09:05')
+check('and the minute is padded in both',
+  hhmm(at(9, 5), '12h').endsWith(':05 AM')
+  && hhmm(at(9, 5), '24h').endsWith(':05'))
+check('a period carries the format to both ends',
+  timeCell(period, '12h') === '7:00 PM–9:30 PM', timeCell(period, '12h'))
+check('24h is what a period reads by default', timeCell(period) === timeCell(period, '24h'))
 
 // --- the rest ---------------------------------------------------------------
 // Sleep has its own cell now — it reads as a state, not as an event that
