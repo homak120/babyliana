@@ -6,7 +6,24 @@
   margin: 0 auto;
   /* Scrolling comes from `#root > main`. */
   padding: calc(1rem + env(safe-area-inset-top)) 0 1.5rem;
+
+  /* Vertical belongs to the scroller, horizontal is ours: the page swipe steps
+     to the day before or after. Without this iOS claims a horizontal drag for
+     its own back-navigation before a listener ever sees it, which is the same
+     trap `.swipeable` had to say this to escape. */
+  touch-action: pan-y;
+
+  /* A page that moves under a horizontal drag must not also start selecting
+     the text it is made of. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
+
+/* The date strip scrolls sideways on its own, so it keeps the horizontal
+   gesture rather than handing it to the page swipe. Dragging the pills is
+   how you reach `more`, and it must not step the day instead. */
+.datestrip { touch-action: pan-x; }
 
 .datestrip {
   display: flex;

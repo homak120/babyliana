@@ -133,10 +133,22 @@ async function suite(label: string) {
 
 await suite('home')
 
-SEL = '.trow.swipeable'
+// The day view used to run this same suite. It does not swipe any more —
+// editing and deleting are the home screen's alone (2026-09-06, amending
+// D-025), and the day view spends the gesture on moving between days instead.
+// `verify-period` covers that; what is checked here is that the old gesture is
+// really gone rather than merely unbound.
 await p.getByRole('navigation').getByLabel('day').click()
 await p.waitForTimeout(600)
-await suite('day')
+check('the day table has no swipeable rows',
+  (await p.locator('.trow.swipeable').count()) === 0
+    && (await p.locator('.trow').count()) > 0,
+  `${await p.locator('.trow.swipeable').count()} swipeable of ${await p.locator('.trow').count()} rows`)
+check('and no row actions behind them',
+  (await p.locator('.table .rowactions').count()) === 0,
+  `${await p.locator('.table .rowactions').count()} action strips`)
+await p.getByRole('navigation').getByLabel('log', { exact: true }).click()
+await p.waitForTimeout(600)
 
 // --- the confirm sheet (Q-012) ----------------------------------------------
 const rowsBefore = await p.locator(SEL).count()

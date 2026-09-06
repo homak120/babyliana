@@ -20,3 +20,22 @@ export const shiftIso = (iso: string, days: number) => {
 }
 
 export const pad2 = pad
+
+/**
+ * The day `delta` steps away from `selected`, or null at either end.
+ *
+ * `days` is newest first (`daysWithEntries`), so **+1 is older** and −1 newer.
+ * That inversion is the whole reason this is a named function rather than an
+ * index sum inside the component: a left swipe means "older", and reading
+ * `days[here + 1]` at the call site says the opposite of what it does.
+ *
+ * Only days that have entries are in the list, so stepping skips the gaps and a
+ * swipe never lands on an empty table. Null at the ends rather than wrapping —
+ * a log has a first day and a most recent one, and looping past either would be
+ * a lie about the data.
+ */
+export function stepDay(days: Date[], selected: Date, delta: number): Date | null {
+  const here = days.findIndex((d) => +d === +selected)
+  if (here === -1) return null
+  return days[here + delta] ?? null
+}

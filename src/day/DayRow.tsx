@@ -1,4 +1,3 @@
-import { SwipeRow } from '../swipe/SwipeRow'
 import { Icon } from '../log/Icon'
 import type { Moment } from '../types'
 import {
@@ -6,15 +5,20 @@ import {
   timeCell,
 } from './cells'
 
+/**
+ * A row on the read-back, and **only** a read-back — it does not swipe.
+ *
+ * Editing and deleting live on the home screen alone (the owner's call,
+ * 2026-09-06, amending D-025). The gesture is spent here on moving between
+ * days instead: one screen, one meaning for a horizontal drag.
+ */
 export function DayRow({
-  moment, previous, name, allDeviceIds, onEdit, onDelete,
+  moment, previous, name, allDeviceIds,
 }: {
   moment: Moment
   previous: Moment | undefined
   name: string | null
   allDeviceIds: string[]
-  onEdit: () => void
-  onDelete: () => void
 }) {
   const date = dateCell(moment, previous)
   const milk = milkCell(moment.events)
@@ -26,7 +30,7 @@ export function DayRow({
 
   return (
     <>
-      <SwipeRow className="trow" onEdit={onEdit} onDelete={onDelete}>
+      <div className="trow">
         <span className="tdate">{date}</span>
         <span className="ttime">{timeCell(moment)}</span>
         <span className="tmilk">
@@ -58,9 +62,9 @@ export function DayRow({
             <i className={avatarClass(moment.timeslot.logged_by, allDeviceIds)}>{initial}</i>
           )}
         </span>
-      </SwipeRow>
+      </div>
 
-      {/* Outside the wrapper: the actions should back the row, not the note. */}
+      {/* Outside the row, as it always was — it is a second line, not a cell. */}
       {moment.timeslot.note && (
         <p className="tnote">
           <Icon name="edit_note" size={13} /> {moment.timeslot.note}

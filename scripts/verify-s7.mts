@@ -19,6 +19,7 @@ import {
   chronological, dateCell, daysWithEntries, diaperCell, feedCell, initialOf, milkCell, milkTotal,
   otherCell, srcWord, timeCell,
 } from '../src/day/cells.ts'
+import { stepDay } from '../src/day/period.ts'
 import { feedDuration, mascotState, ongoingFeed, ongoingSleep, sleepDuration } from '../src/derive.ts'
 
 let failures = 0
@@ -216,6 +217,28 @@ for (const r of rendered) {
 }
 check('every row on the page carries something',
   rendered.every((r) => r[2] !== '' || r[3] !== ''))
+
+// --- stepping between days, which is what the page swipe does ---------------
+// `daysWithEntries` is newest first, so +1 is older. Only days with entries are
+// in it, so a step skips the gaps and never lands on an empty table.
+const d = (m: number, day: number) => new Date(2026, m - 1, day)
+const span = [d(9, 6), d(9, 4), d(9, 3), d(8, 30)]
+
+check('a left swipe goes older, skipping the gap',
+  +stepDay(span, d(9, 6), 1)! === +d(9, 4), String(stepDay(span, d(9, 6), 1)))
+check('and again over a longer gap',
+  +stepDay(span, d(9, 3), 1)! === +d(8, 30))
+check('a right swipe goes newer', +stepDay(span, d(9, 3), -1)! === +d(9, 4))
+check('the oldest day has nothing older', stepDay(span, d(8, 30), 1) === null)
+check('the newest has nothing newer', stepDay(span, d(9, 6), -1) === null)
+check('neither end wraps round to the other',
+  stepDay(span, d(8, 30), 1) === null && stepDay(span, d(9, 6), -1) === null)
+check('a day that is not in the list steps nowhere',
+  stepDay(span, d(9, 5), 1) === null && stepDay(span, d(9, 5), -1) === null)
+check('a single logged day steps nowhere either',
+  stepDay([d(9, 6)], d(9, 6), 1) === null && stepDay([d(9, 6)], d(9, 6), -1) === null)
+check('and an empty log has nothing to step through',
+  stepDay([], d(9, 6), 1) === null)
 
 console.log(failures === 0 ? '\n  all checks passed' : `\n  ${failures} FAILED`)
 process.exit(failures === 0 ? 0 : 1)

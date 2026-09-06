@@ -1,16 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { sameDay, totalsOf } from '../derive'
-import { AddSheet } from '../log/AddSheet'
-import { getMoments, removeMoment } from '../moments'
+import { getMoments } from '../moments'
 import { getDevices } from '../db'
-import { subscribe, sync } from '../sync'
+import { subscribe } from '../sync'
 import type { Device, Moment } from '../types'
 import { Icon } from '../log/Icon'
-import { chronological, daysWithEntries, describeMoment } from './cells'
+import { chronological, daysWithEntries } from './cells'
 import { DayRow } from './DayRow'
-import { ConfirmDelete } from '../swipe/ConfirmDelete'
+import { usePageSwipe } from '../swipe/usePageSwipe'
 import { PeriodPicker } from './PeriodPicker'
-import { isoOf, rangeLabel, type Range } from './period'
+import { isoOf, rangeLabel, stepDay, type Range } from './period'
 import { InsightsView } from '../report/InsightsView'
 import type { Span } from '../report/insights'
 
@@ -68,17 +67,12 @@ export function DayScreen() {
   const [devices, setDevices] = useState<Device[]>([])
   // null means "the most recent day with anything in it"; ALL means every day.
   const [day, setDay] = useState<Date | null | typeof ALL>(null)
-  const [editing, setEditing] = useState<Moment | null>(null)
 
   // A picked period, which overrides `day` while it is set. The date pills only
   // ever cover the days that happen to have entries, so without this there was
   // no route to an older day at all.
   const [range, setRange] = useState<Range | null>(null)
   const [picking, setPicking] = useState(false)
-
-  // Nothing is removed until the sheet is confirmed (Q-012). D-003 is a hard
-  // delete with no tombstone, so the check happens before, not after.
-  const [pendingDelete, setPendingDelete] = useState<Moment | null>(null)
 
   // The screen opens on the read-back, which is the thing it exists for.
   // Insights is the second mode and carries its own range, so it ignores the
@@ -93,16 +87,6 @@ export function DayScreen() {
   }, [])
   useEffect(refresh, [refresh])
 
-  const commitDelete = useCallback(
-    (id: string) => {
-      setPendingDelete(null)
-      void removeMoment(id).then(() => {
-        refresh()
-        void sync()
-      })
-    },
-    [refresh],
-  )
   useEffect(() => subscribe(refresh), [refresh])
 
   const days = daysWithEntries(moments)
@@ -121,12 +105,30 @@ export function DayScreen() {
   const withData = new Set(moments.map((m) => isoOf(new Date(m.timeslot.occurred_at))))
   const nameFor = (id: string) => devices.find((d) => d.id === id)?.name ?? null
 
+  // Swiping the page steps between days. `days` is newest first, so the older
+  // day is the next index — which is why a left swipe adds one.
+  //
+  // Only over days that have entries, so a swipe never lands on an empty table,
+  // and only while a single day is showing: `all days` and a picked period are
+  // deliberately not one day, so stepping has no meaning there and the gesture
+  // is simply not attached.
+  const page = useRef<HTMLElement>(null)
+  const step = useCallback((delta: number) => {
+    const next = stepDay(days, selected, delta)
+    if (next) setDay(next)
+  }, [days, selected])
+  usePageSwipe(page, {
+    onNext: () => step(1),
+    onPrev: () => step(-1),
+    enabled: mode === 'log' && !showingAll && !range,
+  })
+
   // Insights shares only the mode pills with the read-back — no date strip, no
   // picked period, no totals row. Returning early keeps that honest instead of
   // threading four conditionals through one tree.
   if (mode === 'insights') {
     return (
-      <main className="day">
+      <main className="day" ref={page}>
         <ModePills mode={mode} onMode={setMode} />
         <InsightsView moments={moments} span={span} onSpan={setSpan} />
       </main>
@@ -134,10 +136,12 @@ export function DayScreen() {
   }
 
   return (
-    <main className="day">
+    <main className="day" ref={page}>
       <ModePills mode={mode} onMode={setMode} />
 
-      <div className="datestrip">
+      {/* `data-noswipe`: this scrolls sideways on its own, and dragging the
+          pills to reach `more` must not step the day. */}
+      <div className="datestrip" data-noswipe>
         <button
           type="button"
           className={`daypill ${showingAll ? 'on' : ''}`}
@@ -198,19 +202,9 @@ export function DayScreen() {
             previous={forDay[i - 1]}
             name={nameFor(m.timeslot.logged_by)}
             allDeviceIds={devices.map((d) => d.id)}
-            onEdit={() => setEditing(m)}
-            onDelete={() => setPendingDelete(m)}
           />
         ))}
       </div>
-
-      {pendingDelete && (
-        <ConfirmDelete
-          label={describeMoment(pendingDelete)}
-          onKeep={() => setPendingDelete(null)}
-          onDelete={() => commitDelete(pendingDelete.timeslot.id)}
-        />
-      )}
 
       {picking && (
         <PeriodPicker
@@ -219,18 +213,6 @@ export function DayScreen() {
           initial={range}
           onClose={() => setPicking(false)}
           onApply={(r) => { setRange(r); setPicking(false) }}
-        />
-      )}
-
-      {editing && (
-        <AddSheet
-          editing={editing}
-          onClose={() => setEditing(null)}
-          onSaved={() => {
-            setEditing(null)
-            refresh()
-            void sync()
-          }}
         />
       )}
     </main>

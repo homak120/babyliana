@@ -18,7 +18,7 @@ Last updated: 2026-09-06
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0–6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. 482 checks pass across twenty-one suites.
+delivered by the second design handoff. 490 checks pass across twenty-one suites.
 
 **`0003_us_units.sql` is applied.** The first schema change since `0001`. The
 owner ran it in the SQL Editor before the code that writes `pounds` and
@@ -31,7 +31,7 @@ What exists: local-first writes to IndexedDB that never block on the network,
 push-then-reconcile sync with Supabase, the home screen (mascot artwork by
 derived state, elapsed hero, totals, recent list), the day table with a date
 strip and period picker, the add/edit sheet with milk, diaper, **sleep**, other
-and notes, swipe-to-edit-and-delete on both lists behind a confirm sheet, a
+and notes, swipe-to-edit-and-delete on the home list behind a confirm sheet, a
 photograph gate before the welcome, name entry, two mascot sets and a theme
 switched by clock, and an offline-capable PWA at 24 entries / 1284.22 KiB
 precached. **The app icon is the v2 art** as of 2026-09-06 — the whole
@@ -134,6 +134,14 @@ Read `CLAUDE.md` first, then this file. Beyond that:
   draws 44px in a 100×96 slot. Following the prose broke the layout twice.
 
 ## In flight
+
+**The day view swipes between days now, and not into a row** — D-037, amending
+D-025. Editing and deleting are the home screen's alone; the read-back spends
+the horizontal gesture on stepping to the day before or after. Left is older,
+right is newer, only over days that have entries, and inert on `all days`, a
+picked period and the insights mode. `usePageSwipe` shares `SwipeRow`'s gesture
+rules — native listeners, a 10px axis decision, `touch-action: pan-y` — and
+nothing moves under the thumb.
 
 **`0004` is applied and the columns are gone** — confirmed against the live
 database, where `grams` and `celsius` now return `42703` and `pounds` /

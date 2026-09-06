@@ -530,9 +530,16 @@ part, not the JSON shape.
 
 ## D-025 — Row actions: swipe reveals edit *and* delete
 
-Dragging a row **in either list — the home screen's recent list or the day
-table** — reveals two actions. **Edit** reopens the add
-sheet pre-filled. **Delete** removes the moment.
+Dragging a row reveals two actions. **Edit** reopens the add sheet pre-filled.
+**Delete** removes the moment.
+
+**Amended 2026-09-06: the home screen's recent list only.** It applied to both
+lists; the day table no longer swipes at all, on the owner's call — one place to
+modify an entry, and it is the screen you are already on when you log one.
+The day view spends the horizontal gesture on **moving between days** instead:
+one screen, one meaning for a sideways drag, which is worth more than a second
+route to the same sheet. Everything below still describes the gesture as it
+behaves on the home list.
 
 **Why this is recorded separately.** The Phase 2 handoff — final under D-021 —
 has swipe-to-edit as a single action and **no delete affordance anywhere**. This
@@ -1161,3 +1168,49 @@ and has no opinion about whether anyone did it.
 
 **Where it is silent.** With no target at all, which includes while a feed is
 running — the same condition that hides the wake line.
+
+---
+
+## D-037 — The day view swipes between days, not into a row
+
+The read-back's horizontal gesture used to reveal edit and delete on a row
+(D-025). It now moves the whole page to the day before or after, and the row
+actions are gone from that screen entirely.
+
+**One screen, one meaning for a sideways drag.** Two gestures on one axis, on
+one page, is how a swipe meant for the page opens a row instead. Modifying an
+entry lives on the home screen alone now — which is the screen you are already
+on when you log one, so the second route was reaching for the rarer case.
+
+**Only days that have entries.** `stepDay` walks `daysWithEntries`, so a swipe
+skips the gaps and never lands on an empty table. It is the same set the date
+pills offer, which means the gesture and the pills cannot disagree about what
+exists.
+
+**Left is older, right is newer**, and neither end wraps. A log has a first day
+and a most recent one; looping past either would be a lie about the data.
+`daysWithEntries` is newest-first, so *older* is `+1` — the inversion is why
+`stepDay` is a named function in `period.ts` rather than an index sum inside the
+component, where `days[here + 1]` reads as the opposite of what it does.
+
+**Inert where stepping has no meaning.** `all days`, a picked period, and the
+insights mode are deliberately not one day, so the listeners are not attached at
+all rather than attached and ignored.
+
+**Nothing moves under the thumb.** `SwipeRow` drags its content because what it
+reveals sits behind the row; here the page is replaced outright, so a transform
+would animate something about to be thrown away. Every moving part is another
+thing that works on a desktop and not on a phone, and this project has paid that
+bill four times.
+
+**What it does share with `SwipeRow` is the gesture rules**, which took four
+attempts to get right on iOS: native listeners rather than React's, because
+React attaches `touchmove` passively and the handler must call
+`preventDefault`; the axis decided on 10px of accumulated travel rather than the
+first pixel, because a thumb arcs and a first-pixel lock reads a real finger as
+a scroll while passing every machine-straight test; and `touch-action: pan-y` on
+the page so iOS does not claim the drag for its own back-navigation first.
+
+**The date strip keeps its own drags.** It scrolls sideways, and reaching `more`
+means dragging it. It carries `data-noswipe` and the hook ignores any touch that
+starts inside it.

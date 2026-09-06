@@ -77,6 +77,91 @@ await p.getByRole('button', { name: 'all days' }).click()
 await p.waitForTimeout(300)
 check('day pill clears the range', (await p.locator('.morepill.on').count()) === 0, 'back to "more"')
 
+// --- swiping the page between days ------------------------------------------
+//
+// The day view spends the horizontal gesture on moving between days now, not on
+// revealing edit and delete — those are the home screen's alone (2026-09-06,
+// amending D-025). `verify-swipe` checks the old gesture is gone; this checks
+// the new one works.
+const cdp = await ctx.newCDPSession(p)
+const swipe = async (dx: number) => {
+  // Started low on the page, clear of the date strip: that scrolls sideways on
+  // its own and carries `data-noswipe` so it keeps its own drags.
+  const y = 520
+  const x0 = dx < 0 ? 300 : 90
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y }] })
+  for (let i = 1; i <= 12; i++) {
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove', touchPoints: [{ x: x0 + (dx * i) / 12, y }],
+    })
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  await p.waitForTimeout(400)
+}
+const label = async () => (await p.locator('.daylabel').innerText()).trim()
+
+// A second day is needed to have anywhere to swipe to, and the only route to
+// one through the UI is the time card: setting an hour that is still ahead of
+// now moves the entry to yesterday (`withHourMinute`). That trick needs an hour
+// left in the day, so late in the evening this section is skipped rather than
+// asserted wrongly.
+const room = new Date().getHours() < 21
+if (!room) {
+  check('skipping the day swipe: too late in the day to backdate through the UI',
+    true, 'runs before 21:00')
+} else {
+  await p.getByRole('navigation').getByLabel('log', { exact: true }).click()
+  await p.waitForTimeout(500)
+  const rowBox = (await p.locator('.row.swipeable').first().boundingBox())!
+  const ry = rowBox.y + rowBox.height / 2, rx = rowBox.x + rowBox.width - 30
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: rx, y: ry }] })
+  for (let i = 1; i <= 14; i++) {
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove', touchPoints: [{ x: rx - (150 * i) / 14, y: ry }],
+    })
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  await p.waitForTimeout(400)
+  await p.locator('.rowactions .act.edit').first().click()
+  await p.waitForTimeout(400)
+  await p.locator('.timestepper .num').first().fill('23')
+  await p.waitForTimeout(200)
+  await p.getByRole('button', { name: 'save changes', exact: true }).click()
+  await p.waitForTimeout(800)
+
+  await p.getByRole('navigation').getByLabel('day', { exact: true }).click()
+  await p.waitForTimeout(600)
+  const pills = await p.locator('.daypill').count()
+  check('two days to move between', pills >= 3, `${pills} pills including "all days"`)
+
+  const start = await label()
+  await swipe(-160)
+  const older = await label()
+  check('a left swipe steps to the older day', older !== start, `${start} -> ${older}`)
+
+  await swipe(160)
+  check('a right swipe comes back', (await label()) === start, `${older} -> ${await label()}`)
+
+  await swipe(160)
+  check('and stops at the most recent day', (await label()) === start,
+    `still ${await label()}`)
+
+  // Inert where stepping has no meaning.
+  await p.getByRole('button', { name: 'all days' }).click()
+  await p.waitForTimeout(300)
+  const all = await label()
+  await swipe(-160)
+  check('a swipe does nothing on "all days"', (await label()) === all, `still ${all}`)
+
+  // A short drag is not a swipe.
+  await p.getByRole('button', { name: 'today', exact: false }).first().click()
+    .catch(() => p.locator('.daypill').nth(1).click())
+  await p.waitForTimeout(300)
+  const single = await label()
+  await swipe(-30)
+  check('a short drag is not a swipe', (await label()) === single, `still ${single}`)
+}
+
 await p.locator('.picker, main.day').first().screenshot({ path: 'scripts/shots/period-picker.png' })
 await b.close()
 stop()
