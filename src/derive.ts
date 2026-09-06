@@ -17,15 +17,22 @@ export function sameDay(a: string, b: Date) {
 const hasFeed = (m: Moment) => m.events.some((e) => e.type === 'feed')
 
 /**
- * When the last feed *finished*.
+ * When the last feed *started* — `occurred_at`, whether or not it has an end.
  *
- * Measured from `ended_at` when the moment has one and `occurred_at` otherwise:
- * what a tired parent means by "since the last feed" is since she finished, not
- * since she started.
+ * Changed 2026-09-06 (D-040). It used to measure from `ended_at` where there
+ * was one, on the reasoning that "since the last feed" means since she
+ * finished. Feeding is counted start to start — *every three hours* is three
+ * hours between the beginnings of two feeds, not three hours of empty between
+ * them — and measuring from the end made a long feed quietly buy itself extra
+ * time on all three things this drives.
+ *
+ * It also settles a disagreement inside the app: the insights screen has always
+ * counted its feed gaps from `occurred_at` (`report/insights.ts`), so the home
+ * screen was the one measuring differently.
  */
 export function lastFeedAt(moments: Moment[]): Date | null {
   const m = lastFeedMoment(moments)
-  return m ? new Date(m.timeslot.ended_at ?? m.timeslot.occurred_at) : null
+  return m ? new Date(m.timeslot.occurred_at) : null
 }
 
 /**
@@ -37,7 +44,10 @@ export function lastFeedAt(moments: Moment[]): Date | null {
 export function lastFeedMoment(moments: Moment[]): Moment | null {
   const feeds = moments.filter(hasFeed)
   if (feeds.length === 0) return null
-  const at = (m: Moment) => new Date(m.timeslot.ended_at ?? m.timeslot.occurred_at).getTime()
+  // Ordered by when each feed began, matching what `lastFeedAt` reads off it.
+  // The two only disagree where feeds overlap — a top-up logged inside a long
+  // breast feed — and there the later *start* is the more recent feed.
+  const at = (m: Moment) => new Date(m.timeslot.occurred_at).getTime()
   return feeds.reduce((a, b) => (at(a) >= at(b) ? a : b))
 }
 
@@ -93,14 +103,15 @@ const NIGHT_TARGET = { from: 22, to: 6 }
  * him: this is the target he is aiming at, and the mascot's *hungry* is a
  * description of the baby, so the two are allowed to disagree.
  *
- * Measured from where `lastFeedAt` measures — the end of the feed where there
- * is one — so the target and the elapsed hero count from the same instant.
+ * Measured from where `lastFeedAt` measures — the *start* of the feed (D-040)
+ * — so the target and the elapsed hero count from the same instant. The
+ * overnight window is therefore judged on the hour the feed began.
  */
-export function targetWake(lastFeedEnd: Date | null): Date | null {
-  if (!lastFeedEnd) return null
-  const h = lastFeedEnd.getHours()
+export function targetWake(lastFeedStart: Date | null): Date | null {
+  if (!lastFeedStart) return null
+  const h = lastFeedStart.getHours()
   const overnight = h >= NIGHT_TARGET.from || h < NIGHT_TARGET.to
-  return new Date(lastFeedEnd.getTime() + (overnight ? 4 : 3) * 3_600_000)
+  return new Date(lastFeedStart.getTime() + (overnight ? 4 : 3) * 3_600_000)
 }
 
 /**

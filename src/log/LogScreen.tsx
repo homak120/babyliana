@@ -179,8 +179,10 @@ export function LogScreen({ onEndOpen }: {
   }, [theme])
 
   const shown = moments
-  const lastFeedEnd = lastFeedAt(moments)
-  const since = minutesSince(lastFeedEnd, now)
+  // When the last feed *began* (D-040) — the hero, the mascot and the target
+  // all count from that one instant, and feeding is counted start to start.
+  const lastFeedStart = lastFeedAt(moments)
+  const since = minutesSince(lastFeedStart, now)
   const totals = totalsFor(moments, now)
   // A logged, still-open sleep beats the night-plus-long-gap guess. Not passed
   // the ticking `now`: it moves every 30s, and a sleep logged just now would
@@ -198,10 +200,12 @@ export function LogScreen({ onEndOpen }: {
   )
 
   const elapsedText = formatElapsed(since)
-  // What the next feed is aimed at. Hidden while one is running: the target is
-  // measured from where the feed *ends*, so during it the line would show a
-  // number that moves every tick and is wrong the moment the feed is closed.
-  const target = feeding ? null : targetWake(lastFeedEnd)
+  // What the next feed is aimed at — the ceiling, not an appointment (D-036).
+  // Still hidden while one is running, but no longer because it has to be:
+  // counting from the start (D-040) the target is known and settled from the
+  // feed's first second. The owner kept it hidden anyway — while she is on it,
+  // the running-feed line is the point and the ceiling is not yet the question.
+  const target = feeding ? null : targetWake(lastFeedStart)
   // Display only. It says the bottle is worth starting; it does not know
   // whether one was, and there is nothing to dismiss — logging the feed moves
   // the target and takes the line with it.

@@ -57,6 +57,12 @@ digit typed replaces, so it costs nothing to disagree with; `+ milk` inside the
 sheet still starts blank, because a feed added by hand is as often the paper's
 `?`. The report screen's date strip now stops at three day pills, so `more` — the
 only route to an older day — is on screen rather than off the right-hand edge.
+**"The last feed" is when it started** — D-040. `lastFeedAt` returns
+`occurred_at` and no longer prefers `ended_at`, so the elapsed hero, the
+mascot's thresholds and the target all count from the feed's beginning. Feeding
+is counted start to start, and this is also what the insights screen has always
+done. Only feeds with a duration move at all.
+
 **Liana's clock depends on what the last feed was** — D-035. After breast milk
 she reads *awake* at 90 minutes and *hungry* at 105; after formula, a mixed
 feed, or a feed with no source, it is 120 and 150. The night override sits above
@@ -138,6 +144,23 @@ Read `CLAUDE.md` first, then this file. Beyond that:
   draws 44px in a 100×96 slot. Following the prose broke the layout twice.
 
 ## In flight
+
+**The last feed is now its start time — D-040.** `lastFeedAt`
+returns `occurred_at`; `lastFeedMoment` orders by the same field, so a top-up
+logged inside a long breast feed reads as the later one. `src/derive.ts`,
+`src/log/LogScreen.tsx` (`lastFeedEnd` renamed `lastFeedStart`), and
+`verify-s3`, where the check that pinned the old rule now pins its reverse plus
+a new overlap case. **The target stays hidden while a feed runs** — it no longer
+has to be, since the ceiling is settled from the feed's first second, and the
+owner kept it hidden as a choice. D-036's paragraph says so.
+
+**`verify-period` has five failures, and they are not from this.** Confirmed by
+stashing and rebuilding: identical on `HEAD`. All five are the D-037 day-swipe
+checks, and they start from `two days to move between — 2 pills including "all
+days"` — the suite is only getting one day with entries, so everything
+downstream of it fails too. Same class as the date-rollover break fixed on the
+6th. Untouched, because nobody asked and it is a suite fault rather than an app
+one — but `npm run verify` is red until someone does.
 
 **The target reads as a ceiling now, in words as well as in reasoning.** D-036's target section gains the floor-and-ceiling argument — why
 *hungry* and the target wake time are the two ends of one range rather than two
@@ -364,7 +387,29 @@ the appointment reading. `targetText` in `src/derive.ts`, the `.wakeline` span
 in `LogScreen.tsx`, and two reworded checks in `verify-s3`. `verify-hero` reads
 geometry rather than text so it needed no edit — and it passes, with the line
 one row and 15px inside the card, because the new wording is shorter than the
-old.
+old. Committed and pushed as `4eb3232`.
+
+**Then the instant it all counts from moved — D-040.** `lastFeedAt` preferred
+`ended_at`; it returns `occurred_at` now. Feeding is counted start to start, and
+the old rule let a long feed buy itself extra time on all three things that
+function drives — the hero, the mascot and the ceiling. The docstring that
+argued for the end (*"since she finished, not since she started"*) described a
+stomach; the target is a schedule.
+
+**The app had been disagreeing with itself.** `report/insights.ts` has always
+measured feed gaps from `occurred_at`, so the same two feeds could be a 3h gap
+on the report and 2h 20m on the home screen. The home screen was the odd one out
+and is the one that moved.
+
+**The owner took the wider of the two scopes**, with both laid out: the hero and
+the mascot move too, not the target alone. And he kept the target hidden during a
+feed even though counting from the start means it no longer has to be — it is a
+choice now rather than a limitation, and D-036 records the difference.
+
+**`verify-period` is red, and was already.** Five failures, all D-037 day-swipe
+checks, stemming from the suite seeing one day with entries instead of two.
+Confirmed pre-existing by stashing this session's changes and rebuilding.
+Flagged rather than folded in.
 
 ### 2026-09-06 — a red dot that was not offline
 

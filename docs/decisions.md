@@ -1187,9 +1187,14 @@ Deriving it from the target would make a 21:00 feed's target depend on the
 target: +3h lands at midnight, which is inside the window, which would argue
 for +4h.
 
-**It is hidden while a feed is running.** The target counts from where a feed
-*ends*, so during one the line would show a number that ticks and is wrong the
-moment the feed closes.
+**It is hidden while a feed is running.** The reason changed under it and the
+behaviour did not. It counted from where a feed *ends*, so during one the line
+would have ticked and been wrong the moment the feed closed — that was a
+constraint. Since D-040 it counts from the start, so the target is known and
+settled from the feed's first second and could be shown throughout. **The owner
+kept it hidden anyway:** while she is on it the running-feed line is the point,
+and the ceiling is not yet the question being asked. A choice now, not a
+limitation.
 
 **It sits outside the three leads**, under whichever one is showing, because the
 rail chooses which summary the card leads with and this is wanted under all of
@@ -1424,3 +1429,47 @@ the phones that took it — the ones that were never broken.
 **Reversal condition.** A client that can be proven current — a version check
 the server can see, or a client that refuses to sync until it has updated.
 Neither exists, and neither is worth building to reclaim a nullable column.
+
+---
+
+## D-040 — The last feed is when it started, not when it finished
+
+`lastFeedAt` returned `ended_at` where a feed had one. It now returns
+`occurred_at` always. Three things move with it, because all three read that one
+function: the **elapsed hero**, the **mascot's thresholds** (D-035), and the
+**target wake time** (D-036).
+
+**Feeding is counted start to start.** *Every three hours* means three hours
+between the beginnings of two feeds, not three hours of empty stomach between
+the end of one and the start of the next. The old rule made a long feed buy
+itself extra time without anyone deciding to give it: a 40-minute feed pushed
+the hero, the mascot and the ceiling 40 minutes further out than a 5-minute one
+that started at the same moment.
+
+**It replaces the opposite reasoning, which was written down and was wrong.**
+`lastFeedAt` used to say that "what a tired parent means by *since the last
+feed* is since she finished, not since she started". That is a fair description
+of a stomach and a poor description of a schedule, and the target is a schedule
+— a ceiling (D-036). The two questions had been collapsed into one function and
+answered in the stomach's favour.
+
+**The app already disagreed with itself about this.** The insights screen has
+always measured its feed gaps from `occurred_at` (`report/insights.ts`), so a
+gap the report called 3h the home screen could call 2h 20m for the same two
+feeds. The home screen was the odd one out, and it is the one that moved.
+
+**What visibly changes.** For an instant feed — no end time, which is most of
+them — nothing at all. Where a feed has a duration, the hero's figure grows by
+that duration, the mascot reaches *awake* and *hungry* that much earlier, and
+the ceiling lands that much sooner. The overnight window is now judged on the
+hour the feed **began**.
+
+**`lastFeedMoment` orders by the same field.** It sorted by `ended_at` where
+there was one, which can pick a different moment than the new `lastFeedAt`
+reads: a top-up logged at 12:30 inside a breast feed running 12:00–13:00 is the
+more recent feed by start and the older one by end. The later start wins, and
+`verify-s3` pins that case.
+
+**What did not change.** `ended_at` keeps every other job it has — the open-feed
+and open-sleep states (D-033), the feed duration on the row, the day table's
+`20:57–21:20`. This is only about which instant "the last feed" names.

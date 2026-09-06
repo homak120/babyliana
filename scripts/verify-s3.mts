@@ -51,11 +51,25 @@ check('elapsed from occurred_at',
   formatElapsed(minutesSince(lastFeedAt(simple), now)) === '2h 40m',
   formatElapsed(minutesSince(lastFeedAt(simple), now)))
 
-// the rule that needed a decision: measure from the END of a period
+// The rule that needed a decision, and was then reversed (D-040): a feed with
+// an end time still measures from its START. Feeding is counted start to start,
+// and this is the check that pins it — 15:00 to 18:00 is 3h, not the 1h 30m
+// from the 16:30 end.
 const period = [moment(at(15, 0), [{ type: 'feed', volume_ml: 60 }], at(16, 30))]
-check('a period measures from ended_at, not occurred_at',
-  formatElapsed(minutesSince(lastFeedAt(period), now)) === '1h 30m',
+check('a period measures from occurred_at, not ended_at',
+  formatElapsed(minutesSince(lastFeedAt(period), now)) === '3h 00m',
   formatElapsed(minutesSince(lastFeedAt(period), now)))
+
+// Where the two orderings disagree: a top-up logged inside a long breast feed.
+// The later start is the more recent feed, so the 12:30 one wins over the
+// 12:00-13:00 one it sits inside.
+const overlap = [
+  moment(at(12, 0), [{ type: 'feed', volume_ml: 60 }], at(13, 0)),
+  moment(at(12, 30), [{ type: 'feed', volume_ml: 20 }]),
+]
+check('the last feed is the one that started most recently',
+  formatElapsed(minutesSince(lastFeedAt(overlap), now)) === '5h 30m',
+  formatElapsed(minutesSince(lastFeedAt(overlap), now)))
 
 check('under an hour drops the hours',
   formatElapsed(minutesSince(lastFeedAt([moment(at(17, 25), [{ type: 'feed' }])]), now)) === '35m')
