@@ -831,6 +831,30 @@ worth keeping is between surfacing a number and passing judgement on the person.
 still filling up. Without that, the wet-diaper rule fires every morning on every
 day, and a warning that is always on is not a warning.
 
+### What it actually does on the real log
+
+Measured 2026-09-05 by loading the ten transcribed paper-log days behind the
+screen. **The card fired six times across seven days**, and the result is worth
+knowing before deciding this rule set is finished:
+
+- **Five of the six are the same rule.** The paper log records 3–5 wet nappies
+  on most days against a threshold of 6, so on this data the card is close to
+  permanently lit — the exact failure the "today is never flagged" rule above was
+  written to avoid, arriving by a different route. Whether that reflects the
+  baby or reflects what gets written down at 4am is the owner's call and nobody
+  else's.
+- **The sixth was an artifact of a hole in the record.** *"10h 10m between feeds
+  on 8/30"* came from the two unreadable 8/30 afternoon rows sitting commented
+  out in `supabase/imports/2026-09-05_paper-log-backfill.sql` § 6. Restore them
+  and the gap is about three hours. **A rule firing on a gap in the record is
+  indistinguishable on screen from one firing on a gap in the feeding.**
+
+Nothing was changed in response. This is recorded rather than acted on because
+the thresholds are the owner's, and because the next person to look at this card
+should not have to rediscover it. If it is ever tuned, the cheapest levers are
+the threshold itself, or requiring a minimum number of diaper entries before a
+day is eligible for the wet rule at all.
+
 ---
 
 ## D-033 — A running feed is a missing end time, exactly like a sleep

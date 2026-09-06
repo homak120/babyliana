@@ -18,7 +18,7 @@ Last updated: 2026-09-05
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0–6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. 367 checks pass across twenty suites.
+delivered by the second design handoff. 371 checks pass across twenty suites.
 **No schema change — `0001` is still the whole schema.**
 
 What exists: local-first writes to IndexedDB that never block on the network,
@@ -39,7 +39,9 @@ stamps the end on the **timeslot**. **Derived from `ended_at` and nothing else**
 same rule as sleep — D-033, which records that a first pass added an
 `event.in_progress` column and the owner rejected it, because the timeslot
 already carries the end time for every type (D-020). Milk also reads in words
-now: `25 mL breast + 45 mL formula`, not `25(B) + 45(F)` (D-034).
+now: `25 mL breast + 45 mL formula`, not `25(B) + 45(F)` (D-034). **Adding an
+end time by hand now defaults to the clock**, not to a guessed half hour, and the
+end row carries its own `now` pill beside the `+30 min` offsets.
 
 **Sleep is a first-class type** as of the third design delivery — its own bubble,
 its own block, a quick icon that becomes a live "end sleep" pill while one is
@@ -103,9 +105,12 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**§11 and §12, committed but not pushed** (`a2cb0cb`, amended), plus
-`scripts/_scratch-insights.mts`, which is untracked scratch like `_gap.mts` and
-`_px.mts` beside it.
+**§11 and §12, committed but not pushed** (`a2cb0cb`, amended), plus this file
+and `docs/decisions.md`, where D-032 gained a measurement of what the watch list
+does on the real log. **Also uncommitted: the end-time `now` default** —
+`src/log/time.ts` (`endNow`), `src/log/TimeCard.tsx`, four checks in
+`verify-s5`. Nothing else — the insights screen itself is pushed
+(`b725da1`, `0584b57`).
 
 **Read D-033 before touching any of it.** The first pass followed the prototype
 and added an `event.in_progress` column with a migration behind it. The owner
@@ -176,7 +181,47 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-05 (latest) — feeds run live, and a column that should never have been
+### 2026-09-05 (latest) — an end time that means now
+
+Tapping *end time — optional* stamped `start + 30 min`, which is a guess dressed
+as a default: every period then had to be corrected, and a 30-minute sleep or
+feed that was never checked is indistinguishable from a real one. It defaults to
+the clock now, and the end row gained a `now` pill of its own so a period that
+has run on closes in one tap, the same gesture the start row already offers.
+
+`endNow` lives in `time.ts` with the rest of the arithmetic, and it is anchored
+to the **start's day** for the same reason `withHourMinute` is: ending a moment
+logged three days ago means that day's clock, not this instant. Landing before
+the start reads as a period across midnight — 23:00 to 07:00 is the case that
+matters — except when the start is itself in the future, where it clamps rather
+than inventing a 23-hour period. Four checks in `verify-s5` cover those.
+
+The end pill carries `aria-label="end now"` so it does not collide with the start
+row's `now` under Playwright's strict mode — the same trap two visible "end
+sleep" controls sprang last session.
+
+### 2026-09-05 (earlier) — the watch list, measured against the real log
+
+D-032 now records what the insights watch list actually does when the ten
+transcribed paper-log days are behind it: **six flags across seven days, five of
+them the same rule.** The log records 3–5 wet nappies most days against a
+threshold of 6, so on real data the card is close to permanently lit. The sixth,
+a 10h feed gap on 8/30, was an artifact of the two unreadable rows commented out
+of the backfill — a rule firing on a hole in the *record* looks identical to one
+firing on a hole in the *feeding*. Nothing was changed; the thresholds are the
+owner's.
+
+**The process lesson is the one to keep.** The insights screen shipped correctly,
+and then the summary suggested loading real data into a scratch project as
+something for the owner to run. That produced a throwaway script, three rounds of
+explaining a file that changed nothing, and no code. His words: *"as human, it is
+hard for me to keep watching each single that you try to do or suggest to do."*
+**Finish the ask, state what changed, stop.** Incomplete verification gets closed
+silently or named in one sentence — it does not become a task for him. The right
+fix here was a realistic fixture in `verify-insights` from the start, which would
+have caught the misfiring thresholds in the gate instead of in a screenshot.
+
+### 2026-09-05 (earliest) — feeds run live, and a column that should never have been
 
 §11 and §12, the last two items in the third handoff's `CHANGES.md`. The build
 reads like sleep because it *is* sleep: `ongoingFeed` differs from `ongoingSleep`
@@ -217,70 +262,3 @@ The asymmetry that does survive is the auto-close. A running sleep is closed by 
 entry, because at 4am you log the feed and not the waking. A running feed is not,
 because the next diaper says nothing about when the bottle finished, and an
 invented duration is unrecoverable under D-003.
-
-### 2026-09-05 (later still) — the lead switcher, and a card that says how long she has slept
-
-The last three items of the third handoff's `CHANGES.md` — §7 sleep in the log
-views, §8 sleep duration on the top card, §9 the lead-view switcher.
-
-**§7 was already there.** Sleep had its own row slot, its peri chip on the home
-list and its peri line in the day table; only one thing was missing, and it was
-in the confirm sheet rather than the list: `describeMoment` had no sleep branch,
-so a sleep-only row asked "delete 9/3 · 21:35 · **empty**?". A hard delete with
-no tombstone is the one place the app must not shrug. The handoff's timeline dot
-does not apply — the app builds the prototype's *table* read-back, which has no
-dots.
-
-**§9 cost the card 40px, and that is the whole story of this change.** The rail
-sits outside the card, so the text column went from 202px to 140px, and 44px
-only holds six characters in that — "14h 21m" is seven and an overnight gap is
-not an edge case. The mascot dropped to the handoff's 88px slot (100px art),
-which gave 12px back, and anything over six characters now steps down to 36px.
-The alternative was the wrap that `verify-hero` exists to catch.
-
-Two more judgement calls worth knowing:
-
-- **The lead lives in localStorage, not in state.** The handoff calls it session
-  state, which is right in a prototype but wrong here: `App` remounts the screen
-  with `key={saved}` on every save, so plain state snapped back to `elapsed` the
-  moment you logged anything. It stays local and unsynced either way.
-- **Both end-sleep controls now carry the hand-drawn crescent-and-arrow SVG**,
-  not `wb_twilight`. The bar pill shipped with the Material icon in `ad2ccce`;
-  having the card's button and the bar's disagree about what the same action
-  looks like was worse than the small scope creep of changing it.
-
-`aria-label="end sleep"` is now on two visible controls, which broke
-`getByLabel` under Playwright's strict mode — `verify-sleep` scopes the bar one
-to `nav.tabs` and exercises the card one on its own sleep. 264 checks across the
-same seventeen suites.
-
-### 2026-09-05 (later) — the tab bar's bottom gap, and a documentation sweep
-
-The bar's bottom padding was `max(22px, env(safe-area-inset-bottom))` — 34pt on a
-notched phone, on top of the inner margin that 40–56px rounded targets already
-give their 20px icons. It discounts the inset by 16pt now, so 18pt on the phone.
-**Invisible off-device**: the inset is 0 in every desktop browser, so before and
-after render identically in the suites that would otherwise have caught it.
-Committed as `5fca772` after the eight browser suites passed.
-
-Then a sweep for stale prose, which found more than the tab bar did. Six
-documents disagreed with the code:
-
-- *In flight* still listed three items that shipped in `ad2ccce`, and Position
-  claimed 187 checks across twelve suites against an actual 254 across seventeen,
-  and 874 KiB precached against 1012.76.
-- **Sleep's promotion (D-029) had not reached any document outside
-  `decisions.md`.** D-013 said sleep was supported but not featured; the baseline
-  drew the same implication and cited D-010 for it; Q-006 still listed sleep as a
-  candidate for promotion; the README described an app that records feeds and
-  diaper changes. Each now points at D-029, and Q-006 covers only the four types
-  that are genuinely still open.
-- The coverage run is **ten photographed days, not seven**, in three documents
-  that all said seven.
-- `supabase/README.md` documented `migrations/` and not `imports/`, so the
-  backfill script existed with no entry in the file that tells you what to run.
-
-The pattern worth keeping: **every one of these was a document that was correct
-when written.** Nothing was wrong at the time. They went stale because a decision
-landed in `decisions.md` and stopped there, which is the failure mode a document
-set has instead of a bug.
