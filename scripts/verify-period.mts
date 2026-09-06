@@ -136,10 +136,11 @@ if (!room) {
 
   const start = await label()
 
-  // --- the page moves under the thumb ---
+  // --- two pages on a track, dragged as a pair ---
   //
-  // Mid-drag, before the finger lifts. The offset is damped rather than
-  // one-to-one, so this asserts a direction and a ceiling, not a number.
+  // Mid-drag, before the finger lifts: the day being read and the one being
+  // dragged toward sit side by side and move together, which is what makes it
+  // read as page navigation rather than as one page wobbling.
   const holdAt = async (dx: number) => {
     const y = 520, x0 = dx < 0 ? 300 : 90
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y }] })
@@ -149,29 +150,46 @@ if (!room) {
       })
     }
     await p.waitForTimeout(120)
-    const shift = await p.evaluate(() =>
-      new DOMMatrix(getComputedStyle(document.querySelector('.daypage')!).transform).m41)
+    const held = await p.evaluate(() => ({
+      shift: new DOMMatrix(getComputedStyle(document.querySelector('.daytrack')!).transform).m41,
+      pages: document.querySelectorAll('.daypage').length,
+      widths: [...document.querySelectorAll('.daypage')]
+        .map((e) => Math.round(e.getBoundingClientRect().width)).join('/'),
+    }))
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
-    await p.waitForTimeout(400)
-    return Math.round(shift)
+    await p.waitForTimeout(500)
+    return { ...held, shift: Math.round(held.shift) }
   }
 
   const heldLeft = await holdAt(-140)
-  check('the page follows the thumb, damped', heldLeft < -20 && heldLeft > -96,
-    `${heldLeft}px for a 140px drag`)
-  check('and springs back when the day did not change',
-    Math.round(await p.evaluate(() =>
-      new DOMMatrix(getComputedStyle(document.querySelector('.daypage')!).transform).m41)) === 0,
-    'back to 0')
+  check('the neighbouring day is mounted beside the current one',
+    heldLeft.pages === 2, `${heldLeft.pages} page(s)`)
+  check('each page is exactly one screen wide',
+    heldLeft.widths === '390/390', heldLeft.widths)
+  // One-to-one, not damped: the pair is being pushed, so it goes where the
+  // thumb goes.
+  check('the track follows the thumb one-to-one',
+    heldLeft.shift <= -120 && heldLeft.shift >= -160, `${heldLeft.shift}px for a 140px drag`)
 
-  // Nothing older than the oldest, and the page says so by barely giving.
+  const rested = await p.evaluate(() => ({
+    shift: Math.round(
+      new DOMMatrix(getComputedStyle(document.querySelector('.daytrack')!).transform).m41),
+    pages: document.querySelectorAll('.daypage').length,
+  }))
+  check('and springs back to one page when the day did not change',
+    rested.shift === 0 && rested.pages === 1, `${rested.shift}px, ${rested.pages} page(s)`)
+
+  // Nothing older than the oldest, so there is no page to mount and the track
+  // barely gives — the end of the log is something you feel rather than read.
   await p.locator('.daypill').last().click().catch(() => {})
   await p.waitForTimeout(300)
   const atOldest = (await p.locator('.daypill.on').count()) === 1
   if (atOldest) {
     const heldAtEnd = await holdAt(-140)
-    check('at the end of the log the page barely gives',
-      heldAtEnd > -20, `${heldAtEnd}px for the same 140px drag`)
+    check('at the end of the log there is nothing to mount',
+      heldAtEnd.pages === 1, `${heldAtEnd.pages} page(s)`)
+    check('and the track barely gives',
+      heldAtEnd.shift > -20, `${heldAtEnd.shift}px for the same 140px drag`)
   }
   await p.locator('.daypill').nth(1).click()
   await p.waitForTimeout(300)
@@ -179,15 +197,28 @@ if (!room) {
   await swipe(-160)
   const older = await label()
   check('a left swipe steps to the older day', older !== start, `${start} -> ${older}`)
-  check('and the new day slides in from the side it came from',
-    (await p.locator('.daypage.in-older').count()) === 1,
-    (await p.locator('.daypage').getAttribute('class')) ?? 'no wrapper')
+  check('and the track is back to a single resting page',
+    (await p.locator('.daypage').count()) === 1
+      && (await p.locator('.daytrack.panning').count()) === 0,
+    `${await p.locator('.daypage').count()} page(s)`)
+
+  // Reduced motion removes the transition, so `transitionend` never fires and
+  // only the timeout fallback lands the page. Checked because the failure is
+  // silent and total: the day would simply never change.
+  await p.emulateMedia({ reducedMotion: 'reduce' })
+  await swipe(160)
+  check('it still lands with the animation turned off',
+    (await label()) === start, `${older} -> ${await label()}`)
+  await p.emulateMedia({ reducedMotion: null })
+  await swipe(-160)
+  await p.waitForTimeout(300)
 
   await swipe(160)
-  check('a right swipe comes back', (await label()) === start, `${older} -> ${await label()}`)
-  check('and slides in from the other side',
-    (await p.locator('.daypage.in-newer').count()) === 1,
-    (await p.locator('.daypage').getAttribute('class')) ?? 'no wrapper')
+  check('a right swipe comes back', (await label()) === start, `${await label()}`)
+  check('and settles the same way going the other direction',
+    (await p.locator('.daypage').count()) === 1
+      && (await p.locator('.daytrack.panning').count()) === 0,
+    `${await p.locator('.daypage').count()} page(s)`)
 
   await swipe(160)
   check('and stops at the most recent day', (await label()) === start,

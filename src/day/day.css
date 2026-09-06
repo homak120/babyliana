@@ -2,6 +2,13 @@
    so they are not styling choices. */
 
 .day {
+  /* `width: 100%` is load-bearing. `#root` is a column flex container, and an
+     auto cross-axis margin cancels the default stretch — so with `margin: 0
+     auto` alone this box was shrink-to-fit and its width came from whatever the
+     longest table row happened to be. Harmless while one page was on screen;
+     fatal once two sit side by side, because `flex: 0 0 100%` then resolves
+     against a width that the pages themselves determine. */
+  width: 100%;
   max-width: 26rem;
   margin: 0 auto;
   /* Scrolling comes from `#root > main`. */
@@ -18,6 +25,10 @@
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
+
+  /* The neighbouring page sits a full screen to the side. Without this it is
+     reachable by scrolling sideways, which is not a gesture this screen has. */
+  overflow-x: hidden;
 }
 
 /* The date strip scrolls sideways on its own, so it keeps the horizontal
@@ -61,34 +72,29 @@
 
 /* The swiped part: the day label, the totals and the table. The mode pills and
    the date strip sit outside it and stay put, so the chrome holds still while
-   the day being read moves. */
-.daypage {
-  /* Springs back when the finger lifts short of the threshold. Suppressed
-     inline while the drag is live, or it would lag behind the thumb. */
-  transition: transform 0.18s ease-out;
+   the day being read moves.
+   
+   At rest the track holds one page and is an ordinary block. It only becomes a
+   two-page flex row while a swipe is in progress, so nothing about the resting
+   layout depends on the gesture. */
+.daytrack.panning {
+  display: flex;
+  align-items: flex-start;
+  will-change: transform;
 }
 
-/* On a committed swipe the wrapper remounts and one of these plays. Left is
-   older, so an older day arrives from the right — the direction the content
-   was already travelling. */
-.daypage.in-older { animation: dayInOlder 0.2s ease-out; }
-.daypage.in-newer { animation: dayInNewer 0.2s ease-out; }
-
-@keyframes dayInOlder {
-  from { transform: translateX(26%); opacity: 0.35; }
-  to { transform: none; opacity: 1; }
-}
-@keyframes dayInNewer {
-  from { transform: translateX(-26%); opacity: 0.35; }
-  to { transform: none; opacity: 1; }
+.daytrack.panning > .daypage {
+  /* Exactly one screen each, and never squeezed to share: `flex: 0 0 100%`
+     without `min-width: 0` lets a wide table push its own page wider, which
+     shifts the one beside it out of alignment mid-drag. */
+  flex: 0 0 100%;
+  min-width: 0;
 }
 
 /* Whoever asked not to see this, does not. The day still changes; it simply
    arrives instead of sliding. */
 @media (prefers-reduced-motion: reduce) {
-  .daypage,
-  .daypage.in-older,
-  .daypage.in-newer { transition: none; animation: none; }
+  .daytrack { transition: none !important; }
 }
 
 .table { margin-top: 0.5rem; }

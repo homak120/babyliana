@@ -24,19 +24,28 @@ const DECIDE_AT = 10
  * **Returns the live horizontal offset** so the caller can move something with
  * the finger, and 0 the moment the touch ends. What moves, how far, and whether
  * it resists is the caller's business — this only reports the drag. The day
- * view damps it and clamps it hard at the ends, so the page barely gives when
- * there is no day to step to.
+ * view carries the page one-to-one with the thumb where there is a day to reach
+ * and barely gives where there is not.
  *
  * `enabled` is false wherever stepping has no meaning — `all days`, a picked
  * period, the insights mode — and the listeners are simply not attached.
  */
 export function usePageSwipe(
   ref: RefObject<HTMLElement | null>,
-  { onPrev, onNext, enabled = true }: {
+  { onPrev, onNext, onSettle, enabled = true }: {
     /** Swipe right: the newer day. */
     onPrev: () => void
     /** Swipe left: the older day. */
     onNext: () => void
+    /**
+     * The finger lifted after a horizontal drag, whether or not it committed.
+     *
+     * The caller needs this to know when to start gliding: the offset returning
+     * to 0 says nothing on its own, because it is 0 before a gesture as well as
+     * after one. Called after `onPrev`/`onNext`, so a committing settle already
+     * knows where it is going.
+     */
+    onSettle?: (committed: boolean) => void
     enabled?: boolean
   },
 ): number {
@@ -52,8 +61,8 @@ export function usePageSwipe(
    * did nothing at all, and only did nothing *after* the animation was added,
    * which is a nasty thing to debug backwards.
    */
-  const cbs = useRef({ onPrev, onNext })
-  cbs.current = { onPrev, onNext }
+  const cbs = useRef({ onPrev, onNext, onSettle })
+  cbs.current = { onPrev, onNext, onSettle }
 
   useEffect(() => {
     const el = ref.current
@@ -96,8 +105,10 @@ export function usePageSwipe(
       if (axis === 'x' && from) {
         const t = e.changedTouches[0]
         const mx = t.clientX - from.x
+        const committed = mx <= -COMMIT_AT || mx >= COMMIT_AT
         if (mx <= -COMMIT_AT) cbs.current.onNext()
         else if (mx >= COMMIT_AT) cbs.current.onPrev()
+        cbs.current.onSettle?.(committed)
       }
       from = null
       axis = null

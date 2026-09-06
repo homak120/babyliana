@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { sameDay, totalsOf } from '../derive'
+import { sameDay } from '../derive'
 import { getMoments } from '../moments'
 import { getDevices } from '../db'
 import { subscribe } from '../sync'
 import type { Device, Moment } from '../types'
 import { Icon } from '../log/Icon'
 import { chronological, daysWithEntries } from './cells'
-import { DayRow } from './DayRow'
+import { DayPage } from './DayPage'
 import { usePageSwipe } from '../swipe/usePageSwipe'
 import { PeriodPicker } from './PeriodPicker'
 import { isoOf, rangeLabel, stepDay, type Range } from './period'
@@ -100,49 +100,73 @@ export function DayScreen() {
     return showingAll || sameDay(m.timeslot.occurred_at, selected)
   })
   const forDay = chronological(inScope)
-  // Totalled over what is actually on screen, so the numbers match the heading.
-  const totals = totalsOf(forDay)
   const withData = new Set(moments.map((m) => isoOf(new Date(m.timeslot.occurred_at))))
-  const nameFor = (id: string) => devices.find((d) => d.id === id)?.name ?? null
 
-  // Swiping the page steps between days. `days` is newest first, so the older
-  // day is the next index — which is why a left swipe adds one.
+  // --- swiping between days -------------------------------------------------
   //
-  // Only over days that have entries, so a swipe never lands on an empty table,
-  // and only while a single day is showing: `all days` and a picked period are
-  // deliberately not one day, so stepping has no meaning there and the gesture
-  // is simply not attached.
+  // Two pages on a track, the one you are reading and the one you are dragging
+  // toward, moved as a pair — the way a phone moves between pages everywhere
+  // else. An earlier pass slid only the outgoing page and animated the new one
+  // in afterwards, which looked like two separate movements rather than one.
+  //
+  // `days` is newest first, so the older day is the next index — a left swipe
+  // adds one. Only days that have entries, so a swipe never lands on an empty
+  // table, and only while a single day is showing: `all days` and a picked
+  // period are deliberately not one day, so the gesture is not attached at all.
   const page = useRef<HTMLElement>(null)
-  // `enter` is the direction the new day arrives from, and `turn` forces the
-  // wrapper to remount so the animation replays. Only a swipe sets them — a
-  // date pill changes the day without a slide, because there was no gesture to
-  // continue.
-  const [enter, setEnter] = useState<'older' | 'newer' | null>(null)
-  const [turn, setTurn] = useState(0)
-  const step = useCallback((delta: number) => {
-    const next = stepDay(days, selected, delta)
-    if (!next) return
-    setEnter(delta > 0 ? 'older' : 'newer')
-    setTurn((n) => n + 1)
-    setDay(next)
-  }, [days, selected])
+  /** Which neighbour is mounted beside the current page, if any. */
+  const [pan, setPan] = useState<'older' | 'newer' | null>(null)
+  /** True from the moment the finger lifts until the track finishes moving. */
+  const [gliding, setGliding] = useState(false)
+  /** Where the track is going, or null if it is springing back. */
+  const landing = useRef<Date | null>(null)
+
   const swipeable = mode === 'log' && !showingAll && !range
   const dx = usePageSwipe(page, {
-    onNext: () => step(1),
-    onPrev: () => step(-1),
+    onNext: () => { landing.current = stepDay(days, selected, 1) },
+    onPrev: () => { landing.current = stepDay(days, selected, -1) },
+    onSettle: () => setGliding(true),
     enabled: swipeable,
   })
 
-  // What the page actually does under the thumb. Damped rather than
-  // one-to-one — the content is not being dragged somewhere, it is showing that
-  // the gesture registered — and clamped hard when there is no day that way, so
-  // the edge of the log is something you feel rather than read.
-  const canGo = (delta: number) => stepDay(days, selected, delta) !== null
-  const damped = dx === 0 || !swipeable
-    ? 0
-    : canGo(dx < 0 ? 1 : -1)
-      ? Math.max(-96, Math.min(96, dx * 0.42))
-      : Math.max(-18, Math.min(18, dx * 0.12))
+  // Which side the neighbour goes on, decided the moment the drag has a
+  // direction and held until the track has finished moving — the offset returns
+  // to 0 on release, and the page must not jump back mid-glide.
+  useEffect(() => {
+    if (dx !== 0) { setPan(dx < 0 ? 'older' : 'newer'); setGliding(false) }
+  }, [dx])
+
+  const neighbour = pan ? stepDay(days, selected, pan === 'older' ? 1 : -1) : null
+  const dayOf = (d: Date) =>
+    chronological(moments.filter((m) => sameDay(m.timeslot.occurred_at, d)))
+
+  // The track holds [current, older] or [newer, current], so its resting offset
+  // is 0 in the first case and -100% in the second.
+  const base = pan === 'newer' ? -100 : 0
+  // One-to-one with the thumb where there is a page to reach; where there is
+  // not, it barely gives, so the end of the log is something you feel rather
+  // than read.
+  const held = neighbour
+    ? Math.max(-window.innerWidth, Math.min(window.innerWidth, dx))
+    : Math.max(-18, Math.min(18, dx * 0.12))
+  const goingTo = landing.current
+  const target = goingTo ? (pan === 'older' ? -100 : 0) : base
+
+  const settle = useCallback(() => {
+    if (landing.current) { setDay(landing.current); landing.current = null }
+    setPan(null)
+    setGliding(false)
+  }, [])
+
+  // A fallback for the glide that never ends. `prefers-reduced-motion` removes
+  // the transition entirely, so `transitionend` never fires and without this the
+  // day would never change for anyone who asked for less movement. Also covers a
+  // transition interrupted by a re-render.
+  useEffect(() => {
+    if (!gliding) return
+    const t = setTimeout(settle, 400)
+    return () => clearTimeout(t)
+  }, [gliding, settle])
 
   // Insights shares only the mode pills with the read-back — no date strip, no
   // picked period, no totals row. Returning early keeps that honest instead of
@@ -191,54 +215,50 @@ export function DayScreen() {
         </button>
       </div>
 
-      {/* The part that moves. The mode pills and the date strip are chrome and
-          stay put; what slides is the day being read. */}
+      {/* The part that moves: two pages on a track, dragged as a pair. The mode
+          pills and the date strip are chrome and hold still. */}
       <div
-        key={turn}
-        className={`daypage${enter ? ` in-${enter}` : ''}`}
-        style={{
-          transform: damped ? `translateX(${damped}px)` : undefined,
-          // Only while the finger is down. A transition during the drag lags
-          // behind the thumb; without one, letting go would snap rather than
-          // spring back.
-          transition: dx === 0 ? undefined : 'none',
+        className={`daytrack${pan ? ' panning' : ''}`}
+        style={pan ? {
+          transform: gliding
+            ? `translateX(${target}%)`
+            : `translateX(calc(${base}% + ${held}px))`,
+          // No transition while the finger is down, or the track lags behind
+          // the thumb; one the moment it lifts, so the page glides home
+          // whichever way it is going.
+          transition: gliding ? 'transform 0.26s ease-out' : 'none',
+        } : undefined}
+        // Only this element's own transform. `transitionend` bubbles, and a
+        // pill or a row finishing its own transition inside the page would
+        // otherwise settle the track early and mid-slide.
+        onTransitionEnd={(e) => {
+          if (e.target === e.currentTarget && e.propertyName === 'transform') settle()
         }}
       >
-      <p className="daylabel">
-        {range ? rangeLabel(range) : showingAll ? 'all days' : dayPill(selected)}
-      </p>
-
-      <div className="totals">
-        <span className="tag rose"><Icon name="local_drink" size={14} /> {totals.feeds}</span>
-        <span className="tag lav"><Icon name="water_full" size={14} /> {totals.ml} mL</span>
-        <span className="tag yellow"><Icon name="water_drop" size={14} /> {totals.pee}</span>
-        <span className="tag mint"><Icon name="cookie" size={14} /> {totals.poop}</span>
-        {totals.unknownVolumes > 0 && (
-          <span className="tag chip">? &times; {totals.unknownVolumes}</span>
-        )}
-      </div>
-
-      <div className="table">
-        <div className="thead">
-          <span>date</span>
-          <span>time</span>
-          <span>milk</span>
-          <span>pee/poop</span>
-          <span />
-        </div>
-
-        {forDay.length === 0 && <p className="empty">nothing logged in this period.</p>}
-
-        {forDay.map((m, i) => (
-          <DayRow
-            key={m.timeslot.id}
-            moment={m}
-            previous={forDay[i - 1]}
-            name={nameFor(m.timeslot.logged_by)}
-            allDeviceIds={devices.map((d) => d.id)}
+        {pan === 'newer' && neighbour && (
+          <DayPage
+            label={dayPill(neighbour)}
+            rows={dayOf(neighbour)}
+            devices={devices}
+            empty="nothing logged in this period."
           />
-        ))}
-      </div>
+        )}
+
+        <DayPage
+          label={range ? rangeLabel(range) : showingAll ? 'all days' : dayPill(selected)}
+          rows={forDay}
+          devices={devices}
+          empty="nothing logged in this period."
+        />
+
+        {pan === 'older' && neighbour && (
+          <DayPage
+            label={dayPill(neighbour)}
+            rows={dayOf(neighbour)}
+            devices={devices}
+            empty="nothing logged in this period."
+          />
+        )}
       </div>
 
       {picking && (

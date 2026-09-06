@@ -1197,22 +1197,44 @@ component, where `days[here + 1]` reads as the opposite of what it does.
 insights mode are deliberately not one day, so the listeners are not attached at
 all rather than attached and ignored.
 
-**The page moves under the thumb, and the new day slides in.** It shipped
-without any of that — the argument was that a day change is instant, so a
-transform would animate something about to be replaced — and the owner asked for
-the movement the same day. He is right about what it buys: a gesture with no
-feedback is one you cannot tell you have started, and the threshold is
-invisible.
+**Two pages on a track, dragged as a pair.** It shipped with no movement at all
+— the argument was that a day change is instant, so a transform would animate
+something about to be replaced — and the owner asked for movement the same day.
+He is right about what it buys: a gesture with no feedback is one you cannot
+tell you have started, and the threshold is invisible.
+
+**The first attempt at it was half the effect and looked it.** It slid only the
+outgoing page, damped, and then played a separate slide-in on the replacement.
+The owner's words: *"I don't see the animation which making it looks like
+targeted page to be moving in."* Two movements where there should be one. What
+it does now is what every phone does between pages: the day you are reading and
+the day you are dragging toward sit side by side on a track, and the track moves
+**one-to-one with the thumb**.
 
 What moves is the day being read — the label, the totals, the table. The mode
-pills and the date strip are chrome and hold still. The drag is **damped**
-(0.42, capped at 96px) rather than one-to-one, because the content is not being
-dragged anywhere; it is showing that the gesture registered. **At either end of
-the log it barely gives** — 0.12, capped at 18px — so the first and last day are
-something you feel rather than read. Letting go short of the threshold springs
-back; committing remounts the wrapper and plays a 200ms slide from the side the
-content was already travelling. `prefers-reduced-motion` turns all of it off and
-the day simply arrives.
+pills and the date strip are chrome and hold still. **At either end of the log
+there is no page to mount**, so the track barely gives (0.12, capped at 18px)
+and the edge of the log is something you feel rather than read. Letting go short
+of the threshold glides back; past it, the track finishes its travel and the
+neighbour becomes the current page with no second animation.
+
+**Three things that had to be got right, each of which was silently wrong
+first:**
+
+- **`.day` was shrink-to-fit.** `#root` is a column flex container, and an auto
+  cross-axis margin cancels the default stretch — so `margin: 0 auto` alone left
+  the screen's width determined by its longest table row. Harmless with one page
+  on screen; fatal with two, because `flex: 0 0 100%` then resolves against a
+  width the pages themselves set. `width: 100%` fixes it, and the day table is
+  full-width now where it used to be as wide as its content.
+- **`transitionend` bubbles.** A pill or a row finishing its own transition
+  inside the page settled the track early, mid-slide. It is filtered on
+  `e.target === e.currentTarget` and `propertyName === 'transform'`.
+- **`prefers-reduced-motion` removes the transition, so `transitionend` never
+  fires** — and the landing is what changes the day, so with less motion asked
+  for the day would never change at all. A 400ms timeout lands it either way,
+  and `verify-period` runs a swipe under `reducedMotion: 'reduce'` because that
+  failure is silent and total.
 
 **Adding it broke the gesture, in a way worth recording.** Callers pass inline
 arrows for `onPrev`/`onNext`, which are new objects every render. That was

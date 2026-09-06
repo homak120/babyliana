@@ -18,7 +18,7 @@ Last updated: 2026-09-06
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0–6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. 506 checks pass across twenty-one suites.
+delivered by the second design handoff. 510 checks pass across twenty-one suites.
 
 **`0003_us_units.sql` is applied.** The first schema change since `0001`. The
 owner ran it in the SQL Editor before the code that writes `pounds` and
@@ -151,13 +151,15 @@ right is newer, only over days that have entries, and inert on `all days`, a
 picked period and the insights mode. `usePageSwipe` shares `SwipeRow`'s gesture
 rules — native listeners, a 10px axis decision, `touch-action: pan-y`.
 
-**The page moves with it.** The day label, totals and table follow the thumb,
-damped, and barely give at either end of the log; the new day slides in from the
-side the content was travelling. The chrome holds still and
-`prefers-reduced-motion` turns it off. Adding that broke the gesture outright —
-reporting the live offset re-renders on every `touchmove`, and the effect was
-keyed on inline callbacks, so it tore itself down mid-drag. The callbacks live
-in a ref now. D-037 has it.
+**Two pages move with it.** The day being read and the day being dragged toward
+sit side by side on a track that follows the thumb one-to-one — the first pass
+slid only the outgoing page and played a separate slide-in after it, which read
+as two movements rather than one. At either end of the log there is no page to
+mount and the track barely gives. Getting there needed `.day` to stop being
+shrink-to-fit (`#root` is a column flex container, and `margin: 0 auto` cancels
+the stretch), a filter on the bubbling `transitionend`, and a timeout fallback
+because `prefers-reduced-motion` removes the transition that lands the page.
+D-037 has all three.
 
 **`0004` is applied and the columns are gone** — confirmed against the live
 database, where `grams` and `celsius` now return `42703` and `pounds` /
