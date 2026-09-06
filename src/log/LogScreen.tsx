@@ -458,8 +458,8 @@ export function LogScreen({ onEndOpen }: {
                   })()}
                   {/* `otherLabel`, not the bare type name: a weight logged
                       here read as "weight" while the day table read
-                      "weight 3.4 kg", which is the same split that hid an end
-                      time from this list until timeCell replaced its local
+                      "weight 7 lb 4 oz", which is the same split that hid an
+                      end time from this list until timeCell replaced its local
                       formatter. */}
                   {m.events
                     .filter((e) => e.type !== 'feed' && e.type !== 'diaper' && e.type !== 'sleep')

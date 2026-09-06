@@ -33,7 +33,6 @@ const ev = (e: Partial<Moment['events'][number]>) => ({
   recorded_at: '', updated_at: '', updated_by: null,
   volume_ml: null, source: null, pee: null, poop: null,
   poop_colour: null, poop_consistency: null, pounds: null, fahrenheit: null,
-  grams: null, celsius: null,
   supplement_name: null, amount: null, severity: null, ...e,
 }) as Moment['events'][number]
 
@@ -140,11 +139,6 @@ check('a supplement with only a name says just that',
     === 'supplement vitamin D')
 check('a blank value falls back to the bare name, like a ? volume',
   otherCell([ev({ type: 'weight' })]) === 'weight')
-// A weight written before 0003 has grams and no pounds. Nothing reads grams
-// any more, so it falls back to the bare name rather than printing a number in
-// the wrong unit.
-check('a pre-0003 weight reads as the bare name, not as pounds',
-  otherCell([ev({ type: 'weight', grams: 3400 })]) === 'weight')
 check('two secondary entries still join with a middot',
   otherCell([ev({ type: 'weight', pounds: 7.25 }), ev({ type: 'spit_up' })])
     === 'weight 7 lb 4 oz · spit up')

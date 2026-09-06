@@ -17,7 +17,8 @@ Editor, paste each file in order, run it.
 | File | What it does | When |
 | --- | --- | --- |
 | `migrations/0001_initial_schema.sql` | Drops the spike table, creates the three tables, RLS, grants, realtime | Once. Safe to re-run |
-| `migrations/0003_us_units.sql` | Adds `event.pounds` and `event.fahrenheit`; comments the superseded `grams` and `celsius` | **Before deploying the version that writes them.** Additive and `if not exists`, so safe to re-run |
+| `migrations/0003_us_units.sql` | Adds `event.pounds` and `event.fahrenheit`; comments the superseded `grams` and `celsius` | **Before deploying the version that writes them.** Additive and `if not exists`, so safe to re-run. Applied 2026-09-06 |
+| `migrations/0004_drop_metric_columns.sql` | Drops `event.grams` and `event.celsius` | **After both phones are on code that stops sending them** — the reverse of 0003, so the reverse order. Refuses to run if either column holds a value. Applied 2026-09-06, ahead of that code being deployed — see below |
 
 **There is no `0002`, and the number is burned.** `0002_seed_household.sql`
 existed on 2026-09-03 and was **run against the database** before `0b14b40`
@@ -44,8 +45,26 @@ because they are the two that hit the live database.
 purpose — the old `grams` and `celsius` columns stay — because two phones run
 this app and the service worker updates lazily, so during a rollout one of them
 is still on code that writes the old pair. Dropping them would break that
-phone's sync until it happened to update. Dropping them is a separate, later,
-deliberate step.
+phone's sync until it happened to update.
+
+**`0004` is that separate step, and its ordering is the mirror image.** Adding a
+column is safe *early*, because a client that has never heard of it carries on
+working. Dropping one is only safe *late*: any phone still naming `grams` fails
+its upsert the moment the column is gone, and the outbox stops draining
+quietly — push returns false and the reconcile is skipped while writes are
+pending, so the phone looks fine and is not syncing. Deploy first, open the app
+on both phones and let the worker update, then run `0004`. The columns sitting
+there unread in the meantime cost nothing, and there is no deadline.
+
+**In practice `0004` ran first, on 2026-09-06, before the code that stops
+sending those columns was deployed.** Recorded rather than tidied away, because
+the window it opened is exactly what this section describes: from the drop until
+each phone picked up the new build, any phone still on the old code was failing
+its upserts and holding writes in the outbox. Nothing was lost — the outbox is
+durable and drains once the client and the schema agree again — but a moment
+logged in that window did not reach the other phone until the app was reopened.
+The order above is still the order; this is what it costs when it is not
+followed.
 
 ## `imports/` — one-off data, not schema
 

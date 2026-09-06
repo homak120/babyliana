@@ -783,7 +783,7 @@ body {
    child too, so the descendant selector was more specific than `.fieldbox` and
    turned the flex row back into a block — Chromium fitted the input and the unit
    on one line anyway, iOS Safari gave the input its wider default and wrapped
-   "kg" underneath. Not `.fieldlabel` either: the welcome gate already owns that
+   the unit underneath. Not `.fieldlabel` either: the welcome gate already owns that
    name for a different thing. */
 .otherfield > .fieldname {
   display: block;

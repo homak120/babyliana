@@ -18,7 +18,7 @@ Last updated: 2026-09-06
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0–6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. 483 checks pass across twenty-one suites.
+delivered by the second design handoff. 482 checks pass across twenty-one suites.
 
 **`0003_us_units.sql` is applied.** The first schema change since `0001`. The
 owner ran it in the SQL Editor before the code that writes `pounds` and
@@ -134,6 +134,16 @@ Read `CLAUDE.md` first, then this file. Beyond that:
   draws 44px in a 100×96 slot. Following the prose broke the layout twice.
 
 ## In flight
+
+**`0004` is applied and the columns are gone** — confirmed against the live
+database, where `grams` and `celsius` now return `42703` and `pounds` /
+`fahrenheit` still return rows. It ran **before** the code that stops sending
+them was deployed, which is the reverse of the order `supabase/README.md` asks
+for. **Open the app on both phones.** Until each one picks up the new build it
+is still naming a column that no longer exists, so its upserts fail and its
+writes sit in the outbox. Nothing is lost — the outbox is durable and drains
+once client and schema agree — but a moment logged on an un-updated phone will
+not reach the other one until the app is reopened.
 
 **Weight and temperature are US units.** `0003` adds `event.pounds` and
 `event.fahrenheit`, and **it is already applied** — confirmed against the live

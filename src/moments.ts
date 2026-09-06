@@ -87,10 +87,6 @@ export async function logMoment(input: NewMoment): Promise<Moment> {
     poop_consistency: e.poop_consistency ?? null,
     pounds: e.pounds ?? null,
     fahrenheit: e.fahrenheit ?? null,
-    // Superseded by the pair above (0003) and never written again. Sent as
-    // null so the row shape still matches the table.
-    grams: null,
-    celsius: null,
     supplement_name: e.supplement_name ?? null,
     amount: e.amount ?? null,
     severity: e.severity ?? null,
@@ -219,8 +215,6 @@ export async function updateMoment(
       poop_consistency: e.poop_consistency ?? null,
       pounds: e.pounds ?? null,
       fahrenheit: e.fahrenheit ?? null,
-      grams: null,
-      celsius: null,
       supplement_name: e.supplement_name ?? null,
       amount: e.amount ?? null,
       severity: e.severity ?? null,

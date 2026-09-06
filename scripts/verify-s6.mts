@@ -57,11 +57,10 @@ check('half-typed reads as the digits so far',
 check('a weight with no number is still savable and still a weight',
   canSave([withFields('weight', { lb: '' })])
     && one(withFields('weight', { lb: '' })).type === 'weight')
-// `grams` is not in DraftEntry any more, so a draft cannot even name it. The
-// column still exists in the table for a phone on older code; nothing here
-// writes it.
-check('the superseded column is not something a draft can carry',
-  !Object.keys(weighed).includes('grams'))
+// Neither the draft nor the row can name the metric pair any more — they are
+// gone from DraftEntry, from LogEvent, and from the table in 0004.
+check('the superseded columns are gone from the draft entirely',
+  !Object.keys(weighed).includes('grams') && !Object.keys(weighed).includes('celsius'))
 
 check('pounds read back the way a scale says it', poundsToLbOz(7.25) === '7 lb 4 oz',
   poundsToLbOz(7.25))
@@ -74,7 +73,7 @@ check('and under an ounce is just the pounds', poundsToLbOz(7.01) === '7 lb', po
 
 const temp = one(withFields('temperature', { fahrenheit: '98.6' }))
 check('a temperature entry carries fahrenheit', temp.fahrenheit === 98.6, String(temp.fahrenheit))
-check('a fever reading fits, where celsius(3,1) could not hold it',
+check('a fever reading fits, where the old numeric(3,1) could not hold it',
   one(withFields('temperature', { fahrenheit: '100.4' })).fahrenheit === 100.4)
 check('a decimal point is not lost',
   one(withFields('temperature', { fahrenheit: '99.05' })).fahrenheit === 99.05)

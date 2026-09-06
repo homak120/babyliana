@@ -70,17 +70,10 @@ export type LogEvent = {
   poop_consistency: PoopConsistency | null
 
   // weight / temperature, in US units as of migration 0003. `pounds` is a
-  // decimal number of pounds as typed and reads back as `7 lb 4 oz`.
+  // decimal number of pounds as typed and reads back as `7 lb 4 oz`. The
+  // metric pair they replaced is gone from the table in 0004.
   pounds: number | null
   fahrenheit: number | null
-
-  /**
-   * Superseded by `pounds` and `fahrenheit`. The columns still exist so a phone
-   * on older code keeps syncing (0003 is additive); nothing reads them, and
-   * nothing new is written to them.
-   */
-  grams: number | null
-  celsius: number | null
 
   // supplement
   supplement_name: string | null
