@@ -57,6 +57,13 @@ digit typed replaces, so it costs nothing to disagree with; `+ milk` inside the
 sheet still starts blank, because a feed added by hand is as often the paper's
 `?`. The report screen's date strip now stops at three day pills, so `more` — the
 only route to an older day — is on screen rather than off the right-hand edge.
+**The bottle prompt moves and can be tapped** — D-045. `make a bottle` is light
+blue now, its icon breathes to catch an eye that is not on the phone, and
+tapping it turns the line into `making milk · 4m 10s` with the icon rocking
+instead. Counts up, claims nothing about when the bottle is cool, stores nothing
+in the database, and clears exactly when the prompt does — logging the feed is
+the cancel.
+
 **The end has its own date too** — D-044. Same row, same words, under the end
 time. The app still works it out — `+1 h` on a 23:30 feed lands on the next day
 — and touching the row pins it, after which changing the time keeps that day
@@ -177,6 +184,20 @@ lavender and the same `BottleIcon` the end-feed pill wears. `src/log/LogScreen.t
 and the `.prepline` rule in `src/log/log.css`. No test changed: `verify-hero`
 asserts the prompt's count, text and geometry, not its glyph, and its five
 prompt checks pass.
+
+**The bottle prompt's motion and count — D-045.** New
+`src/log/PrepLine.tsx`, `--blueFill` / `--blueInk` in `src/tokens.css` for both
+themes, `countUp` in `src/log/time.ts`, two keyframes and a reduced-motion guard
+in `src/log/log.css`. Six checks in `verify-s5`, six in `verify-hero`.
+
+**And a bug it uncovered: empty is not the same as unread.** `LogScreen` starts
+with `moments = []` and fills it asynchronously, so the first render after every
+remount has no moments — no target, `prepping` false — which is indistinguish-
+able from *a feed has just been logged*. Everything else on the screen renders
+the empty array happily for a frame; this line **acts** on it, and wiped a
+running count on every save and every app open. A `loaded` flag now tells the
+two apart. **The shape is worth remembering:** a component that acts on absent
+data needs to know whether the data is absent or merely not here yet.
 
 **The end's date — D-044, and a real bug under it.** The end date
 row and `endPinned` in `src/log/TimeCard.tsx`, the `endsBeforeStart` gate in
@@ -462,7 +483,36 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-07 (latest) — the end says which day, and a chevron lets go
+### 2026-09-07 (latest) — the prompt asks for attention, then keeps time
+
+**`make a bottle` moves now, and tapping it starts a count** (D-045). Light
+blue of its own — rose reads as an alert, lavender is the end-feed bottle,
+periwinkle is sleep, and this is the only line on the card that asks for
+something. `#1f6f9c` is 5.51:1 on the card, above the lavender it replaces.
+
+**The motion changes rather than stops.** A slow breath while it is asking, a
+rock like a shaken bottle while it is counting, so the two states are told apart
+without reading. Both off under `prefers-reduced-motion` — the tone rule holds
+for movement as much as for words.
+
+**It counts up and claims nothing.** `making milk · 4m 10s`. A countdown was
+offered and declined; it would have meant asserting a cool-down time for a
+bottle the app knows nothing about. Nothing reaches the database — the tap is a
+note to yourself, not an event in the baby's log — and there is no cancel,
+because logging the feed is the cancel and the line already disappears then.
+
+**Then the bug worth the session, again.** The count was wiped by any save at
+all, and by opening the app. `LogScreen` starts with `moments = []` and fills it
+asynchronously, so the first render after a remount has no moments, hence no
+target, hence `prepping` false — which is indistinguishable from a feed having
+just been logged. Every other thing on that screen renders the empty array for a
+frame without caring. This line *acts* on it.
+
+**`loaded` now says which it is.** The general lesson is the durable part: a
+component that acts on absent data has to know whether the data is absent or
+merely not here yet, and an empty array cannot tell it.
+
+### 2026-09-07 — the end says which day, and a chevron lets go
 
 **The end has its own date row now** (D-044). D-043 gave the moment a date and
 left the end anchored to the start's day.
@@ -538,36 +588,3 @@ slow.
 tuning the guard to 17: the suite steps the date row now and the guard is
 deleted. The suite reaching for the app's clock logic instead of stating a day
 was the actual fault, and the fix was a missing feature.
-
-### 2026-09-06 — a way back in for a phone that forgot who it was
-
-**`01202012` at the gate opens a device picker instead of the name page**
-(D-042). Pick one, and this phone takes that id rather than minting a new one.
-
-**What it prevents is a duplicate parent.** The welcome runs whenever
-localStorage is empty — a reinstall, a cleared site, a new phone — and
-`createThisDevice` mints a fresh id every time. The parent types their name
-again and gets a *second* device carrying it, so every `logged_by` after that
-points at a stranger and the avatars stop meaning what they meant. Nothing in
-the app could undo it.
-
-**The list is read straight from the server**, because the local database on
-such a phone is empty — that is the whole situation. `fetchDevices` reads
-`device` directly rather than through `pull()`, which calls `replaceAll` and
-would wipe local data for a screen that is only offering a choice, and it needs
-no identity of its own since `device` is not scoped by `baby_id`.
-
-**`null` and `[]` are kept apart.** Could-not-fetch gets an error, a retry and a
-way back to the gate; an empty list says there is nothing to come back to.
-Collapsing them would tell an offline parent their device does not exist.
-
-**Two calls the owner made, both with the consequence in front of him.** Picking
-is straight through with no confirmation — if the other phone still holds that
-id, both write as the same device, which is the recovery case working rather
-than a mistake. And the greeting is his line, lightly smoothed: *you're my dad
-or mom / so good to see you*.
-
-**Measured rather than assumed: the failure takes ~7 seconds to appear.** The
-first version of the check slept 600ms and caught the page still loading; it now
-waits for the error and records 6.8s, because the client does not give up when
-the request does. Left as is — nobody asked, and it is a flow used once.

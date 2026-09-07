@@ -29,6 +29,7 @@ import { getMoments, removeMoment, renameThisDevice } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
 import type { Device, Moment } from '../types'
 import { AddSheet } from './AddSheet'
+import { PrepLine } from './PrepLine'
 import { BottleIcon } from './BottleIcon'
 import { EndSleepIcon } from './EndSleepIcon'
 import { Icon } from './Icon'
@@ -133,6 +134,17 @@ export function LogScreen({ onEndOpen }: {
   onEndOpen: () => void
 }) {
   const [moments, setMoments] = useState<Moment[]>([])
+  /**
+   * Whether `moments` has been read yet, as opposed to being empty.
+   *
+   * The two are the same array and mean opposite things. Everything on this
+   * screen was content to render the empty one for a frame — but the bottle
+   * prompt's timer clears itself when the prompt is over (D-045), and "no
+   * moments yet" looks exactly like "the feed has been logged". It wiped a
+   * running count on every save and on every app open until this told them
+   * apart.
+   */
+  const [loaded, setLoaded] = useState(false)
   const [lead, setLead] = useState<Lead>(storedLead)
   // Held as state as well as in localStorage for the same reason the lead is:
   // this screen is remounted on every save, and `hhmm` reads the stored value,
@@ -156,7 +168,10 @@ export function LogScreen({ onEndOpen }: {
   const [pendingDelete, setPendingDelete] = useState<Moment | null>(null)
 
   const refresh = useCallback(() => {
-    getMoments().then(setMoments)
+    getMoments().then((m) => {
+      setMoments(m)
+      setLoaded(true)
+    })
     getDevices().then(setDevices)
   }, [])
 
@@ -384,15 +399,11 @@ export function LogScreen({ onEndOpen }: {
             {/* Its own row rather than folded into the one above: the wake time
                 and the prompt are two independent facts, and this card already
                 stacks lines this way for a running feed and an open sleep.
-                The drawn bottle rather than `local_drink`, which is a paper cup
-                with a straw: the prompt is asking for a bottle specifically, and
-                this is the same glyph the end-feed control wears. */}
-            {prepping && (
-              <div className="prepline">
-                <BottleIcon size={14} />
-                <span>make a bottle</span>
-              </div>
-            )}
+
+                Rendered whatever `prepping` says, not behind it: the line clears
+                its own timer when the prompt is over (D-045), and a component
+                unmounted by the guard would never get to. */}
+            <PrepLine prepping={prepping} loaded={loaded} />
           </div>
         </section>
       </div>

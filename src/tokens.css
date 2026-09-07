@@ -70,6 +70,10 @@
   --mintFill: #dff2e8;  --mintInk: #3f8a6b;  --mint: #7cc4a4;
   --onMint: #f3fbf7;    --mintShadow: rgba(124,196,164,0.35);
   --periFill: #e9edfa;  --periInk: #5d72b8;
+  /* The bottle prompt alone (D-045). Periwinkle is sleep's colour everywhere
+     else, so the one line on the card that asks for something gets its own.
+     5.51:1 on --card, which is above --lavInk's 5.37 that it replaces. */
+  --blueFill: #ddeefb;  --blueInk: #1f6f9c;
   --dayHead: #fbeef4;
 
   /* Insights only. Chart labels and the watch list are body-size text on a
@@ -111,6 +115,8 @@
   --mintFill: #1f3a30;  --mintInk: #8fd0b3;  --mint: #5f9e84;
   --onMint: #eaf7f1;    --mintShadow: rgba(0,0,0,0.4);
   --periFill: #232a45;  --periInk: #94a6dd;
+  /* 8.74:1 on the night --card. */
+  --blueFill: #1b2b3a;  --blueInk: #8cc6ea;
   --dayHead: #2a2038;
 
   --dim: #a99cc0;       --flagInk: #efd79a;

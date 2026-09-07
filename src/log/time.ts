@@ -129,6 +129,24 @@ export const wrapMinute = (m: number) => ((m % 60) + 60) % 60
 
 export const pad = (n: number) => String(n).padStart(2, '0')
 
+/**
+ * `40s`, `4m 10s`, `1h 04m` — a count that is being watched (D-045).
+ *
+ * Seconds while they matter and not once they do not: under an hour the seconds
+ * are the thing moving, and past it the minute is. Distinct from
+ * `formatDuration`, which reads a period that is over and has no use for a
+ * second hand.
+ */
+export function countUp(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000))
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  const sec = total % 60
+  if (h > 0) return `${h}h ${pad(m)}m`
+  if (m > 0) return `${m}m ${pad(sec)}s`
+  return `${sec}s`
+}
+
 /** `25 min`, `1h 05m`. Words, because a bare number of minutes reads slower. */
 export function formatDuration(start: Date, end: Date): string {
   const mins = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60_000))

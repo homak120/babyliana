@@ -13,7 +13,7 @@ const store = new Map<string, string>([['babyliana.device_id', '00000000-0000-40
 import {
   endNow, formatDuration, minutesAfter, minutesAgo, resolveEnd, stepFor,
   withHourMinute, wrapHour, wrapMinute, HOLD_ACCELERATE_AFTER,
-  atHourMinute, dayWord, daysBack, onDay,
+  atHourMinute, countUp, dayWord, daysBack, onDay,
 } from '../src/log/time.ts'
 
 let failures = 0
@@ -39,6 +39,16 @@ check('typing 23:45 at 00:30 means LAST night, not tonight',
 const lastEvening = withHourMinute(20, 0, t(8, 0))
 check('a time far ahead of now is read as yesterday',
   lastEvening.getDate() === 2, show(lastEvening))
+
+// --- the making-milk count (D-045) ------------------------------------------
+// Seconds while they are the thing moving, and not once they are not.
+check('under a minute is seconds alone', countUp(41_000) === '41s', countUp(41_000))
+check('zero is still a number', countUp(0) === '0s', countUp(0))
+check('minutes carry padded seconds', countUp(250_000) === '4m 10s', countUp(250_000))
+check('the minute rolls at sixty', countUp(60_000) === '1m 00s', countUp(60_000))
+check('past an hour the seconds go', countUp(3_845_000) === '1h 04m', countUp(3_845_000))
+check('a clock nudged backwards does not read negative',
+  countUp(-5_000) === '0s', countUp(-5_000))
 
 // --- the date field, which is what the inference above became a default for --
 // (D-043)

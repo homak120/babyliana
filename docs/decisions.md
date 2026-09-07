@@ -1713,3 +1713,60 @@ at all.
 place; a `console.log` with a stack trace in the parent's `onChange` named
 `onStep` as the caller in one run. The code was innocent everywhere it was
 being read.
+
+---
+
+## D-045 — The bottle prompt moves, and becomes a count when you tap it
+
+`make a bottle` was a static lavender line. It is now light blue, it moves, and
+tapping it turns it into a count of how long the bottle has been standing.
+
+**Why it moves.** The line exists to be noticed by someone who is not looking at
+the phone. A slow breath on the icon, 1.8s, not a flash — the tone rule holds
+for movement as much as for words, and nothing on this card is allowed to nag.
+Once counting, the motion *changes* rather than stops: a rock, like a bottle
+being shaken, so the two states are told apart without reading. Both are off
+under `prefers-reduced-motion`.
+
+**Its own light blue, `--blueFill` / `--blueInk`.** Rose reads as an alert
+(D-038), lavender is the end-feed bottle, periwinkle is sleep. This is the only
+line on the card that asks for something, so it earns a colour. `#1f6f9c` gives
+5.51:1 on `--card`, above the `--lavInk` it replaces; the night `#8cc6ea` gives
+8.74:1.
+
+**It counts up, and claims nothing.** `making milk · 4m 10s` — how long since
+you started, not how long until it is cool. A countdown was offered and
+declined, and it would have meant the app asserting a cool-down time for a
+bottle it knows nothing about. Seconds while they are the thing moving, minutes
+once they are not.
+
+**Nothing is stored in the database.** The tap is a note to yourself about a
+bottle, not an event in the baby's log — there is no moment to attach it to and
+nothing the other phone needs. It sits in localStorage with the lead rail and
+the clock format (`event-model.md` § Where each fact lives). It is in
+localStorage rather than component state because this screen is remounted by
+`key={saved}` on every save.
+
+**No cancel, by the owner's decision.** Logging the feed is the cancel. The line
+clears exactly when the prompt does — `prepping` goes false when a feed pushes
+the target hours out (D-036) — so the count needs no rule of its own about
+feeds, and there is no second gesture to learn.
+
+**`PrepLine` is a component so the one-second tick is confined to it.** The card
+above is content with `now` every 30s and should not re-render every second to
+move one line's digits.
+
+### The bug this uncovered — empty is not the same as unread
+
+The count was wiped by *any* save, and by opening the app.
+
+`LogScreen` starts with `moments = []` and fills it asynchronously, so the first
+render after every remount has no moments — which produces no target, which
+makes `prepping` false, which is indistinguishable from *a feed has just been
+logged*. Everything else on the screen was happy to render the empty array for a
+frame. This line acts on it, and cleared a running count.
+
+**`loaded` now says which it is**, set when `getMoments` first resolves, and the
+clearing effect waits for it. The general shape is worth remembering: a
+component that *acts* on absent data needs to know whether the data is absent or
+merely not here yet, and an empty array cannot tell it.

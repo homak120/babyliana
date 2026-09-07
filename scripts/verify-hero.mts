@@ -263,6 +263,55 @@ check('it sits below the wake line, on one row, inside the card',
   prep.below && prep.right <= prep.limit && prep.lines <= 1,
   `ends ${prep.right} vs ${prep.limit}, ${prep.lines} line(s), below: ${prep.below}`)
 
+// --- tapping it starts the making-milk count (D-045) -------------------------
+check('the prompt is a button before it is tapped',
+  (await p.locator('button.prepline.asking').count()) === 1,
+  `${await p.locator('button.prepline.asking').count()} tappable prompt(s)`)
+// It moves because it is asking to be noticed by someone not looking at the
+// phone. Read off the computed style rather than watched: what is under test is
+// that the rule reaches the icon, not what an animation looks like.
+const askAnim = await p.evaluate(() =>
+  getComputedStyle(document.querySelector('.prepline.asking svg')!).animationName)
+check('and it is moving', askAnim === 'prepbreathe', askAnim)
+
+await p.locator('button.prepline').click()
+await p.waitForTimeout(1300)
+const madeText = (await p.locator('.prepline').innerText()).replace(/\n/g, ' ')
+check('tapping turns it into a count that is running',
+  /making milk · \d+s/.test(madeText), madeText)
+check('the motion changes with the state, rather than stopping',
+  (await p.evaluate(() =>
+    getComputedStyle(document.querySelector('.prepline.making svg')!).animationName))
+  === 'preprock',
+  await p.evaluate(() =>
+    getComputedStyle(document.querySelector('.prepline.making svg')!).animationName))
+check('and it is no longer a button, having nothing left to ask',
+  (await p.locator('button.prepline').count()) === 0,
+  `${await p.locator('button.prepline').count()} button(s)`)
+
+// This screen is remounted by `key={saved}` on every save — the trap the lead
+// rail fell into. A diaper is not a feed, so the prompt must survive it.
+await p.getByLabel('log a diaper').click()
+await p.waitForTimeout(250)
+await p.getByRole('button', { name: 'save', exact: true }).click()
+await p.waitForTimeout(900)
+check('a save that is not a feed leaves the count running',
+  /making milk/.test((await p.locator('.prepline').innerText().catch(() => 'absent'))),
+  (await p.locator('.prepline').innerText().catch(() => 'absent')).replace(/\n/g, ' '))
+
+// And the disappearing act: a feed pushes the target hours out, which takes the
+// whole line with it — the count needs no rule of its own about feeds.
+await p.getByLabel('log a feed').click()
+await p.waitForTimeout(250)
+await p.getByRole('button', { name: 'save', exact: true }).click()
+await p.waitForTimeout(900)
+check('logging a feed clears the prompt and the count with it',
+  (await p.locator('.prepline').count()) === 0,
+  `${await p.locator('.prepline').count()} prompt(s)`)
+check('and it does not come back on the next render',
+  await p.evaluate(() => localStorage.getItem('babyliana.making')) === null,
+  String(await p.evaluate(() => localStorage.getItem('babyliana.making'))))
+
 await b.close()
 stop()
 console.log(fail === 0 ? '\n  hero fits' : `\n  ${fail} FAILED`)
