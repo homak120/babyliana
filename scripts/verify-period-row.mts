@@ -31,7 +31,15 @@ await p.getByLabel('log a moment').click()
 await p.getByRole('button', { name: '+ milk' }).click()
 for (const k of ['6', '0']) await p.getByRole('button', { name: k, exact: true }).click()
 await p.getByRole('button', { name: /end time/ }).click()
-await p.waitForTimeout(250)
+await p.waitForTimeout(300)
+// It opens on the start's own date and time — nothing yet elapsed (D-047). It
+// used to open a day out, because the start carried seconds that "now" did not
+// and `resolveEnd` read the difference as crossing midnight.
+check('adding an end time starts it at the start',
+  (await p.locator('.duration').innerText()) === '0 min'
+  && (await p.locator('.daterow.end .dateword').innerText())
+     === (await p.locator('.daterow:not(.end) .dateword').innerText()).split('·')[1].trim(),
+  `${await p.locator('.duration').innerText()}, ends on ${await p.locator('.daterow.end .dateword').innerText()}`)
 // +30 min, so the end differs from the start.
 await p.getByRole('button', { name: '+30 min' }).click()
 await p.waitForTimeout(200)

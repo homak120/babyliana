@@ -25,6 +25,26 @@ export const END_OFFSETS = [30, 60, 120, 180, 240]
 export const minutesAgo = (mins: number, now = new Date()) =>
   new Date(now.getTime() - mins * 60_000)
 
+/**
+ * The same instant with its seconds and milliseconds discarded — for
+ * *comparing*, never for storing (D-047).
+ *
+ * Nothing here has ever shown a second: the clock is `HH:MM` and durations are
+ * minutes. But a `new Date()` carries them and every typed or stepped time
+ * zeroes them, so `16:01:00` and `16:01:37` are the same minute to a person and
+ * 37 seconds apart to `resolveEnd` — which read that as crossing midnight and
+ * filed the end a day later.
+ *
+ * **Stored instants keep their seconds.** They are what orders two moments
+ * logged in the same minute, and `ongoingFeed` and `ongoingSleep` both ask
+ * which moment is latest. Truncating on the way in made that a coin toss.
+ */
+export function toMinute(d: Date): Date {
+  const x = new Date(d)
+  x.setSeconds(0, 0)
+  return x
+}
+
 export const minutesAfter = (from: Date, mins: number) =>
   new Date(from.getTime() + mins * 60_000)
 
@@ -172,7 +192,10 @@ export function formatDuration(start: Date, end: Date): string {
  * database constraint would refuse it and the user would only see a failure.
  */
 export function resolveEnd(start: Date, end: Date): Date {
-  if (end.getTime() >= start.getTime()) return end
+  // Compared minute to minute (D-047): an end typed at the start's own minute
+  // is not "before" it in any sense a person means, and treating it as such
+  // pushed the whole entry into tomorrow.
+  if (toMinute(end).getTime() >= toMinute(start).getTime()) return end
   const next = new Date(end)
   next.setDate(next.getDate() + 1)
   return next
@@ -190,6 +213,11 @@ export function resolveEnd(start: Date, end: Date): Date {
  */
 export function endNow(start: Date, now = new Date()): Date {
   const at = withHourMinute(now.getHours(), now.getMinutes(), now, start)
-  if (at.getTime() >= start.getTime()) return at
-  return start.getTime() <= now.getTime() ? resolveEnd(start, at) : new Date(start)
+  // Compared minute to minute. `at` has no seconds and a start read back from
+  // the database may well have them, and 16:01:00 is not "before" 16:01:37 in
+  // any sense a person means — but it is by milliseconds, which used to send
+  // this a whole day forward (D-047).
+  const from = toMinute(start)
+  if (at.getTime() >= from.getTime()) return at
+  return from.getTime() <= now.getTime() ? resolveEnd(from, at) : new Date(from)
 }

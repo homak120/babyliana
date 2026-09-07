@@ -1832,3 +1832,52 @@ that in production it should span the full history. That would make the coverage
 run impossible: the ten photographed days are older than anything in the log,
 and D-043 exists precisely so they can be entered. The start stays open
 backwards and clamped forwards at today.
+
+---
+
+## D-047 — The end time opens at the start, and seconds stop costing a day
+
+Adding an end time prefilled a moment **23h 59m** long. It now opens on the
+start's own date and time, at zero.
+
+### The prefill
+
+`+ end time — optional` called `endNow(start)`, which is *the current clock time
+on the start's day*. D-036 chose that over a guessed half hour, and for a moment
+being logged as it happens the two are the same instant. For a backdated one
+they are not: a feed entered at 08:00 for 04:10 opened its end at 08:00, a three
+hour fifty feed, which is not a guess anyone would want. **The end now opens as
+a copy of the start** — nothing has elapsed yet, and `+30 min`, `+1 h` and the
+`now` pill are all one tap away. The `now` pill still means *now*, which is a
+real answer on a backdated start and reads sixteen hours where that is the
+truth.
+
+### The 24 hours
+
+The real fault was seconds. `start` is `new Date()` and carries them; every
+typed, stepped or offset time zeroes them. So on a moment logged *now*, the end
+candidate `16:01:00` was 37 milliseconds-worth-of-seconds **before** a start of
+`16:01:37` — and `resolveEnd`, whose whole job is *an end before its start means
+it crossed midnight*, dutifully filed it tomorrow. Hence 23h 59m, and hence
+"always 24 hours away".
+
+**`resolveEnd` now compares minute to minute.** An end typed at the start's own
+minute is not before it in any sense a person means. `endNow` does the same,
+which matters for a start read back from the database with real seconds on it.
+
+### What was tried first and reverted
+
+The first fix truncated seconds at the source — `minutesAgo`, and the sheet's
+initial `start`. It fixed the symptom and broke `verify-feed` and
+`verify-sleep`, which crashed rather than failing quietly.
+
+**Stored instants need their seconds.** They are what orders two moments logged
+in the same minute, and `ongoingFeed` and `ongoingSleep` both ask which moment
+is *latest*. Truncating on the way in made that a coin toss: a feed and the
+diaper logged twenty seconds later became simultaneous, the latest moment could
+be either, and a running feed stopped being detectable.
+
+**So `toMinute` is for comparing, never for storing** — the docstring says so,
+and `verify-s5` pins it with a check that a stored instant keeps its seconds.
+The two suites that caught it are the ones that drive a real feed and a real
+sleep from the bar, which is the only place the ordering shows.

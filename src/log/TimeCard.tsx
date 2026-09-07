@@ -246,7 +246,7 @@ export function TimeCard({
       {end === null ? (
         <button
           type="button" className="pill addend"
-          onClick={() => onChange(start, endNow(start))}
+          onClick={() => onChange(start, new Date(start))}
         >
           <Icon name="add" size={16} /> end time — optional
         </button>

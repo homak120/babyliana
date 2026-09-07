@@ -13,7 +13,7 @@ const store = new Map<string, string>([['babyliana.device_id', '00000000-0000-40
 import {
   endNow, formatDuration, minutesAfter, minutesAgo, resolveEnd, stepFor,
   withHourMinute, wrapHour, wrapMinute, HOLD_ACCELERATE_AFTER,
-  atHourMinute, countUp, dayDate, dayWord, daysBack, onDay,
+  atHourMinute, countUp, dayDate, dayWord, daysBack, onDay, toMinute,
 } from '../src/log/time.ts'
 
 let failures = 0
@@ -39,6 +39,40 @@ check('typing 23:45 at 00:30 means LAST night, not tonight',
 const lastEvening = withHourMinute(20, 0, t(8, 0))
 check('a time far ahead of now is read as yesterday',
   lastEvening.getDate() === 2, show(lastEvening))
+
+// --- seconds, and the day they used to cost (D-047) --------------------------
+// Nothing in this app shows a second, but `new Date()` carries them and every
+// other route to a time zeroes them. "Now" then landed a few seconds before a
+// start that was also now, which reads as crossing midnight.
+const withSecs = new Date(2026, 8, 3, 16, 1, 37, 250)
+check('a comparison drops the seconds', toMinute(withSecs).getSeconds() === 0
+  && toMinute(withSecs).getMilliseconds() === 0, show(toMinute(withSecs)))
+check('and keeps the minute it was in', toMinute(withSecs).getMinutes() === 1, show(toMinute(withSecs)))
+// Stored instants keep theirs: they are what orders two moments logged in the
+// same minute, and `ongoingFeed` asks which is latest. Truncating on the way in
+// made that a coin toss, and took `verify-feed` and `verify-sleep` down.
+check('but a stored instant keeps them', minutesAgo(20, withSecs).getSeconds() === 37,
+  String(minutesAgo(20, withSecs).getSeconds()))
+
+// The same minute is not "before": this is the comparison that used to push a
+// whole entry into tomorrow.
+const sameMin = resolveEnd(withSecs, new Date(2026, 8, 3, 16, 1, 0))
+check('an end on the start\'s own minute stays on the day',
+  sameMin.getDate() === 3, show(sameMin))
+check('and one genuinely before it still crosses midnight',
+  resolveEnd(withSecs, new Date(2026, 8, 3, 2, 0)).getDate() === 4,
+  show(resolveEnd(withSecs, new Date(2026, 8, 3, 2, 0))))
+
+const sameMinute = endNow(withSecs, new Date(2026, 8, 3, 16, 1, 50))
+check('ending now on a start of now is the same minute, not the next day',
+  sameMinute.getDate() === 3 && sameMinute.getHours() === 16 && sameMinute.getMinutes() === 1,
+  show(sameMinute))
+
+// The pill still means *now* where that is a real answer: a feed begun last
+// night and ended this afternoon is sixteen hours, and says so.
+const later = endNow(new Date(2026, 8, 2, 23, 30), new Date(2026, 8, 3, 16, 3))
+check('but a backdated start still ends at the real clock time',
+  later.getDate() === 3 && later.getHours() === 16, show(later))
 
 // --- the making-milk count (D-045) ------------------------------------------
 // Seconds while they are the thing moving, and not once they are not.

@@ -57,6 +57,12 @@ digit typed replaces, so it costs nothing to disagree with; `+ milk` inside the
 sheet still starts blank, because a feed added by hand is as often the paper's
 `?`. The report screen's date strip now stops at three day pills, so `more` — the
 only route to an older day — is on screen rather than off the right-hand edge.
+**The end time opens at the start, not a day out** — D-047. It prefilled 23h
+59m long: the start carries seconds and every other time zeroes them, so the end
+candidate was a few seconds *before* it and `resolveEnd` read that as crossing
+midnight. Comparisons are minute-to-minute now, and the prefill is a copy of the
+start rather than the clock.
+
 **The date rows follow the date-fields handoff** — D-046. `calendar_today`, a
 36px round step either side of a centred `today · 09/07`, and a hairline under
 it; the end row moved below its own steppers as `event · ends on · 09/08` with
@@ -191,6 +197,20 @@ lavender and the same `BottleIcon` the end-feed pill wears. `src/log/LogScreen.t
 and the `.prepline` rule in `src/log/log.css`. No test changed: `verify-hero`
 asserts the prompt's count, text and geometry, not its glyph, and its five
 prompt checks pass.
+
+**The end-time prefill — D-047.** `resolveEnd` and `endNow` compare
+minute to minute, a new `toMinute` in `src/log/time.ts` for comparing only, and
+`+ end time — optional` copies the start instead of calling `endNow`. Six checks
+in `verify-s5`, one in `verify-period-row`.
+
+**The first fix was wrong and two suites caught it.** Truncating seconds at the
+source — in `minutesAgo` and the sheet's initial `start` — cured the symptom and
+took `verify-feed` and `verify-sleep` down with a crash. **Stored instants need
+their seconds:** they order two moments logged in the same minute, and
+`ongoingFeed` and `ongoingSleep` both ask which is latest. A feed and the diaper
+logged twenty seconds after it became simultaneous, so a running feed stopped
+being detectable. `toMinute` is for comparing, never for storing, and
+`verify-s5` now pins that.
 
 **The date rows redrawn to the handoff — D-046.** `dayWord` and a
 new `dayDate` in `src/log/time.ts`, both rows restructured in
@@ -507,7 +527,33 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-07 (latest) — the date rows get their proper shape
+### 2026-09-07 (latest) — the end time stops opening a day out
+
+**Adding an end time prefilled a moment 23h 59m long** (D-047). The owner hit it
+in use and read it correctly: it should open at the start.
+
+**The fault was seconds.** `start` is `new Date()` and carries them; every
+typed, stepped or offset time zeroes them. So on a moment logged now, the end
+candidate `16:01:00` was seconds *before* a start of `16:01:37` — and
+`resolveEnd`, whose whole job is *an end before its start crossed midnight*,
+filed it tomorrow. `resolveEnd` and `endNow` compare minute to minute now.
+
+**And the prefill itself changed**, which is the owner's call. It called
+`endNow` — the clock time on the start's day — which D-036 chose over a guessed
+half hour. For a moment logged as it happens those are the same instant; for a
+backdated one they are not, and a feed entered at 08:00 for 04:10 opened its end
+at 08:00. It opens as a copy of the start now, with `+30 min`, `+1 h` and `now`
+one tap away. The `now` pill still means now, and reads sixteen hours on a
+backdated start where that is the truth.
+
+**The first fix was wrong, and the suites caught it.** Truncating seconds at the
+source cured the symptom and crashed `verify-feed` and `verify-sleep`. **Stored
+instants need their seconds** — they order two moments logged in the same
+minute, and `ongoingFeed` and `ongoingSleep` both ask which is latest. A feed
+and the diaper logged twenty seconds later became simultaneous, so a running
+feed stopped being detectable. `toMinute` is for comparing, never for storing.
+
+### 2026-09-07 — the date rows get their proper shape
 
 **`handoff_date_fields` is a design pass over what D-043 and D-044 built**, and
 its layout, wording and ranges are now in (D-046). The start row is
@@ -574,42 +620,3 @@ frame without caring. This line *acts* on it.
 **`loaded` now says which it is.** The general lesson is the durable part: a
 component that acts on absent data has to know whether the data is absent or
 merely not here yet, and an empty array cannot tell it.
-
-### 2026-09-07 — the end says which day, and a chevron lets go
-
-**The end has its own date row now** (D-044). D-043 gave the moment a date and
-left the end anchored to the start's day.
-
-**The data had always been right.** A 23:30 feed with an hour on it was already
-stored as `9/6 23:30 → 9/7 01:30`; `resolveEnd` is what makes a 23:00→07:00
-sleep work and predates all of this. What was missing is that nothing said so —
-the sheet showed two steppers and the table printed `23:30–01:30`. Same
-invisibility the start had before D-043.
-
-**The app still computes it and the owner can overrule it.** `+1 h` on 23:30
-still lands on the next day untouched. Touch the end's date row and it pins:
-changing `00:30` to `23:45` then means that day at 23:45, not a re-anchor to the
-start.
-
-**The feed belongs to its start date** — the owner's rule, and it settles the
-day table: a period crossing midnight needs no marker, because it is filed by
-where it began. The second date says what happened, not where it lives.
-
-**An impossible period is refused where it can be explained.** `0001` has
-`ended_at >= occurred_at`, and an editable end date makes that reachable. The
-earlier-day chevron stops at the start's day, and the save button reads *the end
-is before the start* rather than failing as an upsert.
-
-**Then the bug worth the session.** Stepping the end date back made the end time
-impossible to change — every edit applied and reverted a tenth of a second
-later. `useHold` clears its repeat interval on `pointerup`, and the chevron
-disables itself the moment it reaches the start's day, so React removed its
-handlers mid-press and the release never arrived. The interval outlived the
-press and re-applied its stale step every 110ms. **It was already shipped** in
-D-043's later-day chevron, where re-applying an already-taken step looks like
-nothing at all.
-
-**Four passes of reading the code all pointed at the wrong place** — `wrapHour`,
-`clampHour`, React's controlled inputs. A `console.log` with a stack trace in
-the parent's `onChange` named `onStep` as the caller in one run. Instrument
-earlier.
