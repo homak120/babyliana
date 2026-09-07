@@ -1,5 +1,9 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { putDevice } from '../db'
+import { adoptDeviceId } from '../device-id'
 import { createThisDevice } from '../moments'
+import { fetchDevices } from '../sync'
+import type { Device } from '../types'
 import { Icon } from './Icon'
 import { Mascot } from './Mascot'
 import gateWebp from '../assets/mascot/gate.webp'
@@ -35,21 +39,82 @@ import gateJpg from '../assets/mascot/gate.jpg'
  */
 const SECRET_CODE = '08242026'
 
+/**
+ * The second answer: the same gate, a different door (D-042).
+ *
+ * Typing this instead of the code above skips the name page entirely and lists
+ * the devices already on the server, so a reinstalled phone can take its own
+ * identity back rather than minting a second one under the same name.
+ *
+ * It is not more secret than `SECRET_CODE` — same bundle, same plain text, same
+ * D-030 caveat. It is a different destination, not a higher privilege.
+ */
+const RECOVERY_CODE = '01202012'
+
+/** Enough of a UUID to tell two devices apart without printing all 36. */
+const shortId = (id: string) => `${id.slice(0, 4)}…${id.slice(-3)}`
+
+type Stage = 'gate' | 'name' | 'devices'
+
 export function Welcome({ onDone }: { onDone: () => void }) {
-  const [passed, setPassed] = useState(false)
+  const [stage, setStage] = useState<Stage>('gate')
   const [code, setCode] = useState('')
   const [wrong, setWrong] = useState(false)
   const [name, setName] = useState('')
 
   const [saving, setSaving] = useState(false)
 
+  // The recovery list. `null` is "not fetched"; the failure is its own flag,
+  // because an empty list is a real answer — a server nobody has set up yet.
+  const [list, setList] = useState<Device[] | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [failed, setFailed] = useState(false)
+
+  const loadDevices = useCallback(async () => {
+    setLoading(true)
+    setFailed(false)
+    const rows = await fetchDevices()
+    if (rows) {
+      // Named first and alphabetical, so the two phones that matter are at the
+      // top however many test rows are behind them.
+      setList([...rows].sort((a, b) => (a.name ?? '~').localeCompare(b.name ?? '~')))
+    } else {
+      setFailed(true)
+    }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    if (stage === 'devices' && list === null && !failed && !loading) void loadDevices()
+  }, [stage, list, failed, loading, loadDevices])
+
   const submitCode = () => {
     if (code === SECRET_CODE) {
-      setPassed(true)
+      setStage('name')
+      setWrong(false)
+    } else if (code === RECOVERY_CODE) {
+      setStage('devices')
       setWrong(false)
     } else {
       setWrong(true)
     }
+  }
+
+  /**
+   * Straight through, deliberately — no confirm step. The owner chose that with
+   * the consequence in front of him: if the other phone still holds this id,
+   * both write as the same device. That is the recovery case working, not a
+   * mistake, and anyone who got here typed an eight-digit code to do it.
+   *
+   * The row is written locally before the app opens so the first render already
+   * knows the name; the normal sync brings the rest down behind it.
+   */
+  const adopt = async (d: Device) => {
+    if (saving) return
+    setSaving(true)
+    await putDevice(d)
+    adoptDeviceId(d.id)
+    onDone()
   }
 
   // This is where the device comes into existence — nothing before it. Which is
@@ -62,7 +127,7 @@ export function Welcome({ onDone }: { onDone: () => void }) {
     onDone()
   }
 
-  if (!passed) {
+  if (stage === 'gate') {
     return (
       <main className="welcome gate">
         {/* The photograph the design asks for, `assets/liana-photo.png`, which
@@ -119,6 +184,70 @@ export function Welcome({ onDone }: { onDone: () => void }) {
           onClick={submitCode}
         >
           <Icon name="lock_open" size={26} /> that&rsquo;s me
+        </button>
+      </main>
+    )
+  }
+
+  if (stage === 'devices') {
+    return (
+      <main className="welcome recover">
+        <Mascot state="settled" size={88} welcome />
+
+        <p className="kickerup">you&rsquo;re my dad or mom</p>
+        <h1>so good to see you</h1>
+        <p className="sub">
+          pick the phone you were logging on before, and this one carries on as it.
+        </p>
+
+        {loading && <p className="recovnote">looking for your phones&hellip;</p>}
+
+        {failed && (
+          <>
+            <p className="gateerr">
+              <Icon name="error" size={18} /> can&rsquo;t reach the list of devices right now.
+            </p>
+            <button type="button" className="save" onClick={() => void loadDevices()}>
+              <Icon name="refresh" size={22} /> try again
+            </button>
+          </>
+        )}
+
+        {list && list.length === 0 && (
+          <p className="recovnote">
+            no devices on the server yet — there is nothing to come back to.
+          </p>
+        )}
+
+        {list && list.length > 0 && (
+          <ul className="devlist">
+            {list.map((d) => (
+              <li key={d.id}>
+                <button type="button" onClick={() => void adopt(d)} disabled={saving}>
+                  <b>{d.name ?? 'unnamed'}</b>
+                  <span>{shortId(d.id)}</span>
+                  <Icon name="arrow_forward" size={20} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="spacer" />
+
+        {/* The way out. Without it a failed fetch is a dead end, and the only
+            escape from a hidden page is closing the app. */}
+        <button
+          type="button"
+          className="backlink"
+          onClick={() => {
+            setStage('gate')
+            setCode('')
+            setList(null)
+            setFailed(false)
+          }}
+        >
+          <Icon name="arrow_back" size={18} /> back
         </button>
       </main>
     )

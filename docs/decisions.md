@@ -1537,3 +1537,58 @@ AM`. Six checks in `verify-s7` pin the boundaries: `12:05 AM`, `12:00 PM`,
 settings screen.** The name button was the first, and its comment says the same
 thing. Neither is an argument against the settings screen; both are what it will
 hold when it exists.
+
+---
+
+## D-042 — A second gate code that hands a phone its old identity back
+
+Typing `01202012` at the gate, instead of the secret code, skips the name page
+and lists the devices already on the server. Picking one makes this phone *be*
+that device — the stored id is the one that was chosen, not a fresh UUID.
+
+**The problem it solves is a duplicate parent.** `createThisDevice` mints a new
+id and a new row every time the welcome runs, and the welcome runs whenever
+localStorage is empty — a reinstall, a cleared site, a new phone. The parent
+types their name again and gets a *second* device with the same name, so
+`logged_by` now points at a stranger and the avatars on the home screen stop
+meaning what they meant. Nothing in the app could undo that.
+
+**The list has to come from the server, because the local database is empty.**
+That is the whole situation this page exists for. `fetchDevices` reads
+`device` directly rather than going through `pull()`, which calls `replaceAll`
+and would wipe local data for a screen that is only offering a choice. It needs
+no identity of its own: `device` is not scoped by `baby_id`, so the read works
+before this phone is anybody.
+
+**`null` and `[]` are different answers.** Could-not-fetch shows an error and a
+retry; an empty list says there is nothing to come back to. Collapsing them
+would tell an offline parent that their device does not exist.
+
+**Picking is straight through, with no confirmation.** The owner chose that with
+the consequence stated: if the other phone still holds the id, both phones then
+write as the same device and their entries become indistinguishable. That is the
+recovery case working — the old phone is usually the one that is gone — and
+anyone who reaches this page typed an eight-digit code to get here. A confirm
+step was offered and declined.
+
+**The chosen row is written to the local database before the app opens**, so the
+first render already knows the name. Waiting for the next sync would show a
+nameless phone for a second or two on the screen whose whole point was choosing
+who you are.
+
+**It is a different door, not a higher privilege.** `RECOVERY_CODE` sits beside
+`SECRET_CODE` in the same file and ships in the same public bundle, in plain
+text, with the same D-030 caveat: a doormat, not a lock. It grants nothing the
+other code does not — both end in the same app, with the same access to the same
+log.
+
+**There is a way back.** A failed fetch on a page with no tab bar would otherwise
+be a dead end escapable only by closing the app, so `back` returns to the gate
+and clears the code.
+
+**Measured, and worth knowing: the failure takes about seven seconds to
+appear.** `verify-welcome` waits for it rather than sleeping a fixed time, and
+records 6.8s from an aborted request to the error on screen — the client does
+not give up when the request does. Until then the page says *looking for your
+phones*. Not fixed, because nobody has asked and this is a flow used once; the
+lever, if it is ever wanted, is a timeout around `fetchDevices`.

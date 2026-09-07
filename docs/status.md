@@ -57,6 +57,11 @@ digit typed replaces, so it costs nothing to disagree with; `+ milk` inside the
 sheet still starts blank, because a feed added by hand is as often the paper's
 `?`. The report screen's date strip now stops at three day pills, so `more` — the
 only route to an older day — is on screen rather than off the right-hand edge.
+**A second gate code hands a phone its identity back** — D-042. `01202012`
+instead of the secret code skips the name page and lists the devices on the
+server; picking one adopts that id rather than minting a new one, which is the
+only thing that stops a reinstall creating a second parent with the same name.
+
 **Times can read `9:09 PM`** — D-041. An icon beside the status row's clock
 toggles the whole app between 24-hour and 12-hour: the status clock, the
 target, the home list and the day table, because `hhmm` is the only formatter.
@@ -159,6 +164,22 @@ lavender and the same `BottleIcon` the end-feed pill wears. `src/log/LogScreen.t
 and the `.prepline` rule in `src/log/log.css`. No test changed: `verify-hero`
 asserts the prompt's count, text and geometry, not its glyph, and its five
 prompt checks pass.
+
+**The recovery gate — D-042.** `01202012` at the gate opens a
+third welcome page listing the server's devices; tapping one writes that exact
+id to localStorage and opens the app as it. `adoptDeviceId` in
+`src/device-id.ts`, `fetchDevices` in `src/sync.ts` (a direct read, not
+`pull()`, which would `replaceAll` and wipe the local database), the third
+stage in `src/log/Welcome.tsx`, styles in `src/log/log.css`, and eight checks in
+`verify-welcome` — the happy path with the device table stubbed by a fulfilled
+route, since the browser suites touch no database.
+
+**Two things to know about it.** Picking is straight through with no confirm,
+which the owner chose with the shared-id consequence stated. And a failed fetch
+takes **about seven seconds** to surface — 6.8s measured in the suite, which
+waits for it rather than sleeping — because the client does not give up when the
+request does. Until then the page says *looking for your phones*. The lever, if
+it is ever wanted, is a timeout around `fetchDevices`.
 
 **The clock-format toggle — D-041.** A new `src/timeformat.ts`
 holds the preference (localStorage, cached, and guarded so the Node suites that
@@ -386,7 +407,40 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-06 (latest) — the prompt stops looking like a warning
+### 2026-09-06 (latest) — a way back in for a phone that forgot who it was
+
+**`01202012` at the gate opens a device picker instead of the name page**
+(D-042). Pick one, and this phone takes that id rather than minting a new one.
+
+**What it prevents is a duplicate parent.** The welcome runs whenever
+localStorage is empty — a reinstall, a cleared site, a new phone — and
+`createThisDevice` mints a fresh id every time. The parent types their name
+again and gets a *second* device carrying it, so every `logged_by` after that
+points at a stranger and the avatars stop meaning what they meant. Nothing in
+the app could undo it.
+
+**The list is read straight from the server**, because the local database on
+such a phone is empty — that is the whole situation. `fetchDevices` reads
+`device` directly rather than through `pull()`, which calls `replaceAll` and
+would wipe local data for a screen that is only offering a choice, and it needs
+no identity of its own since `device` is not scoped by `baby_id`.
+
+**`null` and `[]` are kept apart.** Could-not-fetch gets an error, a retry and a
+way back to the gate; an empty list says there is nothing to come back to.
+Collapsing them would tell an offline parent their device does not exist.
+
+**Two calls the owner made, both with the consequence in front of him.** Picking
+is straight through with no confirmation — if the other phone still holds that
+id, both write as the same device, which is the recovery case working rather
+than a mistake. And the greeting is his line, lightly smoothed: *you're my dad
+or mom / so good to see you*.
+
+**Measured rather than assumed: the failure takes ~7 seconds to appear.** The
+first version of the check slept 600ms and caught the page still loading; it now
+waits for the error and records 6.8s, because the client does not give up when
+the request does. Left as is — nobody asked, and it is a flow used once.
+
+### 2026-09-06 — the prompt stops looking like a warning
 
 The owner asked for the milk icon on the top card's `make a bottle` line to
 become a bottle, and for the red to go.
@@ -492,42 +546,3 @@ without setting state behind the module.
 **It is the second control in the status row that a settings screen would
 hold**, after the name button. Not an argument against building that screen —
 a list of what goes in it.
-
-### 2026-09-06 — a red dot that was not offline
-
-The owner saw the sync icon red on the second phone, with internet working, and
-asked whether something recent had caused it. It had.
-
-**Red is two states wearing one colour.** `.sync.offline` and `.sync.error`
-share `var(--accent)` in `log.css`, and `offline` is only ever set from
-`navigator.onLine` — so on a working network, red means `error`, which is a
-failing push and not a network at all. The dot cannot tell them apart and
-neither could the owner.
-
-**The cause was `0004`.** It dropped `event.grams` and `event.celsius` before
-the build that stops naming them had reached both phones. The un-updated phone
-sends two columns that no longer exist, every upsert fails, `push()` returns
-false, and the reconcile is skipped while the outbox is non-empty — so it holds
-its writes and shows red. The window that both the commit and
-`supabase/README.md` described as temporary did not close, because **the owner
-cannot reach that device.**
-
-**The fix is a migration, not a deploy** — `0005_restore_metric_columns.sql`,
-which puts both columns back nullable and dead. A deploy only fixes phones that
-take it, which are the ones that were never broken; restoring the columns fixes
-the broken one from the server side, and it drains on its next foreground with
-nobody touching it. Restored to `0001`'s shapes — `integer` with the positive
-check, `numeric(3,1)` — because the point is to accept exactly what the old
-build sends.
-
-**And the ordering rule was retired for a stronger one — D-039.** Additive only:
-no column is ever dropped, narrowed, or given a constraint an older row could
-fail. "After every phone has updated" is not a step, because the service worker
-updates lazily, there is no forced update, no login to gate one behind, and one
-phone belongs to the other parent. A dead nullable column costs nothing against
-a 500 MB tier holding a projected 5 MB a year; a dropped one costs a phone's
-sync.
-
-**Nothing in `src/` changed.** The current build is already correct — it stopped
-naming the columns in `93cb7aa`. The mismatch is entirely between the database
-and an old client, so the database is where it is repaired.

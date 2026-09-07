@@ -77,6 +77,26 @@ async function push(): Promise<boolean> {
   return true
 }
 
+/**
+ * Every device on the server, for the recovery page (D-042).
+ *
+ * Read directly rather than through `pull()`, which calls `replaceAll` and
+ * would wipe the local database — wrong for a screen that is only offering a
+ * list. It also has to work before this phone has an identity at all, which is
+ * why it filters on nothing: `device` is not scoped by `baby_id`.
+ *
+ * `null` means the list could not be fetched — offline, unreachable, or no
+ * Supabase configured. The page says so rather than showing an empty list,
+ * because "nobody has ever set this up" and "I cannot see" are different
+ * answers and only one of them is recoverable by waiting.
+ */
+export async function fetchDevices(): Promise<Device[] | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase.from('device').select('*')
+  if (error) return null
+  return (data ?? []) as Device[]
+}
+
 async function pull(): Promise<boolean> {
   if (!supabase) return false
   const [baby, device, timeslot, event] = await Promise.all([

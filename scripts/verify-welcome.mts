@@ -101,6 +101,85 @@ check('the night theme uses the night art', !/-day/.test(nightSrc), nightSrc.spl
 check('and both themes land on the same file', daySrc === nightSrc, `${daySrc} vs ${nightSrc}`)
 await night.ctx.close()
 
+// --- the recovery code (D-042) ----------------------------------------------
+//
+// The same gate, a different door: `01202012` skips the name page and lists the
+// devices already on the server, so a reinstalled phone takes its own identity
+// back instead of minting a second one under the same name.
+
+// The failure path first, on the context every other suite runs in — supabase
+// aborted, which is exactly "cannot reach the list".
+const off = await fresh(10)
+await off.p.locator('#code').fill('01202012')
+await off.p.locator('.gate .save').click()
+await off.p.waitForTimeout(400)
+check('the recovery code opens the device page, not the name page',
+  (await off.p.locator('.recover').count()) === 1
+  && (await off.p.getByPlaceholder('Anya').count()) === 0,
+  `${await off.p.locator('.recover').count()} recovery page(s)`)
+check('and it greets you before it asks anything',
+  (await off.p.locator('.recover h1').innerText()).includes('so good to see you'),
+  await off.p.locator('.recover h1').innerText())
+// Waited for rather than slept on: the client does not give up the moment the
+// request is aborted, so a fixed pause caught the page still saying "looking
+// for your phones". That wait is the honest shape of being offline here.
+const t0 = Date.now()
+await off.p.locator('.gateerr').waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
+const waited = Date.now() - t0
+const errs = await off.p.locator('.gateerr').count()
+const lists = await off.p.locator('.devlist').count()
+check('an unreachable list says so rather than showing an empty one',
+  errs === 1 && lists === 0,
+  `${errs} error(s), ${lists} list(s), after ${waited}ms`)
+check('with a way to try again', (await off.p.getByRole('button', { name: /try again/ }).count()) === 1,
+  `${await off.p.getByRole('button', { name: /try again/ }).count()} retry button(s)`)
+
+// The way out. Without it a failed fetch is a dead end on a page with no tabs.
+await off.p.getByRole('button', { name: /back/ }).click()
+await off.p.waitForTimeout(300)
+check('and a way back to the gate', (await off.p.locator('.gate').count()) === 1,
+  `${await off.p.locator('.gate').count()} gate(s)`)
+await off.ctx.close()
+
+// Now the list itself, with the device table stubbed. The suites serve their
+// own build and touch no database (`status.md`), so the rows are fulfilled here
+// rather than fetched — what is under test is the page, not PostgREST.
+const ID = '11111111-2222-3333-4444-555555555555'
+const rec = await fresh(10)
+await rec.p.route('**://*.supabase.co/rest/v1/device*', (r) => r.fulfill({
+  status: 200,
+  contentType: 'application/json',
+  body: JSON.stringify([
+    { id: ID, name: 'Ho', created_at: null, updated_at: null, updated_by: null },
+    { id: '99999999-8888-7777-6666-555555555555', name: 'Anya', created_at: null, updated_at: null, updated_by: null },
+  ]),
+}))
+await rec.p.locator('#code').fill('01202012')
+await rec.p.locator('.gate .save').click()
+await rec.p.waitForTimeout(900)
+const names = await rec.p.locator('.devlist b').allInnerTexts()
+check('every device on the server is offered, by name',
+  names.length === 2 && names.includes('Ho') && names.includes('Anya'), names.join(', '))
+check('and each carries enough of its id to tell two apart',
+  (await rec.p.locator('.devlist span').first().innerText()).includes('…'),
+  await rec.p.locator('.devlist span').first().innerText())
+
+// The point of the whole flow: the chosen id is taken, not a fresh one minted.
+await rec.p.getByRole('button', { name: /Ho/ }).click()
+await rec.p.waitForTimeout(900)
+const stored = await rec.p.evaluate(() => localStorage.getItem('babyliana.device_id'))
+check('picking one adopts that exact id rather than minting a new one',
+  stored === ID, `${stored} vs ${ID}`)
+check('and it lands in the app, with no name page in between',
+  (await rec.p.locator('.log').count()) === 1 && (await rec.p.getByPlaceholder('Anya').count()) === 0,
+  `${await rec.p.locator('.log').count()} log screen(s)`)
+// The name comes from the adopted row, which is why it is written locally
+// before the app opens rather than waited on from the next sync.
+check('and the app already knows whose phone this is',
+  (await rec.p.locator('.whos').innerText()).includes('H'),
+  (await rec.p.locator('.whos').innerText()).replace(/\n/g, ' '))
+await rec.ctx.close()
+
 await b.close()
 stop()
 console.log(fail === 0 ? '\n  welcome and the art sets are right' : `\n  ${fail} FAILED`)

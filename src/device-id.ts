@@ -26,6 +26,22 @@ export function createDeviceId(): string {
   return id
 }
 
+/**
+ * Take on an identity that already exists on the server, rather than minting a
+ * fresh one (D-042).
+ *
+ * The recovery code's whole purpose. A phone that has been reinstalled has an
+ * empty localStorage, so the normal welcome would mint a *second* device for a
+ * parent who already has one — and every entry logged after that would be
+ * attributed to a stranger with the same name.
+ *
+ * No new row is created and nothing is enqueued: the row is already on the
+ * server, and this phone is only agreeing to be it.
+ */
+export function adoptDeviceId(id: string) {
+  localStorage.setItem(DEVICE_KEY, id)
+}
+
 /** For the write path, where a device is guaranteed to exist by then. */
 export function requireDeviceId(): string {
   const id = getDeviceId()
