@@ -57,6 +57,12 @@ digit typed replaces, so it costs nothing to disagree with; `+ milk` inside the
 sheet still starts blank, because a feed added by hand is as often the paper's
 `?`. The report screen's date strip now stops at three day pills, so `more` — the
 only route to an older day — is on screen rather than off the right-hand edge.
+**The add sheet has a date** — D-043. A `‹ today ›` row above the clock, with
+hold-to-repeat, so any past day is reachable; the six-hour midnight rule still
+fills it in but stops deciding once it is touched. Forward of today is refused.
+**This unblocks the coverage run**, which could not be done through the UI at
+all — backdating reached yesterday and no further.
+
 **A second gate code hands a phone its identity back** — D-042. `01202012`
 instead of the secret code skips the name page and lists the devices on the
 server; picking one adopts that id rather than minting a new one, which is the
@@ -165,6 +171,18 @@ and the `.prepline` rule in `src/log/log.css`. No test changed: `verify-hero`
 asserts the prompt's count, text and geometry, not its glyph, and its five
 prompt checks pass.
 
+**The date field — D-043.** `atHourMinute`, `onDay`, `daysBack`
+and `dayWord` in `src/log/time.ts`; the date row and a `DayStep` chevron in
+`src/log/TimeCard.tsx`, with a `pinned` flag that switches the hour steppers off
+the inference once the date is set by hand; `.daterow` styles. Seven checks in
+`verify-s5`, four in `verify-period`.
+
+**`verify-period` is green again, and not by tuning its guard.** The suite made
+its second day by setting the hour to 23 and hoping the midnight rule read it as
+yesterday, which only works before ~17:00 — hence the `getHours() < 21` guard
+that was the wrong number. It steps the date row now and the guard is deleted.
+**All twenty-one suites pass**, at 19:00, which the old approach could not do.
+
 **The recovery gate — D-042.** `01202012` at the gate opens a
 third welcome page listing the server's devices; tapping one writes that exact
 id to localStorage and opens the app as it. `adoptDeviceId` in
@@ -205,8 +223,10 @@ a new overlap case. **The target stays hidden while a feed runs** — it no long
 has to be, since the ceiling is settled from the feed's first second, and the
 owner kept it hidden as a choice. D-036's paragraph says so.
 
-**`verify-period`'s five failures are a clock, not a bug — diagnosed
-2026-09-06.** All five are the D-037 day-swipe checks, cascading from `two days
+**`verify-period` is fixed as of 2026-09-06, by the date field rather than by a
+better guard.** What follows is the diagnosis that led there; it is history now.
+
+**Diagnosed before the fix:** All five are the D-037 day-swipe checks, cascading from `two days
 to move between — 2 pills`. The suite makes its second day by editing an entry's
 hour to `23`, expecting `withHourMinute` to read that as *last night* and file it
 on yesterday. That only happens past `FUTURE_TOLERANCE_MS`, which is **six
@@ -407,7 +427,45 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-06 (latest) — a way back in for a phone that forgot who it was
+### 2026-09-06 (latest) — the sheet finally says which day
+
+**The add sheet had an hour and a minute and no date.** Which day an entry
+landed on was inferred: more than six hours ahead of now meant yesterday. There
+is a `‹ today ›` row above the clock now, chevrons holding to repeat, and the
+inference only fills it in.
+
+**The owner found this himself, from the other end.** He kept asking which UI
+feature `verify-period`'s guard related to, because a test workaround is not a
+thing to fix — and the answer was that there was no feature, only a missing one.
+
+**The blocking reason was not midnight.** A day before yesterday could not be
+reached at all, so the coverage run — the ten photographed paper days, the
+project's gate — was not possible through the UI. Midnight was the correctness
+reason: the guess was invisible and, on the entries the paper log is mostly made
+of, occasionally wrong.
+
+**The inference is kept and demoted.** It still decides when nobody has said, so
+logging now costs zero extra taps and 23:45 at 00:30 still lands last night
+without thought. Touch the date row and `pinned` switches the hour steppers to
+`atHourMinute`, which does not second-guess — an explicit date is an answer.
+
+**One date per moment, not two.** The end stays a time that rolls past midnight,
+which is what makes a 23:00→07:00 sleep work; `onDay` shifts it by the same
+number of days as the start rather than re-anchoring, so the sleep keeps its
+eight hours when the day moves. A second date field would have asked for input
+nobody has.
+
+**Steppers rather than the calendar**, chosen by the owner. Ten days back is a
+hold, not ten taps. `PeriodPicker`'s calendar reaches 8/26 in one tap and is
+already built, so it stays the cheap upgrade if the coverage run finds the hold
+slow.
+
+**And `verify-period` is green — all twenty-one suites are, at 19:00.** Not by
+tuning the guard to 17: the suite steps the date row now and the guard is
+deleted. The suite reaching for the app's clock logic instead of stating a day
+was the actual fault, and the fix was a missing feature.
+
+### 2026-09-06 — a way back in for a phone that forgot who it was
 
 **`01202012` at the gate opens a device picker instead of the name page**
 (D-042). Pick one, and this phone takes that id rather than minting a new one.
@@ -457,92 +515,3 @@ above it.
 `verify-hero` needed no edit and passes: it reads the prompt's count, text and
 geometry rather than its icon, and the line still lands one row and inside the
 card at 328 against a 337 limit.
-
-### 2026-09-06 — the target is a ceiling, not an appointment
-
-A reasoning session. Nothing in `src/` moved, and nothing needed to.
-
-**The question was whether the target wake time should follow the mascot's
-breast / formula split (D-035).** Laid out on a timeline it looks like it
-should: after a breast feed the card draws Liana *hungry* at 1h 45m while the
-wake line still reads `in 1h 15m`, so for 75 minutes one card appears to make
-two claims. After formula the same overlap is 30 minutes. Framed that way the
-split reads as the obvious fix.
-
-**The owner's framing dissolved it.** The target is a **ceiling** — the time not
-to go past — and *hungry* is a **floor**, the earliest she is ready. Feeling
-hungry is not the same as needing to eat this minute: a baby sleeping deeply can
-be left a while longer, and the target is what says how much longer. The two are
-the ends of one range, not two answers to one question, and the 75 minutes is
-the window rather than a contradiction.
-
-**Which inverts the conclusion.** If the ceiling followed the floor, the room
-between them would be a fixed width and the target would stop saying anything
-the mascot had not already said. Held flat it varies — 75 minutes after breast
-milk, 30 after everything else — and that variation is the whole of its value.
-**Splitting the target would flatten it.**
-
-**D-036 now carries all of it**, including the tone guard: a ceiling is a thing
-that can be passed, and the line still only says how far past, with no alarm and
-no view about it. The entry says out loud that this proposal has been reached
-for twice and why it is wrong, so a third pass finds the argument instead of
-re-deriving it.
-
-**Then the wording followed, in the same session.** `wake ~15:00 · in 1h 15m`
-is an appointment — a thing scheduled to happen, counted down to. It now reads
-`by 15:00 · 1h 15m left`: same instant, same number, and the only change is
-which question it answers. `wake ~` was a small untruth besides, since the app
-has no idea when she wakes and the tilde was carrying that.
-
-**Past the ceiling it says `1h 10m past`.** Not `over` or `late`, which carry a
-verdict the mascot is already held away from, and not `ago`, which belonged to
-the appointment reading. `targetText` in `src/derive.ts`, the `.wakeline` span
-in `LogScreen.tsx`, and two reworded checks in `verify-s3`. `verify-hero` reads
-geometry rather than text so it needed no edit — and it passes, with the line
-one row and 15px inside the card, because the new wording is shorter than the
-old. Committed and pushed as `4eb3232`.
-
-**Then the instant it all counts from moved — D-040.** `lastFeedAt` preferred
-`ended_at`; it returns `occurred_at` now. Feeding is counted start to start, and
-the old rule let a long feed buy itself extra time on all three things that
-function drives — the hero, the mascot and the ceiling. The docstring that
-argued for the end (*"since she finished, not since she started"*) described a
-stomach; the target is a schedule.
-
-**The app had been disagreeing with itself.** `report/insights.ts` has always
-measured feed gaps from `occurred_at`, so the same two feeds could be a 3h gap
-on the report and 2h 20m on the home screen. The home screen was the odd one out
-and is the one that moved.
-
-**The owner took the wider of the two scopes**, with both laid out: the hero and
-the mascot move too, not the target alone. And he kept the target hidden during a
-feed even though counting from the start means it no longer has to be — it is a
-choice now rather than a limitation, and D-036 records the difference.
-
-**`verify-period` is red, and was already.** Five failures, all D-037 day-swipe
-checks, stemming from the suite seeing one day with entries instead of two.
-Confirmed pre-existing by stashing this session's changes and rebuilding.
-Flagged rather than folded in.
-
-**Then a clock-format toggle — D-041.** An icon beside the status row's clock
-switches the app between `21:09` and `9:09 PM`. It reaches every time in the
-app by changing one function, because `hhmm` has been the only formatter since
-the home list's private one was removed. 24-hour stays the default — the paper
-log is written in it, and the day table is read beside photographs of the page.
-
-**Two things it could have broken, both measured rather than assumed.** The day
-table's time column is a fixed 62px, and it already wrapped the 24-hour period
-onto two lines; the 12-hour one wraps onto the same two. The wake line ends
-exactly on the card's inner edge at 12-hour — 337 against 337 — and wraps rather
-than truncates, so it cannot push the page sideways, but nothing longer will
-fit on one line.
-
-**The preference is Node-safe on purpose.** `cells.ts` is imported by the
-data-layer suites, which have no `localStorage`; an unguarded read there would
-have taken `verify-s7` down. And the format is a defaulted *parameter* rather
-than a read inside `hhmm`, so the suites check midnight, noon and the padding
-without setting state behind the module.
-
-**It is the second control in the status row that a settings screen would
-hold**, after the name button. Not an argument against building that screen —
-a list of what goes in it.

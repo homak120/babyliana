@@ -714,6 +714,30 @@ body {
 
 .timecard { padding-top: 1rem; }
 
+/* The day, above the clock (D-043). Quieter than the time row — it is right
+   without being touched on almost every entry, and shouting about it would put
+   weight on the one thing that costs nothing. */
+.daterow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  margin-bottom: 0.5rem;
+}
+
+.dateword {
+  min-width: 5.5rem;
+  text-align: center;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* At today there is no later day to reach, and a chevron that does nothing is
+   worse than one that says so. */
+.daterow .stepper:disabled { opacity: 0.3; cursor: default; }
+
 .timerow {
   display: flex;
   align-items: center;

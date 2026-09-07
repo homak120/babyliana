@@ -53,13 +53,69 @@ const FUTURE_TOLERANCE_MS = 6 * 60 * 60_000
  *    hours ahead, which is exactly when someone is most likely to be doing it.
  */
 export function withHourMinute(h: number, m: number, now = new Date(), anchor = now): Date {
-  const d = new Date(anchor)
-  d.setHours(clampHour(h), clampMinute(m), 0, 0)
+  const d = atHourMinute(h, m, anchor)
   const editingToday = startOfDay(anchor).getTime() === startOfDay(now).getTime()
   if (editingToday && d.getTime() > now.getTime() + FUTURE_TOLERANCE_MS) {
     d.setDate(d.getDate() - 1)
   }
   return d
+}
+
+/**
+ * The clock set on the anchor's own day, and nothing else — no inference about
+ * which day was meant.
+ *
+ * What `withHourMinute` does once the day question is already answered. The
+ * time card uses it directly after the date has been set by hand (D-043): an
+ * explicit date is an answer, and a rule that then moved the entry anyway would
+ * be overruling the person who gave it.
+ */
+export function atHourMinute(h: number, m: number, anchor: Date): Date {
+  const d = new Date(anchor)
+  d.setHours(clampHour(h), clampMinute(m), 0, 0)
+  return d
+}
+
+/**
+ * Move a moment to another day, carrying its end with it (D-043).
+ *
+ * The end is shifted by the same number of days rather than re-anchored, which
+ * is what keeps a period that crosses midnight intact: a sleep from 9/2 23:00
+ * to 9/3 07:00 stepped back a day is 9/1 23:00 to 9/2 07:00, still eight hours.
+ * `resolveEnd` afterwards is belt and braces — the shift preserves the ordering
+ * it fixes.
+ */
+export function onDay(start: Date, end: Date | null, days: number): {
+  start: Date
+  end: Date | null
+} {
+  const s = new Date(start)
+  s.setDate(s.getDate() + days)
+  if (!end) return { start: s, end: null }
+  const e = new Date(end)
+  e.setDate(e.getDate() + days)
+  return { start: s, end: resolveEnd(s, e) }
+}
+
+/**
+ * How many days back a moment sits. `0` is today, `1` yesterday, and a negative
+ * number is the future — which the date stepper refuses.
+ *
+ * Compared at the day boundary rather than by dividing a millisecond gap, so a
+ * clock change does not make yesterday 0.96 of a day ago.
+ */
+export function daysBack(d: Date, now = new Date()): number {
+  return Math.round(
+    (startOfDay(now).getTime() - startOfDay(d).getTime()) / 86_400_000,
+  )
+}
+
+/** `today`, `yesterday`, or the paper log's own `9/1`. */
+export function dayWord(d: Date, now = new Date()): string {
+  const back = daysBack(d, now)
+  if (back === 0) return 'today'
+  if (back === 1) return 'yesterday'
+  return `${d.getMonth() + 1}/${d.getDate()}`
 }
 
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())

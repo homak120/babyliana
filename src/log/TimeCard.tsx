@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Icon } from './Icon'
 import {
   COLLAPSED_OFFSETS, END_OFFSETS, HOLD_MS, MINUTE_OFFSETS,
-  endNow, formatDuration, minutesAfter, minutesAgo, pad, resolveEnd,
-  stepFor, withHourMinute, wrapHour, wrapMinute,
+  atHourMinute, dayWord, daysBack, endNow, formatDuration, minutesAfter, minutesAgo,
+  onDay, pad, resolveEnd, stepFor, withHourMinute, wrapHour, wrapMinute,
 } from './time'
 
 // Always first in the sheet. Defaults to now, which is the overwhelmingly
@@ -74,6 +74,30 @@ function Stepper({
   )
 }
 
+/**
+ * One chevron of the date row. Holding runs through days, accelerating exactly
+ * as the hour and minute steppers do — ten days back for the coverage run is a
+ * hold, not ten taps.
+ */
+function DayStep({
+  label, icon, onStep, disabled = false,
+}: {
+  label: string
+  icon: string
+  onStep: (days: number) => void
+  disabled?: boolean
+}) {
+  const hold = useHold(onStep)
+  return (
+    <button
+      type="button" className="stepper" aria-label={label} disabled={disabled}
+      {...(disabled ? {} : hold)}
+    >
+      <Icon name={icon} size={18} />
+    </button>
+  )
+}
+
 export function TimeCard({
   start, end, onChange,
 }: {
@@ -83,11 +107,31 @@ export function TimeCard({
 }) {
   const [field, setField] = useState<Field>('h')
   const [expanded, setExpanded] = useState(false)
+  /**
+   * Set once the date row has been touched (D-043).
+   *
+   * After that the six-hour rule stops running: a date chosen by hand is an
+   * answer, and inferring over it would move an entry off the day someone just
+   * picked. Before it, the inference is what fills the date row in — the guess
+   * became a default rather than a verdict.
+   */
+  const [pinned, setPinned] = useState(false)
 
   const setStart = (h: number, m: number) => {
     // `start` is the anchor: editing an older moment keeps its own day.
-    const next = withHourMinute(h, m, new Date(), start)
+    const next = pinned ? atHourMinute(h, m, start) : withHourMinute(h, m, new Date(), start)
     onChange(next, end ? resolveEnd(next, end) : null)
+  }
+
+  const back = daysBack(start)
+  const stepDay = (days: number) => {
+    // Never forward of today. There is no such thing as a feed that has not
+    // happened, and the old inference made a future date impossible to reach by
+    // accident — the date row must not be the thing that reintroduces it.
+    if (days > 0 && back <= 0) return
+    setPinned(true)
+    const moved = onDay(start, end, days)
+    onChange(moved.start, moved.end)
   }
   const setEnd = (h: number, m: number) => {
     const raw = new Date(start)
@@ -99,6 +143,20 @@ export function TimeCard({
 
   return (
     <section className="block timecard">
+      {/* Above the clock, because the day is the coarser question and reading it
+          answers "did it guess right?" at a glance — which is the whole reason
+          this row exists. Always visible rather than behind a tap: logging now
+          costs no extra taps either way, and a date you cannot see is a date
+          nobody checks (D-043). */}
+      <div className="daterow">
+        <DayStep label="earlier day" icon="chevron_left" onStep={(n) => stepDay(-n)} />
+        <span className="dateword">{dayWord(start)}</span>
+        <DayStep
+          label="later day" icon="chevron_right" disabled={back <= 0}
+          onStep={(n) => stepDay(n)}
+        />
+      </div>
+
       <div className="timerow">
         <Icon name="schedule" size={17} />
         <Stepper

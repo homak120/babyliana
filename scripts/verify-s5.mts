@@ -13,6 +13,7 @@ const store = new Map<string, string>([['babyliana.device_id', '00000000-0000-40
 import {
   endNow, formatDuration, minutesAfter, minutesAgo, resolveEnd, stepFor,
   withHourMinute, wrapHour, wrapMinute, HOLD_ACCELERATE_AFTER,
+  atHourMinute, dayWord, daysBack, onDay,
 } from '../src/log/time.ts'
 
 let failures = 0
@@ -38,6 +39,33 @@ check('typing 23:45 at 00:30 means LAST night, not tonight',
 const lastEvening = withHourMinute(20, 0, t(8, 0))
 check('a time far ahead of now is read as yesterday',
   lastEvening.getDate() === 2, show(lastEvening))
+
+// --- the date field, which is what the inference above became a default for --
+// (D-043)
+const pinned = atHourMinute(23, 45, t(0, 30, 2))
+check('an explicit day is not second-guessed — 23:45 on the 2nd stays there',
+  pinned.getDate() === 2 && pinned.getHours() === 23, show(pinned))
+
+check('today is today', dayWord(t(12, 0), t(15, 0)) === 'today', dayWord(t(12, 0), t(15, 0)))
+check('and the day before has a word too',
+  dayWord(t(12, 0, 2), t(15, 0)) === 'yesterday', dayWord(t(12, 0, 2), t(15, 0)))
+check('further back is the paper log\'s own date',
+  dayWord(t(12, 0, 1), t(15, 0)) === '9/1', dayWord(t(12, 0, 1), t(15, 0)))
+check('days back counts whole days, not elapsed hours',
+  daysBack(t(23, 59, 2), t(0, 1, 3)) === 1, String(daysBack(t(23, 59, 2), t(0, 1, 3))))
+
+// Ten days back is the coverage run: the photographs start on 8/26.
+const far = onDay(t(9, 0), null, -8)
+check('stepping back reaches the photographed days',
+  far.start.getMonth() === 7 && far.start.getDate() === 26 && far.start.getHours() === 9,
+  show(far.start))
+
+// The case a naive re-anchor breaks: a sleep that crosses midnight.
+const night = onDay(t(23, 0, 2), t(7, 0, 3), -1)
+check('a period crossing midnight keeps its length when the day moves',
+  night.start.getDate() === 1 && night.end!.getDate() === 2
+  && night.end!.getTime() - night.start.getTime() === 8 * 3_600_000,
+  `${show(night.start)} → ${show(night.end!)}`)
 
 const nudge = withHourMinute(8, 0, t(8, 0))
 check('nudging to the current minute does not jump a day',

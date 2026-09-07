@@ -100,16 +100,13 @@ const swipe = async (dx: number) => {
 }
 const label = async () => (await p.locator('.daylabel').innerText()).trim()
 
-// A second day is needed to have anywhere to swipe to, and the only route to
-// one through the UI is the time card: setting an hour that is still ahead of
-// now moves the entry to yesterday (`withHourMinute`). That trick needs an hour
-// left in the day, so late in the evening this section is skipped rather than
-// asserted wrongly.
-const room = new Date().getHours() < 21
-if (!room) {
-  check('skipping the day swipe: too late in the day to backdate through the UI',
-    true, 'runs before 21:00')
-} else {
+// A second day is needed to have anywhere to swipe to. It used to be made by
+// setting the hour to 23 and letting `withHourMinute` read that as last night,
+// which only works while 23:00 is more than six hours ahead — so the section
+// was guarded by `getHours() < 21`, the wrong number, and five checks failed
+// every evening. The date row (D-043) says which day outright, so the trick and
+// the guard are both gone.
+{
   await p.getByRole('navigation').getByLabel('log', { exact: true }).click()
   await p.waitForTimeout(500)
   const rowBox = (await p.locator('.row.swipeable').first().boundingBox())!
@@ -124,8 +121,17 @@ if (!room) {
   await p.waitForTimeout(400)
   await p.locator('.rowactions .act.edit').first().click()
   await p.waitForTimeout(400)
-  await p.locator('.timestepper .num').first().fill('23')
-  await p.waitForTimeout(200)
+  check('the sheet opens on today', (await p.locator('.dateword').innerText()) === 'today',
+    await p.locator('.dateword').innerText())
+  check('and on today there is no later day to step to',
+    await p.getByLabel('later day').isDisabled(), 'later day enabled at today')
+  await p.getByLabel('earlier day').click()
+  await p.waitForTimeout(250)
+  check('one step back is yesterday, in words',
+    (await p.locator('.dateword').innerText()) === 'yesterday',
+    await p.locator('.dateword').innerText())
+  check('and now there is a way forward again',
+    !(await p.getByLabel('later day').isDisabled()), 'later day still disabled')
   await p.getByRole('button', { name: 'save changes', exact: true }).click()
   await p.waitForTimeout(800)
 

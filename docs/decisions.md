@@ -1592,3 +1592,60 @@ records 6.8s from an aborted request to the error on screen — the client does
 not give up when the request does. Until then the page says *looking for your
 phones*. Not fixed, because nobody has asked and this is a flow used once; the
 lever, if it is ever wanted, is a timeout around `fetchDevices`.
+
+---
+
+## D-043 — The time card carries a date, and the midnight guess becomes a default
+
+The add sheet had an hour and a minute and no date. Which *day* an entry landed
+on was inferred: a time landing more than six hours ahead of now was read as
+yesterday (`FUTURE_TOLERANCE_MS`, D-018's follow-on). There is now a date row
+above the clock — `‹ today ›` — and the inference only fills it in.
+
+**Two problems, and the second is the one that blocks the project.**
+
+1. **Around midnight the guess is invisible and can be wrong.** 23:45 typed at
+   00:30 means last night, and the app was right about that — but nothing on
+   screen said which day it had chosen, on exactly the entries the paper log is
+   mostly made of.
+2. **A day before yesterday could not be reached at all.** The inference reaches
+   back one day and no further, so the coverage run — entering the ten
+   photographed paper days, the project's gate — was not possible through the
+   UI. That is not polish; it was standing in front of the gate.
+
+**The inference is kept, demoted.** It still decides the day when nobody has
+said, which keeps the 4am flow at zero extra taps and keeps 23:45-at-00:30
+landing correctly without thought. The moment the date row is touched, `pinned`
+goes true and `atHourMinute` replaces `withHourMinute`: an explicit date is an
+answer, and a rule that moved the entry afterwards would be overruling the
+person who gave it.
+
+**One date per moment, not two.** The end stays a *time*, and `resolveEnd` rolls
+it onto the next day when it lands before the start — which is what makes a
+23:00→07:00 sleep work. A second date field would have asked for input nobody
+has and broken the case it was meant to serve. `onDay` shifts the end by the
+same number of days as the start rather than re-anchoring it, so a period that
+crosses midnight keeps its length when the day moves; `verify-s5` pins the
+eight-hour sleep through a step.
+
+**Steppers, not a calendar.** `‹ ›` chevrons reusing the same `useHold` the hour
+and minute have, so ten days back is a hold rather than ten taps. The
+`PeriodPicker` calendar was the alternative and reaches 8/26 in one tap; it is
+already built, so it stays the cheap upgrade if the coverage run finds the hold
+slow. Starting with the steppers keeps the sheet one idiom.
+
+**Forward of today is refused.** The old inference made a future date almost
+unreachable by accident; a date row must not be what reintroduces it, so the
+later-day chevron is disabled at today. The *time* steppers are unchanged and
+can still land a few hours ahead, which is the existing, visible, fixable case
+`FUTURE_TOLERANCE_MS` already describes.
+
+**It also removes a test that could only pass in the morning.**
+`verify-period` needed two days with entries and had no way to make one except
+by abusing the midnight rule — set the hour to 23 and hope. That only works
+while 23:00 is more than six hours ahead, so the section was guarded by
+`getHours() < 21`, which is the wrong number: between 17:00 and 21:00 the guard
+let it run in a window where the trick could not work, and five checks failed
+every evening. The suite now steps the date row and the guard is gone. **The
+suite reaching for the app's clock logic instead of stating a day was the actual
+fault**, and the fix for it was a missing feature rather than a better number.
