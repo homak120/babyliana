@@ -127,14 +127,15 @@ const label = async () => (await p.locator('.daylabel').innerText()).trim()
   await p.waitForTimeout(400)
   await p.locator('.rowactions .act.edit').first().click()
   await p.waitForTimeout(400)
-  check('the sheet opens on today', (await p.locator('.dateword').innerText()) === 'today',
+  check('the sheet opens on today, with the date beside the word',
+    /^today · \d{2}\/\d{2}$/.test(await p.locator('.dateword').innerText()),
     await p.locator('.dateword').innerText())
   check('and on today there is no later day to step to',
     await p.getByLabel('later day').isDisabled(), 'later day enabled at today')
   await p.getByLabel('earlier day').click()
   await p.waitForTimeout(250)
-  check('one step back is yesterday, in words',
-    (await p.locator('.dateword').innerText()) === 'yesterday',
+  check('one step back is yesterday, in words and in figures',
+    /^yesterday · \d{2}\/\d{2}$/.test(await p.locator('.dateword').innerText()),
     await p.locator('.dateword').innerText())
   check('and now there is a way forward again',
     !(await p.getByLabel('later day').isDisabled()), 'later day still disabled')

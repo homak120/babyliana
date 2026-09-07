@@ -110,12 +110,24 @@ export function daysBack(d: Date, now = new Date()): number {
   )
 }
 
-/** `today`, `yesterday`, or the paper log's own `9/1`. */
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+/** `09/07`, zero-padded, as the home list's day separators already print it. */
+export const dayDate = (d: Date) => `${pad(d.getMonth() + 1)}/${pad(d.getDate())}`
+
+/**
+ * `today · 09/07`, `yesterday · 09/06`, `Sat · 09/05` (the date-fields handoff).
+ *
+ * The date is always shown, never only the word. *Yesterday* alone is a
+ * relative claim that needs the reader to know what today is, which at 4am is
+ * exactly what they are unsure of — and a day further back needs a weekday
+ * anyway, because `09/05` alone says nothing about which night it was.
+ */
 export function dayWord(d: Date, now = new Date()): string {
   const back = daysBack(d, now)
-  if (back === 0) return 'today'
-  if (back === 1) return 'yesterday'
-  return `${d.getMonth() + 1}/${d.getDate()}`
+  if (back === 0) return `today · ${dayDate(d)}`
+  if (back === 1) return `yesterday · ${dayDate(d)}`
+  return `${WEEKDAYS[d.getDay()]} · ${dayDate(d)}`
 }
 
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())

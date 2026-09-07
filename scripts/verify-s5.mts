@@ -13,7 +13,7 @@ const store = new Map<string, string>([['babyliana.device_id', '00000000-0000-40
 import {
   endNow, formatDuration, minutesAfter, minutesAgo, resolveEnd, stepFor,
   withHourMinute, wrapHour, wrapMinute, HOLD_ACCELERATE_AFTER,
-  atHourMinute, countUp, dayWord, daysBack, onDay,
+  atHourMinute, countUp, dayDate, dayWord, daysBack, onDay,
 } from '../src/log/time.ts'
 
 let failures = 0
@@ -56,11 +56,17 @@ const pinned = atHourMinute(23, 45, t(0, 30, 2))
 check('an explicit day is not second-guessed — 23:45 on the 2nd stays there',
   pinned.getDate() === 2 && pinned.getHours() === 23, show(pinned))
 
-check('today is today', dayWord(t(12, 0), t(15, 0)) === 'today', dayWord(t(12, 0), t(15, 0)))
-check('and the day before has a word too',
-  dayWord(t(12, 0, 2), t(15, 0)) === 'yesterday', dayWord(t(12, 0, 2), t(15, 0)))
-check('further back is the paper log\'s own date',
-  dayWord(t(12, 0, 1), t(15, 0)) === '9/1', dayWord(t(12, 0, 1), t(15, 0)))
+// The date is always shown, never only the word (the date-fields handoff):
+// "yesterday" alone asks the reader to know what today is, which at 4am is the
+// thing they are least sure of.
+check('today carries its date', dayWord(t(12, 0), t(15, 0)) === 'today · 09/03',
+  dayWord(t(12, 0), t(15, 0)))
+check('and so does the day before',
+  dayWord(t(12, 0, 2), t(15, 0)) === 'yesterday · 09/02', dayWord(t(12, 0, 2), t(15, 0)))
+check('further back takes a weekday instead of a word',
+  dayWord(t(12, 0, 1), t(15, 0)) === 'Tue · 09/01', dayWord(t(12, 0, 1), t(15, 0)))
+check('the date alone is padded, as the day separators print it',
+  dayDate(t(12, 0, 1)) === '09/01', dayDate(t(12, 0, 1)))
 check('days back counts whole days, not elapsed hours',
   daysBack(t(23, 59, 2), t(0, 1, 3)) === 1, String(daysBack(t(23, 59, 2), t(0, 1, 3))))
 

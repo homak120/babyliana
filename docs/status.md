@@ -57,6 +57,13 @@ digit typed replaces, so it costs nothing to disagree with; `+ milk` inside the
 sheet still starts blank, because a feed added by hand is as often the paper's
 `?`. The report screen's date strip now stops at three day pills, so `more` — the
 only route to an older day — is on screen rather than off the right-hand edge.
+**The date rows follow the date-fields handoff** — D-046. `calendar_today`, a
+36px round step either side of a centred `today · 09/07`, and a hairline under
+it; the end row moved below its own steppers as `event · ends on · 09/08` with
+30px steps, capped to the start's day or the one after. **Its data model was not
+taken** — `day` / `endDay` strings would be a weaker second source of truth for
+what `occurred_at` and `ended_at` already hold.
+
 **The bottle prompt moves and can be tapped** — D-045. `make a bottle` is light
 blue now, its icon breathes to catch an eye that is not on the phone, and
 tapping it turns the line into `making milk · 4m 10s` with the icon rocking
@@ -184,6 +191,21 @@ lavender and the same `BottleIcon` the end-feed pill wears. `src/log/LogScreen.t
 and the `.prepline` rule in `src/log/log.css`. No test changed: `verify-hero`
 asserts the prompt's count, text and geometry, not its glyph, and its five
 prompt checks pass.
+
+**The date rows redrawn to the handoff — D-046.** `dayWord` and a
+new `dayDate` in `src/log/time.ts`, both rows restructured in
+`src/log/TimeCard.tsx`, `.daterow` rewritten in `src/log/log.css`. Four checks
+updated in `verify-s5`, two in `verify-period`, five in `verify-period-row`.
+Geometry measured against the spec in a throwaway probe: 36x36 and 30x30 steps,
+20px and 17px icons, a 1px hairline, the end row between its steppers and the
+duration, no overflow.
+
+**Two things in the handoff were deliberately not taken**, both recorded in
+D-046. Its `day` / `endDay` string fields are storage shape, and this app has
+carried real timestamps since D-020 — which is why the duration and
+midnight-wrap behaviour it lists as work to do has always worked here. And its
+clamp of the start date to the log's existing days would make the coverage run
+impossible, since the photographed days are older than anything in the log.
 
 **The bottle prompt's motion and count — D-045.** New
 `src/log/PrepLine.tsx`, `--blueFill` / `--blueInk` in `src/tokens.css` for both
@@ -485,7 +507,37 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-07 (latest) — the prompt asks for attention, then keeps time
+### 2026-09-07 (latest) — the date rows get their proper shape
+
+**`handoff_date_fields` is a design pass over what D-043 and D-044 built**, and
+its layout, wording and ranges are now in (D-046). The start row is
+`calendar_today` with a 36px round step either side of a centred label and a
+hairline beneath; the end row moved below its own steppers and reads
+`event · ends on · 09/08` with 30px steps.
+
+**The label always carries the date now** — `today · 09/07`, `yesterday · 09/06`,
+`Sat · 09/05`. *Yesterday* alone asks the reader to know what today is, which at
+4am is the thing they are least sure of.
+
+**The end is capped to the start's day or the next**, which D-044 had left open
+in the forward direction — it allowed a four-day feed. Both arrows dim at their
+bound rather than vanishing, so the row keeps its shape and the thumb keeps its
+target.
+
+**Its data model was not taken, and that is the point worth keeping.** The
+handoff adds `day` / `endDay` as `"DD.MM"` strings with a `1440·offset`
+duration. This app has stored real timestamps since D-020, so everything that
+section lists as work — a 22:40→06:10 sleep reading `7h 30m`, presets advancing
+past midnight — has worked here since sleeps got end times. Taking the fields
+would put a weaker second source of truth beside the schema. **D-033's rule, a
+second time: the prototype is authority on interaction, not on the data model.**
+
+**One more thing declined.** The handoff clamps the start date to the days
+already in the log. That would make the coverage run impossible — the ten
+photographed days are older than anything in it, and D-043 exists so they can be
+entered at all.
+
+### 2026-09-07 — the prompt asks for attention, then keeps time
 
 **And `verify-period`'s last date-dependent check is gone.** It expected one
 preset edge in each month grid, but the calendar opens on the month the range
@@ -561,41 +613,3 @@ nothing at all.
 `clampHour`, React's controlled inputs. A `console.log` with a stack trace in
 the parent's `onChange` named `onStep` as the caller in one run. Instrument
 earlier.
-
-### 2026-09-06 — the sheet finally says which day
-
-**The add sheet had an hour and a minute and no date.** Which day an entry
-landed on was inferred: more than six hours ahead of now meant yesterday. There
-is a `‹ today ›` row above the clock now, chevrons holding to repeat, and the
-inference only fills it in.
-
-**The owner found this himself, from the other end.** He kept asking which UI
-feature `verify-period`'s guard related to, because a test workaround is not a
-thing to fix — and the answer was that there was no feature, only a missing one.
-
-**The blocking reason was not midnight.** A day before yesterday could not be
-reached at all, so the coverage run — the ten photographed paper days, the
-project's gate — was not possible through the UI. Midnight was the correctness
-reason: the guess was invisible and, on the entries the paper log is mostly made
-of, occasionally wrong.
-
-**The inference is kept and demoted.** It still decides when nobody has said, so
-logging now costs zero extra taps and 23:45 at 00:30 still lands last night
-without thought. Touch the date row and `pinned` switches the hour steppers to
-`atHourMinute`, which does not second-guess — an explicit date is an answer.
-
-**One date per moment, not two.** The end stays a time that rolls past midnight,
-which is what makes a 23:00→07:00 sleep work; `onDay` shifts it by the same
-number of days as the start rather than re-anchoring, so the sleep keeps its
-eight hours when the day moves. A second date field would have asked for input
-nobody has.
-
-**Steppers rather than the calendar**, chosen by the owner. Ten days back is a
-hold, not ten taps. `PeriodPicker`'s calendar reaches 8/26 in one tap and is
-already built, so it stays the cheap upgrade if the coverage run finds the hold
-slow.
-
-**And `verify-period` is green — all twenty-one suites are, at 19:00.** Not by
-tuning the guard to 17: the suite steps the date row now and the guard is
-deleted. The suite reaching for the app's clock logic instead of stating a day
-was the actual fault, and the fix was a missing feature.

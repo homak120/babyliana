@@ -125,6 +125,9 @@ await p.locator('.timerow:not(.end) .num').first().fill('23')
 await p.locator('.timerow:not(.end) .num').nth(1).fill('30')
 await p.waitForTimeout(250)
 const startWord = await p.locator('.daterow:not(.end) .dateword').innerText()
+// `today · 09/07` — the word is relative and the figures are not, so the
+// figures are what the end row can be compared against.
+const startDate = startWord.split('·')[1].trim()
 
 await p.getByRole('button', { name: '+ milk' }).click()
 await p.getByRole('button', { name: /end time/ }).click()
@@ -135,15 +138,15 @@ const endWord = await p.locator('.daterow.end .dateword').innerText()
 const endHour = await p.locator('.timerow.end .num').first().inputValue()
 const dur = await p.locator('.duration').innerText()
 check('an hour past 23:30 lands at 00:30 on the following day, and says which',
-  endHour === '00' && endWord !== startWord && dur.includes('1h'),
-  `start ${startWord} 23:30 → end ${endWord} ${endHour}:30, ${dur}`)
+  endHour === '00' && endWord !== startDate && dur.includes('1h'),
+  `start ${startWord} 23:30 → ends on ${endWord} at ${endHour}:30, ${dur}`)
 
 // Back onto the start's own day, which is a period the database refuses
 // (`ended_at >= occurred_at`). The button has to say so rather than fail later.
 await p.getByLabel('earlier end day').click()
 await p.waitForTimeout(300)
 check('the end can be walked back to the start day, and then no further',
-  (await p.locator('.daterow.end .dateword').innerText()) === startWord
+  (await p.locator('.daterow.end .dateword').innerText()) === startDate
   && await p.getByLabel('earlier end day').isDisabled(),
   await p.locator('.daterow.end .dateword').innerText())
 check('an end before its start blocks the save, and says why',
@@ -155,12 +158,17 @@ check('an end before its start blocks the save, and says why',
 await p.locator('.timerow.end .num').first().fill('23')
 await p.waitForTimeout(300)
 check('changing the end time keeps the day that was set by hand',
-  (await p.locator('.daterow.end .dateword').innerText()) === startWord
+  (await p.locator('.daterow.end .dateword').innerText()) === startDate
   && !/before the start/.test(await p.locator('button.save').last().innerText()),
   `${await p.locator('.daterow.end .dateword').innerText()} 23:30`)
 
-// And forward again, where a stale hold interval used to overwrite every later
-// edit because the chevron disabled itself mid-press (D-044).
+// The end reaches the start's day or the one after it, and no further — the
+// date-fields handoff's range, and nothing in this log runs past a day.
+check('and no further forward than the day after the start',
+  !(await p.getByLabel('later end day').isDisabled()), 'later end day disabled at the start day')
+
+// Forward again, where a stale hold interval used to overwrite every later edit
+// because the chevron disabled itself mid-press (D-044).
 await p.getByLabel('later end day').click()
 await p.waitForTimeout(300)
 const dayAfter = await p.locator('.daterow.end .dateword').innerText()
@@ -170,6 +178,8 @@ check('and a disabled chevron does not keep stepping after the press ends',
   (await p.locator('.daterow.end .dateword').innerText()) === dayAfter
   && (await p.locator('.timerow.end .num').first().inputValue()) === '02',
   `${await p.locator('.daterow.end .dateword').innerText()} ${await p.locator('.timerow.end .num').first().inputValue()}:30`)
+check('one day past the start is the end of the road',
+  await p.getByLabel('later end day').isDisabled(), 'later end day still enabled at +1')
 
 await b.close()
 stop()

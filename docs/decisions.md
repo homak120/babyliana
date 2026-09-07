@@ -1770,3 +1770,65 @@ frame. This line acts on it, and cleared a running count.
 clearing effect waits for it. The general shape is worth remembering: a
 component that *acts* on absent data needs to know whether the data is absent or
 merely not here yet, and an empty array cannot tell it.
+
+---
+
+## D-046 — The date rows take the handoff's shape, but not its data model
+
+`handoff_date_fields` is a Claude Design pass over the start and end date
+controls built in D-043 and D-044. Its layout, wording and ranges are adopted.
+Its **Data model** section is not.
+
+### Taken
+
+- **The start row is `calendar_today` · 36px round step · centred label · 36px
+  round step**, with a 1px `--hair` rule under it. The hairline is what says a
+  date and a time are two questions rather than one long row of controls, and
+  the round steps are a thumb's target in the dark. Measured: 36x36, 20px icon,
+  1px rule.
+- **The label always shows the date** — `today · 09/07`, `yesterday · 09/06`,
+  `Sat · 09/05`. *Yesterday* alone is a relative claim that needs the reader to
+  know what today is, which at 4am is the thing they are least sure of; and a
+  day further back needs the weekday, because `09/05` says nothing about which
+  night it was. Zero-padded, as the home list's day separators already print it.
+- **The end row moved below its own steppers**, above the duration, and gained
+  `event` · *ends on* · 30px steps · the date. It qualifies the time just set,
+  and the duration under it is what the two add up to. Measured: 30x30, 17px.
+- **The end is the start's day or the one after, and nothing else.** Both arrows
+  dim at their bound. Nothing in a newborn log runs past a day, and the cap is
+  what makes both directions answerable — D-044 left the forward direction open,
+  which allowed a four-day feed.
+- **A bound dims to 0.35 and stays put**, rather than disappearing, so the row
+  keeps its shape and the thumb keeps its target.
+- **Removing the end time forgets that its date was ever pinned.** The handoff
+  clears `endDay` with `endH`/`endM`; this is the same rule without the field.
+
+### Not taken — the `day` / `endDay` fields
+
+The handoff adds `day: "DD.MM"` and `endDay: "DD.MM" | null` to the draft and
+the entry, with `dayShift`, `wdOf` and `endOffset` around them, and computes
+duration as `(endMins + 1440·offset) − startMins`.
+
+**This app stores `occurred_at` and `ended_at` as real timestamps** (D-020), so
+all of that is already true without being stored. The duration behaviour the
+handoff lists as engineering work — *a 22:40 → 06:10 sleep reads `7h 30m` rather
+than wrapping*, presets auto-advancing past midnight — has worked since sleeps
+got end times, because subtracting two instants needs no day offset.
+
+**Adopting the fields would be a second, weaker source of truth for something
+the schema already holds**, and a string date has no timezone, no ordering and
+no arithmetic. `endOffset` survives here as a *derived* number for the arrows'
+range, computed from the two dates rather than stored beside them.
+
+This is D-033's rule applied a second time: **the prototype is authority on
+interaction, not on the data model.** The handoff is followed exactly where it
+describes what a person sees and does, and disregarded where it describes what
+is written down.
+
+### Not taken — clamping the start to the log's history
+
+The handoff clamps the start date to *the days that exist in the log*, and notes
+that in production it should span the full history. That would make the coverage
+run impossible: the ten photographed days are older than anything in the log,
+and D-043 exists precisely so they can be entered. The start stays open
+backwards and clamped forwards at today.

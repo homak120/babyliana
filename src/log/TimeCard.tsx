@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Icon } from './Icon'
 import {
   COLLAPSED_OFFSETS, END_OFFSETS, HOLD_MS, MINUTE_OFFSETS,
-  atHourMinute, dayWord, daysBack, endNow, formatDuration, minutesAfter, minutesAgo,
+  atHourMinute, dayDate, dayWord, daysBack, endNow, formatDuration, minutesAfter, minutesAgo,
   onDay, pad, resolveEnd, stepFor, withHourMinute, wrapHour, wrapMinute,
 } from './time'
 
@@ -85,9 +85,6 @@ function Stepper({
   )
 }
 
-/** Midnight on a date, for comparing two moments by day alone. */
-const startOfDayOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
-
 /**
  * One chevron of the date row. Holding runs through days, accelerating exactly
  * as the hour and minute steppers do — ten days back for the coverage run is a
@@ -147,9 +144,13 @@ export function TimeCard({
     onChange(next, end ? resolveEnd(next, end) : null)
   }
 
-  const startBack = daysBack(start)
-  const back = startBack
-  const endBack = end ? daysBack(end) : 0
+  const back = daysBack(start)
+  /**
+   * How many days past the start the end sits — 0 or 1, and the handoff allows
+   * nothing else. Nothing in a newborn log runs past a day, and the cap is what
+   * makes both arrows answerable: back at 0, forward at 1.
+   */
+  const endOffset = end ? daysBack(start) - daysBack(end) : 0
   const stepDay = (days: number) => {
     // Never forward of today. There is no such thing as a feed that has not
     // happened, and the old inference made a future date impossible to reach by
@@ -175,12 +176,13 @@ export function TimeCard({
 
   const stepEndDay = (days: number) => {
     if (!end) return
+    // The start's day or the one after it. Earlier is a period the database
+    // refuses outright (`ended_at >= occurred_at`); later than one day is not a
+    // thing this log records.
+    const next = endOffset + days
+    if (next < 0 || next > 1) return
     const moved = new Date(end)
     moved.setDate(moved.getDate() + days)
-    // An end before its start is what the database refuses
-    // (`ended_at >= occurred_at`), so the chevron stops rather than making a
-    // row that cannot be saved.
-    if (moved.getTime() < startOfDayOf(start).getTime()) return
     setEndPinned(true)
     onChange(start, moved)
   }
@@ -195,6 +197,7 @@ export function TimeCard({
           costs no extra taps either way, and a date you cannot see is a date
           nobody checks (D-043). */}
       <div className="daterow">
+        <Icon name="calendar_today" size={20} />
         <DayStep label="earlier day" icon="chevron_left" onStep={(n) => stepDay(-n)} />
         <span className="dateword">{dayWord(start)}</span>
         <DayStep
@@ -249,20 +252,6 @@ export function TimeCard({
         </button>
       ) : (
         <div className="endblock">
-          {/* The end's own day, same words as the start's (D-044). The app
-              still works it out — a 23:30 feed plus an hour shows 9/7 without
-              anyone asking — and this is where that answer becomes visible and
-              changeable rather than assumed. */}
-          <div className="daterow end">
-            <DayStep
-              label="earlier end day" icon="chevron_left"
-              disabled={endBack >= startBack}
-              onStep={(n) => stepEndDay(-n)}
-            />
-            <span className="dateword">{dayWord(end)}</span>
-            <DayStep label="later end day" icon="chevron_right" onStep={(n) => stepEndDay(n)} />
-          </div>
-
           <div className="timerow end">
             <Stepper
               value={end.getHours()} active={field === 'eh'} big={false}
@@ -277,10 +266,34 @@ export function TimeCard({
             />
             <button
               type="button" className="x" aria-label="remove end time"
-              onClick={() => onChange(start, null)}
+              onClick={() => {
+                setEndPinned(false)
+                onChange(start, null)
+              }}
             >
               <Icon name="close" size={18} />
             </button>
+          </div>
+
+          {/* Under the end's own steppers and above the duration, where the
+              handoff puts it: it qualifies the time just set, and the duration
+              below is what the two of them add up to. Named "ends on" rather
+              than left bare — this row is a date and the one above is a clock,
+              and at 4am that is worth saying (D-044, D-046). */}
+          <div className="daterow end">
+            <Icon name="event" size={17} />
+            <span className="endson">ends on</span>
+            <DayStep
+              label="earlier end day" icon="chevron_left"
+              disabled={endOffset <= 0}
+              onStep={(n) => stepEndDay(-n)}
+            />
+            <span className="dateword">{dayDate(end)}</span>
+            <DayStep
+              label="later end day" icon="chevron_right"
+              disabled={endOffset >= 1}
+              onStep={(n) => stepEndDay(n)}
+            />
           </div>
 
           <div className="shortcuts">
