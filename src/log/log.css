@@ -748,6 +748,11 @@ body {
   min-width: 0;
 }
 
+/* Tighter than the start's, like the end time row below it: it is a
+   qualifier on the end, not a second heading. */
+.daterow.end { gap: 0.25rem; margin: 0 0 0.25rem; }
+.daterow.end .dateword { font-size: 0.8125rem; }
+
 .timerow.end {
   gap: 0.125rem;
   padding-top: 0.875rem;

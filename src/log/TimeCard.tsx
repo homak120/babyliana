@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Icon } from './Icon'
 import {
   COLLAPSED_OFFSETS, END_OFFSETS, HOLD_MS, MINUTE_OFFSETS,
@@ -20,16 +20,27 @@ function useHold(onStep: (step: number) => void) {
   const timer = useRef<ReturnType<typeof setInterval> | null>(null)
   const ticks = useRef(0)
 
-  const stop = () => {
+  const stop = useCallback(() => {
     if (timer.current) clearInterval(timer.current)
     timer.current = null
     ticks.current = 0
-  }
-  useEffect(() => stop, [])
+    window.removeEventListener('pointerup', stop)
+    window.removeEventListener('pointercancel', stop)
+  }, [])
+  useEffect(() => stop, [stop])
 
   return {
     onPointerDown: () => {
       onStep(1)
+      // The release is heard on the window, not only on the button (D-044).
+      // A chevron can be disabled by the very step it just took — the later-day
+      // one on reaching today, the earlier-end-day one on reaching the start's
+      // day — and React then removes its handlers, so `onPointerUp` never
+      // arrives. The interval outlived the press and re-applied its stale step
+      // every 110ms, quietly overwriting whatever was done next: the end time
+      // could not be changed at all once its date had been stepped back.
+      window.addEventListener('pointerup', stop)
+      window.addEventListener('pointercancel', stop)
       timer.current = setInterval(() => {
         ticks.current += 1
         onStep(stepFor(ticks.current))
@@ -74,6 +85,9 @@ function Stepper({
   )
 }
 
+/** Midnight on a date, for comparing two moments by day alone. */
+const startOfDayOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
+
 /**
  * One chevron of the date row. Holding runs through days, accelerating exactly
  * as the hour and minute steppers do — ten days back for the coverage run is a
@@ -91,7 +105,7 @@ function DayStep({
   return (
     <button
       type="button" className="stepper" aria-label={label} disabled={disabled}
-      {...(disabled ? {} : hold)}
+      {...hold}
     >
       <Icon name={icon} size={18} />
     </button>
@@ -116,6 +130,16 @@ export function TimeCard({
    * became a default rather than a verdict.
    */
   const [pinned, setPinned] = useState(false)
+  /**
+   * The same flag for the end (D-044).
+   *
+   * Until it is set, the end is anchored to the start's day and rolled forward
+   * when it lands before it — which is what makes `23:30` plus an hour read as
+   * `00:30 tomorrow` without anyone thinking about it. Once the end's own date
+   * row is touched, the end keeps the day it is on and the time steppers stop
+   * re-anchoring it to the start.
+   */
+  const [endPinned, setEndPinned] = useState(false)
 
   const setStart = (h: number, m: number) => {
     // `start` is the anchor: editing an older moment keeps its own day.
@@ -123,7 +147,9 @@ export function TimeCard({
     onChange(next, end ? resolveEnd(next, end) : null)
   }
 
-  const back = daysBack(start)
+  const startBack = daysBack(start)
+  const back = startBack
+  const endBack = end ? daysBack(end) : 0
   const stepDay = (days: number) => {
     // Never forward of today. There is no such thing as a feed that has not
     // happened, and the old inference made a future date impossible to reach by
@@ -134,9 +160,29 @@ export function TimeCard({
     onChange(moved.start, moved.end)
   }
   const setEnd = (h: number, m: number) => {
+    if (!end) return
+    // Pinned, the end's own day is the answer and nothing rolls it: changing
+    // `00:30` to `23:45` on a pinned 9/7 means 9/7 23:45, and correcting the
+    // day after that is what the row above is for.
+    if (endPinned) {
+      onChange(start, atHourMinute(wrapHour(h), wrapMinute(m), end))
+      return
+    }
     const raw = new Date(start)
     raw.setHours(wrapHour(h), wrapMinute(m), 0, 0)
     onChange(start, resolveEnd(start, raw))
+  }
+
+  const stepEndDay = (days: number) => {
+    if (!end) return
+    const moved = new Date(end)
+    moved.setDate(moved.getDate() + days)
+    // An end before its start is what the database refuses
+    // (`ended_at >= occurred_at`), so the chevron stops rather than making a
+    // row that cannot be saved.
+    if (moved.getTime() < startOfDayOf(start).getTime()) return
+    setEndPinned(true)
+    onChange(start, moved)
   }
 
   const offsets = expanded ? MINUTE_OFFSETS : MINUTE_OFFSETS.slice(0, COLLAPSED_OFFSETS)
@@ -203,6 +249,20 @@ export function TimeCard({
         </button>
       ) : (
         <div className="endblock">
+          {/* The end's own day, same words as the start's (D-044). The app
+              still works it out — a 23:30 feed plus an hour shows 9/7 without
+              anyone asking — and this is where that answer becomes visible and
+              changeable rather than assumed. */}
+          <div className="daterow end">
+            <DayStep
+              label="earlier end day" icon="chevron_left"
+              disabled={endBack >= startBack}
+              onStep={(n) => stepEndDay(-n)}
+            />
+            <span className="dateword">{dayWord(end)}</span>
+            <DayStep label="later end day" icon="chevron_right" onStep={(n) => stepEndDay(n)} />
+          </div>
+
           <div className="timerow end">
             <Stepper
               value={end.getHours()} active={field === 'eh'} big={false}

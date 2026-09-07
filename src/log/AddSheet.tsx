@@ -175,7 +175,13 @@ export function AddSheet({
     onSaved()
   }
 
-  const ready = canSave(blocks) && !saving
+  // An end before its start is what the database refuses outright
+  // (`ended_at >= occurred_at`), and since the end's date became editable
+  // (D-044) it is reachable: pin the end to the start's day and set an earlier
+  // time. Caught here, where the button can say so, rather than as a failed
+  // upsert with nothing on screen to explain it.
+  const endsBeforeStart = end !== null && end.getTime() < start.getTime()
+  const ready = canSave(blocks) && !saving && !endsBeforeStart
 
   return (
     <div className="sheet">
@@ -260,7 +266,11 @@ export function AddSheet({
           that does not — the prototype's own copy. */}
       <button type="button" className="save" disabled={!ready} onClick={save}>
         <Icon name="check_circle" size={24} />
-        {blocks.length === 0 ? 'pick what happened' : editing ? 'save changes' : 'save'}
+        {blocks.length === 0
+          ? 'pick what happened'
+          : endsBeforeStart
+            ? 'the end is before the start'
+            : editing ? 'save changes' : 'save'}
       </button>
     </div>
   )

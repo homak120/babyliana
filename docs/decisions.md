@@ -1649,3 +1649,67 @@ let it run in a window where the trick could not work, and five checks failed
 every evening. The suite now steps the date row and the guard is gone. **The
 suite reaching for the app's clock logic instead of stating a day was the actual
 fault**, and the fix for it was a missing feature rather than a better number.
+
+---
+
+## D-044 — The end carries its own date, and a held chevron lets go
+
+D-043 gave the moment a date. The end had none: it was anchored to the start's
+day and rolled forward by `resolveEnd` when it landed before it. The end now has
+its own date row, worded exactly like the start's.
+
+**The data was already right; the screen was not.** A feed at 23:30 with an hour
+on it has always been stored as `9/6 23:30 → 9/7 01:30` — `resolveEnd` is what
+makes a 23:00→07:00 sleep work, and it predates all of this. What was missing is
+that nothing said so. The sheet showed two steppers and the day table printed
+`23:30–01:30`, so the app's answer to *which day* was invisible in exactly the
+way the start's was before D-043.
+
+**The app still works it out; the owner can now overrule it.** The quick
+shortcuts are unchanged — `+1 h` on a 23:30 start still lands on the next day
+with nobody thinking about it. Touching the end's date row sets `endPinned`, and
+from then on the end keeps the day it is on: changing `00:30` to `23:45` means
+`23:45 on that day`, not a re-anchor to the start. That is the whole point of a
+date field, applied to the end as well as the start.
+
+**One date per moment for grouping, two for entry.** The owner's rule: *the feed
+belongs to the start time's date*. So the day table, the date strip and the
+insights all still file a moment by `occurred_at`, and a period crossing midnight
+needs no marker there — it belongs to the day it began. The second date is for
+saying what happened, not for deciding where it is filed.
+
+**An impossible period is refused where it can be explained.** `0001`'s
+constraint is `ended_at is null or ended_at >= occurred_at`, and an editable end
+date makes it reachable: put the end on the start's day and set an earlier time.
+The earlier-day chevron stops at the start's day, and if the time still lands
+before the start the save button reads **the end is before the start** — the
+prototype's own "a disabled button that says why" pattern, rather than a failed
+upsert with nothing on screen.
+
+### The bug underneath it — a hold that outlived its button
+
+Stepping the end date back one day made the end time impossible to change at
+all. Not a display problem: every edit was applied and then silently reverted
+about a tenth of a second later.
+
+**`useHold` starts an interval on `pointerdown` and clears it on `pointerup`,
+which never arrived.** The earlier-end-day chevron disables itself the moment it
+reaches the start's day — that is the guard above — so React removed its
+handlers mid-press. The interval outlived the press and re-applied its stale
+step every 110ms, overwriting whatever was done next.
+
+**The release is now heard on the window**, added on `pointerdown` and removed
+in `stop`, so a button that vanishes or disables itself under the finger still
+ends its own hold. The button-level handlers stay for the ordinary case.
+
+**This was already shipped.** D-043's later-day chevron disables itself on
+reaching today, which is the same shape, so the leak went out with it. It was
+found only because the end date made the consequence visible — the start row's
+version re-applied a step that had already been taken, which looks like nothing
+at all.
+
+**Found by instrumenting, not by reading.** Four passes of reasoning about
+`wrapHour`, `clampHour` and React's controlled inputs all pointed at the wrong
+place; a `console.log` with a stack trace in the parent's `onChange` named
+`onStep` as the caller in one run. The code was innocent everywhere it was
+being read.

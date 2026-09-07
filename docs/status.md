@@ -57,6 +57,13 @@ digit typed replaces, so it costs nothing to disagree with; `+ milk` inside the
 sheet still starts blank, because a feed added by hand is as often the paper's
 `?`. The report screen's date strip now stops at three day pills, so `more` — the
 only route to an older day — is on screen rather than off the right-hand edge.
+**The end has its own date too** — D-044. Same row, same words, under the end
+time. The app still works it out — `+1 h` on a 23:30 feed lands on the next day
+— and touching the row pins it, after which changing the time keeps that day
+rather than re-anchoring to the start. An end before its start is refused by the
+save button, which says why. **The moment is still filed by its start date**, so
+the day table needs no crossing marker.
+
 **The add sheet has a date** — D-043. A `‹ today ›` row above the clock, with
 hold-to-repeat, so any past day is reachable; the six-hour midnight rule still
 fills it in but stops deciding once it is touched. Forward of today is refused.
@@ -170,6 +177,34 @@ lavender and the same `BottleIcon` the end-feed pill wears. `src/log/LogScreen.t
 and the `.prepline` rule in `src/log/log.css`. No test changed: `verify-hero`
 asserts the prompt's count, text and geometry, not its glyph, and its five
 prompt checks pass.
+
+**The end's date — D-044, and a real bug under it.** The end date
+row and `endPinned` in `src/log/TimeCard.tsx`, the `endsBeforeStart` gate in
+`src/log/AddSheet.tsx`, `.daterow.end` styles, and five checks in
+`verify-period-row`.
+
+**`useHold` leaked an interval, and it was already shipped.** A chevron that
+disables itself under the finger — the later-day one on reaching today (D-043),
+the earlier-end-day one on reaching the start's day — has its handlers removed
+by React mid-press, so `pointerup` never fires and the interval keeps
+re-applying its stale step every 110ms. The symptom was that the end time could
+not be changed at all once its date had been stepped back: every edit applied,
+then reverted. The release is heard on the window now. **Found by logging a
+stack trace in the parent's `onChange`** after four passes of reading the wrong
+code.
+
+**`verify-period` has one failure, and it is not from this** — `other edge is
+next month`, confirmed on `HEAD` with these changes stashed. The date rolling to
+the 7th put both edges of the preset inside September, so a check that pages
+forward to find one no longer holds. Same family as the `preset fills the span`
+fix on the 6th, and the same lesson: **a check written against today's date is a
+check with a shelf life.** Untouched, because nobody asked.
+
+**One test of my own was that fault too.** `verify-period-row`'s 12-hour column
+check compared the wrapped height against the 24-hour one — five characters
+against up to eight, so `11:02 AM–11:32 AM` takes three lines in the morning
+where `6:23 PM–6:53 PM` takes two. It now asserts the cell wraps inside its own
+width without overflowing, which is the thing that actually matters.
 
 **The date field — D-043.** `atHourMinute`, `onDay`, `daysBack`
 and `dayWord` in `src/log/time.ts`; the date row and a `DayStep` chevron in
@@ -427,7 +462,46 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-06 (latest) — the sheet finally says which day
+### 2026-09-07 (latest) — the end says which day, and a chevron lets go
+
+**The end has its own date row now** (D-044). D-043 gave the moment a date and
+left the end anchored to the start's day.
+
+**The data had always been right.** A 23:30 feed with an hour on it was already
+stored as `9/6 23:30 → 9/7 01:30`; `resolveEnd` is what makes a 23:00→07:00
+sleep work and predates all of this. What was missing is that nothing said so —
+the sheet showed two steppers and the table printed `23:30–01:30`. Same
+invisibility the start had before D-043.
+
+**The app still computes it and the owner can overrule it.** `+1 h` on 23:30
+still lands on the next day untouched. Touch the end's date row and it pins:
+changing `00:30` to `23:45` then means that day at 23:45, not a re-anchor to the
+start.
+
+**The feed belongs to its start date** — the owner's rule, and it settles the
+day table: a period crossing midnight needs no marker, because it is filed by
+where it began. The second date says what happened, not where it lives.
+
+**An impossible period is refused where it can be explained.** `0001` has
+`ended_at >= occurred_at`, and an editable end date makes that reachable. The
+earlier-day chevron stops at the start's day, and the save button reads *the end
+is before the start* rather than failing as an upsert.
+
+**Then the bug worth the session.** Stepping the end date back made the end time
+impossible to change — every edit applied and reverted a tenth of a second
+later. `useHold` clears its repeat interval on `pointerup`, and the chevron
+disables itself the moment it reaches the start's day, so React removed its
+handlers mid-press and the release never arrived. The interval outlived the
+press and re-applied its stale step every 110ms. **It was already shipped** in
+D-043's later-day chevron, where re-applying an already-taken step looks like
+nothing at all.
+
+**Four passes of reading the code all pointed at the wrong place** — `wrapHour`,
+`clampHour`, React's controlled inputs. A `console.log` with a stack trace in
+the parent's `onChange` named `onStep` as the caller in one run. Instrument
+earlier.
+
+### 2026-09-06 — the sheet finally says which day
 
 **The add sheet had an hour and a minute and no date.** Which day an entry
 landed on was inferred: more than six hours ahead of now meant yesterday. There
@@ -497,21 +571,3 @@ or mom / so good to see you*.
 first version of the check slept 600ms and caught the page still loading; it now
 waits for the error and records 6.8s, because the client does not give up when
 the request does. Left as is — nobody asked, and it is a flow used once.
-
-### 2026-09-06 — the prompt stops looking like a warning
-
-The owner asked for the milk icon on the top card's `make a bottle` line to
-become a bottle, and for the red to go.
-
-Both were already-decided arguments applied to a line that had missed them.
-The glyph was `local_drink`, which D-038 records as reading like a milk *cup* —
-the drawn `BottleIcon` exists precisely because Material Symbols has no bottle.
-The colour was `--roseDeep`, which the same entry moved the end-feed control
-away from for reading as an alert. The prompt is a suggestion fifteen minutes
-ahead of a ceiling, with nothing wrong behind it, so it now matches the
-end-feed control on both counts and stays distinct from the amber wake line
-above it.
-
-`verify-hero` needed no edit and passes: it reads the prompt's count, text and
-geometry rather than its icon, and the line still lands one row and inside the
-card at 328 against a 337 limit.

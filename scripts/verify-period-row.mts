@@ -97,9 +97,79 @@ const dayRow = await p.evaluate(() => {
   }
 })
 check('the day table follows the same setting', AMPM.test(dayRow.text), dayRow.text)
-check('the time column is no taller than it was at 24h, and nothing overflows',
-  dayRow.h <= day24 && dayRow.over === 0,
-  `${dayRow.h}px vs ${day24}px at 24h, ${dayRow.over}px overflow`)
+// Not compared against the 24h height: 24h is always five characters and 12h
+// is up to eight, so `11:02 AM–11:32 AM` takes three lines in the morning where
+// `6:23 PM–6:53 PM` takes two — a check on that comparison passes or fails by
+// the hour, which is the fault this suite's sibling was just cured of. What
+// matters is that it wraps inside its column instead of pushing the page.
+const line = day24 / 2
+check('the 12-hour time column wraps inside its own width, without overflowing',
+  dayRow.over === 0 && dayRow.h <= 3 * line,
+  `${dayRow.h}px (${Math.round(dayRow.h / line)} lines), ${dayRow.over}px overflow`)
+
+// --- the end carries its own date (D-044) ------------------------------------
+//
+// The owner's case: log at 23:30, use the +1 h shortcut, and the end is 00:30
+// on the NEXT day. The app works that out; this is about it being visible and
+// then changeable.
+await p.getByRole('navigation').getByLabel('log', { exact: true }).click()
+await p.waitForTimeout(400)
+await p.getByLabel('log a moment').click()
+await p.waitForTimeout(300)
+// Put the start on 23:30 yesterday, so "an hour later" crosses midnight without
+// depending on what time this suite runs.
+// Read relationally rather than against fixed words: typing 23:30 in the
+// morning is read as last night, in the evening as tonight, and either is a
+// correct answer to a different clock. What must hold is the *relationship*.
+await p.locator('.timerow:not(.end) .num').first().fill('23')
+await p.locator('.timerow:not(.end) .num').nth(1).fill('30')
+await p.waitForTimeout(250)
+const startWord = await p.locator('.daterow:not(.end) .dateword').innerText()
+
+await p.getByRole('button', { name: '+ milk' }).click()
+await p.getByRole('button', { name: /end time/ }).click()
+await p.waitForTimeout(250)
+await p.getByRole('button', { name: '+1 h', exact: true }).click()
+await p.waitForTimeout(300)
+const endWord = await p.locator('.daterow.end .dateword').innerText()
+const endHour = await p.locator('.timerow.end .num').first().inputValue()
+const dur = await p.locator('.duration').innerText()
+check('an hour past 23:30 lands at 00:30 on the following day, and says which',
+  endHour === '00' && endWord !== startWord && dur.includes('1h'),
+  `start ${startWord} 23:30 → end ${endWord} ${endHour}:30, ${dur}`)
+
+// Back onto the start's own day, which is a period the database refuses
+// (`ended_at >= occurred_at`). The button has to say so rather than fail later.
+await p.getByLabel('earlier end day').click()
+await p.waitForTimeout(300)
+check('the end can be walked back to the start day, and then no further',
+  (await p.locator('.daterow.end .dateword').innerText()) === startWord
+  && await p.getByLabel('earlier end day').isDisabled(),
+  await p.locator('.daterow.end .dateword').innerText())
+check('an end before its start blocks the save, and says why',
+  /before the start/.test(await p.locator('button.save').last().innerText()),
+  (await p.locator('button.save').last().innerText()).replace(/\n/g, ' '))
+
+// The point of making it editable: the time changes and the day stays put,
+// instead of being re-anchored to the start the way the guess used to do.
+await p.locator('.timerow.end .num').first().fill('23')
+await p.waitForTimeout(300)
+check('changing the end time keeps the day that was set by hand',
+  (await p.locator('.daterow.end .dateword').innerText()) === startWord
+  && !/before the start/.test(await p.locator('button.save').last().innerText()),
+  `${await p.locator('.daterow.end .dateword').innerText()} 23:30`)
+
+// And forward again, where a stale hold interval used to overwrite every later
+// edit because the chevron disabled itself mid-press (D-044).
+await p.getByLabel('later end day').click()
+await p.waitForTimeout(300)
+const dayAfter = await p.locator('.daterow.end .dateword').innerText()
+await p.locator('.timerow.end .num').first().fill('02')
+await p.waitForTimeout(300)
+check('and a disabled chevron does not keep stepping after the press ends',
+  (await p.locator('.daterow.end .dateword').innerText()) === dayAfter
+  && (await p.locator('.timerow.end .num').first().inputValue()) === '02',
+  `${await p.locator('.daterow.end .dateword').innerText()} ${await p.locator('.timerow.end .num').first().inputValue()}:30`)
 
 await b.close()
 stop()
