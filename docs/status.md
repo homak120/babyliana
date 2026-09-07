@@ -214,12 +214,14 @@ then reverted. The release is heard on the window now. **Found by logging a
 stack trace in the parent's `onChange`** after four passes of reading the wrong
 code.
 
-**`verify-period` has one failure, and it is not from this** — `other edge is
-next month`, confirmed on `HEAD` with these changes stashed. The date rolling to
-the 7th put both edges of the preset inside September, so a check that pages
-forward to find one no longer holds. Same family as the `preset fills the span`
-fix on the 6th, and the same lesson: **a check written against today's date is a
-check with a shelf life.** Untouched, because nobody asked.
+**`verify-period` is green again — the calendar check now sums.** It asserted
+one preset edge per month grid, which depends entirely on the date: picking a
+preset opens the calendar on the month the range *starts* in, so on the 6th
+"last 7 days" is 8/31–9/6 and the edges are a month apart, while on the 7th it
+is 9/1–9/7 and both sit in September. It counts both grids and asserts **two
+edges in total**, which is true on every date because a range has two ends.
+Checked by pinning the clock to 9/7, 9/6 and 9/2 in a throwaway probe: `2+0`,
+`1+1`, `1+1`. **All twenty-one suites pass.**
 
 **One test of my own was that fault too.** `verify-period-row`'s 12-hour column
 check compared the wrapped height against the 24-hour one — five characters
@@ -484,6 +486,15 @@ Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
 ### 2026-09-07 (latest) — the prompt asks for attention, then keeps time
+
+**And `verify-period`'s last date-dependent check is gone.** It expected one
+preset edge in each month grid, but the calendar opens on the month the range
+*starts* in — so whether the far edge is in that grid or the next one is decided
+by today's date. It sums both grids and asserts two edges, which holds on any
+date because a range has two ends. Confirmed against a pinned clock on 9/7, 9/6
+and 9/2. That is the third clock-dependent check retired in two days, after the
+day-swipe guard (D-043) and the 12-hour column height (D-044). **All twenty-one
+suites pass.**
 
 **`make a bottle` moves now, and tapping it starts a count** (D-045). Light
 blue of its own — rose reads as an alert, lavender is the end-feed bottle,
