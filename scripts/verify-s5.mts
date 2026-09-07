@@ -11,7 +11,8 @@ const store = new Map<string, string>([['babyliana.device_id', '00000000-0000-40
 } as Storage
 
 import {
-  endNow, formatDuration, minutesAfter, minutesAgo, resolveEnd, stepFor,
+  endAgo, endNow, formatDuration, minutesAfter, minutesAgo, resolveEnd, stepFor,
+  END_AGO_OFFSETS, END_OFFSETS,
   withHourMinute, wrapHour, wrapMinute, HOLD_ACCELERATE_AFTER,
   atHourMinute, countUp, dayDate, dayWord, daysBack, onDay, toMinute,
 } from '../src/log/time.ts'
@@ -39,6 +40,29 @@ check('typing 23:45 at 00:30 means LAST night, not tonight',
 const lastEvening = withHourMinute(20, 0, t(8, 0))
 check('a time far ahead of now is read as yesterday',
   lastEvening.getDate() === 2, show(lastEvening))
+
+// --- the end-time shortcuts (D-048) ------------------------------------------
+check('two forward offsets, not five', END_OFFSETS.join(',') === '30,60', END_OFFSETS.join(','))
+check('and three counted back from now', END_AGO_OFFSETS.join(',') === '5,10,15',
+  END_AGO_OFFSETS.join(','))
+
+// The ordinary case: a feed begun twenty minutes ago that finished five ago.
+const began = new Date(2026, 8, 3, 15, 50)
+const ago5 = endAgo(began, 5, t(16, 10))
+check('"5 min ago" is five minutes before now, not before the start',
+  ago5.getHours() === 16 && ago5.getMinutes() === 5, show(ago5))
+
+// The trap: on a start of *now*, five minutes ago is behind it, and rolling it
+// forward a day is exactly the fault D-047 removed.
+const clamped = endAgo(t(16, 10), 5, t(16, 10))
+check('and never lands before the start', clamped.getTime() === t(16, 10).getTime(), show(clamped))
+check('so it reads as nothing elapsed, not as a day',
+  formatDuration(t(16, 10), clamped) === '0 min', formatDuration(t(16, 10), clamped))
+
+// And never past what the date arrows can express (D-046).
+const capped = endAgo(new Date(2026, 7, 28, 9, 0), 5, t(16, 10))
+check('nor more than a day after the start',
+  capped.getDate() === 29 && capped.getMonth() === 7, show(capped))
 
 // --- seconds, and the day they used to cost (D-047) --------------------------
 // Nothing in this app shows a second, but `new Date()` carries them and every

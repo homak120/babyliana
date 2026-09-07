@@ -40,6 +40,17 @@ check('adding an end time starts it at the start',
   && (await p.locator('.daterow.end .dateword').innerText())
      === (await p.locator('.daterow:not(.end) .dateword').innerText()).split('·')[1].trim(),
   `${await p.locator('.duration').innerText()}, ends on ${await p.locator('.daterow.end .dateword').innerText()}`)
+// The end shortcuts are two forward offsets and three counted back from now
+// (D-048). `+2 h`, `+3 h` and `+4 h` went because nothing ever used them.
+// Scoped to the end block and matched exactly: the START row carries its own
+// "5 min ago" and "10 min ago" pills, and `hasText` is a substring match that
+// would count "15 min ago" as one of them too.
+const endPills = p.locator('.endblock')
+check('the end offers minutes back from now, and no multi-hour jumps',
+  (await endPills.getByRole('button', { name: '5 min ago', exact: true }).count()) === 1
+  && (await endPills.getByRole('button', { name: '15 min ago', exact: true }).count()) === 1
+  && (await endPills.getByRole('button', { name: '+2 h', exact: true }).count()) === 0,
+  (await p.locator('.endblock .shortcuts').innerText()).replace(/\n/g, ' '))
 // +30 min, so the end differs from the start.
 await p.getByRole('button', { name: '+30 min' }).click()
 await p.waitForTimeout(200)

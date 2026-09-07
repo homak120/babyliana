@@ -1881,3 +1881,50 @@ be either, and a running feed stopped being detectable.
 and `verify-s5` pins it with a check that a stored instant keeps its seconds.
 The two suites that caught it are the ones that drive a real feed and a real
 sleep from the bar, which is the only place the ordering shows.
+
+---
+
+## D-048 — Minutes back from now on the end, and a bubble grid that holds
+
+Two things the owner hit in the sheet, both about a row not doing what it looks
+like it should.
+
+### The end-time shortcuts
+
+`+2 h`, `+3 h` and `+4 h` are gone, and `5 min ago`, `10 min ago` and
+`15 min ago` take their place beside `now`, `+30 min` and `+1 h`.
+
+**The removed three had never been used.** A feed is minutes, and a sleep gets
+its end from the bar when it actually ends — a four-hour guess was a pill
+nobody could want. **The three added are the commonest correction there is:**
+the feed finished a few minutes ago and you are logging it now.
+
+**They are bounded, because an unbounded one would rebuild D-047's bug.** On a
+moment whose start is *now*, five minutes ago is behind the start, and
+`resolveEnd` would read that as crossing midnight and file a 23h 55m entry —
+exactly the fault just removed. `endAgo` clamps to the start, which reads as
+zero and is one tap from right. It also caps at start + 1 day, for the same
+reason the end date arrows stop there (D-046): a value the arrows cannot express
+should not be reachable from a pill beside them.
+
+### The bubble grid
+
+`supplement` is about five pixels wider than half a row on a 390px phone, and a
+flex item cannot shrink below its own text unless it is told it may. So it took
+a line of its own and left `temp` sitting alone on the line above — the pairing
+that is the whole layout, broken by one word being one character too long.
+
+**`min-width: 0` lets the bubble shrink**, and the label carries
+`text-overflow: ellipsis`, so the word gives rather than the grid. With the
+padding tightened from `1rem` to `0.75rem` and the gap from `0.375` to `0.25`,
+`supplement` now reads whole down to **375px** and only shortens at 360 and
+below. Measured at 430, 393, 390, 375, 360 and 320: two to a row at every width,
+`other` last, no horizontal overflow anywhere.
+
+**The label needed its own class.** `.bubble span` also catches the Material
+Symbols span, so the ellipsis rule was clipping the *icon* — and a probe reading
+`querySelector('span')` was measuring the icon's overflow, which is why an early
+measurement claimed the word was clipped when it was not. `.bubbletext` names
+the thing that is allowed to give. **A check that reads the wrong element
+reports the wrong thing confidently**, and this one only surfaced because a
+second check disagreed with it.

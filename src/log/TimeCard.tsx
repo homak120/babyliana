@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Icon } from './Icon'
 import {
-  COLLAPSED_OFFSETS, END_OFFSETS, HOLD_MS, MINUTE_OFFSETS,
-  atHourMinute, dayDate, dayWord, daysBack, endNow, formatDuration, minutesAfter, minutesAgo,
+  COLLAPSED_OFFSETS, END_AGO_OFFSETS, END_OFFSETS, HOLD_MS, MINUTE_OFFSETS,
+  atHourMinute, dayDate, dayWord, daysBack, endAgo, endNow, formatDuration, minutesAfter, minutesAgo,
   onDay, pad, resolveEnd, stepFor, withHourMinute, wrapHour, wrapMinute,
 } from './time'
 
@@ -303,6 +303,16 @@ export function TimeCard({
             >
               <Icon name="schedule" size={14} /> now
             </button>
+            {/* Ago before plus: they read as one sequence going forward — a
+                few minutes back from now, then a stretch on from the start. */}
+            {END_AGO_OFFSETS.map((o) => (
+              <button
+                type="button" key={`ago${o}`} className="pill"
+                onClick={() => onChange(start, endAgo(start, o))}
+              >
+                {o} min ago
+              </button>
+            ))}
             {END_OFFSETS.map((o) => (
               <button
                 type="button" key={o} className="pill"

@@ -191,6 +191,40 @@ check('the other bubble stays, because it repeats',
   (await p.locator('.bubble.other').count()) === 1,
   `${await p.locator('.bubble.other').count()} other bubbles`)
 
+// --- the bubbles pair up, whatever the longest word is (D-048) ---------------
+//
+// `supplement` is five pixels wider than half a row at 390, and a flex item
+// cannot shrink below its own text unless told it may — so it took a line of
+// its own and left `temp` sitting alone above it. The pairing is the layout.
+await p.reload({ waitUntil: 'load' })
+await p.waitForTimeout(600)
+await p.getByLabel('log a moment').click()
+await p.waitForTimeout(400)
+const grid = await p.evaluate(`(() => {
+  const rows = {}; const clipped = [];
+  document.querySelectorAll('.bubble').forEach((el) => {
+    const top = Math.round(el.getBoundingClientRect().top);
+    const s = el.querySelector('.bubbletext');
+    if (s.scrollWidth > s.clientWidth + 1) clipped.push(s.innerText);
+    (rows[top] = rows[top] || []).push(s.innerText);
+  });
+  return { rows: Object.values(rows), clipped,
+           over: Math.round(document.documentElement.scrollWidth - document.documentElement.clientWidth) };
+})()`) as { rows: string[][]; clipped: string[]; over: number }
+
+const paired = grid.rows.filter((r) => r.length === 2).length
+check('the bubbles sit two to a row, with the odd one last',
+  paired === 3 && grid.rows.length === 4 && grid.rows[3].length === 1,
+  grid.rows.map((r) => r.join('+')).join(' / '))
+check('supplement shares its row with temp rather than taking one',
+  grid.rows.some((r) => r.length === 2 && r.includes('supplement') && r.includes('temp')),
+  grid.rows.map((r) => r.join('+')).join(' / '))
+// It is the label that gives on a narrower phone, never the grid. At this
+// width it should not have to give at all.
+check('and reads whole at 390, with nothing pushed sideways',
+  grid.clipped.length === 0 && grid.over === 0,
+  `clipped: ${grid.clipped.join(',') || 'none'}, ${grid.over}px overflow`)
+
 await b.close()
 stop()
 console.log(fail === 0 ? '\n  the secondary types take their values' : `\n  ${fail} FAILED`)

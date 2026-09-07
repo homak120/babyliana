@@ -19,8 +19,24 @@ export const MINUTE_OFFSETS = [5, 10, 15, 20, 30, 45, 60]
 /** Shown collapsed until the `…` toggle — the first two cover most cases. */
 export const COLLAPSED_OFFSETS = 2
 
-/** Minutes forward from the start, for the end-time shortcuts. */
-export const END_OFFSETS = [30, 60, 120, 180, 240]
+/**
+ * Minutes forward from the start, for the end-time shortcuts.
+ *
+ * Two, not five. `+2 h`, `+3 h` and `+4 h` went because nothing in the log ever
+ * used them: a feed is minutes and a sleep gets its end from the bar when it
+ * actually ends, so a four-hour guess was a pill nobody could want.
+ */
+export const END_OFFSETS = [30, 60]
+
+/**
+ * Minutes back from *now*, for the end-time shortcuts.
+ *
+ * The commonest correction there is: the feed finished a few minutes ago and
+ * you are logging it now. Counted from the clock rather than from the start,
+ * like the start row's own `N min ago` pills, and anchored to the start's day so
+ * a backdated moment cannot acquire a six-day end.
+ */
+export const END_AGO_OFFSETS = [5, 10, 15]
 
 export const minutesAgo = (mins: number, now = new Date()) =>
   new Date(now.getTime() - mins * 60_000)
@@ -199,6 +215,27 @@ export function resolveEnd(start: Date, end: Date): Date {
   const next = new Date(end)
   next.setDate(next.getDate() + 1)
   return next
+}
+
+/**
+ * The end meant by *N minutes ago* — the real instant, held inside the two
+ * bounds the date arrows already enforce.
+ *
+ * Never before the start: on a moment whose start is *now*, five minutes ago is
+ * behind it, and `resolveEnd` would read that as crossing midnight and file a
+ * 23h 55m entry — the exact fault D-047 removed. It clamps to the start
+ * instead, which reads as zero and is one tap from being right.
+ *
+ * Never more than a day after it either, for the same reason the end date stops
+ * at start + 1 (D-046): a value the arrows cannot express should not be
+ * reachable from a pill beside them.
+ */
+export function endAgo(start: Date, mins: number, now = new Date()): Date {
+  const at = minutesAgo(mins, now)
+  if (at.getTime() <= start.getTime()) return new Date(start)
+  const cap = new Date(start)
+  cap.setDate(cap.getDate() + 1)
+  return at.getTime() > cap.getTime() ? cap : at
 }
 
 /**

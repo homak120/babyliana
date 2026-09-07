@@ -245,7 +245,7 @@ export function AddSheet({
         </p>
         {AVAILABLE.filter((a) => a.repeats || !blocks.some((b) => b.type === a.type)).map((a) => (
           <button type="button" key={a.type} className={`bubble ${a.type}`} onClick={() => add(a.type)}>
-            + <Icon name={a.icon} size={17} /> {a.label}
+            + <Icon name={a.icon} size={17} /> <span className="bubbletext">{a.label}</span>
           </button>
         ))}
       </div>

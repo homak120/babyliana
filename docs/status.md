@@ -57,6 +57,12 @@ digit typed replaces, so it costs nothing to disagree with; `+ milk` inside the
 sheet still starts blank, because a feed added by hand is as often the paper's
 `?`. The report screen's date strip now stops at three day pills, so `more` — the
 only route to an older day — is on screen rather than off the right-hand edge.
+**The end's shortcuts are minutes back from now** — D-048. `5 / 10 / 15 min
+ago` replace `+2 h`, `+3 h` and `+4 h`, which nothing ever used, and they are
+bounded so they cannot land before the start. **The bubble grid holds two to a
+row again** — `supplement` was five pixels too wide and took a line of its own,
+leaving `temp` alone above it.
+
 **The end time opens at the start, not a day out** — D-047. It prefilled 23h
 59m long: the start carries seconds and every other time zeroes them, so the end
 candidate was a few seconds *before* it and `resolveEnd` read that as crossing
@@ -197,6 +203,24 @@ lavender and the same `BottleIcon` the end-feed pill wears. `src/log/LogScreen.t
 and the `.prepline` rule in `src/log/log.css`. No test changed: `verify-hero`
 asserts the prompt's count, text and geometry, not its glyph, and its five
 prompt checks pass.
+
+**The sheet's two rough edges — D-048.** `END_OFFSETS` is `[30,
+60]`, a new `END_AGO_OFFSETS` is `[5, 10, 15]`, and `endAgo` in
+`src/log/time.ts` bounds them at the start and at start + 1 day. `.bubble` gains
+`min-width: 0` with tighter padding, and the label gets its own `.bubbletext`
+class. Six checks in `verify-s5`, one in `verify-period-row`, three in
+`verify-other`.
+
+**Measured across six widths**: two bubbles to a row at 430, 393, 390, 375, 360
+and 320, `other` last, no overflow anywhere, and `supplement` reading whole down
+to 375.
+
+**One thing worth remembering from it.** An early probe read
+`querySelector('span')` inside a bubble and got the **Material Symbols span**,
+not the label — so it reported the word as clipped when it was not, and the
+ellipsis rule written from that reading was clipping the icon. It surfaced only
+because a second check disagreed with the first. A check that reads the wrong
+element reports the wrong thing confidently.
 
 **The end-time prefill — D-047.** `resolveEnd` and `endNow` compare
 minute to minute, a new `toMinute` in `src/log/time.ts` for comparing only, and
@@ -527,7 +551,35 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-07 (latest) — the end time stops opening a day out
+### 2026-09-07 (latest) — two rough edges in the sheet
+
+**The end's shortcuts are minutes back from now** (D-048). `+2 h`, `+3 h` and
+`+4 h` are gone — nothing ever used them, since a feed is minutes and a sleep
+gets its end from the bar — and `5 / 10 / 15 min ago` sit beside `now`,
+`+30 min` and `+1 h`. That is the commonest correction there is: the feed
+finished a few minutes ago and you are logging it now.
+
+**They are bounded, or they would rebuild the bug just fixed.** On a start of
+*now*, five minutes ago is behind it, and `resolveEnd` would read that as
+crossing midnight — a 23h 55m entry, which is D-047 all over again. `endAgo`
+clamps to the start, and caps at start + 1 day so a pill cannot reach a value
+the date arrows refuse.
+
+**And the bubbles pair up again.** `supplement` is five pixels wider than half a
+row at 390, and a flex item cannot shrink below its own text unless told it may
+— so it took a line of its own and left `temp` alone above it. `min-width: 0`
+plus an ellipsis on the label means the word gives rather than the grid. It now
+reads whole down to 375 and only shortens at 360 and below. Measured at six
+widths.
+
+**The lesson was in the measuring, not the fixing.** A probe read
+`querySelector('span')` inside a bubble and got the Material Symbols span rather
+than the label — so it reported the word clipped when it was not, and the CSS
+written from that reading was clipping the *icon*. It surfaced only because a
+second check disagreed with the first. **A check that reads the wrong element
+reports the wrong thing confidently.**
+
+### 2026-09-07 — the end time stops opening a day out
 
 **Adding an end time prefilled a moment 23h 59m long** (D-047). The owner hit it
 in use and read it correctly: it should open at the start.
@@ -582,41 +634,3 @@ second time: the prototype is authority on interaction, not on the data model.**
 already in the log. That would make the coverage run impossible — the ten
 photographed days are older than anything in it, and D-043 exists so they can be
 entered at all.
-
-### 2026-09-07 — the prompt asks for attention, then keeps time
-
-**And `verify-period`'s last date-dependent check is gone.** It expected one
-preset edge in each month grid, but the calendar opens on the month the range
-*starts* in — so whether the far edge is in that grid or the next one is decided
-by today's date. It sums both grids and asserts two edges, which holds on any
-date because a range has two ends. Confirmed against a pinned clock on 9/7, 9/6
-and 9/2. That is the third clock-dependent check retired in two days, after the
-day-swipe guard (D-043) and the 12-hour column height (D-044). **All twenty-one
-suites pass.**
-
-**`make a bottle` moves now, and tapping it starts a count** (D-045). Light
-blue of its own — rose reads as an alert, lavender is the end-feed bottle,
-periwinkle is sleep, and this is the only line on the card that asks for
-something. `#1f6f9c` is 5.51:1 on the card, above the lavender it replaces.
-
-**The motion changes rather than stops.** A slow breath while it is asking, a
-rock like a shaken bottle while it is counting, so the two states are told apart
-without reading. Both off under `prefers-reduced-motion` — the tone rule holds
-for movement as much as for words.
-
-**It counts up and claims nothing.** `making milk · 4m 10s`. A countdown was
-offered and declined; it would have meant asserting a cool-down time for a
-bottle the app knows nothing about. Nothing reaches the database — the tap is a
-note to yourself, not an event in the baby's log — and there is no cancel,
-because logging the feed is the cancel and the line already disappears then.
-
-**Then the bug worth the session, again.** The count was wiped by any save at
-all, and by opening the app. `LogScreen` starts with `moments = []` and fills it
-asynchronously, so the first render after a remount has no moments, hence no
-target, hence `prepping` false — which is indistinguishable from a feed having
-just been logged. Every other thing on that screen renders the empty array for a
-frame without caring. This line *acts* on it.
-
-**`loaded` now says which it is.** The general lesson is the durable part: a
-component that acts on absent data has to know whether the data is absent or
-merely not here yet, and an empty array cannot tell it.
