@@ -76,6 +76,16 @@
   --blueFill: #ddeefb;  --blueInk: #1f6f9c;
   --dayHead: #fbeef4;
 
+  /* Chart series (D-049). Not the `*Ink` tones: those are chosen to be read as
+     text on a fill, and as adjacent bar fills they fail the separation a chart
+     needs — mint against yellow measured 14.5 where 15 is the floor, and
+     `--muted` reads as no colour at all. These four were snapped to the nearest
+     passing step and validated: light wet/dirty ΔE 16.5 normal / 7.9 protan,
+     breast/formula 21.9. The wet pair sits in the CVD floor band, which is why
+     that chart carries direct labels and a legend rather than colour alone. */
+  --cWet: #a97f16;     --cDirty: #0d8a63;
+  --cBreast: #7a5aa8;  --cFormula: #b06a1e;
+
   /* Insights only. Chart labels and the watch list are body-size text on a
      fill, and must clear 4.5:1 — which --muted and the base --*Ink tones do
      not. Do not substitute those here. */
@@ -117,6 +127,12 @@
   --periFill: #232a45;  --periInk: #94a6dd;
   /* 8.74:1 on the night --card. */
   --blueFill: #1b2b3a;  --blueInk: #8cc6ea;
+
+  /* Chosen for the night surface, not flipped from the day steps: the light
+     values sit outside the dark lightness band, and the night `*Ink` tones are
+     lighter and greyer still. Validated against #221e33. */
+  --cWet: #b08a28;     --cDirty: #2f9d75;
+  --cBreast: #8f74c9;  --cFormula: #bd7f36;
   --dayHead: #2a2038;
 
   --dim: #a99cc0;       --flagInk: #efd79a;

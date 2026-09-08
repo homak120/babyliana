@@ -29,6 +29,10 @@ export type DayStat = {
   date: Date
   isToday: boolean
   ml: number
+  /** Millilitres by source. The three add up to `ml` (D-049). */
+  mlBreast: number
+  mlFormula: number
+  mlUnmarked: number
   feeds: number
   pees: number
   poops: number
@@ -49,6 +53,33 @@ export type HeatRow = { iso: string; label: string; cells: HeatCell[] }
 
 export type WeightEntry = { key: string; day: string; text: string }
 
+/** One row of the poop-colour tally — a count and nothing said about it. */
+export type ColourCount = { name: string; count: number }
+
+/**
+ * Poop colours across the span, commonest first.
+ *
+ * A tally, and deliberately no more: the app records and does not diagnose
+ * (CLAUDE.md), so there is no threshold here, nothing flagged, and no colour
+ * treated as better or worse than another. Unrecorded colours are counted
+ * separately rather than dropped, because "not written down" is not "other".
+ */
+export function poopColours(moments: Moment[]): ColourCount[] {
+  const tally = new Map<string, number>()
+  for (const m of moments) {
+    for (const e of m.events) {
+      if (e.type !== 'diaper' || !e.poop) continue
+      const name = e.poop_colour ?? 'not noted'
+      tally.set(name, (tally.get(name) ?? 0) + 1)
+    }
+  }
+  return [...tally.entries()]
+    .map(([name, count]) => ({ name, count }))
+    // Commonest first, and ties by name so the order does not shuffle between
+    // renders of the same data.
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+}
+
 const minutesInto = (iso: string) => {
   const d = new Date(iso)
   return d.getHours() * 60 + d.getMinutes()
@@ -67,7 +98,7 @@ function statsFor(iso: string, moments: Moment[], now: Date): DayStat {
   const date = startOfDay(new Date(moments[0].timeslot.occurred_at))
   const s: DayStat = {
     iso, date, isToday: sameDay(date.toISOString(), now),
-    ml: 0, feeds: 0, pees: 0, poops: 0,
+    ml: 0, mlBreast: 0, mlFormula: 0, mlUnmarked: 0, feeds: 0, pees: 0, poops: 0,
     sleeps: 0, sleepMins: 0, longestSleepMins: 0,
     maxFeedGap: 0, avgFeedGap: 0, moments,
   }
@@ -77,7 +108,15 @@ function statsFor(iso: string, moments: Moment[], now: Date): DayStat {
     for (const e of m.events) {
       if (e.type === 'feed') {
         s.feeds++
-        if (e.volume_ml !== null) s.ml += e.volume_ml
+        if (e.volume_ml !== null) {
+          s.ml += e.volume_ml
+          // A feed with no source is its own band, not a rounding error: more
+          // than half the log has none, and hiding that would make the chart a
+          // claim about the baby rather than about what was written down.
+          if (e.source === 'breast_milk') s.mlBreast += e.volume_ml
+          else if (e.source === 'formula') s.mlFormula += e.volume_ml
+          else s.mlUnmarked += e.volume_ml
+        }
       }
       if (e.type === 'diaper') {
         if (e.pee) s.pees++
@@ -287,6 +326,17 @@ export function buildInsights(moments: Moment[], span: Span, now = new Date()) {
     sincePoopMins,
     lastPoop,
     poopTotal: days.reduce((a, d) => a + d.poops, 0),
+
+    // --- the three charts added in D-049 ---
+    // A stacked bar needs the tallest total to scale against, and it is the
+    // *sum* that sets the height, not either part.
+    maxDiapers: Math.max(1, ...days.map((d) => d.pees + d.poops)),
+    peeTotal: days.reduce((a, d) => a + d.pees, 0),
+    // The whole point of the source chart: how much was never marked. Kept as
+    // a figure of its own so the caption can say it outright.
+    mlUnmarked: days.reduce((a, d) => a + d.mlUnmarked, 0),
+    sourcedDays: days.filter((d) => d.mlBreast + d.mlFormula > 0).length,
+    colours: poopColours(days.flatMap((d) => d.moments)),
 
     sleepCount: days.reduce((a, d) => a + d.sleeps, 0),
     longestSleepMins: Math.max(0, ...days.map((d) => d.longestSleepMins)),

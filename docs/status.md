@@ -57,6 +57,13 @@ digit typed replaces, so it costs nothing to disagree with; `+ milk` inside the
 sheet still starts blank, because a feed added by hand is as often the paper's
 `?`. The report screen's date strip now stops at three day pills, so `more` — the
 only route to an older day — is on screen rather than off the right-hand edge.
+**The report has three more charts** — D-049. Diapers a day stacked wet/dirty,
+milk by source with a hatched *not marked* band, and a poop-colour tally. Chosen
+against what the database actually holds, and they describe rather than assess —
+D-032's four rules are still four. **Four new series tokens**, validated rather
+than eyeballed: the app's `*Ink` tones are chosen to be read as text on a fill
+and fail as adjacent bar fills.
+
 **The end's shortcuts are minutes back from now** — D-048. `5 / 10 / 15 min
 ago` replace `+2 h`, `+3 h` and `+4 h`, which nothing ever used, and they are
 bounded so they cannot land before the start. **The bubble grid holds two to a
@@ -203,6 +210,27 @@ lavender and the same `BottleIcon` the end-feed pill wears. `src/log/LogScreen.t
 and the `.prepline` rule in `src/log/log.css`. No test changed: `verify-hero`
 asserts the prompt's count, text and geometry, not its glyph, and its five
 prompt checks pass.
+
+**Three charts on the report — D-049.** `mlBreast` / `mlFormula` /
+`mlUnmarked` per day plus a `poopColours` tally in `src/report/insights.ts`,
+three cards in `InsightsView.tsx`, stacked-bar and tally styles in
+`insights.css`, and `--cWet` / `--cDirty` / `--cBreast` / `--cFormula` in
+`tokens.css` for both themes. Twelve checks in `verify-insights`, six in
+`verify-report`.
+
+**The palette was computed.** Reusing the `*Ink` tokens the app already assigns
+to these meanings looked obvious and fails the validator: mint against yellow is
+ΔE 14.5 where the floor is 15 and reads grey at chroma 0.09, and `--muted` is
+chroma 0.02 at 2.78:1. The four new tokens were snapped to passing steps and
+checked separately per surface — **dark is its own selection, not a flip**,
+because every light value sits outside the dark lightness band.
+
+**Two things are load-bearing rather than decorative.** The wet/dirty pair
+passes at CVD ΔE 7.9, the floor band, which is legal only with secondary
+encoding — so the counting legend, the value on each bar and the 2px gap between
+segments are what make that chart right for a protanopic reader. And the tally
+bar is neutral because it was green beside a row labelled *yellow*, which
+rendering it made obvious and no validator would have caught.
 
 **The sheet's two rough edges — D-048.** `END_OFFSETS` is `[30,
 60]`, a new `END_AGO_OFFSETS` is `[5, 10, 15]`, and `endAgo` in
@@ -551,7 +579,40 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-07 (latest) — two rough edges in the sheet
+### 2026-09-07 (latest) — three more charts, and a palette that was computed
+
+**The report gains diapers a day, milk by source, and a poop-colour tally**
+(D-049). The owner picked three from a longer list; *feeds by hour* was offered
+and declined, as were cards for the four types with no data.
+
+**Chosen against the live database rather than the schema.** 99 feeds, 89
+diapers, 31 recorded colours — and zero weights, zero spit-ups, one supplement,
+two temperatures. A chart with no rows is worse than no chart.
+
+**They describe and do not assess.** D-032's four counted rules are still four.
+The colour tally is the sharp case: a count, in frequency order, with nothing
+said about any colour and a caption saying so.
+
+**"Not marked" is a band, not a discard.** More than half the log's feeds carry
+no source, so charting only the sourced ones would make the picture a claim
+about the baby rather than about what was written down. Hatched rather than
+hued, because an absence should not compete for identity, and the millilitres
+are said outright in the caption.
+
+**The palette was computed, and the obvious answer was wrong.** Reusing the
+`*Ink` tokens the app already assigns to these meanings fails: mint against
+yellow measures ΔE 14.5 against a floor of 15 and reads grey at chroma 0.09;
+`--muted` is chroma 0.02 at 2.78:1. Four new tokens were snapped to passing
+steps and validated per surface — **dark is its own selection, not a flip.**
+
+**And two details are load-bearing.** The wet/dirty pair passes at CVD ΔE 7.9,
+the floor band, legal only with secondary encoding — so the counting legend, the
+value above each bar and the 2px gap between segments are what make it right for
+a protanopic reader, not decoration. **The tally bar is neutral because
+rendering it showed a green bar beside a row labelled *yellow*.** No validator
+would have caught that; looking at it did.
+
+### 2026-09-07 — two rough edges in the sheet
 
 **The end's shortcuts are minutes back from now** (D-048). `+2 h`, `+3 h` and
 `+4 h` are gone — nothing ever used them, since a feed is minutes and a sleep
@@ -604,33 +665,3 @@ instants need their seconds** — they order two moments logged in the same
 minute, and `ongoingFeed` and `ongoingSleep` both ask which is latest. A feed
 and the diaper logged twenty seconds later became simultaneous, so a running
 feed stopped being detectable. `toMinute` is for comparing, never for storing.
-
-### 2026-09-07 — the date rows get their proper shape
-
-**`handoff_date_fields` is a design pass over what D-043 and D-044 built**, and
-its layout, wording and ranges are now in (D-046). The start row is
-`calendar_today` with a 36px round step either side of a centred label and a
-hairline beneath; the end row moved below its own steppers and reads
-`event · ends on · 09/08` with 30px steps.
-
-**The label always carries the date now** — `today · 09/07`, `yesterday · 09/06`,
-`Sat · 09/05`. *Yesterday* alone asks the reader to know what today is, which at
-4am is the thing they are least sure of.
-
-**The end is capped to the start's day or the next**, which D-044 had left open
-in the forward direction — it allowed a four-day feed. Both arrows dim at their
-bound rather than vanishing, so the row keeps its shape and the thumb keeps its
-target.
-
-**Its data model was not taken, and that is the point worth keeping.** The
-handoff adds `day` / `endDay` as `"DD.MM"` strings with a `1440·offset`
-duration. This app has stored real timestamps since D-020, so everything that
-section lists as work — a 22:40→06:10 sleep reading `7h 30m`, presets advancing
-past midnight — has worked here since sleeps got end times. Taking the fields
-would put a weaker second source of truth beside the schema. **D-033's rule, a
-second time: the prototype is authority on interaction, not on the data model.**
-
-**One more thing declined.** The handoff clamps the start date to the days
-already in the log. That would make the coverage run impossible — the ten
-photographed days are older than anything in it, and D-043 exists so they can be
-entered at all.

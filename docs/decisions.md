@@ -1928,3 +1928,64 @@ measurement claimed the word was clipped when it was not. `.bubbletext` names
 the thing that is allowed to give. **A check that reads the wrong element
 reports the wrong thing confidently**, and this one only surfaced because a
 second check disagreed with it.
+
+---
+
+## D-049 — Three more charts on the report, and a validated series palette
+
+The report gains **diapers a day** (stacked wet/dirty), **by source** (milk by
+breast / formula / not marked) and **poop colours** (a tally). The owner chose
+these three from a longer list; *feeds by hour* was offered and declined.
+
+**Chosen against what is actually in the database**, not against what the schema
+allows: 99 feeds, 89 diapers, 31 recorded poop colours — and **zero** weights,
+zero spit-ups, one supplement, two temperatures. Cards for the empty four were
+offered and declined until there is something to draw. A chart with no rows is
+worse than no chart.
+
+**They describe; they do not assess.** D-032 fixes the watch list at four
+counted rules and says not to add a fifth, so none of these flags anything. The
+colour tally is the sharp case: it counts what was written down, in the order it
+was written down, with no colour treated as better or worse than another and a
+caption saying so. The app records; it does not diagnose (CLAUDE.md).
+
+**"Not marked" is a band, not a discard.** More than half the log's feeds have
+no source, so charting only the sourced ones would make the picture a claim
+about the baby rather than about what was written down. It is drawn as a hatched
+neutral rather than a third hue — an absence should not compete for identity —
+and the caption says the millilitres outright. `mlBreast + mlFormula +
+mlUnmarked === ml` is checked, because a stack whose parts do not sum to its
+total is a lie about the day.
+
+**An unrecorded colour is `not noted`, never `other`.** `other` is a colour
+someone chose; a blank is a mark that was never made. That is the paper log's
+own distinction between an empty cell and a `?` (D-018), applied again.
+
+### The palette was computed, not chosen
+
+The obvious move was to reuse the `*Ink` tokens the app already assigns to these
+meanings — pee yellow, poop mint, breast lilac, formula amber. **Run through the
+validator, two of the four fail.** Those tones are picked to be read as *text on
+a fill*; as adjacent bar fills they are too close and too grey:
+
+| palette | verdict |
+| --- | --- |
+| `--yellowInk` + `--mintInk` | mint chroma 0.09 reads grey; normal-vision ΔE 14.5, floor is 15 |
+| `--lilacInk` + `--amberInk` + `--muted` | `--muted` chroma 0.02; contrast 2.78:1 |
+
+Four new tokens were snapped to the nearest passing step and validated
+separately for each surface — `--cWet` / `--cDirty` / `--cBreast` / `--cFormula`.
+**Dark is its own selection, not a flip:** every light value sits outside the
+dark lightness band, and the night `*Ink` tones are lighter and greyer still.
+
+**The wet/dirty pair passes at CVD ΔE 7.9**, which is the floor band and legal
+only with secondary encoding. That is why that chart carries a counting legend
+(`wet 7 · dirty 4`), a value on top of every bar, and a 2px surface gap between
+segments — those are load-bearing, not decoration, and removing them makes the
+chart wrong for a protanopic reader rather than merely plainer.
+
+**The tally bar is deliberately neutral.** It was `--cDirty` green at first,
+which put a green bar beside a row labelled *yellow* — a chart asking the reader
+to ignore what they can see. One series measuring magnitude needs no identity
+colour at all. **Found by rendering it and looking**, which is the step that
+catches what a validator cannot.

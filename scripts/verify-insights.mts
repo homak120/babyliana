@@ -237,6 +237,52 @@ check('the 3d span keeps three days', build(week, 3).days.length === 3)
 check('the 3d span keeps the most recent three',
   build(week, 3).days[2].isToday === true)
 
+// --- the three charts (D-049) -----------------------------------------------
+
+const sourced = (ml: number, source: LogEvent['source']) =>
+  ev({ type: 'feed', volume_ml: ml, source })
+
+const mixedDay = build([
+  at(9, 8, 0, [sourced(60, 'breast_milk')]),
+  at(9, 11, 0, [sourced(45, 'formula')]),
+  at(9, 14, 0, [feed(30)]),          // `unknown` — a source nobody wrote down
+  at(9, 17, 0, [ev({ type: 'feed', volume_ml: 25, source: null })]),
+])
+const d0 = mixedDay.days[0]
+check('milk splits by source', d0.mlBreast === 60 && d0.mlFormula === 45)
+check('an unmarked source is its own band, not a discard', d0.mlUnmarked === 55)
+// The bands are a decomposition, so they must add back up — a chart whose parts
+// do not sum to its total is a lie about the day.
+check('and the three bands add up to the day', d0.mlBreast + d0.mlFormula + d0.mlUnmarked === d0.ml)
+check('the unmarked total is carried for the caption', mixedDay.mlUnmarked === 55)
+
+const diaperDays = build([
+  at(9, 8, 0, [pee()]), at(9, 9, 0, [pee()]), at(9, 10, 0, [poop()]),
+  at(10, 8, 0, [pee()]),
+])
+// A stacked bar scales against the tallest *total*, not the tallest part.
+check('the diaper scale is the tallest day\'s total', diaperDays.maxDiapers === 3)
+check('and both parts are counted across the span',
+  diaperDays.peeTotal === 3 && diaperDays.poopTotal === 1)
+check('an empty span still scales against one, never zero', build([]).maxDiapers === 1)
+
+const coloured = build([
+  at(9, 8, 0, [poop('yellow')]), at(9, 9, 0, [poop('green')]),
+  at(9, 10, 0, [poop('yellow')]), at(9, 11, 0, [poop(null)]),
+  at(10, 8, 0, [pee()]),
+])
+check('colours are tallied commonest first',
+  coloured.colours[0].name === 'yellow' && coloured.colours[0].count === 2,
+  JSON.stringify(coloured.colours))
+// "not written down" is not a colour called "other" — the paper log's own
+// distinction between an empty cell and a mark.
+check('an unrecorded colour is counted as its own row',
+  coloured.colours.some((c) => c.name === 'not noted' && c.count === 1),
+  JSON.stringify(coloured.colours))
+check('a wet-only change is not in the tally at all',
+  coloured.colours.reduce((a, c) => a + c.count, 0) === 4)
+check('and no poops means no rows to draw', build([at(9, 8, 0, [pee()])]).colours.length === 0)
+
 // --- nothing at all ---------------------------------------------------------
 
 const empty = build([])

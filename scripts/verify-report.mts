@@ -89,6 +89,38 @@ check('3d takes over', (await p.locator('.spanPill.on').innerText()).trim() === 
 // --- nothing overflows the phone -------------------------------------------
 // Wide content on this screen is a chart, and a chart that pushes the body
 // sideways breaks every other screen with it.
+// --- the three charts added in D-049 ----------------------------------------
+for (const title of ['diapers a day', 'by source'] as const) {
+  check(`the ${title} card renders`,
+    (await p.locator('.card', { hasText: new RegExp(title, 'i') }).count()) === 1,
+    `${await p.locator('.card', { hasText: new RegExp(title, 'i') }).count()} card(s)`)
+}
+// Two series each, so a legend is not optional — the wet/dirty pair sits in the
+// CVD floor band and the words are what carry the difference.
+check('every stacked chart names its series in a legend',
+  (await p.locator('.legend').count()) >= 3,
+  `${await p.locator('.legend').count()} legends`)
+check('and the diaper legend counts as well as names',
+  /wet \d+/.test(await p.locator('.legend').nth(1).innerText()),
+  (await p.locator('.legend').nth(1).innerText()).replace(/\n/g, ' '))
+// A stack whose parts do not sum to its own total would be a lie about the day.
+const stacks = await p.evaluate(`(() => {
+  const out = [];
+  document.querySelectorAll('.stack').forEach((st) => {
+    let parts = 0;
+    st.querySelectorAll('.seg').forEach((sg) => { parts += sg.getBoundingClientRect().height; });
+    out.push([Math.round(parts), Math.round(st.getBoundingClientRect().height)]);
+  });
+  return out;
+})()`) as [number, number][]
+check('a stack is exactly its segments plus their gaps',
+  stacks.length > 0 && stacks.every(([parts, total]) => total - parts <= 4 && total >= parts),
+  stacks.map(([a, c]) => `${a}/${c}`).join(' '))
+// The poop tally only exists when something has been logged with a colour; the
+// seeded diaper above has none, so it is absent, which is the point.
+check('the colour tally stays away until a colour is recorded',
+  (await p.locator('.tally').count()) === 0, 'no colours logged in this range')
+
 const overflow = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
 check('the page does not scroll sideways', overflow <= 0, `${overflow}px over`)
 

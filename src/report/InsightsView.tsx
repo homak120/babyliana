@@ -222,6 +222,126 @@ export function InsightsView({
         </section>
       </div>
 
+      {/* 4b. Diapers per day, stacked (D-049). The pair above says how many;
+              this says what shape the days have. */}
+      <section className="card">
+        <h2 className="cardTitle">
+          <Icon name="water_drop" size={15} /> diapers a day
+        </h2>
+
+        {i.peeTotal + i.poopTotal > 0 ? (
+          <>
+            <div className="bars">
+              {i.days.map((d) => {
+                const total = d.pees + d.poops
+                const h = (n: number) => Math.round((n / i.maxDiapers) * 78)
+                return (
+                  <div className="bar" key={d.iso}>
+                    {/* The count on top, so the reader never has to judge a
+                        length against the axis to know what a day held. */}
+                    <span className="barValue">{total || '—'}</span>
+                    <div className="stack">
+                      {d.poops > 0 && (
+                        <div className="seg dirty" style={{ height: `${h(d.poops)}px` }} />
+                      )}
+                      {d.pees > 0 && (
+                        <div className="seg wet" style={{ height: `${h(d.pees)}px` }} />
+                      )}
+                    </div>
+                    <span className={`barLabel ${d.isToday ? 'today' : ''}`}>
+                      {d.date.getMonth() + 1}/{d.date.getDate()}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Never colour alone: the two hues are close enough under
+                protanopia that the words are what carry the difference. */}
+            <div className="legend">
+              <span><i className="key wet" /> wet {i.peeTotal}</span>
+              <span><i className="key dirty" /> dirty {i.poopTotal}</span>
+            </div>
+          </>
+        ) : (
+          <p className="insCaption">no changes logged in this range.</p>
+        )}
+      </section>
+
+      {/* 4c. What was in the bottle (D-049). */}
+      <section className="card">
+        <h2 className="cardTitle">
+          <Icon name="local_drink" size={15} /> by source
+        </h2>
+
+        {i.days.some((d) => d.ml > 0) ? (
+          <>
+            <div className="bars">
+              {i.days.map((d) => {
+                const h = (n: number) => Math.round((n / i.maxMl) * 78)
+                return (
+                  <div className="bar" key={d.iso}>
+                    <span className="barValue">{d.ml || '—'}</span>
+                    <div className="stack">
+                      {d.mlUnmarked > 0 && (
+                        <div className="seg unmarked" style={{ height: `${h(d.mlUnmarked)}px` }} />
+                      )}
+                      {d.mlFormula > 0 && (
+                        <div className="seg formula" style={{ height: `${h(d.mlFormula)}px` }} />
+                      )}
+                      {d.mlBreast > 0 && (
+                        <div className="seg breast" style={{ height: `${h(d.mlBreast)}px` }} />
+                      )}
+                    </div>
+                    <span className={`barLabel ${d.isToday ? 'today' : ''}`}>
+                      {d.date.getMonth() + 1}/{d.date.getDate()}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="legend">
+              <span><i className="key breast" /> breast</span>
+              <span><i className="key formula" /> formula</span>
+              <span><i className="key unmarked" /> not marked</span>
+            </div>
+
+            {/* Said outright rather than left to be inferred from a big grey
+                band: the chart is as much about how often the source goes
+                unwritten as about what was in the bottle. */}
+            <p className="insCaption">
+              {i.mlUnmarked > 0
+                ? `${i.mlUnmarked} mL went down without a source marked.`
+                : 'every feed in this range has a source.'}
+            </p>
+          </>
+        ) : (
+          <p className="insCaption">no milk logged in this range.</p>
+        )}
+      </section>
+
+      {/* 4d. Poop colours (D-049) — a tally, and nothing said about it. */}
+      {i.colours.length > 0 && (
+        <section className="card">
+          <h2 className="cardTitle">
+            <Icon name="palette" size={15} /> poop colours
+          </h2>
+          <div className="tally">
+            {i.colours.map((c) => (
+              <div className="tallyRow" key={c.name}>
+                <span className="tallyName">{c.name}</span>
+                <span className="tallyBar">
+                  <i style={{ width: `${Math.round((c.count / i.colours[0].count) * 100)}%` }} />
+                </span>
+                <span className="tallyCount">{c.count}</span>
+              </div>
+            ))}
+          </div>
+          <p className="insCaption">what was written down, counted. nothing more.</p>
+        </section>
+      )}
+
       {/* 5. Sleep */}
       <section className="card">
         <h2 className="cardTitle">
