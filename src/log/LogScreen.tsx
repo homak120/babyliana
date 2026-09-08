@@ -24,12 +24,14 @@ import {
   timeCell,
 } from '../day/cells'
 import { getDeviceId } from '../device-id'
+import { cycleFor, gapText, isNightCycle, upcomingFeeds } from '../cycles'
 import { setTimeFormat, timeFormat } from '../timeformat'
 import { getMoments, removeMoment, renameThisDevice } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
 import type { Device, Moment } from '../types'
 import { AddSheet } from './AddSheet'
-import { PrepLine } from './PrepLine'
+import { CycleSheet } from './CycleSheet'
+import { PrepPill, usePrepTimer } from './PrepLine'
 import { BottleIcon } from './BottleIcon'
 import { EndSleepIcon } from './EndSleepIcon'
 import { Icon } from './Icon'
@@ -61,7 +63,7 @@ type Lead = 'elapsed' | 'combined' | 'mascot'
 
 const LEADS: { id: Lead; icon: string; label: string }[] = [
   { id: 'elapsed', icon: 'schedule', label: 'elapsed view' },
-  { id: 'combined', icon: 'insights', label: 'combined view' },
+  { id: 'combined', icon: 'event_upcoming', label: 'next feeds view' },
   { id: 'mascot', icon: 'pets', label: 'mascot view' },
 ]
 
@@ -166,6 +168,7 @@ export function LogScreen({ onEndOpen }: {
 
   // Nothing is removed until the sheet is confirmed (Q-012).
   const [pendingDelete, setPendingDelete] = useState<Moment | null>(null)
+  const [tuning, setTuning] = useState(false)
 
   const refresh = useCallback(() => {
     getMoments().then((m) => {
@@ -230,6 +233,13 @@ export function LogScreen({ onEndOpen }: {
   // whether one was, and there is nothing to dismiss — logging the feed moves
   // the target and takes the line with it.
   const prepping = bottleDue(target, now)
+  // The timer is held by the screen, not by the pill: the pill is absent on the
+  // next-feeds tab, and the timer still has to clear itself when a feed is
+  // logged whichever tab is showing (D-050).
+  const prep = usePrepTimer(prepping, loaded)
+  // Counted forward from the last feed's start, never from now, so the list
+  // does not creep while nobody is logging (D-040).
+  const upcoming = upcomingFeeds(lastFeedStart, now)
   // The total, not the breakdown. With the unit and the source word on every
   // part (§12), "25 mL breast + 45 mL formula" is far past what a one-line
   // figure slot holds — so these two leads print one number.
@@ -301,12 +311,26 @@ export function LogScreen({ onEndOpen }: {
         </div>
 
         <section className="herocard">
+          {/* Top-right of the card, where the handoff puts it. Quiet: the two
+              windows are right for almost everyone almost always, and this is
+              the only control on a card that is otherwise all read-back. */}
+          <button
+            type="button"
+            className="tunebtn"
+            aria-label="feeding cycle settings"
+            onClick={() => setTuning(true)}
+          >
+            <Icon name="tune" size={17} />
+          </button>
           <Mascot state={state} theme={theme} />
           {/* min-width:0 so the figure can shrink rather than force the card wide. */}
           <div style={{ minWidth: 0 }}>
             <p className="kicker">
-              <Icon name={lead === 'mascot' ? 'pets' : 'schedule'} size={13} />{' '}
-              {lead === 'mascot' ? 'Liana is' : lead === 'combined' ? 'last feed' : 'since last feed'}
+              <Icon
+                name={lead === 'mascot' ? 'pets' : lead === 'combined' ? 'event_upcoming' : 'schedule'}
+                size={13}
+              />{' '}
+              {lead === 'mascot' ? 'Liana is' : lead === 'combined' ? 'next feeds' : 'since last feed'}
             </p>
 
             {lead === 'elapsed' && (
@@ -321,6 +345,12 @@ export function LogScreen({ onEndOpen }: {
                   <Icon name={STATE[state].icon} size={16} />
                   {STATE[state].word}
                 </span>
+                {/* Only inside fifteen minutes of the ceiling, or while it is
+                    already running — the handoff's own rule, and the one
+                    `bottleDue` has always used (D-036). */}
+                {(prepping || prep.startedAt !== null) && (
+                  <PrepPill startedAt={prep.startedAt} onToggle={prep.toggle} />
+                )}
                 {/* How long she has been down, and the way out of it, without
                     going near the bar. Descriptive: how long, not whether it is
                     long enough. */}
@@ -357,18 +387,35 @@ export function LogScreen({ onEndOpen }: {
 
             {lead === 'combined' && (
               <>
-                <p className="combined">
-                  {/* The unit comes from `milkTotal` now, with a non-breaking
-                      space ahead of it: the column is about eight characters
-                      wide at this size, so the line always wraps, and "mL"
-                      alone on the second line reads as a mistake. */}
-                  {lastFeed ? `${elapsedText} ago · ${lastVol}`.replace(' mL', '\u00a0mL') : '—'}
-                </p>
-                <p className="leadsub">
-                  {lastFeed
-                    ? `at ${hhmm(lastFeed.timeslot.occurred_at, clock)}${lastBy ? ` · logged by ${lastBy}` : ''}`
-                    : 'nothing logged yet'}
-                </p>
+                {upcoming.length > 0 ? (
+                  <>
+                    {/* The nearest one, large. Or the one just passed, which is
+                        the row a tired person is actually looking for. */}
+                    <p className="nextfeed">
+                      <b>{hhmm(upcoming[0].toISOString(), clock)}</b>
+                      <em className={upcoming[0] < now ? 'past' : ''}>
+                        {targetText(upcoming[0], now)}
+                      </em>
+                    </p>
+                    {upcoming.slice(1).map((at) => {
+                      const c = cycleFor(at)
+                      return (
+                        <p className="laterfeed" key={at.toISOString()}>
+                          <b>{hhmm(at.toISOString(), clock)}</b>
+                          <em>{targetText(at, now)}</em>
+                          {/* Which window produced this one, so a sequence that
+                              changes interval halfway explains itself. */}
+                          <span className={isNightCycle(c) ? 'gapchip gapnight' : 'gapchip gapday'}>
+                            <Icon name={isNightCycle(c) ? 'bedtime' : 'wb_sunny'} size={12} />
+                            {gapText(c.gap)}
+                          </span>
+                        </p>
+                      )
+                    })}
+                  </>
+                ) : (
+                  <p className="leadsub">nothing logged yet</p>
+                )}
               </>
             )}
 
@@ -381,14 +428,17 @@ export function LogScreen({ onEndOpen }: {
                     ? `${lastVol.replace(' mL', '\u00a0mL')}${lastBy ? ` · ${lastBy}` : ''}`
                     : 'nothing logged yet'}
                 </p>
+                {/* Always here, whatever the clock says — this tab is the one
+                    you open to ask about the bottle (D-050). */}
+                <PrepPill startedAt={prep.startedAt} onToggle={prep.toggle} />
               </>
             )}
 
-            {/* Outside the three leads on purpose: the rail chooses which
-                summary the card leads with, and the target is wanted under all
-                of them. Descriptive, like everything else on this card — the
-                clock time and how far off it is, and no view about it. */}
-            {target && (
+            {/* Under the elapsed and mascot leads, not under the next-feed one
+                (D-050): tab 2's big number is the same instant this line names,
+                and saying it twice on one card — once as a ceiling, once as an
+                appointment — reads as two different claims. */}
+            {target && lead !== 'combined' && (
               <div className="wakeline">
                 <Icon name="alarm" size={14} />
                 <span>by {hhmm(target.toISOString(), clock)}</span>
@@ -396,14 +446,7 @@ export function LogScreen({ onEndOpen }: {
               </div>
             )}
 
-            {/* Its own row rather than folded into the one above: the wake time
-                and the prompt are two independent facts, and this card already
-                stacks lines this way for a running feed and an open sleep.
 
-                Rendered whatever `prepping` says, not behind it: the line clears
-                its own timer when the prompt is over (D-045), and a component
-                unmounted by the guard would never get to. */}
-            <PrepLine prepping={prepping} loaded={loaded} />
           </div>
         </section>
       </div>
@@ -555,6 +598,8 @@ export function LogScreen({ onEndOpen }: {
           }}
         />
       )}
+
+      {tuning && <CycleSheet onClose={() => setTuning(false)} />}
 
       {sheet && (
         <AddSheet

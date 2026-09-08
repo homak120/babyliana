@@ -111,7 +111,7 @@ check('exactly one is active', rail !== null && rail.on === 1, `${rail?.on} acti
 // switch that renders by branch.
 for (const [label, sel] of [
   ['elapsed view', '.elapsed'],
-  ['combined view', '.combined'],
+  ['next feeds view', '.nextfeed'],
   ['mascot view', '.mascotword'],
 ] as const) {
   await p.getByLabel(label).click()
@@ -150,15 +150,22 @@ check('the target is there once no feed is running',
   (await p.locator('.wakeline').count()) === 1,
   (await p.locator('.wakeline').innerText().catch(() => 'absent')).replace(/\n/g, ' '))
 
-// It sits outside the three leads, so it is under all of them.
-for (const label of ['combined view', 'mascot view', 'elapsed view'] as const) {
+// Under the elapsed and mascot leads, and deliberately not under the next-feeds
+// one (D-050): that tab's big number is the same instant this line names, and
+// saying it twice on one card — once as a ceiling, once as an appointment —
+// reads as two different claims.
+for (const [label, want] of [
+  ['next feeds view', 0],
+  ['mascot view', 1],
+  ['elapsed view', 1],
+] as const) {
   await p.getByLabel(label).click()
   await p.waitForTimeout(200)
   const seen = await p.locator('.wakeline').count()
   const over = await p.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   )
-  check(`the target is under ${label}`, seen === 1 && over === 0,
+  check(`the target is ${want ? 'under' : 'off'} ${label}`, seen === want && over === 0,
     `${seen} wake line(s), ${over}px overflow`)
 }
 
@@ -204,8 +211,8 @@ await p.waitForTimeout(250)
 // Nothing to prepare yet: the feed above is minutes old, so the target is
 // hours out.
 check('no bottle prompt hours ahead of the target',
-  (await p.locator('.prepline').count()) === 0,
-  `${await p.locator('.prepline').count()} prompt(s)`)
+  (await p.locator('.preppill').count()) === 0,
+  `${await p.locator('.preppill').count()} prompt(s)`)
 
 // Walk the feed back four hours so the target has passed. Editing the entry
 // rather than logging another one, because the prompt reads the *latest* feed
@@ -231,86 +238,148 @@ for (let i = 0; i < 4; i++) { await hourDown.click(); await p.waitForTimeout(120
 await p.getByRole('button', { name: 'save changes', exact: true }).click()
 await p.waitForTimeout(900)
 
-check('the prompt is up once the target is inside 15 minutes',
-  (await p.locator('.prepline').count()) === 1,
-  (await p.locator('.prepline').innerText().catch(() => 'absent')).replace(/\n/g, ' '))
+check('the prep pill is up once the target is inside 15 minutes',
+  (await p.locator('.preppill').count()) === 1,
+  (await p.locator('.preppill').innerText().catch(() => 'absent')).replace(/\n/g, ' '))
 
-// Under every lead, like the wake line it sits below, and inside the card.
-for (const label of ['combined view', 'mascot view', 'elapsed view'] as const) {
+// It lives *inside* a lead now (D-050), not under all three: on the elapsed
+// tab only while the ceiling is close, on the mascot tab always, and never on
+// the next-feeds tab, which has three times of its own to carry.
+for (const [label, want] of [
+  ['next feeds view', 0],
+  ['mascot view', 1],
+  ['elapsed view', 1],
+] as const) {
   await p.getByLabel(label).click()
   await p.waitForTimeout(200)
-  const seen = await p.locator('.prepline').count()
+  const seen = await p.locator('.preppill').count()
   const over = await p.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   )
-  check(`the prompt is under ${label}`, seen === 1 && over === 0,
-    `${seen} prompt(s), ${over}px overflow`)
+  check(`the pill is ${want ? 'on' : 'off'} ${label}`, seen === want && over === 0,
+    `${seen} pill(s), ${over}px overflow`)
 }
 
-const prep = await p.evaluate(() => {
-  const el = document.querySelector('.prepline') as HTMLElement
-  const wakeEl = document.querySelector('.wakeline') as HTMLElement
-  const card = document.querySelector('.herocard') as HTMLElement
-  const pad = parseFloat(getComputedStyle(card).paddingRight)
-  return {
-    right: Math.round(el.getBoundingClientRect().right),
-    limit: Math.round(card.getBoundingClientRect().right - pad),
-    below: el.getBoundingClientRect().top >= wakeEl.getBoundingClientRect().bottom - 1,
-    lines: Math.round(el.getBoundingClientRect().height / 18),
-  }
-})
-check('it sits below the wake line, on one row, inside the card',
-  prep.below && prep.right <= prep.limit && prep.lines <= 1,
-  `ends ${prep.right} vs ${prep.limit}, ${prep.lines} line(s), below: ${prep.below}`)
+const prep = await p.evaluate(`(() => {
+  const el = document.querySelector('.preppill');
+  const card = document.querySelector('.herocard');
+  const pad = parseFloat(getComputedStyle(card).paddingRight);
+  const r = el.getBoundingClientRect();
+  return { right: Math.round(r.right), limit: Math.round(card.getBoundingClientRect().right - pad),
+           lines: Math.round(r.height / 18) };
+})()`) as { right: number; limit: number; lines: number }
+check('and it fits inside the card, two lines and no more',
+  prep.right <= prep.limit && prep.lines <= 2,
+  `ends ${prep.right} vs ${prep.limit}, ${prep.lines} line(s)`)
 
-// --- tapping it starts the making-milk count (D-045) -------------------------
-check('the prompt is a button before it is tapped',
-  (await p.locator('button.prepline.asking').count()) === 1,
-  `${await p.locator('button.prepline.asking').count()} tappable prompt(s)`)
-// It moves because it is asking to be noticed by someone not looking at the
-// phone. Read off the computed style rather than watched: what is under test is
-// that the rule reaches the icon, not what an animation looks like.
-const askAnim = await p.evaluate(() =>
-  getComputedStyle(document.querySelector('.prepline.asking svg')!).animationName)
-check('and it is moving', askAnim === 'prepbreathe', askAnim)
+// --- the timer (D-045, redrawn in D-050) ------------------------------------
+check('it asks before it counts, and says how to start',
+  /make milk/.test(await p.locator('.preppill').innerText())
+  && /tap when you start/.test(await p.locator('.preppill').innerText()),
+  (await p.locator('.preppill').innerText()).replace(/\n/g, ' '))
+const askAnim = await p.evaluate(
+  `getComputedStyle(document.querySelector('.preppill.asking .prepmark')).animationName`)
+check('and it is moving', askAnim === 'prepbreathe', String(askAnim))
 
-await p.locator('button.prepline').click()
+await p.locator('.preppill').click()
 await p.waitForTimeout(1300)
-const madeText = (await p.locator('.prepline').innerText()).replace(/\n/g, ' ')
-check('tapping turns it into a count that is running',
-  /making milk · \d+s/.test(madeText), madeText)
+const madeText = (await p.locator('.preppill').innerText()).replace(/\n/g, ' ')
+check('tapping turns it into a running stopwatch',
+  /making milk/.test(madeText) && /\d+:\d{2}/.test(madeText), madeText)
 check('the motion changes with the state, rather than stopping',
-  (await p.evaluate(() =>
-    getComputedStyle(document.querySelector('.prepline.making svg')!).animationName))
+  (await p.evaluate(
+    `getComputedStyle(document.querySelector('.preppill.making .prepmark')).animationName`))
   === 'preprock',
-  await p.evaluate(() =>
-    getComputedStyle(document.querySelector('.prepline.making svg')!).animationName))
-check('and it is no longer a button, having nothing left to ask',
-  (await p.locator('button.prepline').count()) === 0,
-  `${await p.locator('button.prepline').count()} button(s)`)
+  String(await p.evaluate(
+    `getComputedStyle(document.querySelector('.preppill.making .prepmark')).animationName`)))
+
+// The owner's call in D-050: the tap-to-stop from the handoff AND the
+// clear-on-feed rule from D-045 both hold. This is the first half.
+check('it offers the way back out', /tap to stop/.test(madeText), madeText)
+await p.locator('.preppill').click()
+await p.waitForTimeout(300)
+check('and tapping again stops it',
+  /make milk/.test(await p.locator('.preppill').innerText()),
+  (await p.locator('.preppill').innerText()).replace(/\n/g, ' '))
+await p.locator('.preppill').click()
+await p.waitForTimeout(400)
 
 // This screen is remounted by `key={saved}` on every save — the trap the lead
-// rail fell into. A diaper is not a feed, so the prompt must survive it.
+// rail fell into. A diaper is not a feed, so the count must survive it.
 await p.getByLabel('log a diaper').click()
 await p.waitForTimeout(250)
 await p.getByRole('button', { name: 'save', exact: true }).click()
 await p.waitForTimeout(900)
+await p.getByLabel('elapsed view').click()
+await p.waitForTimeout(250)
 check('a save that is not a feed leaves the count running',
-  /making milk/.test((await p.locator('.prepline').innerText().catch(() => 'absent'))),
-  (await p.locator('.prepline').innerText().catch(() => 'absent')).replace(/\n/g, ' '))
+  /making milk/.test(await p.locator('.preppill').innerText().catch(() => 'absent')),
+  (await p.locator('.preppill').innerText().catch(() => 'absent')).replace(/\n/g, ' '))
 
-// And the disappearing act: a feed pushes the target hours out, which takes the
-// whole line with it — the count needs no rule of its own about feeds.
+// And the second half: a feed pushes the ceiling hours out, which takes the
+// pill off this tab and the stored timer with it.
 await p.getByLabel('log a feed').click()
 await p.waitForTimeout(250)
 await p.getByRole('button', { name: 'save', exact: true }).click()
 await p.waitForTimeout(900)
-check('logging a feed clears the prompt and the count with it',
-  (await p.locator('.prepline').count()) === 0,
-  `${await p.locator('.prepline').count()} prompt(s)`)
+check('logging a feed clears the pill and the count with it',
+  (await p.locator('.preppill').count()) === 0,
+  `${await p.locator('.preppill').count()} pill(s)`)
 check('and it does not come back on the next render',
   await p.evaluate(() => localStorage.getItem('babyliana.making')) === null,
   String(await p.evaluate(() => localStorage.getItem('babyliana.making'))))
+
+// --- the next-feeds lead and the tune screen (D-050) -------------------------
+// The feed logged above is still open, so the bar shows "end feed" rather than
+// the quick bottle. Close it: the estimate counts from a feed, not from a
+// running one.
+await p.locator('nav.tabs [aria-label="end feed"]').click()
+await p.waitForTimeout(900)
+await p.getByLabel('next feeds view').click()
+await p.waitForTimeout(300)
+
+check('the next-feeds lead names three times',
+  (await p.locator('.nextfeed').count()) === 1 && (await p.locator('.laterfeed').count()) === 2,
+  `${await p.locator('.nextfeed').count()} + ${await p.locator('.laterfeed').count()}`)
+// Each later row says which window produced it, so a sequence that changes
+// interval halfway explains itself rather than looking wrong.
+check('and each later one names the interval behind it',
+  (await p.locator('.gapchip').count()) === 2,
+  (await p.locator('.laterfeed').first().innerText()).replace(/\n/g, ' '))
+// The tone rule: a distance, never a verdict. `overdue` in rose was the
+// handoff's wording and is deliberately not taken (CLAUDE.md).
+check('the distances are distances, with no verdict in them',
+  !/overdue|late/i.test(await p.locator('.herocard').innerText()),
+  (await p.locator('.nextfeed').innerText()).replace(/\n/g, ' '))
+
+const noOver = await p.evaluate(
+  () => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+check('and the whole lead stays inside the page', noOver === 0, `${noOver}px overflow`)
+
+// The tune button, and the one thing it must do: change the gap and have both
+// the estimate and the ceiling follow it.
+const before = await p.locator('.nextfeed b').innerText()
+await p.getByLabel('feeding cycle settings').click()
+await p.waitForTimeout(350)
+check('the tune button opens the feeding cycle',
+  (await p.locator('.cyclesheet').count()) === 1 && (await p.locator('.cyclerow').count()) === 2,
+  `${await p.locator('.cyclerow').count()} window(s)`)
+// Both windows, so the check does not depend on which one the clock is in
+// when the suite runs — the fault this repo has spent two days removing.
+await p.getByLabel('less often, day').click()
+await p.waitForTimeout(150)
+await p.getByLabel('less often, night').click()
+await p.waitForTimeout(150)
+await p.getByRole('button', { name: 'save', exact: true }).click()
+await p.waitForTimeout(500)
+const after = await p.locator('.nextfeed b').innerText()
+check('a changed gap moves the estimate', before !== after, `${before} → ${after}`)
+// The ceiling reads the same cycles, which is why they left `targetWake`.
+await p.getByLabel('elapsed view').click()
+await p.waitForTimeout(250)
+check('and the wake line follows the same change',
+  (await p.locator('.wakeline').innerText()).includes(after.trim()),
+  `${(await p.locator('.wakeline').innerText()).replace(/\n/g, ' ')} vs ${after}`)
 
 await b.close()
 stop()

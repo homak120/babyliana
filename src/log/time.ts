@@ -195,6 +195,14 @@ export function countUp(ms: number): string {
   return `${sec}s`
 }
 
+/** `4:10` — a stopwatch, in the shape the prep pill's sub-line draws it. Minutes
+ *  run past 60 rather than rolling into hours: a bottle that has been standing
+ *  ninety minutes should say so plainly, not read as a tidy `1:30`. */
+export function mmss(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000))
+  return `${Math.floor(total / 60)}:${pad(total % 60)}`
+}
+
 /** `25 min`, `1h 05m`. Words, because a bare number of minutes reads slower. */
 export function formatDuration(start: Date, end: Date): string {
   const mins = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60_000))

@@ -57,6 +57,14 @@ digit typed replaces, so it costs nothing to disagree with; `+ milk` inside the
 sheet still starts blank, because a feed added by hand is as often the paper's
 `?`. The report screen's date strip now stops at three day pills, so `more` — the
 only route to an older day — is on screen rather than off the right-hand edge.
+**The status card follows the status-card handoff** — D-050. The prep timer is
+a pill on tabs 1 and 3 — *make milk / tap when you start*, then *making milk /
+4:10 · tap to stop* — and tab 2 is **next feeds**, three estimated times with a
+chip naming the window behind each. The 3h/4h windows moved out of `targetWake`
+into `src/cycles.ts` and are **editable behind a `tune` button**, which is the
+app's first settings screen. **Tap-to-stop and clear-on-feed both hold**, on the
+owner's ruling.
+
 **The report has three more charts** — D-049. Diapers a day stacked wet/dirty,
 milk by source with a hatched *not marked* band, and a poop-colour tally. Chosen
 against what the database actually holds, and they describe rather than assess —
@@ -210,6 +218,31 @@ lavender and the same `BottleIcon` the end-feed pill wears. `src/log/LogScreen.t
 and the `.prepline` rule in `src/log/log.css`. No test changed: `verify-hero`
 asserts the prompt's count, text and geometry, not its glyph, and its five
 prompt checks pass.
+
+**The status card — D-050.** New `src/cycles.ts` (windows,
+estimator, localStorage) and `src/log/CycleSheet.tsx`; `PrepLine.tsx` is now
+`usePrepTimer` plus `PrepPill`; tab 2 rewritten in `LogScreen.tsx`; `targetWake`
+reads the cycles. Eighteen checks in `verify-s3`, the prep section of
+`verify-hero` rewritten and eight added.
+
+**Two things the owner overruled from the handoff.** `overdue 12m` in deep rose
+reads as a warning, which is the one thing this card may never do — it says
+`12m past` in muted ink, the wording D-047 gave the wake line. And the wake line
+comes off tab 2 only, because that tab's big number is the same instant.
+
+**Two bugs no passing check caught, both found by screenshotting.** The interval
+chip was `gapchip day`, and `.day` is the day screen's page class in `day.css` —
+a flex container — so the chip stretched into an amber slab across the card.
+`verify-s3` now forbids `log.css` and `day.css` sharing a class name, the same
+rule it already applies to `tokens.css`. And the tune button's `z-index: 2`
+painted it straight through the settings sheet, because neither `.herocard` nor
+`.sheet` creates a stacking context.
+
+**One cost worth naming: the cycles are per-phone.** localStorage, like every
+other setting here, so **the two phones can disagree about the feeding rhythm** —
+which is arguably a fact about the baby, not about the phone in your hand. Not
+synced because sync means a schema change (D-039). If it matters, the fix is a
+column.
 
 **Three charts on the report — D-049.** `mlBreast` / `mlFormula` /
 `mlUnmarked` per day plus a `poopColours` tally in `src/report/insights.ts`,
@@ -579,7 +612,43 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-07 (latest) — three more charts, and a palette that was computed
+### 2026-09-07 (latest) — the status card, redrawn to the handoff
+
+**Three things land from `handoff_status_card`** (D-050). The milk-prep timer is
+a pill — *make milk / tap when you start*, then *making milk / 4:10 · tap to
+stop*. Tab 2 stops repeating the elapsed figure and becomes **next feeds**:
+three estimated times, each later one carrying a chip naming the window that
+produced it. And the windows behind both are editable behind a `tune` button —
+the app's first settings screen.
+
+**The pill shows on tab 1 inside fifteen minutes of the ceiling, and on tab 3
+always**, which is the tab you open to ask about the bottle. Never on tab 2,
+which has three times of its own.
+
+**Tap-to-stop and clear-on-feed both hold.** D-045 recorded the owner declining
+a cancel; the handoff has a toggle. His ruling was that both can live together —
+the tap is a way out of a mis-tap, the feed is what the timer was counting
+towards. **The timer moved out of the pill into a hook on the screen**, because
+the pill is absent on tab 2 and the clearing still has to happen.
+
+**The windows left `targetWake` so the two cannot disagree.** A ceiling and an
+estimate with different gaps would be two answers to one question on one card.
+The defaults reproduce the old behaviour exactly, which is why every existing
+check passed untouched.
+
+**Two of the handoff's choices were overruled**, both on tone: `overdue 12m` in
+deep rose reads as a warning, so it says `12m past` in muted ink; and the wake
+line comes off tab 2, where the big number already names that instant.
+
+**Two bugs, neither visible to any passing check.** `gapchip day` collided with
+`.day`, the day screen's page class — a flex container — and the chip stretched
+into an amber slab across the card. And the tune button's `z-index: 2` painted
+it through the settings sheet, because neither the card nor the sheet creates a
+stacking context. **Both came from taking a screenshot and looking at it**, and
+the first now has a guard: `verify-s3` forbids our two stylesheets sharing a
+class name, as it already does for `tokens.css`.
+
+### 2026-09-07 — three more charts, and a palette that was computed
 
 **The report gains diapers a day, milk by source, and a poop-colour tally**
 (D-049). The owner picked three from a longer list; *feeds by hour* was offered
@@ -639,29 +708,3 @@ than the label — so it reported the word clipped when it was not, and the CSS
 written from that reading was clipping the *icon*. It surfaced only because a
 second check disagreed with the first. **A check that reads the wrong element
 reports the wrong thing confidently.**
-
-### 2026-09-07 — the end time stops opening a day out
-
-**Adding an end time prefilled a moment 23h 59m long** (D-047). The owner hit it
-in use and read it correctly: it should open at the start.
-
-**The fault was seconds.** `start` is `new Date()` and carries them; every
-typed, stepped or offset time zeroes them. So on a moment logged now, the end
-candidate `16:01:00` was seconds *before* a start of `16:01:37` — and
-`resolveEnd`, whose whole job is *an end before its start crossed midnight*,
-filed it tomorrow. `resolveEnd` and `endNow` compare minute to minute now.
-
-**And the prefill itself changed**, which is the owner's call. It called
-`endNow` — the clock time on the start's day — which D-036 chose over a guessed
-half hour. For a moment logged as it happens those are the same instant; for a
-backdated one they are not, and a feed entered at 08:00 for 04:10 opened its end
-at 08:00. It opens as a copy of the start now, with `+30 min`, `+1 h` and `now`
-one tap away. The `now` pill still means now, and reads sixteen hours on a
-backdated start where that is the truth.
-
-**The first fix was wrong, and the suites caught it.** Truncating seconds at the
-source cured the symptom and crashed `verify-feed` and `verify-sleep`. **Stored
-instants need their seconds** — they order two moments logged in the same
-minute, and `ongoingFeed` and `ongoingSleep` both ask which is latest. A feed
-and the diaper logged twenty seconds later became simultaneous, so a running
-feed stopped being detectable. `toMinute` is for comparing, never for storing.

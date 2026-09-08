@@ -1,3 +1,4 @@
+import { cycleFor } from './cycles'
 import type { Moment } from './types'
 
 // Everything the home screen shows is computed from the log, never stored
@@ -84,19 +85,15 @@ export function formatElapsed(minutes: number | null): string {
 }
 
 /**
- * The overnight window the longer target runs in — 22:00 up to 06:00.
+ * When the next feed is aimed at: the last feed plus the gap of the window it
+ * began in — three hours by day, four overnight, unless the tune screen has
+ * moved them (D-050).
  *
- * Judged on the **last feed's own clock time**, not on the target it produces.
+ * **Judged on the last feed's own clock time**, not on the target it produces.
  * A feed knows which side of ten o'clock it happened on the moment it is
- * logged, so the answer never changes underneath a card that is already
- * showing it; deriving the window from the target instead would make a 21:30
- * feed's target depend on the target.
- */
-const NIGHT_TARGET = { from: 22, to: 6 }
-
-/**
- * When the next feed is aimed at: three hours after the last one, four
- * overnight.
+ * logged, so the answer never changes underneath a card already showing it;
+ * deriving the window from the target would make a 21:30 feed's target depend
+ * on the target.
  *
  * A flat number, deliberately — it does **not** follow the mascot's breast /
  * formula split (D-035). The owner set it that way with the split in front of
@@ -104,14 +101,15 @@ const NIGHT_TARGET = { from: 22, to: 6 }
  * description of the baby, so the two are allowed to disagree.
  *
  * Measured from where `lastFeedAt` measures — the *start* of the feed (D-040)
- * — so the target and the elapsed hero count from the same instant. The
- * overnight window is therefore judged on the hour the feed began.
+ * — so the target and the elapsed hero count from the same instant.
+ *
+ * It reads the same cycles the next-feed list does, which is the whole reason
+ * they moved out of here into `cycles.ts`: a ceiling and an estimate that
+ * disagree about the gap would be two answers to one question on one card.
  */
 export function targetWake(lastFeedStart: Date | null): Date | null {
   if (!lastFeedStart) return null
-  const h = lastFeedStart.getHours()
-  const overnight = h >= NIGHT_TARGET.from || h < NIGHT_TARGET.to
-  return new Date(lastFeedStart.getTime() + (overnight ? 4 : 3) * 3_600_000)
+  return new Date(lastFeedStart.getTime() + cycleFor(lastFeedStart).gap * 60_000)
 }
 
 /**

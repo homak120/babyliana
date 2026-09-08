@@ -1,6 +1,7 @@
 // S3's done-when: the elapsed figure and the totals have to be right, since
 // they are what the whole screen is for. Pure functions, no browser needed.
 import type { Moment } from '../src/types.ts'
+import { cycleFor, feedTimeline, gapText, isNightCycle, upcomingFeeds } from '../src/cycles.ts'
 import {
   bottleDue,
   feedKind,
@@ -186,6 +187,44 @@ check('how far past once there is none',
 check('and on the minute', targetText(aim, aim) === 'now')
 check('nothing to say without a target', targetText(null) === null)
 
+// --- the cycle windows behind it (D-050) ------------------------------------
+// The defaults reproduce exactly what `targetWake` used to hardcode, which is
+// why every check above still passes unchanged.
+check('the day window is three hours', cycleFor(new Date(2026, 8, 3, 14)).gap === 180)
+check('the night window is four', cycleFor(new Date(2026, 8, 3, 23)).gap === 240)
+check('a wrapping window is one window, not two',
+  cycleFor(new Date(2026, 8, 3, 2)).id === 'night' && cycleFor(new Date(2026, 8, 3, 23)).id === 'night')
+check('and 06:00 is back in the day one', cycleFor(new Date(2026, 8, 3, 6)).id === 'day')
+
+// The estimate steps forward, taking the gap of the window each step lands in
+// — so a sequence can change interval halfway.
+const line = feedTimeline(new Date(2026, 8, 3, 21, 0), 3)
+check('a 21:00 feed is followed at three hours', line[0].getHours() === 0)
+check('and the one after that at four, being inside the night window',
+  line[1].getHours() === 4, String(line[1].getHours()))
+// 04:00 is still inside the night window, so the third step is four hours too
+// — the interval follows where each step *lands*, not where the sequence began.
+check('and stays at four while still inside it',
+  line[2].getHours() === 8, String(line[2].getHours()))
+
+const up = upcomingFeeds(new Date(2026, 8, 3, 14, 0), new Date(2026, 8, 3, 15, 0))
+check('three are offered', up.length === 3, String(up.length))
+check('the first is the nearest still ahead', up[0].getHours() === 17, String(up[0].getHours()))
+
+// Overdue: the row just passed leads, because it is the one being looked for.
+const late = upcomingFeeds(new Date(2026, 8, 3, 14, 0), new Date(2026, 8, 3, 20, 30))
+check('a passed feed still leads the list', late[0].getTime() < new Date(2026, 8, 3, 20, 30).getTime(),
+  String(late[0].getHours()))
+check('nothing logged yet means nothing to estimate',
+  upcomingFeeds(null, new Date()).length === 0)
+
+check('a whole-hour gap reads without minutes', gapText(180) === '3h', gapText(180))
+check('and a half-hour one says so', gapText(150) === '2h 30m', gapText(150))
+check('a window starting in the evening is a night one',
+  isNightCycle({ id: 'n', from: 22 * 60, to: 6 * 60, gap: 240 }))
+check('and one starting in the morning is not',
+  !isNightCycle({ id: 'd', from: 6 * 60, to: 22 * 60, gap: 180 }))
+
 // --- the bottle prompt ------------------------------------------------------
 // Up from 15 minutes before the target and onwards, not just until it.
 const at17 = new Date(2026, 8, 3, 17, 0)
@@ -229,6 +268,16 @@ check('day at 09:00', themeFor(new Date(2026, 8, 3, 9)) === 'day')
   const ALLOWED = new Set(['day-sep']) // extended deliberately, not redefined
   const clash = [...mine].filter((c) => design.has(c) && !ALLOWED.has(c))
   check('no class redefines one from tokens.css', clash.length === 0, clash.join(', '))
+
+  // And the same rule between our own two stylesheets. A `.gapchip day` chip
+  // picked up `.day` — the day screen's page class, a flex container — and
+  // stretched into an amber slab across the card. Nothing in the markup said
+  // which sheet a class came from, and only a screenshot showed it (D-050).
+  const logCss = classesIn('src/log/log.css')
+  const dayCss = classesIn('src/day/day.css')
+  const crossed = [...logCss].filter((c) => dayCss.has(c))
+  check('and the two screens do not share a class name',
+    crossed.length === 0, crossed.join(', '))
 }
 
 console.log(failures === 0 ? '\n  all checks passed' : `\n  ${failures} FAILED`)

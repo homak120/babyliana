@@ -1,26 +1,31 @@
 import { useEffect, useRef, useState } from 'react'
-import { BottleIcon } from './BottleIcon'
-import { countUp } from './time'
+import { mmss } from './time'
 
 /**
- * The bottle prompt, and the timer it becomes when tapped (D-045).
+ * The milk-prep timer: how long the bottle has been standing (D-045), in the
+ * shape the status-card handoff draws it (D-050).
  *
- * Two states on one line. Before the tap it asks — *make a bottle* — and moves,
- * because the whole reason it exists is to be noticed by someone who is not
- * looking at the phone. After the tap it counts up from that moment, which is
- * how long the bottle has been standing: the cool-down, read rather than
- * calculated.
+ * A pill, not a line — a bottle mark, a title, and a sub-line under it. Before
+ * the tap it asks and breathes, because the whole reason it exists is to be
+ * caught by someone who is not looking at the phone. After it, it counts and
+ * rocks.
  *
  * **Nothing here reaches the database.** The tap is a note to yourself about a
  * bottle, not an event in the baby's log — there is no moment to attach it to
- * and nothing the other phone needs to know. `event-model.md` § Where each fact
- * lives puts it in the same bracket as the lead rail and the clock format.
+ * and nothing the other phone needs to know (`event-model.md` § Where each fact
+ * lives).
  */
 const KEY = 'babyliana.making'
 
-/** Its own component so the one-second tick re-renders this line and not the
- *  whole screen — the card above it is content with `now` every 30s. */
-export function PrepLine({ prepping, loaded }: { prepping: boolean; loaded: boolean }) {
+/**
+ * The timer itself, held by the screen rather than by the pill.
+ *
+ * The pill is not always on screen — tab 2 has no room for it — but the timer
+ * has to keep clearing itself when a feed is logged whichever tab is showing.
+ * A hook mounted once by `LogScreen` does that; a component mounted by one of
+ * three tabs could not.
+ */
+export function usePrepTimer(prepping: boolean, loaded: boolean) {
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [, tick] = useState(0)
   const readOnce = useRef(false)
@@ -33,17 +38,14 @@ export function PrepLine({ prepping, loaded }: { prepping: boolean; loaded: bool
   }
 
   /**
-   * The same disappearing act the prompt already had, and for the same reason.
+   * Logging a feed still clears it, and that rule is untouched by the tap
+   * (D-050). The two live together: the tap is a way out of a mis-tap, and the
+   * feed is what the timer was counting towards.
    *
    * `prepping` is false exactly when a feed has been logged — the target moves
-   * three or four hours out and takes the line with it (D-036) — so clearing on
-   * it needs no separate rule about feeds. Nothing to cancel by hand: the owner
-   * asked for none, on the grounds that logging the feed is the cancel.
-   *
-   * **`loaded` is what stops it firing on an empty first render.** The screen
-   * remounts on every save and starts with no moments, which is indistinguish-
-   * able from a feed having just been logged. Without this the count was wiped
-   * by any save at all, and by opening the app.
+   * hours out and takes the prompt with it (D-036). `loaded` is what stops this
+   * firing on the empty first render after a remount, which is
+   * indistinguishable from a feed having just been logged.
    */
   useEffect(() => {
     if (!loaded || prepping) return
@@ -57,29 +59,69 @@ export function PrepLine({ prepping, loaded }: { prepping: boolean; loaded: bool
     return () => clearInterval(id)
   }, [startedAt])
 
-  if (!prepping) return null
-
-  if (startedAt === null) {
-    return (
-      <button
-        type="button"
-        className="prepline asking"
-        onClick={() => {
-          const at = Date.now()
-          localStorage.setItem(KEY, String(at))
-          setStartedAt(at)
-        }}
-      >
-        <BottleIcon size={14} />
-        <span>make a bottle</span>
-      </button>
-    )
+  return {
+    startedAt,
+    /** Tap toggles: start it, or stop one that is running. */
+    toggle: () => {
+      if (startedAt !== null) {
+        localStorage.removeItem(KEY)
+        setStartedAt(null)
+        return
+      }
+      const at = Date.now()
+      localStorage.setItem(KEY, String(at))
+      setStartedAt(at)
+    },
   }
+}
 
+/**
+ * The bottle mark, filled rather than stroked, with the milk sitting at 60% of
+ * the body — the handoff's own drawing.
+ *
+ * The app's other bottle (`BottleIcon`) is a 2px outline meant to sit beside
+ * Material Symbols on a button. This one is a solid mark inside a coloured
+ * pill, and the milk level is the part that says what the timer is about.
+ */
+function PrepBottle() {
   return (
-    <div className="prepline making">
-      <BottleIcon size={14} />
-      <span>making milk · {countUp(Date.now() - startedAt)}</span>
-    </div>
+    <svg width="17" height="21" viewBox="0 0 20 24" aria-hidden="true" focusable="false">
+      <rect x="7.6" y="0.8" width="4.8" height="3" rx="1.5" fill="currentColor" />
+      <rect x="6" y="3.4" width="8" height="2.8" rx="1.4" fill="currentColor" opacity="0.5" />
+      <path
+        d="M4.2 13.5h11.6v4.6a4.6 4.6 0 0 1-4.6 4.6H8.8a4.6 4.6 0 0 1-4.6-4.6V13.5z"
+        fill="currentColor"
+        opacity="0.8"
+      />
+      <rect
+        x="4.2" y="6.2" width="11.6" height="16.5" rx="4.6"
+        fill="none" stroke="currentColor" strokeWidth="1.5"
+      />
+    </svg>
+  )
+}
+
+export function PrepPill({
+  startedAt, onToggle,
+}: {
+  startedAt: number | null
+  onToggle: () => void
+}) {
+  const running = startedAt !== null
+  return (
+    <button
+      type="button"
+      className={`preppill ${running ? 'making' : 'asking'}`}
+      onClick={onToggle}
+    >
+      <span className="prepmark"><PrepBottle /></span>
+      <span className="preptext">
+        <b>{running ? 'making milk' : 'make milk'}</b>
+        {/* Recomputed from the stored instant on every tick, never counted up
+            from the tick itself: a backgrounded phone stops firing intervals,
+            and a count of ticks would come back minutes short. */}
+        <em>{running ? `${mmss(Date.now() - startedAt)} · tap to stop` : 'tap when you start'}</em>
+      </span>
+    </button>
   )
 }

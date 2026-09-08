@@ -1989,3 +1989,99 @@ which put a green bar beside a row labelled *yellow* — a chart asking the read
 to ignore what they can see. One series measuring magnitude needs no identity
 colour at all. **Found by rendering it and looking**, which is the step that
 catches what a validator cannot.
+
+---
+
+## D-050 — The status card takes the handoff: a prep pill, next feeds, a tune screen
+
+`handoff_status_card` redraws the top card. Three things land: the milk-prep
+timer becomes a **pill** on tabs 1 and 3, tab 2 becomes **next feeds**, and the
+feeding windows behind both become **editable**.
+
+### The prep pill
+
+D-045's line becomes the handoff's pill — a bottle mark, a title, a sub-line.
+Idle it says *make milk / tap when you start* and breathes; running it says
+*making milk / 4:10 · tap to stop* and rocks. Same reasoning as before: it exists
+to be caught by someone not looking at the phone, so it moves, slowly, and the
+motion *changes* rather than stops so the states are told apart without reading.
+
+**Tap-to-stop is added and clear-on-feed is kept.** D-045 recorded the owner
+declining a cancel — *logging the feed is the cancel* — and the handoff has a
+toggle. The owner's ruling: **both.** "D-045 is too restrictive; allowing tap to
+stop is not a bad design, and the existing logic is just common sense." The tap
+is a way out of a mis-tap; the feed is what the timer was counting towards.
+
+**Where it shows**: on the elapsed tab only inside fifteen minutes of the
+ceiling or while running — the rule `bottleDue` has always used — and on the
+mascot tab **always**, because that is the tab you open to ask about the bottle.
+Never on next feeds, which has three times of its own to carry.
+
+**The timer moved out of the pill into a hook on the screen.** The pill is
+absent on tab 2, and the timer still has to clear itself when a feed is logged
+whichever tab is showing. A component mounted by one of three tabs could not do
+that; `usePrepTimer` mounted once by `LogScreen` can.
+
+**A second bottle drawing, deliberately.** `BottleIcon` is a 2px outline meant
+to sit beside Material Symbols on a button; the pill's is a solid mark with the
+milk at 60% of the body, which is the part that says what the timer is about.
+The handoff draws it explicitly and this is a different context, so the app now
+has two — named apart rather than merged.
+
+### Next feeds
+
+Tab 2 was *last feed* — the elapsed figure and the volume again. It is now three
+estimated times: the nearest large, two more under it, each later one carrying a
+chip naming the window that produced it.
+
+**Counted from the last feed's start** (D-040), never from now, so the list does
+not creep while nobody is logging. **The passed one leads when a feed is
+overdue**, because that is the row a tired person is looking for.
+
+**`overdue 12m` in deep rose is not taken.** The handoff specifies it; CLAUDE.md
+says the app records and never scolds, and D-036 already settled that past the
+ceiling the card says only how far past. It reads `12m past` in muted ink — the
+wording D-047 gave the wake line, so the card keeps one voice.
+
+**The wake line comes off this tab and stays on the other two.** Tab 2's big
+number is the same instant the wake line names; saying it twice on one card,
+once as a ceiling and once as an appointment, reads as two different claims.
+D-036 put the line under all three leads and this narrows that, on the owner's
+call.
+
+### The feeding windows, and why they left `targetWake`
+
+The 3h/4h split and the 22:00–06:00 boundary were two constants inside
+`targetWake`. The tune screen makes them something a person can change, so they
+moved to `cycles.ts` — and **`targetWake` now reads the same cycles the estimate
+does.** A ceiling and an estimate that disagreed about the gap would be two
+answers to one question on one card. The defaults reproduce the old behaviour
+exactly, which is why every existing check passed unchanged.
+
+**The gaps are editable; the boundaries are not.** The handoff draws the hours
+as labels and the interval as the field. Moving a boundary raises what a window
+that no longer covers the whole clock should do, which nobody has asked.
+
+**It is per-phone, in localStorage**, like every other setting here — and that
+is a real cost worth naming: **the two phones can disagree about the feeding
+rhythm**, which is arguably a fact about the baby rather than about the phone in
+your hand. It is not synced because sync means a schema change and D-039 made
+the schema additive-only for a reason. If it matters, the fix is a column.
+
+### Two bugs the screenshots caught
+
+**A class name collided across our own two stylesheets.** The interval chip was
+`gapchip day`, and `.day` is the day screen's page class in `day.css` — a flex
+container. The chip inherited `display:flex` and stretched into an amber slab
+across the card. `verify-s3` already forbids redefining a `tokens.css` class;
+**it now forbids `log.css` and `day.css` sharing one too**, which is the same
+rule between the two sheets we own.
+
+**The tune button painted through the settings sheet.** The handoff gives it
+`z-index: 2`; `.herocard` is `position: relative` with no z-index so it creates
+no stacking context, and `.sheet` is `position: fixed` with none either — so a
+positive z-index on a child of the card outranks the whole overlay. Nothing
+inside the card overlaps the button, so it never needed one.
+
+Neither was visible in any check that passed. Both came from rendering the card
+and looking at it.
