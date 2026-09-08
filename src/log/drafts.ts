@@ -316,3 +316,19 @@ export function blocksFromMoment(m: Moment): Block[] {
   }
   return blocks
 }
+
+/**
+ * The bar's bottle and its bedtime button, as entries rather than as blocks.
+ *
+ * Both quick icons write straight to the log now — no sheet, no second tap on a
+ * save button — so there is no block left to convert when the moment is saved.
+ * The defaults still have exactly one definition each, and `toEntries` is still
+ * the only thing that turns a draft into rows: what the bottle means is decided
+ * by `quickMilk` here, in the same place it was decided when the icon opened a
+ * sheet on it.
+ */
+export const quickFeedEntries = (): DraftEntry[] =>
+  toEntries({ key: 'quick', type: 'milk', draft: quickMilk() })
+
+export const quickSleepEntries = (): DraftEntry[] =>
+  toEntries({ key: 'quick', type: 'sleep', draft: newSleep() })

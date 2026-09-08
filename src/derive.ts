@@ -226,6 +226,23 @@ export function ongoingSleep(moments: Moment[], now = new Date()): Moment | null
 }
 
 /**
+ * The sleep that was just ended and can be taken back, if there is one.
+ *
+ * The exact complement of `ongoingSleep` on the same latest moment: that one is
+ * the sleep with no end, this one is the sleep that has just been given one. A
+ * row offers to end it or to resume it, never both and never neither.
+ *
+ * The latest moment only, for the reason `latestPast` gives — reopening
+ * anything older would claim a sleep ran through everything logged after it.
+ */
+export function resumableSleep(moments: Moment[], now = new Date()): Moment | null {
+  const latest = latestPast(moments, now)
+  if (!latest) return null
+  const closed = latest.timeslot.ended_at !== null && latest.events.some((e) => e.type === 'sleep')
+  return closed ? latest : null
+}
+
+/**
  * The feed that is still running, if there is one.
  *
  * **The same rule as `ongoingSleep`, on the same field.** A moment with a feed
@@ -273,6 +290,25 @@ export function sleepDuration(from: string, to: string | Date): string {
   const mins = durationMinutes(from, to)
   const h = Math.floor(mins / 60)
   return h === 0 ? `${mins}m` : `${h}h ${String(mins % 60).padStart(2, '0')}m`
+}
+
+/**
+ * "1h 05m 32s" / "45m 12s" / "38s" — a sleep that is still running, live.
+ *
+ * The row's version of `sleepDuration`, and the only place in the app that
+ * counts in seconds. It is there because a sleep with no end time is the one
+ * thing on the screen that is *happening*: a figure that sits still for a
+ * minute at a time reads as a number the app has stopped watching, and the
+ * whole point of the chip is that it is watching. Everything finished still
+ * reads in minutes — a slept 1h 20m does not become more true to the second.
+ */
+export function sleepClock(from: string, to: string | Date): string {
+  const secs = Math.max(0, Math.floor((new Date(to).getTime() - new Date(from).getTime()) / 1000))
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const h = Math.floor(secs / 3600)
+  const m = Math.floor((secs % 3600) / 60)
+  if (h > 0) return `${h}h ${pad(m)}m ${pad(secs % 60)}s`
+  return m > 0 ? `${m}m ${pad(secs % 60)}s` : `${secs}s`
 }
 
 /**

@@ -550,6 +550,31 @@ body {
   font-weight: 700;
 }
 
+/* The running sleep counts in seconds, so the chip's width changes every tick.
+   Tabular figures stop the end button shuffling sideways once a second. */
+.chip-peri { font-variant-numeric: tabular-nums; }
+
+/* End or resume, inside the chip that says which. 26px rather than the card's
+   30 because it sits inside a 0.8125rem pill, and still past the 24px floor a
+   thumb needs — the row is 44px tall, so the target extends past the glyph.
+   `currentColor` on `--periFill`: the chip is already the sleep colour, and a
+   second fill inside it would read as a second thing. */
+.chipbtn {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  margin: -0.25rem -0.375rem -0.25rem 0.125rem;
+  padding: 0;
+  border: 0;
+  border-radius: 13px;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  color: inherit;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.chipbtn:active { background: color-mix(in srgb, currentColor 26%, transparent); }
+
 
 /* --- mascot ---------------------------------------------------------------- */
 

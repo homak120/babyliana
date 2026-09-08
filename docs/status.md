@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-06
+Last updated: 2026-09-08
 
 ---
 
@@ -18,7 +18,7 @@ Last updated: 2026-09-06
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0–6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. 510 checks pass across twenty-one suites.
+delivered by the second design handoff. 660 checks pass across twenty-one suites.
 
 **`0003_us_units.sql` is applied.** The first schema change since `0001`. The
 owner ran it in the SQL Editor before the code that writes `pounds` and
@@ -40,6 +40,19 @@ The precache grew 271 KiB with it: the 512 is 435 KB where the old one was 243,
 and it is in the bundle where the 1024 is already excluded for being large and
 only needed at install.
 
+**The bottle and the bedtime button no longer open a sheet** — D-053. Both write
+straight to the log: 60 mL of formula, or an open sleep, one tap. The sheet was
+never asking a question on those two (the bottle already opened filled in, sleep
+has nothing to fill in), so its save button was confirming what the first tap had
+said. The `+` button is now the **only** route that asks for a volume. **The home
+list's sleep chip counts in seconds** while it runs and carries its own control —
+*end* while open, *resume* once closed, never both. **Resume clears `ended_at` on
+that same sleep** rather than starting a new one: it is the undo for a stir that
+was not a waking, and the count picks up from the start it always had. **The
+report's day strip is a fixed pair around a scrolling rail** — `all days` and
+`more` pinned to the ends, every day the log has scrollable between them, and the
+rail follows a page swipe as well as a tap.
+
 **Feeds now run live too** — §11 and §12 of `CHANGES.md`, the last two items.
 A feed with no end time reads as running: the bar's bottle becomes the handoff's
 `timer_off` pill carrying the live duration, the top card grows a
@@ -52,16 +65,15 @@ already carries the end time for every type (D-020). Milk also reads in words
 now: `25 mL breast + 45 mL formula`, not `25(B) + 45(F)` (D-034). **Adding an
 end time by hand now defaults to the clock**, not to a guessed half hour, and the
 end row carries its own `now` pill beside the `+30 min` offsets. **The bar's
-bottle opens on 60 mL of formula**, already filled in — a suggestion the first
-digit typed replaces, so it costs nothing to disagree with; `+ milk` inside the
-sheet still starts blank, because a feed added by hand is as often the paper's
-`?`. The report screen's date strip now stops at three day pills, so `more` — the
-only route to an older day — is on screen rather than off the right-hand edge.
+bottle writes 60 mL of formula** — the value is still `quickMilk()`'s, but it
+goes straight to the log now rather than into a sheet (D-053); `+ milk` inside
+the sheet still starts blank, because a feed added by hand is as often the
+paper's `?`.
 **Shared settings live on `baby`** — D-052. `0006` adds `baby.settings jsonb`,
 an object keyed by setting name, and the feeding cycle is the first key in it —
 so the two phones agree on the rhythm instead of each holding their own, and the
 next shared setting is a new key rather than a new migration.
-**`0006` is not applied and this blocks the deploy** — see *In flight*.
+**`0006` is applied** — checked against the live database. See *In flight*.
 
 **Next feeds shows four times, not three** — D-051, and the fourth is what makes
 the list reach past midnight from an afternoon feed. It exposed a chip that
@@ -220,6 +232,40 @@ Read `CLAUDE.md` first, then this file. Beyond that:
   draws 44px in a 100×96 slot. Following the prose broke the layout twice.
 
 ## In flight
+
+**Uncommitted: D-053 — the quick icons write straight to the log, the sleep row
+ticks, and the report's day strip scrolls.** All three in one working tree.
+
+- **`src/App.tsx`** — `afterWrite` is the one path every write from the bar
+  takes; `quickFeed` / `quickSleep` replace `setAdding('milk')` /
+  `setAdding('sleep')`; `resumeSleep` is passed down to `LogScreen`.
+- **`src/moments.ts`** — `logQuick` (the write plus the `closeOpenSleep` the
+  sheet's save has always paired with it) and `resumeLastSleep`. `latestOpen`
+  split into `latestBefore` + `latestOpen`, since resume needs the *closed*
+  latest moment where ending needs the open one.
+- **`src/derive.ts`** — `sleepClock` (seconds) and `resumableSleep`, the exact
+  complement of `ongoingSleep` on the same moment.
+- **`src/log/drafts.ts`** — `quickFeedEntries` / `quickSleepEntries`, built
+  through `toEntries` so `quickMilk()` stays the one definition of what the
+  bottle means.
+- **`src/log/LogScreen.tsx`** — a 1s interval that exists only while a sleep is
+  open, and the chip's end/resume buttons. **`src/day/DayScreen.tsx`** — the
+  `.dayrail`, `QUICK_DAYS` gone, and the centre-the-selected-pill effect.
+  Plus `.dayrail` in `day.css` and `.chipbtn` in `log.css`.
+
+**No schema change, so nothing blocks the deploy.** `resumeLastSleep` writes
+`ended_at: null` on a column that has always been nullable.
+
+**Five verify suites changed, and all twenty-one pass** — 660 checks. The churn
+is real and worth knowing about: `verify-feed`, `verify-sleep`, `verify-hero`
+and `verify-report` all drove the bar's bottle *through the sheet* to seed data,
+and that route no longer exists. `verify-feed` grew a `feedOf()` helper that
+goes via `+` → milk bubble, which is now the only way to log a chosen volume.
+
+**`MilkPart.preset` is now unreached through the UI** and deliberately left in.
+It marks the 60 as a suggestion the first typed digit replaces; nothing opens a
+sheet on a preset milk part any more, but `verify-s4` still pins `quickMilk()`
+at the unit level and unpicking it would touch the keypad for no gain.
 
 **The `make a bottle` prompt wears the drawn bottle, in lavender.** It was
 `local_drink` — the paper cup with a straw — in `--roseDeep`, which is the
@@ -655,7 +701,41 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-08 (latest) — the feeding cycle stops being a per-phone opinion
+### 2026-09-08 (latest) — two taps become one, and the day strip scrolls
+
+**The bottle and the bedtime button stopped opening the sheet** (D-053). Both
+write straight to the log now. The reasoning is short: the sheet was not asking
+a question on either of them — the bottle already opened on 60 mL of formula,
+and sleep has nothing to fill in at all — so the save button was confirming what
+the first tap had said. These are the two entries made one-handed in the dark.
+
+**Nothing was taken away to buy it.** The `+` button still reaches a feed of any
+volume, and it is now the only route that asks for one; the row lands at the top
+of the list where a swipe reaches edit and delete. No toast, no undo bar — a bar
+you have to dismiss puts back the tap this removed.
+
+**The sleep chip counts in seconds while it runs**, on an interval that exists
+only while there is an open sleep, and reverts to minutes once it is over. It is
+the one thing on the screen that is *happening*; a figure that sits still for a
+minute reads as one the app has stopped watching.
+
+**Resume reopens that same sleep rather than starting a new one.** The owner
+chose this over "start a fresh sleep" with both readings in front of him: it is
+the undo for a stir that was not a waking, and the count picks up from the start
+it always had. Latest moment only, the same rule ending has.
+
+**The report's day strip is now a fixed pair around a scrolling rail.** The
+three-pill cap existed because the pills used to push `more` off the edge;
+pinning `all days` and `more` solves that directly and the cap had nothing left
+to buy. The rail follows a page swipe as well as a tap — centred by hand, not
+with `scrollIntoView`, which walks every scrollable ancestor and would scroll
+the table vertically on what was meant to be a sideways move.
+
+**Five verify suites had to change** and that is the honest cost: four of them
+seeded data by driving the bottle through the sheet, and that route is gone.
+660 checks pass across twenty-one suites.
+
+### 2026-09-08 — the feeding cycle stops being a per-phone opinion
 
 **`0006` adds `baby.settings jsonb`** and the rhythm syncs (D-052). It went on
 `baby` rather than a new table because that row is the root of the schema
@@ -719,39 +799,3 @@ started in.
 **No check caught it** — `verify-hero` counted chips and `verify-s3` checked
 times, and both passed throughout. Reading the four times against each other did.
 Two checks guard it now.
-
-### 2026-09-07 — the status card, redrawn to the handoff
-
-**Three things land from `handoff_status_card`** (D-050). The milk-prep timer is
-a pill — *make milk / tap when you start*, then *making milk / 4:10 · tap to
-stop*. Tab 2 stops repeating the elapsed figure and becomes **next feeds**:
-three estimated times, each later one carrying a chip naming the window that
-produced it. And the windows behind both are editable behind a `tune` button —
-the app's first settings screen.
-
-**The pill shows on tab 1 inside fifteen minutes of the ceiling, and on tab 3
-always**, which is the tab you open to ask about the bottle. Never on tab 2,
-which has three times of its own.
-
-**Tap-to-stop and clear-on-feed both hold.** D-045 recorded the owner declining
-a cancel; the handoff has a toggle. His ruling was that both can live together —
-the tap is a way out of a mis-tap, the feed is what the timer was counting
-towards. **The timer moved out of the pill into a hook on the screen**, because
-the pill is absent on tab 2 and the clearing still has to happen.
-
-**The windows left `targetWake` so the two cannot disagree.** A ceiling and an
-estimate with different gaps would be two answers to one question on one card.
-The defaults reproduce the old behaviour exactly, which is why every existing
-check passed untouched.
-
-**Two of the handoff's choices were overruled**, both on tone: `overdue 12m` in
-deep rose reads as a warning, so it says `12m past` in muted ink; and the wake
-line comes off tab 2, where the big number already names that instant.
-
-**Two bugs, neither visible to any passing check.** `gapchip day` collided with
-`.day`, the day screen's page class — a flex container — and the chip stretched
-into an amber slab across the card. And the tune button's `z-index: 2` painted
-it through the settings sheet, because neither the card nor the sheet creates a
-stacking context. **Both came from taking a screenshot and looking at it**, and
-the first now has a guard: `verify-s3` forbids our two stylesheets sharing a
-class name, as it already does for `tokens.css`.

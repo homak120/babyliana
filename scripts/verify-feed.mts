@@ -36,31 +36,33 @@ const typeVolume = async (digits: string) => {
   for (const k of digits) await p.getByRole('button', { name: k, exact: true }).click()
 }
 
+/**
+ * A feed of a chosen volume, through the sheet.
+ *
+ * The bar's bottle writes 60 mL of formula and nothing else, so the `+` button
+ * and the milk bubble are now the only route that asks for a number — which is
+ * the trade the quick icon makes, and worth exercising rather than assuming.
+ */
+const feedOf = async (digits: string) => {
+  await p.getByLabel('log a moment').click()
+  await p.waitForTimeout(300)
+  await p.getByRole('button', { name: /\+ .*milk/ }).click()
+  await p.waitForTimeout(250)
+  await typeVolume(digits)
+  await p.getByRole('button', { name: 'save', exact: true }).click()
+  await p.waitForTimeout(900)
+}
+
 // --- a feed with no end time is running -------------------------------------
+//
+// One tap. The bottle writes 60 mL of formula straight to the log: that is the
+// commonest feed by a distance, and the sheet was a save button confirming what
+// the first tap had already said.
 await p.locator('nav.tabs').waitFor({ state: 'visible' })
 await p.getByLabel('log a feed').click()
-await p.waitForTimeout(300)
-check('the milk block carries no in-progress control of its own',
-  (await p.locator('.stillfeeding').count()) === 0, 'the time card owns the end time')
-
-// The quick bottle arrives filled in — the commonest feed at two taps — and the
-// 60 is a suggestion rather than a claim: the first digit typed replaces it, so
-// a 45 mL feed never becomes 604.
-const part1 = p.getByLabel('part 1')
-check('the quick bottle opens on 60 mL of formula',
-  (await part1.innerText()).trim() === '60'
-    && await part1.evaluate((el) => el.classList.contains('formula')),
-  (await part1.innerText()).trim())
-await typeVolume('4')
-check('and the first digit typed replaces the suggestion',
-  (await part1.innerText()).trim() === '4', (await part1.innerText()).trim())
-// The backspace key is an aria-hidden icon, so it has no accessible name — it
-// is the last key on the pad.
-await p.locator('.keypad button').last().click()
-await typeVolume('60')
-await p.getByRole('button', { name: 'save', exact: true }).click()
 await p.waitForTimeout(900)
-
+check('the bottle opens no sheet at all', (await p.locator('.sheet').count()) === 0,
+  `${await p.locator('.sheet').count()} sheet(s)`)
 // The bar swaps the bottle for the end-feed pill, exactly as it swaps the moon
 // for end-sleep: an unfinished feed's useful verb is "end it".
 await p.locator('.endfeed').waitFor({ state: 'visible', timeout: 5000 })
@@ -105,8 +107,11 @@ check('and carries the running duration',
 
 check('the mascot says feeding', (await p.locator('.statetag').innerText()).includes('feeding'),
   await p.locator('.statetag').innerText())
-check('the row reads the volume with its unit',
-  /60 mL/.test((await p.locator('.chip-rose').first().innerText()).replace(/\n/g, ' ')),
+// The unit, the volume and the source, read back off the row rather than off
+// the draft — verify-s4 checks `quickMilk()` itself, and this is the half that
+// proves the bottle's defaults were written without a sheet in between.
+check('the row reads the volume with its unit and its source',
+  /60 mL formula/.test((await p.locator('.chip-rose').first().innerText()).replace(/\n/g, ' ')),
   (await p.locator('.chip-rose').first().innerText()).replace(/\n/g, ' '))
 
 // The direct child only: the end-feed button beside it is a Material icon in a
@@ -131,11 +136,7 @@ await p.locator('.quick.feed').waitFor({ state: 'visible', timeout: 5000 })
 check('and the bar goes back to offering a feed', true, 'bottle restored')
 
 // --- ending it from the bar -------------------------------------------------
-await p.getByLabel('log a feed').click()
-await p.waitForTimeout(300)
-await typeVolume('30')
-await p.getByRole('button', { name: 'save', exact: true }).click()
-await p.waitForTimeout(900)
+await feedOf('30')
 await p.locator('.endfeed').waitFor({ state: 'visible', timeout: 5000 })
 // Two controls carry "end feed", so every reference has to say which.
 await p.locator('nav.tabs [aria-label="end feed"]').click()
@@ -146,16 +147,18 @@ check('the bar pill closes it too',
 
 // While one is open the `+` button is still the way to log anything, including
 // another feed — the quick bottle is the thing that steps aside, not the sheet.
-await p.getByLabel('log a feed').click()
-await p.waitForTimeout(300)
-await typeVolume('40')
-await p.getByRole('button', { name: 'save', exact: true }).click()
-await p.waitForTimeout(900)
+await feedOf('40')
 await p.locator('.endfeed').waitFor({ state: 'visible', timeout: 5000 })
 await p.getByLabel('log a moment').click()
 await p.waitForTimeout(300)
 check('the + button still reaches a feed while one is open',
   await p.getByRole('button', { name: /\+ .*milk/ }).isVisible(), 'milk bubble offered')
+await p.getByRole('button', { name: /\+ .*milk/ }).click()
+await p.waitForTimeout(250)
+// The end time lives on the time card, not on the milk block — D-033, and the
+// only place a milk block is opened at all now.
+check('the milk block carries no in-progress control of its own',
+  (await p.locator('.stillfeeding').count()) === 0, 'the time card owns the end time')
 await p.getByRole('button', { name: 'close' }).click()
 await p.waitForTimeout(300)
 // Close it again so the next section starts from the bottle.
@@ -169,11 +172,7 @@ await p.locator('.quick.feed').waitFor({ state: 'visible', timeout: 5000 })
 // time stamped on it, because at 4am you log the feed and not the waking. A
 // feed must not: the diaper says nothing about when the bottle finished, and an
 // invented duration is unrecoverable in a model with no history (D-003).
-await p.getByLabel('log a feed').click()
-await p.waitForTimeout(300)
-await typeVolume('55')
-await p.getByRole('button', { name: 'save', exact: true }).click()
-await p.waitForTimeout(900)
+await feedOf('55')
 await p.locator('.endfeed').waitFor({ state: 'visible', timeout: 5000 })
 const openRowTime = (await p.locator('.row time').first().innerText()).trim()
 

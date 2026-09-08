@@ -317,10 +317,9 @@ check('a save that is not a feed leaves the count running',
   (await p.locator('.preppill').innerText().catch(() => 'absent')).replace(/\n/g, ' '))
 
 // And the second half: a feed pushes the ceiling hours out, which takes the
-// pill off this tab and the stored timer with it.
+// pill off this tab and the stored timer with it. One tap — the bottle writes
+// straight to the log now, with no sheet to save.
 await p.getByLabel('log a feed').click()
-await p.waitForTimeout(250)
-await p.getByRole('button', { name: 'save', exact: true }).click()
 await p.waitForTimeout(900)
 check('logging a feed clears the pill and the count with it',
   (await p.locator('.preppill').count()) === 0,

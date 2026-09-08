@@ -22,10 +22,10 @@ import './report/insights.css'
 // because it is a diagnostic, not a screen anyone navigates to.
 
 import { AddSheet } from './log/AddSheet'
-import { getMoments, endOpenPeriod } from './moments'
+import { getMoments, endOpenPeriod, logQuick, resumeLastSleep } from './moments'
 import { feedDuration, ongoingFeed, ongoingSleep, sleepDuration } from './derive'
 import type { Moment } from './types'
-import type { Block } from './log/drafts'
+import { quickFeedEntries, quickSleepEntries, type Block } from './log/drafts'
 
 type Screen = 'log' | 'day'
 
@@ -57,15 +57,46 @@ export default function App() {
   const asleep = ongoingSleep(moments)
   const feeding = ongoingFeed(moments)
 
+  /**
+   * What every write from the bar does afterwards, and nothing else does.
+   *
+   * `setSaved` is not a counter anybody reads — it is the `key` on both screens,
+   * so bumping it remounts the one that is showing. That is how a quick write
+   * repaints the list, the card and the bar's own buttons at once, and it is the
+   * same path `endOpen` has always taken.
+   */
+  const afterWrite = useCallback(() => {
+    void getMoments().then(setMoments)
+    setSaved((n) => n + 1)
+    void sync()
+  }, [])
+
   // One handler for both pills: ending a feed and ending a sleep are the same
   // act on the same latest moment — stamp now as its end (D-033).
   const endOpen = useCallback(() => {
-    void endOpenPeriod(new Date()).then(() => {
-      void getMoments().then(setMoments)
-      setSaved((n) => n + 1)
-      void sync()
-    })
-  }, [])
+    void endOpenPeriod(new Date()).then(afterWrite)
+  }, [afterWrite])
+
+  /**
+   * The bottle and the bedtime button write straight to the log (no sheet).
+   *
+   * The sheet was one tap of overhead on the two entries that are most often
+   * made one-handed in the dark, and both of them opened on a filled-in answer
+   * anyway — the bottle on 60 mL of formula, sleep on nothing to fill in at all.
+   * So the second tap was only ever confirming what the first one already said.
+   *
+   * Nothing is lost: the moment lands at the top of the list, the `+` button
+   * still reaches a feed with any volume, and the row is one swipe from edit and
+   * delete if the 60 was wrong. Both leave the moment open-ended, exactly as
+   * saving from the sheet did, so the bar flips to "end feed" / "end sleep".
+   */
+  const quickFeed = useCallback(() => { void logQuick(quickFeedEntries()).then(afterWrite) }, [afterWrite])
+  const quickSleep = useCallback(() => { void logQuick(quickSleepEntries()).then(afterWrite) }, [afterWrite])
+
+  /** The row's resume icon: take the end back off the sleep just closed. */
+  const resumeSleep = useCallback(() => {
+    void resumeLastSleep(new Date()).then(afterWrite)
+  }, [afterWrite])
 
   const refreshMoments = useCallback(() => { void getMoments().then(setMoments) }, [])
   useEffect(refreshMoments, [refreshMoments])
@@ -110,7 +141,7 @@ export default function App() {
   return (
     <>
       {screen === 'log' ? (
-        <LogScreen key={saved} onEndOpen={endOpen} />
+        <LogScreen key={saved} onEndOpen={endOpen} onResumeSleep={resumeSleep} />
       ) : (
         <DayScreen key={saved} />
       )}
@@ -144,7 +175,7 @@ export default function App() {
                 <button
                   type="button"
                   className="quick feed"
-                  onClick={() => setAdding('milk')}
+                  onClick={quickFeed}
                   aria-label="log a feed"
                 >
                   <Icon name="local_drink" size={20} />
@@ -177,7 +208,7 @@ export default function App() {
                 <button
                   type="button"
                   className="quick sleep"
-                  onClick={() => setAdding('sleep')}
+                  onClick={quickSleep}
                   aria-label="log a sleep"
                 >
                   <Icon name="bedtime" size={20} />

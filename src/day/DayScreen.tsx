@@ -24,17 +24,6 @@ const dayPill = (d: Date) =>
 
 const ALL = 'all' as const
 
-/**
- * How many day pills the strip offers before `more` takes over.
- *
- * It used to offer every day that had entries, which pushed the picker off the
- * right-hand edge of the strip as soon as the log was a week old — the one
- * control that reaches an older day was the one you had to scroll to find. Three
- * is the most recent day and the two before it, which is what a phone-width
- * strip holds beside `all days` and `more`.
- */
-const QUICK_DAYS = 3
-
 function ModePills({
   mode,
   onMode,
@@ -168,6 +157,30 @@ export function DayScreen() {
     return () => clearTimeout(t)
   }, [gliding, settle])
 
+  // --- keeping the rail and the page in step --------------------------------
+  //
+  // The day changes two ways — a pill is tapped, or the page is swiped — and
+  // the rail has to follow the second one as well as the first. Swiping back a
+  // week and leaving the strip showing today would put the selected pill off
+  // the left-hand edge, so the one control that says which day you are on would
+  // be the one you have to go looking for.
+  //
+  // Centred by hand rather than with `scrollIntoView`. That method walks every
+  // scrollable ancestor, so on a phone it scrolls the *page* vertically as well
+  // — the table jumps under the thumb on what was meant to be a sideways move.
+  const rail = useRef<HTMLDivElement>(null)
+  const at = +selected
+  useEffect(() => {
+    const el = rail.current
+    if (!el) return
+    const pill = el.querySelector<HTMLElement>('.daypill.on')
+    if (!pill) return
+    el.scrollTo({
+      left: Math.max(0, pill.offsetLeft - (el.clientWidth - pill.offsetWidth) / 2),
+      behavior: 'smooth',
+    })
+  }, [at, showingAll, range])
+
   // Insights shares only the mode pills with the read-back — no date strip, no
   // picked period, no totals row. Returning early keeps that honest instead of
   // threading four conditionals through one tree.
@@ -184,9 +197,14 @@ export function DayScreen() {
     <main className="day" ref={page}>
       <ModePills mode={mode} onMode={setMode} />
 
-      {/* `data-noswipe`: this scrolls sideways on its own, and dragging the
-          pills to reach `more` must not step the day. */}
+      {/* `data-noswipe` on the whole strip: nothing in the chrome may step the
+          day, and the rail inside it scrolls sideways on its own. */}
       <div className="datestrip" data-noswipe>
+        {/* `all days` and `more` are the two fixed ends. They are the controls
+            you reach for when you do not know which day you want, so they must
+            be in the same place every time — the rail between them is the part
+            that moves, and it holds every day the log has rather than the three
+            that happened to fit. */}
         <button
           type="button"
           className={`daypill ${showingAll ? 'on' : ''}`}
@@ -194,16 +212,19 @@ export function DayScreen() {
         >
           all days
         </button>
-        {(days.length ? days.slice(0, QUICK_DAYS) : [new Date()]).map((d) => (
-          <button
-            type="button"
-            key={+d}
-            className={`daypill ${!showingAll && !range && +d === +selected ? 'on' : ''}`}
-            onClick={() => { setRange(null); setDay(d) }}
-          >
-            {dayPill(d)}
-          </button>
-        ))}
+
+        <div className="dayrail" ref={rail}>
+          {(days.length ? days : [new Date()]).map((d) => (
+            <button
+              type="button"
+              key={+d}
+              className={`daypill ${!showingAll && !range && +d === +selected ? 'on' : ''}`}
+              onClick={() => { setRange(null); setDay(d) }}
+            >
+              {dayPill(d)}
+            </button>
+          ))}
+        </div>
 
         <button
           type="button"

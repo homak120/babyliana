@@ -10,7 +10,9 @@ import {
   minutesSince,
   ongoingFeed,
   ongoingSleep,
+  resumableSleep,
   sameDay,
+  sleepClock,
   sleepDuration,
   targetText,
   targetWake,
@@ -131,9 +133,11 @@ function NamePrompt({
   )
 }
 
-export function LogScreen({ onEndOpen }: {
+export function LogScreen({ onEndOpen, onResumeSleep }: {
   /** Ends whatever is running — a feed or a sleep. One act, two pills (D-033). */
   onEndOpen: () => void
+  /** Takes the end back off the sleep just closed — the row's resume icon. */
+  onResumeSleep: () => void
 }) {
   const [moments, setMoments] = useState<Moment[]>([])
   /**
@@ -221,6 +225,22 @@ export function LogScreen({ onEndOpen }: {
   // fail its own "started at or before now" test until the next tick.
   const asleep = ongoingSleep(moments)
   const feeding = ongoingFeed(moments)
+  // The sleep that was just closed, and so the one the row may offer to resume.
+  // Never both this and `asleep` — they are complements on the same moment.
+  const resumable = resumableSleep(moments)
+
+  // The running sleep's chip counts in seconds, so it needs its own tick rather
+  // than the 30s one the hero runs on. Keyed on the sleep's id and torn down the
+  // moment there is no open sleep, so the app is not repainting once a second
+  // for the rest of the day because something was asleep an hour ago.
+  const openSleepId = asleep?.timeslot.id ?? null
+  const [second, setSecond] = useState(() => new Date())
+  useEffect(() => {
+    if (!openSleepId) return
+    setSecond(new Date())
+    const t = setInterval(() => setSecond(new Date()), 1000)
+    return () => clearInterval(t)
+  }, [openSleepId])
   // The combined and mascot leads print the last feed itself, not just how long
   // ago it was: its volume as the paper writes it, its clock time, and who
   // logged it. An em dash where there is nothing yet, same as the elapsed lead.
@@ -537,11 +557,44 @@ export function LogScreen({ onEndOpen }: {
                   )}
                   {(() => {
                     const s = sleepCell(m)
-                    return s ? (
+                    if (!s) return null
+                    // Only ever the latest moment carries a control, because
+                    // only the latest one can be ended or reopened — see
+                    // `resumableSleep`. Every other sleep row is a read-back.
+                    const running = asleep?.timeslot.id === m.timeslot.id
+                    const canResume = resumable?.timeslot.id === m.timeslot.id
+                    return (
                       <span className={s.open ? 'chip-peri open' : 'chip-peri'}>
-                        <Icon name={s.icon} size={14} /> {s.text}
+                        <Icon name={s.icon} size={14} />{' '}
+                        {/* Live to the second while it runs, so the row reads as
+                            something happening rather than a figure that stopped
+                            being watched. Finished, it is minutes again. */}
+                        {running ? `sleeping ${sleepClock(m.timeslot.occurred_at, second)}` : s.text}
+                        {running && (
+                          <button
+                            type="button"
+                            className="chipbtn"
+                            aria-label="end sleep"
+                            onClick={onEndOpen}
+                          >
+                            <EndSleepIcon size={14} />
+                          </button>
+                        )}
+                        {/* Resume, not "sleep again": it clears the end time on
+                            this same sleep, which is the undo for a stir that
+                            was not a waking. A new sleep is the bar's button. */}
+                        {canResume && (
+                          <button
+                            type="button"
+                            className="chipbtn"
+                            aria-label="resume sleep"
+                            onClick={onResumeSleep}
+                          >
+                            <Icon name="bedtime" size={14} />
+                          </button>
+                        )}
                       </span>
-                    ) : null
+                    )
                   })()}
                   {/* `otherLabel`, not the bare type name: a weight logged
                       here read as "weight" while the day table read

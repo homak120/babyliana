@@ -2222,3 +2222,80 @@ migration runs, which is that suite doing its job.
 **`0006` was rewritten rather than superseded.** It had never been applied or
 committed, so no database and no client had seen it — the number is not burned
 by a file that never ran. `0002` is burned because it existed; this did not.
+
+## D-053 — The two commonest entries lose their save button, and the report's day strip scrolls
+
+Three changes, all of them about the same thing: the number of taps between
+intending something and it being recorded.
+
+### The bottle and the bedtime button write straight to the log
+
+`setAdding('milk')` and `setAdding('sleep')` are gone. Both icons now call
+`logQuick`, which is `logMoment` plus the `closeOpenSleep` that the sheet's save
+has always paired with it.
+
+The sheet was never asking a question on these two. The bottle opened on 60 mL
+of formula already filled in (D-045's sibling change), and sleep has nothing to
+fill in at all — so the save button was confirming what the first tap had
+already said. One tap for the commonest feed and for a sleep, both of which are
+made one-handed, in the dark, holding a baby.
+
+**Nothing is lost, and that is why this is allowed.** The `+` button still
+reaches a feed with any volume — it is now the *only* route that asks for one —
+and the row lands at the top of the list where a swipe reaches edit and delete.
+A wrong 60 costs the same correction it always did. Both writes still leave the
+moment open-ended, exactly as saving from the sheet did, so the bar flips to
+*end feed* / *end sleep* and the running duration behaves as before.
+
+**No confirmation, no toast, no undo bar.** The row appearing *is* the feedback,
+and a bar that has to be dismissed would put back the tap this removed.
+
+**`MilkPart.preset` is now unreached through the UI.** It marked the 60 as a
+suggestion the first typed digit replaces, and nothing opens a sheet on a preset
+milk part any more. Left in place rather than torn out: it is the mechanism that
+says the value is a suggestion, `verify-s4` still pins `quickMilk()` at the unit
+level, and unpicking it would touch the keypad's digit handling for no gain.
+
+### `sleeping` counts in seconds, and carries its own two buttons
+
+The home list's sleep chip reads `sleeping 1h 05m 32s` while it runs, ticking
+once a second on an interval that exists only while there is an open sleep — and
+`slept 1h 20m` once it is over, in minutes, because a finished sleep does not
+become more true to the second.
+
+It is the one thing on the screen that is *happening*. A figure that sits still
+for a minute at a time reads as a number the app has stopped watching.
+
+The chip carries a control: **end** while it runs, **resume** once it is over,
+never both and never neither. `resumableSleep` is the exact complement of
+`ongoingSleep` on the same latest moment, so the pair cannot drift.
+
+**Resume clears `ended_at` on that same sleep** — it does not start a new one.
+That is the undo for a stir that turned out not to be a waking, and the count
+picks up from the start it always had. Starting a fresh sleep is what the bar's
+button is for, and duplicating it on the row would have been the weaker of the
+two readings. **Latest moment only**, for the same reason ending is: reopening
+an older sleep would claim it ran through everything logged after it, and
+`ongoingSleep` would not read it as running anyway.
+
+### The report's day strip is a fixed pair around a scrolling rail
+
+`QUICK_DAYS = 3` is gone. `all days` and `more` are pinned to the two ends and
+every day the log has sits in a `.dayrail` between them, scrolled sideways.
+
+The cap existed because the pills used to push `more` off the right-hand edge —
+the one control that reaches an older day was the one you had to scroll to find.
+Pinning the two ends solves that directly, and then the cap has nothing left to
+buy: the days you *can* see are no longer limited by what has to fit beside two
+fixed controls.
+
+**The rail follows the page swipe, not only the tap.** Swiping back through a
+week and leaving the strip on today would put the pill that says which day you
+are reading off the left edge. Centred by hand rather than with
+`scrollIntoView`, which walks every scrollable ancestor and on a phone scrolls
+the table vertically as well — the page jumping under the thumb on what was
+meant to be a sideways move.
+
+A 14px mask fade at each end of the rail. The pills and `all days` share a fill,
+so a pill clipped mid-scroll butted straight against it and the two read for a
+moment as one wide pill.

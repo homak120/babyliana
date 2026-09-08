@@ -31,19 +31,48 @@
   overflow-x: hidden;
 }
 
-/* The date strip scrolls sideways on its own, so it keeps the horizontal
-   gesture rather than handing it to the page swipe. Dragging the pills is
-   how you reach `more`, and it must not step the day instead. */
+/* The date strip keeps the horizontal gesture rather than handing it to the
+   page swipe. Dragging the pills is how you reach an older day, and it must not
+   step the day out from under the drag instead. */
 .datestrip { touch-action: pan-x; }
 
+/* The strip itself no longer scrolls — the rail inside it does. `all days` and
+   `more` are pinned to the two ends, so the controls you reach for when you do
+   not know which day you want are always in the same place. */
 .datestrip {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0 1.125rem 0.75rem;
+  overflow: hidden;
+}
+
+/* The part that moves. `min-width: 0` so it yields the fixed pills their width
+   instead of pushing `more` off the edge, and `position: relative` so the pills'
+   `offsetLeft` is measured against the rail — which is what centres the selected
+   one when the page is swiped. */
+.dayrail {
+  position: relative;
+  flex: 1;
+  min-width: 0;
   display: flex;
   gap: 0.375rem;
   overflow-x: auto;
-  padding: 0 1.125rem 0.75rem;
+  overscroll-behavior-x: contain;
   scrollbar-width: none;
+  /* Room at both extremes, so a pill at either end of the log is not touching
+     the fixed control beside it. */
+  padding: 0 0.125rem;
+
+  /* A short fade at each end, because the pills and `all days` share a fill: a
+     pill clipped mid-scroll butted straight against it and the two read for a
+     moment as one wide pill. The fade says the edge is a cut rather than a
+     shape, which is also the only hint the rail gives that it scrolls at all. */
+  mask-image: linear-gradient(
+    to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%
+  );
 }
-.datestrip::-webkit-scrollbar { display: none; }
+.dayrail::-webkit-scrollbar { display: none; }
 
 .daypill {
   flex: none;

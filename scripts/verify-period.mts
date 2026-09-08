@@ -147,6 +147,33 @@ const label = async () => (await p.locator('.daylabel').innerText()).trim()
   const pills = await p.locator('.daypill').count()
   check('two days to move between', pills >= 3, `${pills} pills including "all days"`)
 
+  // The strip is a fixed pair around a scrolling middle. The nesting is the
+  // whole of it: `all days` and `more` are the controls you reach for when you
+  // do not know which day you want, so if they sit *inside* the rail they
+  // scroll away exactly when they are needed.
+  const strip = await p.evaluate(() => {
+    const s = document.querySelector('.datestrip')!
+    const rail = s.querySelector('.dayrail') as HTMLElement
+    if (!rail) return null
+    return {
+      inRail: rail.querySelectorAll('.daypill').length,
+      total: s.querySelectorAll('.daypill').length,
+      moreOutside: !rail.contains(s.querySelector('.morepill')),
+      allDaysOutside: !rail.contains(s.querySelector('.daypill')),
+      railScrolls: getComputedStyle(rail).overflowX,
+      stripScrolls: getComputedStyle(s).overflowX,
+    }
+  })
+  check('the day pills live in a rail of their own',
+    strip !== null && strip.inRail === strip.total - 1,
+    strip === null ? 'no rail' : `${strip.inRail} of ${strip.total} in the rail`)
+  check('and the two fixed ends sit outside it',
+    strip !== null && strip.moreOutside && strip.allDaysOutside,
+    strip === null ? 'no rail' : `more ${strip.moreOutside}, all days ${strip.allDaysOutside}`)
+  check('the rail is what scrolls, not the strip',
+    strip !== null && strip.railScrolls === 'auto' && strip.stripScrolls === 'hidden',
+    strip === null ? 'no rail' : `rail ${strip.railScrolls}, strip ${strip.stripScrolls}`)
+
   const start = await label()
 
   // --- two pages on a track, dragged as a pair ---
@@ -210,6 +237,21 @@ const label = async () => (await p.locator('.daylabel').innerText()).trim()
   await swipe(-160)
   const older = await label()
   check('a left swipe steps to the older day', older !== start, `${start} -> ${older}`)
+
+  // The rail follows the page, not just the tap. Swiping back through a week
+  // and leaving the strip showing today would put the pill that says which day
+  // you are on off the left-hand edge — the one control you would then go
+  // looking for. Measured after the smooth scroll has had time to land.
+  await p.waitForTimeout(600)
+  const inView = await p.evaluate(() => {
+    const rail = document.querySelector('.dayrail') as HTMLElement
+    const on = rail?.querySelector('.daypill.on') as HTMLElement | null
+    if (!on) return null
+    const r = rail.getBoundingClientRect(), o = on.getBoundingClientRect()
+    return { ok: o.left >= r.left - 1 && o.right <= r.right + 1, at: Math.round(o.left - r.left) }
+  })
+  check('and the rail scrolls the selected pill into view',
+    inView !== null && inView.ok, inView === null ? 'no selected pill' : `${inView.at}px from the edge`)
   check('and the track is back to a single resting page',
     (await p.locator('.daypage').count()) === 1
       && (await p.locator('.daytrack.panning').count()) === 0,

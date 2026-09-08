@@ -153,6 +153,20 @@ export async function logMoment(input: NewMoment): Promise<Moment> {
 }
 
 /**
+ * One entry, logged now, the way the sheet's save would have logged it.
+ *
+ * The bar's bottle and bedtime buttons write through this instead of opening
+ * the sheet, so the sleep that the new entry implies has ended still gets
+ * closed — that pairing is what "save" does, not what `logMoment` does, and a
+ * quick icon that skipped it would leave a sleep running through a feed.
+ */
+export async function logQuick(entries: DraftEntry[]): Promise<Moment> {
+  const m = await logMoment({ entries })
+  await closeOpenSleep(new Date(m.timeslot.occurred_at), m.timeslot.id)
+  return m
+}
+
+/**
  * The end button: stamp `at` as the end of whatever is still running.
  *
  * A sleep or a feed — the same write either way, which is why one function
@@ -197,21 +211,48 @@ export async function closeOpenSleep(at: Date, exceptId?: string) {
 }
 
 /**
- * The most recent moment before `at` that is still open, if it is open at all.
+ * Take the end back off the latest sleep — the mirror of `endOpenPeriod`.
+ *
+ * The row's resume icon. It clears `ended_at` on the sleep that was just
+ * closed, so it reads as running again and keeps counting from the start it
+ * always had. That is what "resume" means here: an undo for a stir that turned
+ * out not to be a waking, not a new sleep — the bar's bedtime button is what
+ * starts one of those.
+ *
+ * **Only the latest moment**, same as ending one. Reopening anything older
+ * would invent a sleep that ran through everything logged after it, and
+ * `ongoingSleep` would not read it as running anyway.
+ */
+export async function resumeLastSleep(at: Date) {
+  const latest = latestBefore(await db.getMoments(), at)
+  if (!latest || latest.timeslot.ended_at === null) return
+  if (!latest.events.some((e) => e.type === 'sleep')) return
+  const timeslot: Timeslot = { ...latest.timeslot, ended_at: null, updated_at: now() }
+  await db.putMoment({ timeslot, events: latest.events })
+  await db.enqueue([{ table: 'timeslot', rowId: timeslot.id, op: 'put' }])
+}
+
+/**
+ * The most recent moment before `at`.
  *
  * Only the most recent one. Anything older already had something logged after
  * it, so it was over long before now — reaching back to stamp an end time on it
  * would be inventing data, not closing a period.
  */
-function latestOpen(moments: Moment[], at: Date, exceptId?: string): Moment | null {
+function latestBefore(moments: Moment[], at: Date, exceptId?: string): Moment | null {
   const before = moments.filter(
     (m) => m.timeslot.id !== exceptId && new Date(m.timeslot.occurred_at) < at,
   )
   if (before.length === 0) return null
-  const latest = before.reduce((a, b) =>
+  return before.reduce((a, b) =>
     new Date(a.timeslot.occurred_at) >= new Date(b.timeslot.occurred_at) ? a : b,
   )
-  return latest.timeslot.ended_at === null ? latest : null
+}
+
+/** The same moment, but only when it is still open. */
+function latestOpen(moments: Moment[], at: Date, exceptId?: string): Moment | null {
+  const latest = latestBefore(moments, at, exceptId)
+  return latest && latest.timeslot.ended_at === null ? latest : null
 }
 
 /** The whole of ending a period: one field on one row. */

@@ -30,12 +30,14 @@ let fail = 0
 const check = (l: string, ok: boolean, d: string) => { if (!ok) fail++; console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${l} — ${d}`) }
 
 // --- something to report on -------------------------------------------------
-for (const label of ['log a feed', 'log a diaper'] as const) {
-  await p.getByLabel(label).click()
-  await p.waitForTimeout(250)
-  await p.getByRole('button', { name: 'save', exact: true }).click()
-  await p.waitForTimeout(350)
-}
+// The bottle writes straight to the log; the diaper still goes through the
+// sheet, so the two are seeded differently on purpose.
+await p.getByLabel('log a feed').click()
+await p.waitForTimeout(500)
+await p.getByLabel('log a diaper').click()
+await p.waitForTimeout(250)
+await p.getByRole('button', { name: 'save', exact: true }).click()
+await p.waitForTimeout(350)
 
 // --- getting there ----------------------------------------------------------
 await p.getByLabel('day').click()
@@ -70,10 +72,10 @@ const cell = await p.locator('.heatCell').first().boundingBox()
 check('and its cells have real width', !!cell && cell.width > 4, cell ? `${Math.round(cell.width)}px` : 'no box')
 
 // --- the bars are drawn, not just present ----------------------------------
-// Only that the bar is laid out with real width and its floor height. The feed
-// saved above carries no volume, so its bar is legitimately the 3px minimum —
-// proving a *tall* bar needs a seeded volume, which verify-insights covers as
-// arithmetic instead.
+// Only that the bar is laid out with real width and at least its floor height.
+// One day of one 60 mL feed is its own maximum, so the height this proves is a
+// layout fact rather than a scale one — verify-insights covers the arithmetic
+// that decides how tall a bar should be, with no browser at all.
 const bar = await p.locator('.barFill').first().boundingBox()
 check('a bar is laid out', !!bar && bar.height >= 3 && bar.width > 4,
   bar ? `${Math.round(bar.width)}x${Math.round(bar.height)}` : 'no box')
