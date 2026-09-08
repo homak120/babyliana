@@ -2085,3 +2085,40 @@ inside the card overlaps the button, so it never needed one.
 
 Neither was visible in any check that passed. Both came from rendering the card
 and looking at it.
+
+---
+
+## D-051 — A fourth estimate, and a chip that names the right window
+
+The next-feeds tab shows **four** times rather than the handoff's three.
+
+**The fourth is what makes the list cover a night.** With the day gap at three
+hours, three rows reach about nine hours out — an evening. The fourth reaches
+twelve or thirteen and lands past midnight from an afternoon feed, which is the
+question the tab is opened at 4am to answer. The card grows to 165px and the
+last row still sits 18px inside it, with nothing pushed sideways.
+
+### The bug it exposed
+
+The interval chip named **the window the row landed in**, not the one whose gap
+produced it. Those differ exactly when a step crosses a boundary — and with only
+three rows the case rarely showed. The fourth row put it on screen:
+
+```
+19:40   3h      ← 16:40 + 3h, day
+22:40   4h      ← 19:40 + 3h, day … labelled 4h
+02:40   4h      ← 22:40 + 4h, night
+```
+
+`22:40` is three hours after `19:40` and the chip beside it said `4h`, because
+22:40 is itself inside the night window. Two times three hours apart with a `4h`
+label between them.
+
+**`feedTimeline` now returns `{ at, cycle }`**, the cycle being the one the step
+*started* in. `upcomingFeeds` carries it through and the chip reads it, so the
+label always names the arithmetic that produced the number beside it.
+
+**Found by reading the four times against each other**, not by a check —
+`verify-hero` counted the chips and `verify-s3` checked the times, and both
+passed throughout. There are two checks on it now: a step across the boundary is
+labelled by where it began, and one wholly inside the night by the night.

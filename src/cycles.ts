@@ -101,31 +101,60 @@ export function cycleFor(at: Date, list = cycles()): Cycle {
  * window. Counted from the last feed's start (D-040), never from now, so the
  * list does not creep forward while nobody is logging.
  */
-export function feedTimeline(anchor: Date, count = 10, list = cycles()): Date[] {
-  const out: Date[] = []
+export type FeedStep = {
+  at: Date
+  /**
+   * The window whose gap *produced* this time — the one the step started in,
+   * not the one it landed in.
+   *
+   * They differ exactly when a step crosses a boundary, and that is the case
+   * the chip exists for: a 19:40 feed plus the day's three hours is 22:40,
+   * which is itself inside the night window. Labelling it from where it landed
+   * put `4h` beside two times three hours apart.
+   */
+  cycle: Cycle
+}
+
+export function feedTimeline(anchor: Date, count = 10, list = cycles()): FeedStep[] {
+  const out: FeedStep[] = []
   let t = anchor
   for (let i = 0; i < count; i++) {
-    const c = cycleFor(t, list)
-    t = new Date(t.getTime() + c.gap * 60_000)
-    out.push(t)
+    const cycle = cycleFor(t, list)
+    t = new Date(t.getTime() + cycle.gap * 60_000)
+    out.push({ at: t, cycle })
   }
   return out
 }
 
 /**
- * The next three feeds to show, positioned so the first row is the nearest one
- * — or the one just passed, when a feed is overdue.
+ * How many rows the next-feeds tab shows. Four as of D-051, up from the
+ * handoff's three — with the day gap at 3h the fourth reaches nine to twelve
+ * hours out, which is what makes the list cover a night rather than an evening.
+ */
+export const UPCOMING = 4
+
+/**
+ * The next feeds to show, positioned so the first row is the nearest one — or
+ * the one just passed, when a feed is overdue.
  *
  * Showing the passed one is the point: it is the row a tired person is looking
  * for, and dropping it off the top would leave the card describing a future
  * that has already moved on.
  */
-export function upcomingFeeds(anchor: Date | null, now: Date, list = cycles()): Date[] {
+export function upcomingFeeds(
+  anchor: Date | null,
+  now: Date,
+  list = cycles(),
+  count = UPCOMING,
+): FeedStep[] {
   if (!anchor) return []
-  const all = feedTimeline(anchor, 10, list)
-  let idx = all.findIndex((d) => d.getTime() > now.getTime())
-  if (idx < 0) idx = all.length - 3
-  return all.slice(Math.max(0, idx > 0 ? idx - 1 : 0), Math.max(0, idx > 0 ? idx - 1 : 0) + 3)
+  // Enough headroom that the window never runs off the end of the timeline,
+  // however far behind the anchor is.
+  const all = feedTimeline(anchor, count + 8, list)
+  let idx = all.findIndex((s) => s.at.getTime() > now.getTime())
+  if (idx < 0) idx = all.length - count
+  const start = Math.max(0, idx > 0 ? idx - 1 : 0)
+  return all.slice(start, start + count)
 }
 
 /** `3h`, or `2h 30m` where the gap is not whole hours. */

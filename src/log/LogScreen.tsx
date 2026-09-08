@@ -24,7 +24,7 @@ import {
   timeCell,
 } from '../day/cells'
 import { getDeviceId } from '../device-id'
-import { cycleFor, gapText, isNightCycle, upcomingFeeds } from '../cycles'
+import { gapText, isNightCycle, upcomingFeeds } from '../cycles'
 import { setTimeFormat, timeFormat } from '../timeformat'
 import { getMoments, removeMoment, renameThisDevice } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
@@ -392,13 +392,10 @@ export function LogScreen({ onEndOpen }: {
                     {/* The nearest one, large. Or the one just passed, which is
                         the row a tired person is actually looking for. */}
                     <p className="nextfeed">
-                      <b>{hhmm(upcoming[0].toISOString(), clock)}</b>
-                      <em className={upcoming[0] < now ? 'past' : ''}>
-                        {targetText(upcoming[0], now)}
-                      </em>
+                      <b>{hhmm(upcoming[0].at.toISOString(), clock)}</b>
+                      <em>{targetText(upcoming[0].at, now)}</em>
                     </p>
-                    {upcoming.slice(1).map((at) => {
-                      const c = cycleFor(at)
+                    {upcoming.slice(1).map(({ at, cycle: c }) => {
                       return (
                         <p className="laterfeed" key={at.toISOString()}>
                           <b>{hhmm(at.toISOString(), clock)}</b>

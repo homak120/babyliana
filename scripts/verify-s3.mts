@@ -199,22 +199,35 @@ check('and 06:00 is back in the day one', cycleFor(new Date(2026, 8, 3, 6)).id =
 // The estimate steps forward, taking the gap of the window each step lands in
 // — so a sequence can change interval halfway.
 const line = feedTimeline(new Date(2026, 8, 3, 21, 0), 3)
-check('a 21:00 feed is followed at three hours', line[0].getHours() === 0)
+check('a 21:00 feed is followed at three hours', line[0].at.getHours() === 0)
 check('and the one after that at four, being inside the night window',
-  line[1].getHours() === 4, String(line[1].getHours()))
+  line[1].at.getHours() === 4, String(line[1].at.getHours()))
 // 04:00 is still inside the night window, so the third step is four hours too
-// — the interval follows where each step *lands*, not where the sequence began.
+// — the interval follows where each step *starts*.
 check('and stays at four while still inside it',
-  line[2].getHours() === 8, String(line[2].getHours()))
+  line[2].at.getHours() === 8, String(line[2].at.getHours()))
+
+// The chip names the window that PRODUCED the time, not the one it landed in.
+// The two differ exactly when a step crosses a boundary, and labelling from
+// where it landed put `4h` beside two times three hours apart (D-051).
+check('a step across the boundary is labelled by where it began',
+  line[0].cycle.id === 'day' && line[0].cycle.gap === 180,
+  `${line[0].cycle.id} ${line[0].cycle.gap}`)
+check('and the one wholly inside the night by the night',
+  line[1].cycle.id === 'night', line[1].cycle.id)
 
 const up = upcomingFeeds(new Date(2026, 8, 3, 14, 0), new Date(2026, 8, 3, 15, 0))
-check('three are offered', up.length === 3, String(up.length))
-check('the first is the nearest still ahead', up[0].getHours() === 17, String(up[0].getHours()))
+check('four are offered', up.length === 4, String(up.length))
+check('the first is the nearest still ahead', up[0].at.getHours() === 17, String(up[0].at.getHours()))
+// Four reaches into the night from an afternoon feed, which is the point of the
+// fourth row: 14:00 + 3 + 3 + 3 + 4 lands at 03:00.
+check('and the fourth reaches past midnight', up[3].at.getHours() === 3, String(up[3].at.getHours()))
 
 // Overdue: the row just passed leads, because it is the one being looked for.
 const late = upcomingFeeds(new Date(2026, 8, 3, 14, 0), new Date(2026, 8, 3, 20, 30))
-check('a passed feed still leads the list', late[0].getTime() < new Date(2026, 8, 3, 20, 30).getTime(),
-  String(late[0].getHours()))
+check('a passed feed still leads the list',
+  late[0].at.getTime() < new Date(2026, 8, 3, 20, 30).getTime(),
+  String(late[0].at.getHours()))
 check('nothing logged yet means nothing to estimate',
   upcomingFeeds(null, new Date()).length === 0)
 

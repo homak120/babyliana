@@ -57,6 +57,11 @@ digit typed replaces, so it costs nothing to disagree with; `+ milk` inside the
 sheet still starts blank, because a feed added by hand is as often the paper's
 `?`. The report screen's date strip now stops at three day pills, so `more` — the
 only route to an older day — is on screen rather than off the right-hand edge.
+**Next feeds shows four times, not three** — D-051, and the fourth is what makes
+the list reach past midnight from an afternoon feed. It exposed a chip that
+named the window a row *landed* in rather than the one that produced it: `22:40`
+sat three hours after `19:40` with a `4h` label between them.
+
 **The status card follows the status-card handoff** — D-050. The prep timer is
 a pill on tabs 1 and 3 — *make milk / tap when you start*, then *making milk /
 4:10 · tap to stop* — and tab 2 is **next feeds**, three estimated times with a
@@ -218,6 +223,12 @@ lavender and the same `BottleIcon` the end-feed pill wears. `src/log/LogScreen.t
 and the `.prepline` rule in `src/log/log.css`. No test changed: `verify-hero`
 asserts the prompt's count, text and geometry, not its glyph, and its five
 prompt checks pass.
+
+**A fourth estimate — D-051.** `UPCOMING` is 4 in
+`src/cycles.ts`, and `feedTimeline` returns `{ at, cycle }` so the chip names
+the step that produced a time rather than the window it fell into. Four checks
+in `verify-s3`, two updated in `verify-hero`. The card grows to 165px with the
+last row 18px inside it and no overflow.
 
 **The status card — D-050.** New `src/cycles.ts` (windows,
 estimator, localStorage) and `src/log/CycleSheet.tsx`; `PrepLine.tsx` is now
@@ -612,7 +623,24 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-07 (latest) — the status card, redrawn to the handoff
+### 2026-09-07 (latest) — a fourth estimate, and the chip it caught
+
+**Next feeds shows four times** (D-051). Three reached about nine hours out — an
+evening. Four reaches past midnight from an afternoon feed, which is the
+question that tab is opened at 4am to answer.
+
+**And it put a bug on screen.** The interval chip named the window a row *landed
+in*, not the one whose gap produced it. Those differ only when a step crosses a
+boundary, which three rows rarely showed: `22:40` is three hours after `19:40`
+and carried a `4h` label, because 22:40 is itself inside the night window.
+`feedTimeline` returns `{ at, cycle }` now, the cycle being the one the step
+started in.
+
+**No check caught it** — `verify-hero` counted chips and `verify-s3` checked
+times, and both passed throughout. Reading the four times against each other did.
+Two checks guard it now.
+
+### 2026-09-07 — the status card, redrawn to the handoff
 
 **Three things land from `handoff_status_card`** (D-050). The milk-prep timer is
 a pill — *make milk / tap when you start*, then *making milk / 4:10 · tap to
@@ -680,31 +708,3 @@ value above each bar and the 2px gap between segments are what make it right for
 a protanopic reader, not decoration. **The tally bar is neutral because
 rendering it showed a green bar beside a row labelled *yellow*.** No validator
 would have caught that; looking at it did.
-
-### 2026-09-07 — two rough edges in the sheet
-
-**The end's shortcuts are minutes back from now** (D-048). `+2 h`, `+3 h` and
-`+4 h` are gone — nothing ever used them, since a feed is minutes and a sleep
-gets its end from the bar — and `5 / 10 / 15 min ago` sit beside `now`,
-`+30 min` and `+1 h`. That is the commonest correction there is: the feed
-finished a few minutes ago and you are logging it now.
-
-**They are bounded, or they would rebuild the bug just fixed.** On a start of
-*now*, five minutes ago is behind it, and `resolveEnd` would read that as
-crossing midnight — a 23h 55m entry, which is D-047 all over again. `endAgo`
-clamps to the start, and caps at start + 1 day so a pill cannot reach a value
-the date arrows refuse.
-
-**And the bubbles pair up again.** `supplement` is five pixels wider than half a
-row at 390, and a flex item cannot shrink below its own text unless told it may
-— so it took a line of its own and left `temp` alone above it. `min-width: 0`
-plus an ellipsis on the label means the word gives rather than the grid. It now
-reads whole down to 375 and only shortens at 360 and below. Measured at six
-widths.
-
-**The lesson was in the measuring, not the fixing.** A probe read
-`querySelector('span')` inside a bubble and got the Material Symbols span rather
-than the label — so it reported the word clipped when it was not, and the CSS
-written from that reading was clipping the *icon*. It surfaced only because a
-second check disagreed with the first. **A check that reads the wrong element
-reports the wrong thing confidently.**

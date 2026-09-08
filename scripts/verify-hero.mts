@@ -338,13 +338,13 @@ await p.waitForTimeout(900)
 await p.getByLabel('next feeds view').click()
 await p.waitForTimeout(300)
 
-check('the next-feeds lead names three times',
-  (await p.locator('.nextfeed').count()) === 1 && (await p.locator('.laterfeed').count()) === 2,
+check('the next-feeds lead names four times',
+  (await p.locator('.nextfeed').count()) === 1 && (await p.locator('.laterfeed').count()) === 3,
   `${await p.locator('.nextfeed').count()} + ${await p.locator('.laterfeed').count()}`)
 // Each later row says which window produced it, so a sequence that changes
 // interval halfway explains itself rather than looking wrong.
 check('and each later one names the interval behind it',
-  (await p.locator('.gapchip').count()) === 2,
+  (await p.locator('.gapchip').count()) === 3,
   (await p.locator('.laterfeed').first().innerText()).replace(/\n/g, ' '))
 // The tone rule: a distance, never a verdict. `overdue` in rose was the
 // handoff's wording and is deliberately not taken (CLAUDE.md).
