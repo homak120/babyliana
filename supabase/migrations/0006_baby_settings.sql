@@ -1,0 +1,27 @@
+-- Shared settings, on the row both phones already pull.
+--
+-- The first of them is the feeding cycle, which lived in localStorage (D-050)
+-- and meant each phone could hold a different rhythm — a fact about the baby
+-- stored as if it were a fact about the phone in your hand.
+--
+-- **One `settings` object rather than a column per setting** (D-052). The
+-- alternative was `cycles jsonb`, which would have been right if the cycle were
+-- the only thing that ever needed sharing; it is not obviously the last. This
+-- costs one migration now instead of one per setting later.
+--
+-- Shaped as an object keyed by setting name — `{"cycles": [...]}` — so a new
+-- setting is a new key and never a new migration. The client validates each key
+-- it reads and falls back to its own defaults on anything it does not
+-- recognise, so an unknown or malformed value cannot stop a screen rendering.
+--
+-- On `baby` and not a table of its own because `baby` is the root of this
+-- schema (D-022), there is exactly one row, and `pull()` already fetches it.
+--
+-- Additive, per D-039: a column is added, nothing is dropped or narrowed. An
+-- older client is unaffected — it never pushed `baby` at all, and an extra
+-- column on the row it pulls is ignored.
+--
+-- NULL means nothing has been set, and every reader falls back to its own
+-- default. So there is no backfill, and nothing changes for anyone who never
+-- opens a settings screen.
+alter table public.baby add column if not exists settings jsonb;

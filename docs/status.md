@@ -57,6 +57,12 @@ digit typed replaces, so it costs nothing to disagree with; `+ milk` inside the
 sheet still starts blank, because a feed added by hand is as often the paper's
 `?`. The report screen's date strip now stops at three day pills, so `more` — the
 only route to an older day — is on screen rather than off the right-hand edge.
+**Shared settings live on `baby`** — D-052. `0006` adds `baby.settings jsonb`,
+an object keyed by setting name, and the feeding cycle is the first key in it —
+so the two phones agree on the rhythm instead of each holding their own, and the
+next shared setting is a new key rather than a new migration.
+**`0006` is not applied and this blocks the deploy** — see *In flight*.
+
 **Next feeds shows four times, not three** — D-051, and the fourth is what makes
 the list reach past midnight from an afternoon feed. It exposed a chip that
 named the window a row *landed* in rather than the one that produced it: `22:40`
@@ -223,6 +229,32 @@ lavender and the same `BottleIcon` the end-feed pill wears. `src/log/LogScreen.t
 and the `.prepline` rule in `src/log/log.css`. No test changed: `verify-hero`
 asserts the prompt's count, text and geometry, not its glyph, and its five
 prompt checks pass.
+
+**`0006` is applied — checked against the live database**, where `baby.settings`
+resolves and currently holds `null`. The owner ran it before this build ships,
+which is the order `supabase/README.md` requires: sync upserts whole rows, so a
+client naming a column the database does not have stalls its outbox. **All
+twenty-two suites pass**, `verify-s2` and `verify-s8` included.
+
+**It is a generic `settings` object, not a `cycles` column.** Written as the
+latter first, then widened on the owner's question: a column per setting is one
+migration each, a key per setting is none. **`saveSetting` merges** rather than
+replacing, or saving the cycle would drop every other key — including ones the
+writing build has never heard of. The remaining gap is named in D-052: two
+phones editing *different* keys at once still resolve last-write-wins over the
+whole object.
+
+**What changed.** `PUSH_ORDER` gains `baby` (first — it is the root every
+timeslot references) and the outbox's `table` union with it; `saveSetting` and
+`reconcileCycles` in `src/moments.ts`; `hydrateCycles` and `isDefaultCycles` in
+`src/cycles.ts`; the sheet saves through them and `LogScreen.refresh` reconciles.
+localStorage stays as the **cache** — `cycleFor` runs during render and
+IndexedDB is asynchronous — with the row as the truth.
+
+**The reconcile is deliberately asymmetric.** A row that has a cycle wins; a row
+with none takes this phone's, but only if this phone has been tuned. That second
+rule closes the hole where a cycle set before the first sync would sit local
+forever, and adopting a `null` would have thrown away exactly that change.
 
 **A fourth estimate — D-051.** `UPCOMING` is 4 in
 `src/cycles.ts`, and `feedTimeline` returns `{ at, cycle }` so the chip names
@@ -623,7 +655,55 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-07 (latest) — a fourth estimate, and the chip it caught
+### 2026-09-08 (latest) — the feeding cycle stops being a per-phone opinion
+
+**`0006` adds `baby.settings jsonb`** and the rhythm syncs (D-052). It went on
+`baby` rather than a new table because that row is the root of the schema
+(D-022), a setting like this is a fact about her rather than about a phone, and
+`pull()` already fetched it — half the work existed.
+
+**It was `cycles jsonb` first, and the owner asked the better question:** make
+it generic. A column per setting is a migration each; a key per setting is none.
+`0006` was rewritten rather than superseded — it had never been applied or
+committed, so no database and no client had seen it, and a file that never ran
+does not burn its number the way `0002` did.
+
+**Writes merge, never replace.** Saving the cycle by writing the whole object
+would drop every other key, including ones the writing build has never heard of.
+`verify-s2` checks a second key survives the first. What is still true: two
+phones editing *different* keys at once resolve last-write-wins over the object,
+and one loses.
+
+**And the round-trip found a bug.** `jsonb` does not preserve key order — a
+cycle written `{id, from, to, gap}` comes back `{id, to, gap, from}`, the same
+thing and a different string. `hydrateCycles` compared with `JSON.stringify`, so
+every pull read as a change and repainted the card before settling. It compares
+field by field now. The `verify-s2` check that caught it was making the same
+mistake, which is how both were found at once.
+
+**The write path did not.** `PUSH_ORDER` was device/timeslot/event and the
+outbox knew nothing of `baby`. Both widened, `baby` first, since it is the root
+every timeslot references.
+
+**localStorage stays, demoted to a cache.** `cycleFor` is called during render
+and IndexedDB is asynchronous, so a synchronous read has to come from somewhere.
+
+**The reconcile is asymmetric, and that is the interesting part.** A row with a
+cycle wins — that is the sync. A row with *none* takes this phone's, but only if
+this phone has been tuned. `saveCycles` needs a local `baby` row to update and
+cannot invent one (`baby.name` is `not null` and a fresh phone does not know
+it), so a cycle set before the first sync would otherwise sit local forever.
+Adopting a `null` would have thrown away exactly that change.
+
+**Last write wins, silently, and that is a choice** — for one pair of numbers
+there is nothing to merge, and "never resolve a duplicate silently" is about
+events.
+
+**This one blocks the deploy, and it is the case the rule was written for.**
+`verify-s2` is red on `the baby row carries a cycles column` until the migration
+runs.
+
+### 2026-09-07 — a fourth estimate, and the chip it caught
 
 **Next feeds shows four times** (D-051). Three reached about nine hours out — an
 evening. Four reaches past midnight from an afternoon feed, which is the
@@ -675,36 +755,3 @@ it through the settings sheet, because neither the card nor the sheet creates a
 stacking context. **Both came from taking a screenshot and looking at it**, and
 the first now has a guard: `verify-s3` forbids our two stylesheets sharing a
 class name, as it already does for `tokens.css`.
-
-### 2026-09-07 — three more charts, and a palette that was computed
-
-**The report gains diapers a day, milk by source, and a poop-colour tally**
-(D-049). The owner picked three from a longer list; *feeds by hour* was offered
-and declined, as were cards for the four types with no data.
-
-**Chosen against the live database rather than the schema.** 99 feeds, 89
-diapers, 31 recorded colours — and zero weights, zero spit-ups, one supplement,
-two temperatures. A chart with no rows is worse than no chart.
-
-**They describe and do not assess.** D-032's four counted rules are still four.
-The colour tally is the sharp case: a count, in frequency order, with nothing
-said about any colour and a caption saying so.
-
-**"Not marked" is a band, not a discard.** More than half the log's feeds carry
-no source, so charting only the sourced ones would make the picture a claim
-about the baby rather than about what was written down. Hatched rather than
-hued, because an absence should not compete for identity, and the millilitres
-are said outright in the caption.
-
-**The palette was computed, and the obvious answer was wrong.** Reusing the
-`*Ink` tokens the app already assigns to these meanings fails: mint against
-yellow measures ΔE 14.5 against a floor of 15 and reads grey at chroma 0.09;
-`--muted` is chroma 0.02 at 2.78:1. Four new tokens were snapped to passing
-steps and validated per surface — **dark is its own selection, not a flip.**
-
-**And two details are load-bearing.** The wet/dirty pair passes at CVD ΔE 7.9,
-the floor band, legal only with secondary encoding — so the counting legend, the
-value above each bar and the 2px gap between segments are what make it right for
-a protanopic reader, not decoration. **The tally bar is neutral because
-rendering it showed a green bar beside a row labelled *yellow*.** No validator
-would have caught that; looking at it did.

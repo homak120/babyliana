@@ -113,6 +113,49 @@ try {
   await sync()
   const gone = await sb.from('timeslot').select('id').eq('id', pending.timeslot.id)
   check('a local delete reaches the server', gone.data?.length === 0)
+  // --- shared settings ride on the baby row (D-052) -------------------------
+  // The one check that goes red when `0006` has not been applied, which is what
+  // `verify-s2` is for: a client naming a column the database does not have
+  // stalls its outbox, and this says so before a phone does.
+  const wasSet = await sb.from('baby').select('settings').eq('id', BABY_ID).single()
+  check('the baby row carries a settings column', !wasSet.error,
+    wasSet.error?.message ?? 'present')
+
+  if (!wasSet.error) {
+    const probe = [{ id: 'day', from: 360, to: 1320, gap: 195 }]
+    const wrote = await sb.from('baby')
+      .update({ settings: { cycles: probe } }).eq('id', BABY_ID)
+    check('a setting can be written to it', !wrote.error, wrote.error?.message ?? 'written')
+
+    // Compared field by field, not as a string: `jsonb` does not preserve key
+    // order, and `{id, from, to, gap}` comes back as `{id, to, gap, from}`.
+    // The app compares the same way for the same reason (`same` in cycles.ts).
+    const read = await sb.from('baby').select('settings').eq('id', BABY_ID).single()
+    const got = read.data?.settings?.cycles?.[0]
+    check('and comes back saying the same thing',
+      got?.id === probe[0].id && got?.from === probe[0].from
+      && got?.to === probe[0].to && got?.gap === probe[0].gap,
+      JSON.stringify(read.data?.settings))
+
+    // The reason it is an object and not a column: a second setting must not
+    // take the first with it. `saveSetting` merges, and this is the shape that
+    // merge produces.
+    const merged = { ...(read.data?.settings ?? {}), somethingElse: 'kept' }
+    await sb.from('baby').update({ settings: merged }).eq('id', BABY_ID)
+    const both = await sb.from('baby').select('settings').eq('id', BABY_ID).single()
+    check('a second setting sits beside the first rather than replacing it',
+      both.data?.settings?.cycles?.[0]?.gap === probe[0].gap
+      && both.data?.settings?.somethingElse === 'kept',
+      JSON.stringify(both.data?.settings))
+
+    // Put back exactly what was there — including `null`, which is what the
+    // column holds until someone opens a settings screen for real.
+    await sb.from('baby').update({ settings: wasSet.data?.settings ?? null }).eq('id', BABY_ID)
+    const restored = await sb.from('baby').select('settings').eq('id', BABY_ID).single()
+    check('and the real value is put back',
+      JSON.stringify(restored.data?.settings) === JSON.stringify(wasSet.data?.settings ?? null),
+      JSON.stringify(restored.data?.settings))
+  }
 } finally {
   // Timeslots first — device is `on delete restrict` and will refuse while any
   // moment still points at it.

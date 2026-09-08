@@ -29,13 +29,16 @@ export const DEFAULT_CYCLES: Cycle[] = [
 const KEY = 'babyliana.cycles'
 
 /**
- * Per-phone, in localStorage, like every other setting here (D-041, D-045).
+ * **The shared truth is `baby.cycles`** (D-052). localStorage is the local
+ * *cache* of it, and exists for one reason: `cycleFor` is called during render,
+ * by `targetWake` among others, and IndexedDB is asynchronous. A synchronous
+ * read has to come from somewhere.
  *
- * **The two phones can disagree**, and that is a real cost worth naming: a
- * feeding rhythm is arguably a fact about the baby rather than about the phone
- * in your hand. It is not synced because sync means a schema change, and D-039
- * made the schema additive-only for a reason. If it ever matters, the fix is a
- * column, not a second store.
+ * So the flow is: `hydrate` copies the pulled row down into the cache, and
+ * `setCycles` writes the cache while `saveCycles` in `moments.ts` writes the
+ * row and queues it for push. Both phones converge on whichever write reaches
+ * the server last — there is no merge, and for one pair of numbers there does
+ * not need to be.
  */
 let cached: Cycle[] | null = null
 
@@ -68,6 +71,44 @@ export function setCycles(next: Cycle[]): void {
   cached = next
   store()?.setItem(KEY, JSON.stringify(next))
 }
+
+/**
+ * Take the pulled row's cycle as the local answer.
+ *
+ * **Only when there is one.** A missing key means nobody has ever set a cycle,
+ * and adopting it would throw away a change made on this phone before its first
+ * successful sync — which is exactly when the row is missing.
+ *
+ * Returns whether anything moved, so the screen can re-render on a change that
+ * arrived from the other phone rather than from a tap.
+ */
+export function hydrateCycles(settings: { cycles?: Cycle[] } | null | undefined): boolean {
+  const theirs = settings?.cycles
+  if (!theirs || !Array.isArray(theirs) || theirs.length === 0) return false
+  const next = parse(JSON.stringify(theirs))
+  if (same(next, cycles())) return false
+  setCycles(next)
+  return true
+}
+
+/**
+ * Two cycle lists compared by what they *say*, field by field.
+ *
+ * **Not `JSON.stringify`.** `jsonb` does not preserve key order — a cycle
+ * written as `{id, from, to, gap}` comes back from Postgres as
+ * `{id, to, gap, from}`, identical in meaning and different as a string. A
+ * string comparison would call every pull a change, rewrite the cache and
+ * repaint the card each time. Caught by a `verify-s2` check that compared the
+ * round-trip the same wrong way.
+ */
+export const same = (a: Cycle[], b: Cycle[]) =>
+  a.length === b.length
+  && a.every((c, i) => c.id === b[i].id && c.from === b[i].from
+    && c.to === b[i].to && c.gap === b[i].gap)
+
+/** Whether this phone is holding something other than the defaults. Used to
+ *  decide if a local setting is worth pushing up to an empty row. */
+export const isDefaultCycles = () => same(cycles(), DEFAULT_CYCLES)
 
 /** Forgets the cache, for suites that write the preference behind the module. */
 export function resetCycles(): void {

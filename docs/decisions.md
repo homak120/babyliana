@@ -2122,3 +2122,103 @@ label always names the arithmetic that produced the number beside it.
 `verify-hero` counted the chips and `verify-s3` checked the times, and both
 passed throughout. There are two checks on it now: a step across the boundary is
 labelled by where it began, and one wholly inside the night by the night.
+
+---
+
+## D-052 — Shared settings on `baby`, and the feeding cycle as the first of them
+
+D-050 put the cycle in localStorage and named the cost: two phones could hold
+different rhythms. `0006` adds `baby.settings jsonb` and the two now agree.
+
+**On `baby`, not a new table.** `baby` is the root of this schema (D-022), a
+setting like the cycle is a fact about her rather than about a phone, and
+`pull()` already fetches that row — so half the work existed.
+
+**One `settings` object, not a column per setting.** It was written first as
+`cycles jsonb`, which is the right answer if the cycle is the last thing that
+will ever need sharing — and it plainly is not. An object keyed by setting name
+makes the next one a new key rather than a new migration. The cost is paid once
+here.
+
+**Every key optional, every reader defaulting.** That is what lets a phone on an
+older build ignore a key it has never heard of instead of choking on it, and it
+is why `null` needs no backfill: nothing set means everything falls back.
+
+**Writes merge, never replace.** `saveSetting` spreads the existing object and
+sets one key. Replacing it wholesale would make saving the feeding cycle quietly
+drop every other setting on the row — including ones the writing build does not
+know about. `verify-s2` checks a second key survives the first.
+
+### `jsonb` does not preserve key order
+
+A cycle written `{id, from, to, gap}` comes back from Postgres as
+`{id, to, gap, from}` — identical in meaning, different as a string. `jsonb`
+normalises: it does not keep the order it was given.
+
+`hydrateCycles` compared with `JSON.stringify`, so **every pull looked like a
+change**: it would rewrite the cache and repaint the card each time before
+settling. It compares field by field now (`same`), and `verify-s3` pins it with
+the same cycle written in a different key order.
+
+Found because a `verify-s2` check compared the round-trip the same wrong way and
+failed on it. The check was wrong and so was the code, in the same place — worth
+remembering the next time anything compares stored JSON.
+
+**The gap that remains**: two phones editing *different* keys at the same time
+still resolve as last-write-wins over the whole object, so one loses. The window
+is small — `sync()` pulls before a later push merges — and the fix, if it ever
+matters, is a column per setting or a settings table. Named rather than
+pretended away.
+
+**Additive, per D-039.** Nothing is dropped or narrowed, and an older client is
+unaffected — it never pushed `baby` at all and ignores an extra column on the
+row it pulls. That is the exact opposite of the `0004` situation.
+
+### What had to be built
+
+`pull()` already read the row. The write path did not exist: `PUSH_ORDER` was
+`['device', 'timeslot', 'event']` and the outbox's `table` union had no `baby`.
+Both widened, with **`baby` first** — it is the root every timeslot references.
+
+**localStorage stays, demoted to a cache.** `cycleFor` is called during render,
+by `targetWake` among others, and IndexedDB is asynchronous; a synchronous read
+has to come from somewhere. So the row is the truth and the cache is what the
+card reads.
+
+### The reconcile, and why it is asymmetric
+
+`reconcileCycles` runs on every refresh, and the two directions are not
+symmetric:
+
+- **A row that has a cycle wins.** That is the sync.
+- **A row with none takes this phone's**, but only if this phone has been tuned.
+
+The second rule closes a real hole. `saveCycles` needs a local `baby` row to
+update, and one cannot be invented — `baby.name` is `not null` and a fresh phone
+does not know it. So a cycle set before the first successful sync has nowhere to
+go. Without the second rule it would sit local forever; with it, the first pull
+that brings the row also sends the setting up.
+
+**Adopting a `null` would be the bug.** It would throw away exactly that change,
+which is why `hydrateCycles` refuses a row with no cycle rather than treating it
+as "the shared answer is the defaults".
+
+**Last write wins, and there is no merge.** For one pair of numbers there does
+not need to be. It is silent, which is a choice rather than an oversight: "never
+resolve a duplicate silently" is about events, not settings.
+
+**Nothing blocks on the network.** The sheet writes the cache and closes on it;
+the row and the push follow. A change made offline survives, because `sync()`
+pushes before it pulls and skips the reconcile while the outbox is non-empty.
+
+### This one blocks the deploy
+
+`supabase/README.md`'s rule, and the case it was written for. Sync upserts whole
+rows, so a client that names `cycles` before the column exists fails every
+`baby` push and stalls its outbox. **`0006` goes into the SQL Editor before the
+build ships.** `verify-s2` carries the check that says so — it is red until the
+migration runs, which is that suite doing its job.
+
+**`0006` was rewritten rather than superseded.** It had never been applied or
+committed, so no database and no client had seen it — the number is not burned
+by a file that never ran. `0002` is burned because it existed; this did not.

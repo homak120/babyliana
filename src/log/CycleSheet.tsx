@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { cycles, gapText, isNightCycle, setCycles, type Cycle } from '../cycles'
+import { saveSetting } from '../moments'
+import { sync } from '../sync'
 import { Icon } from './Icon'
 
 /**
@@ -81,8 +83,12 @@ export function CycleSheet({ onClose }: { onClose: () => void }) {
         type="button"
         className="save"
         onClick={() => {
+          // Local first, and the sheet closes on it: the card must repaint at
+          // once whether or not there is a network. The shared row and the push
+          // follow behind (D-052).
           setCycles(draft)
           onClose()
+          void saveSetting('cycles', draft).then(() => sync())
         }}
       >
         <Icon name="check_circle" size={24} /> save

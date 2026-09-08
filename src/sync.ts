@@ -39,7 +39,10 @@ function setState(next: SyncState) {
 }
 
 /** Devices before timeslots: `logged_by` is a foreign key and will reject. */
-const PUSH_ORDER = ['device', 'timeslot', 'event'] as const
+// `baby` first: it is the root every timeslot references, so it has to exist
+// on the server before anything points at it. It is only ever *updated* here —
+// the row is seeded by `0002` and no client creates one (D-052).
+const PUSH_ORDER = ['baby', 'device', 'timeslot', 'event'] as const
 
 async function push(): Promise<boolean> {
   if (!supabase) return false

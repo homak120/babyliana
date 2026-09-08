@@ -1,13 +1,63 @@
 import { BABY_ID } from './config'
 import * as db from './db'
 import { createDeviceId, requireDeviceId } from './device-id'
-import type { DraftEntry, LogEvent, Moment, Timeslot } from './types'
+import { cycles, hydrateCycles, isDefaultCycles } from './cycles'
+import type { Baby, BabySettings, DraftEntry, LogEvent, Moment, Timeslot } from './types'
 
 // Everything above IndexedDB that the UI touches. Kept apart from db.ts so the
 // storage layer stays a dumb store and the rules about ids, timestamps and
 // what a moment is live in one place.
 
 const now = () => new Date().toISOString()
+
+/**
+ * Write one shared setting to the row both phones read (D-052).
+ *
+ * The local write and the queue entry, and nothing else — `sync()` is the
+ * caller's, so this never blocks on the network. `updated_at` and `updated_by`
+ * are stamped the way every other write here stamps them, which is what makes
+ * the server's last-write-wins mean *last*.
+ *
+ * **Silently local when the baby row has not arrived yet.** That is a fresh
+ * install that has never synced; there is no row to update and one cannot be
+ * invented, because `baby.name` is `not null` and this phone does not know it.
+ * The value stays in its local cache and `reconcileCycles` sends it up once the
+ * row appears.
+ */
+export async function saveSetting<K extends keyof BabySettings>(
+  key: K,
+  value: BabySettings[K],
+): Promise<boolean> {
+  const baby = (await db.getRow('baby', BABY_ID)) as Baby | undefined
+  if (!baby) return false
+  // **Merged into what is already there, never replacing it.** One key at a
+  // time is the whole point of an object: writing the object wholesale would
+  // make saving the feeding cycle quietly drop every other setting the row
+  // carries, including ones this build has never heard of.
+  const settings: BabySettings = { ...(baby.settings ?? {}), [key]: value }
+  await db.putBaby({ ...baby, settings, updated_at: now(), updated_by: requireDeviceId() })
+  await db.enqueue([{ table: 'baby', rowId: BABY_ID, op: 'put' }])
+  return true
+}
+
+/**
+ * Reconcile this phone's cycle with the shared row, after a pull.
+ *
+ * Two directions, and the asymmetry is deliberate. A row that *has* a cycle
+ * wins — that is the sync. A row with none takes this phone's, but only if this
+ * phone has actually been tuned, which closes the one hole `saveCycles` leaves:
+ * a change made before the first sync would otherwise sit local forever.
+ *
+ * Returns whether the local value changed, so the screen can repaint on
+ * something the other phone did.
+ */
+export async function reconcileCycles(): Promise<boolean> {
+  const baby = (await db.getRow('baby', BABY_ID)) as Baby | undefined
+  if (!baby) return false
+  if (hydrateCycles(baby.settings)) return true
+  if (!baby.settings?.cycles && !isDefaultCycles()) await saveSetting('cycles', cycles())
+  return false
+}
 
 /**
  * Create this device, once, when its name is submitted.

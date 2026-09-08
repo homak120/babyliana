@@ -1,7 +1,10 @@
 // S3's done-when: the elapsed figure and the totals have to be right, since
 // they are what the whole screen is for. Pure functions, no browser needed.
 import type { Moment } from '../src/types.ts'
-import { cycleFor, feedTimeline, gapText, isNightCycle, upcomingFeeds } from '../src/cycles.ts'
+import {
+  DEFAULT_CYCLES, cycleFor, feedTimeline, gapText, hydrateCycles, isDefaultCycles,
+  isNightCycle, resetCycles, setCycles, upcomingFeeds,
+} from '../src/cycles.ts'
 import {
   bottleDue,
   feedKind,
@@ -237,6 +240,43 @@ check('a window starting in the evening is a night one',
   isNightCycle({ id: 'n', from: 22 * 60, to: 6 * 60, gap: 240 }))
 check('and one starting in the morning is not',
   !isNightCycle({ id: 'd', from: 6 * 60, to: 22 * 60, gap: 180 }))
+
+// --- the cycle is shared, and localStorage is only its cache (D-052) --------
+// `hydrateCycles` is the direction that matters: a pulled row with a cycle wins.
+resetCycles()
+const shared = { cycles: [{ id: 'day', from: 360, to: 1320, gap: 150 }] }
+check('a pulled cycle is adopted',
+  hydrateCycles(shared) && cycleFor(new Date(2026, 8, 3, 14)).gap === 150,
+  String(cycleFor(new Date(2026, 8, 3, 14)).gap))
+check('and adopting the same one again changes nothing', !hydrateCycles(shared))
+
+// Settings with no cycle key means nobody has ever set one. Adopting it would
+// throw away a change made on this phone before its first sync — which is
+// exactly when the row is missing.
+check('settings without a cycle are not adopted over a local one',
+  !hydrateCycles({}) && cycleFor(new Date(2026, 8, 3, 14)).gap === 150)
+check('nor is a row with no settings at all', !hydrateCycles(null))
+check('nor a missing row', !hydrateCycles(undefined))
+// Anything unrecognisable falls back rather than throwing: a bad value must not
+// be able to stop the card rendering.
+check('and neither is a nonsense one', !hydrateCycles({ cycles: [] }))
+
+// `jsonb` does not preserve key order — a cycle written `{id, from, to, gap}`
+// comes back `{id, to, gap, from}`. Comparing as strings would call every pull
+// a change and repaint the card on each one.
+check('the same cycle in a different key order is not a change',
+  !hydrateCycles({ cycles: [{ gap: 150, to: 1320, from: 360, id: 'day' }] }),
+  'reordered keys read as unchanged')
+
+setCycles(DEFAULT_CYCLES)
+check('the defaults are recognised as such', isDefaultCycles())
+setCycles([{ id: 'day', from: 360, to: 1320, gap: 210 }])
+check('and a tuned phone is not', !isDefaultCycles())
+// Back to the defaults for whatever runs after this — and through `setCycles`
+// rather than `localStorage`, which does not exist in a Node suite. That guard
+// is the reason `cycles.ts` reaches storage through an accessor at all.
+setCycles(DEFAULT_CYCLES)
+resetCycles()
 
 // --- the bottle prompt ------------------------------------------------------
 // Up from 15 minutes before the target and onwards, not just until it.

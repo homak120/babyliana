@@ -1,6 +1,20 @@
 // Mirrors the schema in supabase/migrations/0001_initial_schema.sql.
 // Keep the two in step — event-model.md § Schema (Postgres) is the reference.
 
+import type { Cycle } from './cycles'
+
+/**
+ * The shared settings object on `baby.settings`.
+ *
+ * **Every key is optional and every reader defaults**, which is what lets a new
+ * setting be a new key rather than a new migration — and lets a phone on an
+ * older build ignore a key it has never heard of instead of choking on it.
+ */
+export type BabySettings = {
+  /** The feeding cycle: how long a feed is expected to hold, by window. */
+  cycles?: Cycle[]
+}
+
 export type EventType =
   | 'feed'
   | 'diaper'
@@ -18,6 +32,12 @@ export type PoopConsistency = 'liquid' | 'soft' | 'seedy' | 'firm' | 'other'
 export type Baby = {
   id: string
   name: string
+  /**
+   * Everything both phones should agree on, keyed by setting name (D-052).
+   * `null` until something is set, and every reader falls back to its own
+   * default — so an app that does not know a key simply ignores it.
+   */
+  settings: BabySettings | null
   created_at: string
   updated_at: string
   updated_by: string | null

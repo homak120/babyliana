@@ -26,7 +26,7 @@ import {
 import { getDeviceId } from '../device-id'
 import { gapText, isNightCycle, upcomingFeeds } from '../cycles'
 import { setTimeFormat, timeFormat } from '../timeformat'
-import { getMoments, removeMoment, renameThisDevice } from '../moments'
+import { getMoments, reconcileCycles, removeMoment, renameThisDevice } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
 import type { Device, Moment } from '../types'
 import { AddSheet } from './AddSheet'
@@ -169,6 +169,9 @@ export function LogScreen({ onEndOpen }: {
   // Nothing is removed until the sheet is confirmed (Q-012).
   const [pendingDelete, setPendingDelete] = useState<Moment | null>(null)
   const [tuning, setTuning] = useState(false)
+  // Bumped when a pull brings a cycle from the other phone. Nothing reads it —
+  // it exists to re-render a card whose numbers come from a module cache.
+  const [, setCycleTick] = useState(0)
 
   const refresh = useCallback(() => {
     getMoments().then((m) => {
@@ -176,6 +179,12 @@ export function LogScreen({ onEndOpen }: {
       setLoaded(true)
     })
     getDevices().then(setDevices)
+    // The feeding cycle is on the row both phones share (D-052), so a pull can
+    // bring one the other phone set. `cycles()` reads a synchronous cache, so
+    // the repaint has to be asked for rather than observed.
+    void reconcileCycles().then((changed) => {
+      if (changed) setCycleTick((n) => n + 1)
+    })
   }, [])
 
   useEffect(refresh, [refresh])

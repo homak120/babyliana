@@ -21,7 +21,7 @@ const DB_VERSION = 2
  */
 export type OutboxItem = {
   key: string
-  table: 'device' | 'timeslot' | 'event'
+  table: 'baby' | 'device' | 'timeslot' | 'event'
   rowId: string
   op: 'put' | 'delete'
 }
@@ -204,6 +204,6 @@ export async function deleteEvent(id: string) {
   await (await db()).delete('event', id)
 }
 
-export async function getRow(table: 'device' | 'timeslot' | 'event', id: string) {
+export async function getRow(table: 'baby' | 'device' | 'timeslot' | 'event', id: string) {
   return (await db()).get(table, id)
 }
