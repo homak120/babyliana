@@ -167,7 +167,9 @@ when". Read that first; this list is the checklist view of the same thing.
       app — that is Phase 9, not first use. Getting a file off an installed iOS
       PWA is the hard part, not the format
 - [ ] **CD/CC** Settings screen — the design does not have one, and export needs
-      somewhere to live
+      somewhere to live. The `tune` sheet (D-050) is the first thing shaped like
+      one but holds only the feeding windows; the clock-format toggle and the
+      phone's name are still loose controls in the status row
 
 ## Post-MVP — deliberately deferred
 

@@ -20,6 +20,7 @@ Editor, paste each file in order, run it.
 | `migrations/0003_us_units.sql` | Adds `event.pounds` and `event.fahrenheit`; comments the superseded `grams` and `celsius` | **Before deploying the version that writes them.** Additive and `if not exists`, so safe to re-run. Applied 2026-09-06 |
 | `migrations/0004_drop_metric_columns.sql` | Drops `event.grams` and `event.celsius` | **After both phones are on code that stops sending them** — the reverse of 0003, so the reverse order. Refuses to run if either column holds a value. Applied 2026-09-06, ahead of that code being deployed — see below |
 | `migrations/0005_restore_metric_columns.sql` | Puts `event.grams` and `event.celsius` back, nullable and dead | **Immediately** — it unblocks a phone that is silently not syncing. Additive and `if not exists`, so safe to re-run. Reverses 0004 and retires the idea; D-039 |
+| `migrations/0006_baby_settings.sql` | Adds `baby.settings jsonb` — one object keyed by setting name, the feeding cycle being the first key | **Before deploying the version that writes it.** Additive and `if not exists`, so safe to re-run. Applied 2026-09-08; D-052 |
 
 **There is no `0002`, and the number is burned.** `0002_seed_household.sql`
 existed on 2026-09-03 and was **run against the database** before `0b14b40`
@@ -65,7 +66,7 @@ its upserts and holding writes in the outbox. Nothing was lost — the outbox is
 durable and drains once the client and the schema agree again — but a moment
 logged in that window did not reach the other phone until the app was reopened.
 
-**`0005` puts them back, and there is no `0006` that drops them again.** The
+**`0005` puts them back, and nothing drops them again.** The
 window did not close on its own: the owner saw a red sync dot on the second
 phone later the same day and could not reach it to update it. That is the case
 the "deploy first, then drop" order never covers — it assumes every client can

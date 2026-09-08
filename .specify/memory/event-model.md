@@ -119,6 +119,14 @@ feed and not the waking. It never does so for a feed — the next diaper is no
 evidence of when the bottle finished, and an invented duration cannot be undone
 in a model with hard deletes (D-003).
 
+**Ending a period is one field on one row, and so is taking it back.** Stamping
+`ended_at` closes a sleep or a feed; clearing it back to null reopens the sleep
+that was just closed, counting from the start it always had (D-053). Both are
+plain updates in place, which is D-003 — there is no reopen event and nothing to
+reconcile. Only ever the **latest** moment: anything older already had something
+logged after it, so reopening it would claim a period that ran through
+everything since.
+
 **`other` has no columns at all.** Type plus `note`, and a period if it needs
 one. It is the escape hatch that makes the app as accepting as paper: anything
 the schema never anticipated still has somewhere to go, which is the last item
@@ -353,9 +361,14 @@ the same row twice costs nothing.
 Computed, never stored:
 
 - Time since last feed — the primary readout. The most recent timeslot holding a
-  feed event, measured from its `ended_at` when it has one and `occurred_at`
-  otherwise. What a tired parent means by "since the last feed" is since she
-  finished, not since she started. Same rule everywhere else time-since is shown
+  feed event, measured from its **`occurred_at`, always** — feeding is counted
+  start to start (**D-040**). *Every three hours* means three hours between the
+  beginnings of two feeds, not three hours of empty stomach between the end of
+  one and the start of the next. This document used to say the opposite, and the
+  reasoning it gave — that "since the last feed" means since she finished — is a
+  fair description of a stomach and a poor one of a schedule. Same rule
+  everywhere else time-since is shown, the insights screen included, which had
+  always measured its gaps this way while the home screen did not
 - Volume today, split by source
 - Pee and poop counts today
 - Time since last poop
