@@ -366,6 +366,24 @@ const noOver = await p.evaluate(
   () => document.documentElement.scrollWidth - document.documentElement.clientWidth)
 check('and the whole lead stays inside the page', noOver === 0, `${noOver}px overflow`)
 
+// The name editor lives in the status row, not in settings (D-056). `enterApp`
+// named this device at first run, so the button reads `edit`; an install that
+// skipped the step would read `name this phone`, which is the whole reason it is
+// out here where it can be seen.
+check('the status row carries the name editor',
+  (await p.locator('.statusrow .namebtn').count()) === 1,
+  await p.locator('.statusrow .namebtn').innerText())
+await p.locator('.statusrow .namebtn').click()
+await p.waitForTimeout(250)
+// A button, not a blur: a typed field left half-done when the app is
+// backgrounded has to either write or not, and `✕` discards.
+check('and it opens a sheet that commits on a button',
+  (await p.locator('.nameSheet').count()) === 1
+  && (await p.locator('.nameSheet .save').count()) === 1,
+  'save, not blur')
+await p.locator('.nameSheet').getByLabel('close').click()
+await p.waitForTimeout(250)
+
 // The tune button, and the one thing it must do: change the gap and have both
 // the estimate and the ceiling follow it.
 const before = await p.locator('.nextfeed b').innerText()
@@ -392,6 +410,12 @@ check('the scope labels say who, not how many and not what kind',
 check('and name no hardware and no count',
   !/phone|laptop|tablet|\bboth\b|\btwo\b/.test(scopeWords),
   scopeWords.replace(/\n/g, ' '))
+// And the local section is the clock alone: the name went back to the status
+// row (D-056), so nothing in here is typed and the no-save-button rule holds
+// for every control on the screen.
+check('the name is not a setting',
+  (await p.locator('.setsheet [aria-label="name this device"]').count()) === 0,
+  'no name field in settings')
 // Both windows, so the check does not depend on which one the clock is in
 // when the suite runs — the fault this repo has spent two days removing.
 await p.getByLabel('decrease day gap').click()

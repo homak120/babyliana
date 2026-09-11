@@ -2357,8 +2357,11 @@ keeps the count. The count itself reverses only with the sleep chip's.
 The `tune` sheet becomes **settings**: five sections behind the same button.
 Three new shared keys on `baby.settings` — `bottle`, `supplement`,
 `prepLeadMinutes` — plus the feeding cycle that was already there, and a *this
-phone* section holding the clock format and the device name that used to be two
-loose controls in the status row.
+device* section holding the clock format, which used to be a loose control in
+the status row.
+
+**Amended by D-056.** This section also took the device-name button out of the
+status row, and that half is reversed: the name is back where it was.
 
 **No migration and no deploy gate.** This is D-052 paying off exactly as
 intended: `settings` is one `jsonb` object keyed by setting name, so a new
@@ -2433,16 +2436,17 @@ what kind.** *everyone* is true at two devices or ten, on any of them. A
 so the chip cannot quietly reacquire either.
 
 **And *only here*, not *just you*.** The local side is per *device*, not per
-person — the clock format is in `localStorage` and the name is on the `device`
-row — so the same person on a laptop and a phone gets two answers. *only here*
+person — the clock format is in `localStorage`, and the name, wherever it is
+edited, is on the `device` row — so the same person on a laptop and a phone gets
+two answers. *only here*
 is true of a place; *just you* would be a claim about a person that the storage
 does not make. The section it heads is titled *only on this device*, which says
 the same thing at more length, so the chip and the heading reinforce rather than
 repeat.
 
-The two local ones did not move into `baby.settings` and must not: the clock
-format is a preference of the phone in your hand and the two phones are allowed
-to disagree forever, and the name *is* the device, syncing as a device row.
+Neither local one moved into `baby.settings`, and neither must: the clock format
+is a preference of the phone in your hand and two phones are allowed to disagree
+forever, and the name *is* the device, syncing as a device row.
 
 ### What was deliberately not made a setting
 
@@ -2458,3 +2462,39 @@ she grows.
 a sheet closed fast, the fix is a longer debounce or a flush on close — not a
 save button, which is a confirmation step this app has spent two decisions
 removing.
+
+---
+
+## D-056 — The name editor goes back to the status row
+
+D-055 moved two loose status-row controls into the settings sheet. The clock
+format stays there. **This device's name comes back out**, to the same button in
+the same place: `name this phone` until there is a name, `edit` after, opening
+the same full-screen prompt with a **save** button.
+
+**A settings screen answers questions; it cannot ask one.** The button labels
+itself, so a device that has never been named says so on the home screen every
+time it is opened. Inside settings that state is invisible — an unnamed install
+looks exactly like a named one until someone opens the sheet and scrolls to the
+last of five sections. The name was the one control in there that has to be
+*offered* rather than found, and the old comment on the button had already said
+so: without it, a name set at first run could never be changed.
+
+**And a name is typed, which is why it commits on a button.** Every other
+control on the settings screen is a tap that cannot be half-done, and that is
+what makes commit-on-touch safe there. A text field has an in-between state, and
+in settings it committed on `blur` — so a name typed and then left by
+backgrounding the app, rather than by touching something else, was neither saved
+nor visibly unsaved. `✕` discards and `save` writes. That is not an exception to
+D-055's no-save-button rule; it is the reason the rule works for the controls it
+covers.
+
+**Cost accepted.** The status row carries one control that is not status, and
+the name is now in a different place from the clock format even though both are
+*only here*. Grouping was the weaker argument: the settings sheet still gathers
+every setting, and a name is an identity rather than a preference.
+
+**Reversal condition.** If first run stops being skippable — every install named
+before it reaches the log — the button has nothing left to advertise, and the
+editor can go back into settings as a plain row. It would still need a save
+button.

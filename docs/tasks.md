@@ -168,8 +168,10 @@ when". Read that first; this list is the checklist view of the same thing.
       PWA is the hard part, not the format
 - [x] **CD/CC** Settings screen — D-055. The `tune` sheet is now five sections:
       quick bottle, supplement preset, prep prompt, feeding cycle, and this
-      phone. The clock-format toggle and the phone's name came off the status
-      row into it. Every row says whether it reaches everyone or stays only here.
+      device. The clock-format toggle came off the status row into it; the name
+      button went with it and came back (D-056), because a device that has never
+      been named has to be asked rather than wait to be found. Every row says
+      whether it reaches everyone or stays only here.
       **Export still has nowhere to live** — it is the next thing to land in it
 
 ## Post-MVP — deliberately deferred

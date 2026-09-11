@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { cycles, gapText, isNightCycle, setCycles, type Cycle } from '../cycles'
-import { getDeviceId } from '../device-id'
-import { renameThisDevice, saveSetting } from '../moments'
+import { saveSetting } from '../moments'
 import { read, write, type SettingKey } from '../settings'
 import { sync } from '../sync'
 import { setTimeFormat, timeFormat, type TimeFormat } from '../timeformat'
-import type { BabySettings, Device, Source } from '../types'
+import type { BabySettings, Source } from '../types'
 import { Icon } from './Icon'
 
 /**
@@ -28,10 +27,13 @@ import { Icon } from './Icon'
  * describing the owner's hardware rather than the rule.
  *
  * **`only here`, not `just you`.** The local side is per *device*, not per
- * person — the clock format is in `localStorage` and the name is on the
- * `device` row — so the same person on a laptop and a phone gets two answers.
- * `only here` is true of a place; `just you` would be a claim about a person
- * that the storage does not make.
+ * person — the clock format is in `localStorage` — so the same person on a
+ * laptop and a phone gets two answers. `only here` is true of a place; `just
+ * you` would be a claim about a person that the storage does not make.
+ *
+ * That side held this device's name too until D-056 took it back to the status
+ * row. What is left here is a preference; a name is an *identity*, and the
+ * thing it most has to do is ask an unnamed device for one.
  *
  * **No save button.** Every control commits as you touch it: local write, the
  * card repaints, the push follows. That is the rule the whole app runs on, and
@@ -168,11 +170,8 @@ function Stepper({ label, name, value, onStep, min, max, step, unit, icon }: {
   )
 }
 
-export function SettingsSheet({ onClose, devices, onRenamed, onClockChange }: {
+export function SettingsSheet({ onClose, onClockChange }: {
   onClose: () => void
-  devices: Device[]
-  /** The name lives on the `device` row, so the screen behind has to refetch. */
-  onRenamed: () => void
   /** `hhmm` is the only formatter (D-041), so changing this restyles every time
    *  in the app — including the ones on the card behind this sheet. */
   onClockChange: (f: TimeFormat) => void
@@ -196,13 +195,6 @@ export function SettingsSheet({ onClose, devices, onRenamed, onClockChange }: {
   }
 
   const [clock, setClock] = useState<TimeFormat>(timeFormat)
-
-  // Local, uncommitted text. The name is written on blur rather than on every
-  // keystroke: it is a row on the `device` table and a sync each, where the
-  // shared settings at least collapse into one object.
-  const [name, setName] = useState(
-    () => devices.find((d) => d.id === getDeviceId())?.name ?? '',
-  )
 
   const sources: { id: Source; label: string }[] = [
     { id: 'breast_milk', label: 'breast milk' },
@@ -312,7 +304,7 @@ export function SettingsSheet({ onClose, devices, onRenamed, onClockChange }: {
 
       <Section title="only on this device" shared={false}>
         <p className="setnote">
-          these two stay where they are set. everyone else may answer them
+          this one stays where it is set. everyone else may answer it
           differently, and that is correct.
         </p>
         <div className="setrow">
@@ -332,21 +324,10 @@ export function SettingsSheet({ onClose, devices, onRenamed, onClockChange }: {
             ))}
           </div>
         </div>
-        <div className="setrow">
-          <span className="setlabel">name</span>
-          <input
-            className="setinput"
-            aria-label="name this device"
-            value={name}
-            placeholder="Anya"
-            onChange={(e) => setName(e.target.value)}
-            onBlur={() => void renameThisDevice(name).then(onRenamed)}
-          />
-        </div>
-        <p className="setnote faint">
-          your name marks every entry you log, so Liana&rsquo;s other grown-ups
-          know who did what.
-        </p>
+        {/* This device's name was here too and is back in the status row
+            (D-056). It is not a setting — it is the question a device that has
+            never been named has to be asked, and a settings screen cannot ask
+            anything. */}
       </Section>
 
       <div className="spacer" />

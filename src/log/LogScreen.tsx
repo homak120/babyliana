@@ -25,9 +25,10 @@ import {
   avatarClass, describeMoment, feedCell, hhmm, milkCell, milkTotal, otherLabel, sleepCell,
   timeCell,
 } from '../day/cells'
+import { getDeviceId } from '../device-id'
 import { gapText, isNightCycle, upcomingFeeds } from '../cycles'
 import { timeFormat } from '../timeformat'
-import { getMoments, reconcileSettings, removeMoment } from '../moments'
+import { getMoments, reconcileSettings, removeMoment, renameThisDevice } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
 import type { Device, Moment } from '../types'
 import { AddSheet } from './AddSheet'
@@ -99,6 +100,54 @@ function dayLabel(iso: string) {
   return `${pad(d.getMonth() + 1)}/${pad(d.getDate())}`
 }
 
+/**
+ * Editing this device's name, from the status row (D-056).
+ *
+ * It went into the settings sheet with D-055 and came back out. Two reasons,
+ * and neither is about tidiness. **An unnamed device has to say so** — the
+ * button labels itself `name this phone` until there is a name, which is an
+ * advertisement on the home screen that a row four gestures deep cannot be.
+ * And **a name is typed, so it commits on a button, not on blur**: every other
+ * control in settings is a tap that cannot be half-done, where a field left
+ * mid-word when the app is backgrounded either writes or does not.
+ *
+ * `✕` discards; `save` writes. That is the opposite of the settings rule and
+ * correct here for the same reason the rule exists — the cheapest commit that
+ * cannot lose what you typed.
+ */
+function NamePrompt({
+  current,
+  onDone,
+}: {
+  current: string
+  onDone: (name: string | null) => void
+}) {
+  const [value, setValue] = useState(current)
+  return (
+    <div className="sheet nameSheet">
+      <header className="sheet-head">
+        <h2>who is logging?</h2>
+        <button type="button" className="x" onClick={() => onDone(null)} aria-label="close">
+          <Icon name="close" size={20} />
+        </button>
+      </header>
+      <p className="sub">
+        your name marks every entry you log, so Liana&rsquo;s other grown-ups know who did what.
+      </p>
+      <input
+        className="nameinput"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="Anya"
+        autoFocus
+      />
+      <button type="button" className="save" onClick={() => onDone(value)}>
+        <Icon name="check_circle" size={24} /> save
+      </button>
+    </div>
+  )
+}
+
 export function LogScreen({ onEndOpen, onResumeSleep }: {
   /** Ends whatever is running — a feed or a sleep. One act, two pills (D-033). */
   onEndOpen: () => void
@@ -126,6 +175,7 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
   const [sheet, setSheet] = useState(false)
   const [sync_, setSync] = useState(syncState())
   const [justLogged, setJustLogged] = useState(false)
+  const [naming, setNaming] = useState(false)
   const [now, setNow] = useState(new Date())
 
   // Edit and delete from the home list too, not only the day view.
@@ -252,10 +302,11 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
     <main className="log">
       <div className="statusrow">
         <span>
-          {/* The format toggle that used to sit here, and the name button that
-              sat opposite it, are both in the settings sheet now (D-055). They
-              were two unrelated controls wedged into a status line because
-              there was nowhere else for them; there is now. */}
+          {/* The format toggle that used to sit here is in the settings sheet
+              now (D-055): it restyles every time in the app, so it belongs with
+              the settings rather than beside one clock. The name button opposite
+              it went there too and came back (D-056) — it is not a setting, it
+              is the one thing a device that has never been named must be asked. */}
           <Icon name={theme === 'night' ? 'bedtime' : 'wb_sunny'} size={15} />
           {hhmm(now.toISOString(), clock)}
         </span>
@@ -265,6 +316,13 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
               {d.name!.charAt(0).toUpperCase()}
             </i>
           ))}
+          {/* It labels itself: `name this phone` until there is one, `edit`
+              after. Without it a device named at first run could never be
+              renamed, and one that skipped the step would look identical to
+              one that did not (D-056). */}
+          <button type="button" className="namebtn" onClick={() => setNaming(true)}>
+            {devices.find((d) => d.id === getDeviceId())?.name ? 'edit' : 'name this phone'}
+          </button>
           <span className={`sync ${sync_.state}`}>
             <Icon name="cloud_done" size={15} />
           </span>
@@ -607,6 +665,16 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
         })}
       </ul>
 
+      {naming && (
+        <NamePrompt
+          current={devices.find((d) => d.id === getDeviceId())?.name ?? ''}
+          onDone={(name) => {
+            setNaming(false)
+            if (name !== null) void renameThisDevice(name).then(refresh)
+          }}
+        />
+      )}
+
       {pendingDelete && (
         <ConfirmDelete
           label={describeMoment(pendingDelete)}
@@ -629,9 +697,7 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
 
       {tuning && (
         <SettingsSheet
-          devices={devices}
           onClose={() => setTuning(false)}
-          onRenamed={refresh}
           onClockChange={setClock}
         />
       )}

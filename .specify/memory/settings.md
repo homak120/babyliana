@@ -58,13 +58,21 @@ from lying.
 
 ## What is local
 
-Neither of these moves into `baby.settings`. The settings screen gathers them
-so there is one place to look — it does not change where they live.
+Neither of these moves into `baby.settings`, and only one of them is on the
+settings screen.
 
-| Setting | Home | Why local |
-| --- | --- | --- |
-| Clock format | `localStorage`, `timeformat.ts` | a preference of the thing in your hand; devices may disagree and that is correct |
-| This device's name | the `device` row, via `renameThisDevice` | the name *is* the device; it syncs as a device, not as a setting |
+| Setting | Home | Where it is edited | Why local |
+| --- | --- | --- | --- |
+| Clock format | `localStorage`, `timeformat.ts` | settings, *only here* | a preference of the thing in your hand; devices may disagree and that is correct |
+| This device's name | the `device` row, via `renameThisDevice` | the status row (D-056) | the name *is* the device; it syncs as a device, not as a setting |
+
+**The name is not a setting, and that is why it is not on this screen.** It was,
+briefly, and D-056 took it back to the status row for two reasons. A settings
+screen answers questions; it cannot *ask* one, and a device that has never been
+named has to be asked — the status-row button labels itself `name this phone`
+until there is a name, which is an advertisement on the home screen that a row
+four gestures deep cannot be. And a name is typed, so it commits on a save
+button, where every control in settings is a tap that cannot be left half-done.
 
 ## The screen
 
@@ -92,10 +100,9 @@ So the rule for any future label, and for prose anywhere near a user: **say who,
 not how many and not what kind.** A `verify-hero` check asserts both halves.
 
 **And *only here*, not *just you*.** The local side is per *device*, not per
-person — the clock format is in `localStorage` and the name is on the `device`
-row — so the same person on a laptop and a phone gets two answers. *only here*
-is true of a place; *just you* would be a claim about a person that the storage
-does not make.
+person — the clock format is in `localStorage` — so the same person on a laptop
+and a phone gets two answers. *only here* is true of a place; *just you* would
+be a claim about a person that the storage does not make.
 
 **No save button.** Every control commits as you touch it: local write, the card
 repaints, the push follows. That is the rule the whole app already runs on, and

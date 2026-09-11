@@ -18,9 +18,8 @@ Last updated: 2026-09-11
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. **691 checks pass across twenty-one
-suites**, and the working tree is clean: everything through D-055 is committed
-and pushed.
+delivered by the second design handoff. Everything through D-055 is committed
+and pushed; **D-056 is in the working tree, uncommitted** — see *In flight*.
 
 **The schema is current through `0006`, and every migration is applied.**
 `supabase/README.md` is the record of what exists and when each one ran — trust
@@ -40,7 +39,8 @@ push-then-reconcile sync with Supabase.
 - **Home** — mascot artwork by derived state, a top card with three leads
   (elapsed / next feeds / mascot) chosen from a rail beside it, a prep-timer
   pill, totals, and the recent list with swipe-to-edit-and-delete behind a
-  confirm sheet.
+  confirm sheet. The status row carries the clock, who is logging, the sync
+  state, and the button that names this device.
 - **Report** — the paper-shaped day table with a scrolling date rail and a
   period picker, plus an insights mode: milk intake, daily rhythm, wet and poop,
   diapers a day, milk by source, poop colours, sleep, and growth when there is
@@ -56,7 +56,7 @@ push-then-reconcile sync with Supabase.
   hands a reinstalled phone its old identity back rather than minting a new one.
 - **Settings** — five sections behind the card's `tune` button: the quick
   bottle's volume and source, the supplement prefill, the prep-prompt lead, the
-  feeding cycle, and this device's clock format and name. Each row says whether
+  feeding cycle, and this device's clock format. Each row says whether
   it reaches *everyone* or stays *only here* — who, not how many and not what
   kind.
 - Two mascot sets and a theme switched by the clock; 12- and 24-hour times, per
@@ -72,6 +72,11 @@ precache sits where it does; the 1024 is excluded, being needed only at install.
 Newest first, and **this is an index, not a record** — `docs/decisions.md`
 carries the reasoning for every one of these, and for everything older.
 
+- **D-056** — the device-name editor goes back to the status row, reversing
+  half of D-055. The clock format stays in settings. A settings screen answers
+  questions and cannot ask one: the button labels itself *name this phone* until
+  there is a name, and a name is typed, so it commits on a save button rather
+  than on blur.
 - **D-055** — the `tune` sheet becomes a settings screen. Three new keys on
   `baby.settings` (bottle, supplement, prep lead), no migration — which is
   D-052 paying off. `settings.ts` is now a registry so the *next* setting costs
@@ -155,7 +160,16 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**Nothing.** The working tree is clean.
+**D-056 — the name editor back in the status row.** Uncommitted, complete, and
+verified. `LogScreen` regains `NamePrompt` and the `.namebtn`; `SettingsSheet`
+loses the name row and the `devices` / `onRenamed` props; `.namebtn` comes back
+to `log.css`; `verify-hero` gains three checks — the button is in the status
+row, its sheet commits on a save button, and settings holds no name field.
+Docs: D-056 added and D-055 amended where it claimed the name, plus
+`settings.md`, `tasks.md`, and this file.
+
+Nothing at the data layer moved. `renameThisDevice` and `verify-s9` are
+unchanged — this was only ever about where the field is.
 
 This section records **what is sitting uncommitted and why**, so a cold session
 can read `git status` and know what it is looking at. It is not a changelog:
@@ -204,7 +218,40 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-11 (latest) — the tune sheet becomes a settings screen
+### 2026-09-11 (latest) — the name editor goes back to the status row
+
+**Half of D-055 is reversed, deliberately and by the owner** (D-056). The `tune`
+sheet keeps the clock format; the device-name row comes out of it and the
+status-row button that used to open a `NamePrompt` comes back, in the same
+place, with the same self-labelling — *name this phone* until there is a name,
+*edit* after.
+
+**The argument that settled it: a settings screen answers questions, it cannot
+ask one.** Inside settings, an unnamed install looks exactly like a named one
+until someone opens the sheet and scrolls to the last of five sections. The
+button is an advertisement on the home screen, and the comment that shipped with
+it in the first place had already said so — without it a name set at first run
+could never be changed.
+
+**The second reason was found reading the code, not the screen.** In settings
+the field committed on `blur`, and the sheet is `position: fixed; inset: 0` with
+no backdrop, so the only ordinary way out fires blur and saves. Backgrounding
+the app mid-word does not. Every other control in there is a tap that cannot be
+half-done, which is what makes commit-on-touch safe for them and not for a text
+field. `✕` discards and `save` writes, and that is not an exception to the
+no-save-button rule — it is why the rule works where it applies.
+
+**694 checks pass across twenty-one suites.** Three of them are new, in
+`verify-hero`: the button is in the status row, the sheet it opens has a save
+button, and settings holds no field labelled *name this device*. The existing section and scope-chip counts still hold, because the
+*only on this device* section survives with the clock toggle in it.
+
+**Nothing at the data layer moved.** `renameThisDevice` and `verify-s9` are
+untouched. The only prose consequence worth noting is that *only here* no longer
+has the name as half of its justification — it is the clock format alone, which
+is still per device rather than per person.
+
+### 2026-09-11 — the tune sheet becomes a settings screen
 
 **Three more shared settings, and no migration** (D-055). The quick bottle's
 volume and source, the supplement prefill, and the prep-prompt lead are keys on
@@ -296,59 +343,3 @@ mascot state already use.
 place in the app that counts in seconds; a second caller made that false, and
 two stopwatches drifting apart in format is how one row ends up writing the same
 second two ways.
-
-### 2026-09-08 — two taps become one, and the day strip scrolls
-
-**The bottle and the bedtime button stopped opening the sheet** (D-053). Both
-write straight to the log now. The reasoning is short: the sheet was not asking
-a question on either of them — the bottle already opened on 60 mL of formula,
-and sleep has nothing to fill in at all — so the save button was confirming what
-the first tap had said. These are the two entries made one-handed in the dark.
-
-**Nothing was taken away to buy it.** The `+` button still reaches a feed of any
-volume, and it is now the only route that asks for one; the row lands at the top
-of the list where a swipe reaches edit and delete. No toast, no undo bar — a bar
-you have to dismiss puts back the tap this removed.
-
-**The sleep chip counts in seconds while it runs**, on an interval that exists
-only while there is an open sleep, and reverts to minutes once it is over. It is
-the one thing on the screen that is *happening*; a figure that sits still for a
-minute reads as one the app has stopped watching.
-
-**Resume reopens that same sleep rather than starting a new one.** The owner
-chose this over "start a fresh sleep" with both readings in front of him: it is
-the undo for a stir that was not a waking, and the count picks up from the start
-it always had. Latest moment only, the same rule ending has.
-
-**The report's day strip is now a fixed pair around a scrolling rail.** The
-three-pill cap existed because the pills used to push `more` off the edge;
-pinning `all days` and `more` solves that directly and the cap had nothing left
-to buy. The rail follows a page swipe as well as a tap — centred by hand, not
-with `scrollIntoView`, which walks every scrollable ancestor and would scroll
-the table vertically on what was meant to be a sideways move.
-
-**Five verify suites had to change** and that is the honest cost: four of them
-seeded data by driving the bottle through the sheet, and that route is gone.
-660 checks pass across twenty-one suites.
-
-**Then a documentation pass, because this file had stopped working.** *In
-flight* had grown to four hundred lines of already-committed history — it is
-meant to say what is sitting uncommitted, so a cold session can read `git
-status` and know why. It is empty now. *Position* was a reverse-chronological
-changelog contradicting itself in two places (it said the bottle prompt was
-display-only, which D-045 had already changed, and described weight in kg after
-D-036 moved it to pounds); it is a description of the current app plus an index
-into `docs/decisions.md`. **801 lines to roughly 300.** Nothing was lost: every
-paragraph removed named its own D-number, and the two facts that were not
-decisions — that `0005` and `0006` are applied — belong in
-`supabase/README.md`, which had never recorded `0006` at all.
-
-**And the pass found a live contradiction in a spec artifact.**
-`.specify/memory/event-model.md` still said time since the last feed is measured
-from `ended_at` where there is one — the rule D-040 reversed, quoting the same
-reasoning D-040 records as wrong. That is the document `CLAUDE.md` sends you to
-before writing storage code, so it was worth more than a footnote. Corrected,
-and it gains a paragraph on reopening a period, since clearing `ended_at` back
-to null is a model fact rather than a UI one. **Worth repeating as a habit: the
-artifacts go stale silently, and only a decision that reverses an earlier one
-leaves a trace to find them by.**
