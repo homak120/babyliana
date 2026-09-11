@@ -27,11 +27,20 @@ before it landed on `main` directly, so nothing here assumes a branch: `main` is
 still what is deployed and what the phones run, and a branch that is not merged
 changes nothing on them.
 
-**What counts as *product ready* is not written down yet — that is Q-013.** The
-branch is a container, not a plan; do not read a scope into the name. The phrase
-reads at least three ways here (the owner's own daily use, a second household, a
-product with accounts and a name), they do not overlap much, and the question
-names them so nobody has to guess. *Next action* below is still the real list.
+**The branch has a scope now: multi-tenancy (D-057, Q-013 closed).** Many
+accounts per baby, many babies per account, **open signup**, and **sign in to
+join a baby — never to log an event**. That supersedes D-022's one hard-coded
+baby and rewrites the *Identity* section of `technical-constraints.md`; the
+non-negotiable about logging survives, narrowed to onboarding.
+
+**The gate on it is RLS.** Today one anon key, one hard-coded baby id and a gate
+code in a public bundle separate nobody from anybody — fine while the only data
+is this family's (D-008), a breach the moment a stranger signs up. `docs/tasks.md`
+§ Phase 12 is the list, in dependency order.
+
+**Phase 12 is running ahead of Phases 8-11**, which are the solo run and the gate
+that was meant to authorise it. Owner's call, recorded so a later session does not
+read it as slippage. **The coverage run still outranks it** — see *Next action*.
 
 **The schema is current through `0006`, and every migration is applied.**
 `supabase/README.md` is the record of what exists and when each one ran — trust
@@ -139,9 +148,7 @@ item in the project.
 - ~~A settings screen~~ — **done, D-055.** Export now has somewhere to live,
   which was half the reason it was on this list.
 
-**3. Four owner decisions. Q-013 now gates a branch; the rest do not block.**
-Q-013 (what *product ready* means — asked because a branch is named for it and
-its scope is unwritten), Q-003 (mascot identity and the rights caution), Q-008
+**3. Three owner decisions, none blocking.** Q-013 is closed — D-057. Q-003 (mascot identity and the rights caution), Q-008
 (the final name, which gets dearer with every asset carrying it), Q-006 (which
 of the *remaining* secondary types earned promotion — sleep already went, by
 design in D-029 rather than by the solo run; weight, temperature, supplements
@@ -174,11 +181,13 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**Two documents, on `product-ready-enhancement`.** This file — the branch's own
-record, plus the correction that followed the D-056 push, where *Position* still
-called D-056 uncommitted — and `docs/open-questions.md`, which gains Q-013.
-**No app code has changed on the branch:** it is identical to `main` at
-`302ce22`, and `origin` has never seen it.
+**The D-057 documentation, on `product-ready-enhancement`.** Q-013 struck from
+`open-questions.md`; D-057 written; `technical-constraints.md` § Identity
+rewritten and a fourth non-negotiable added; `CLAUDE.md`'s summary of the login
+rule amended; `baby-and-devices.md` revived with its token design marked stale;
+`tasks.md` § Phase 12 turned into a dependency-ordered list. **Still no app
+code** — `main` at `302ce22` is what is deployed and the branch has not touched
+the app.
 
 This section records **what is sitting uncommitted and why**, so a cold session
 can read `git status` and know what it is looking at. It is not a changelog:
@@ -227,7 +236,36 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-11 (latest) — the name editor goes back to the status row
+### 2026-09-11 (latest) — product ready gets a definition
+
+**Q-013 is closed and the branch has a scope** (D-057). Multi-tenant: many
+accounts per baby, many babies per account, open signup, and *sign in to join a
+baby, never to log an event*. The owner answered all three in one pass.
+
+**The third answer was the one that needed asking**, because accounts contradict
+a non-negotiable as written — `CLAUDE.md` said "never require a login to log an
+event. Shared baby ID, no accounts." The rule survives and the summary does not:
+onboarding happens once per install, and after it the log opens offline and
+indefinitely. That is D-030's own argument for the gate, extended.
+
+**Many-to-many was asked first because D-039 makes it permanent.** Additive-only
+means the ownership shape cannot be narrowed later, so a join table now is
+cheaper than a column ever was. Open signup, by contrast, narrows to invite-only
+for free — the join code is the same mechanism either way — so it was worth
+choosing quickly and is worth revisiting if the free tier or the abuse surface
+bites.
+
+**A fourth non-negotiable exists now: never let one family read another's rows.**
+Nothing enforces it yet. One anon key, a hard-coded baby id, and a gate code that
+D-030 already called "a doormat, not a lock" in a public bundle. That was an
+accepted risk with only this family's data behind it and is not one after the
+first stranger. RLS through the join table is the gate on signup opening at all.
+
+**Documentation only — no app code moved.** `tasks.md` § Phase 12 is the plan, in
+dependency order, and it says out loud that it is running ahead of Phases 8-11
+and that the coverage run outranks it.
+
+### 2026-09-11 — the name editor goes back to the status row
 
 **Half of D-055 is reversed, deliberately and by the owner** (D-056). The `tune`
 sheet keeps the clock format; the device-name row comes out of it and the
@@ -328,35 +366,3 @@ It reads **everyone / only here** now, with the rule written down in
 checks pin it — the wording, and the absence of any count or hardware noun. Not
 *just you* for the local side: that is per device, not per person, so the same
 person on a laptop and a phone gets two answers.
-
-### 2026-09-10 — the running feed gets the sleep chip's clock
-
-**The home list said nothing about a feed that was happening** (D-054).
-`sleepCell` returns "sleeping…" for an open sleep and the row overrides it with
-a live count; `feedCell` returns *null* for an open feed. That was fine while a
-feed came through the sheet — you had just typed a volume, and the card and the
-bar carried the number. D-053 took the sheet off the bottle, so every quick feed
-is an open one, and the commonest entry in the log was the one the list was
-silent about.
-
-**Seconds, rose, and an end button in the chip.** Seconds for the reason the
-sleep chip has them — an open period is the thing on the screen that is
-happening, and a figure sitting still for a minute reads as one the app stopped
-watching. Rose only *while* it runs: `log.css` already said a second rose chip
-beside the volume reads as a second feed, and that stays true of a finished one,
-which is a footnote to the volume and keeps the neutral fill.
-
-**No resume, deliberately.** The sleep chip has one because reopening a sleep is
-the undo for a stir that was not a waking. A feed has no equivalent, and the
-same asymmetry is already on the write side — `closeOpenSleep` stamps an end on
-a sleep and refuses to on a feed.
-
-**One tick for both.** A moment can carry a feed and a sleep, and two 1-second
-intervals would repaint that row twice a second to show one number. Keyed on
-whichever period is open, feed first, which is the priority the card and the
-mascot state already use.
-
-**`sleepClock` became `liveClock`.** Its own comment claimed to be the only
-place in the app that counts in seconds; a second caller made that false, and
-two stopwatches drifting apart in format is how one row ends up writing the same
-second two ways.

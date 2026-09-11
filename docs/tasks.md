@@ -179,13 +179,15 @@ when". Read that first; this list is the checklist view of the same thing.
 Not "later" as in forgotten. Deferred because the fastest path to a usable
 first version does not go through them, and each has a named trigger.
 
-- [ ] **Pairing and the join flow.** D-022. Trigger: a third device, or anyone
-      outside this family. Design note already written at
-      `.specify/memory/baby-and-devices.md`
+- [ ] **Pairing and the join flow.** D-022. **Trigger fired 2026-09-11** —
+      D-057 chose multi-tenancy, so this is Phase 12 below. The design note at
+      `.specify/memory/baby-and-devices.md` is live again, with its token shape
+      corrected to a join table
 - [ ] **Duplicate detection.** Cut from MVP — see D-023. Trigger: it actually
-      happens during the solo run and is annoying
+      happens during the solo run and is annoying. Still deferred
 - [ ] **Data isolation.** One public anon key, and RLS cannot separate one
-      family's rows from another's. Trigger: Phase 12, or a second family
+      family's rows from another's. **Trigger fired** — D-057 makes it the gate
+      on anyone outside this family signing up. Phase 12 below
 
 ## Phase 7 — Visual identity & polish
 
@@ -237,7 +239,44 @@ the owner's judgement, not production work.
 - [ ] **CH** Interpret what happened
 - [ ] **H** Decide: continue, shelve, go native, or explore product
 
-## Phase 12 — Product exploration (conditional)
+## Phase 12 — Product exploration
 
-- [ ] **CH** Strategy
+**No longer conditional, and started early.** D-057 answers Q-013: product ready
+means multi-tenant — many accounts per baby, many babies per account, open
+signup, sign in to join and never to log. Work happens on
+`product-ready-enhancement`.
+
+**Sequence warning, not a task.** This runs ahead of Phases 8-11, which are the
+solo run and the gate that was meant to authorise it. The **coverage run**
+(`docs/status.md` § *Next action*) still outranks everything here: it is the last
+thing that can show the app cannot record the real paper log, and anything built
+over that finding gets built twice.
+
+- [x] **CH** Strategy — what "product ready" means. D-057
+- [ ] **CC** **Ownership schema.** `baby_member` as a join table — many accounts
+      per baby, many babies per account. Additive only (D-039), so this has to be
+      right the first time, and it must reach Supabase **before** any client code
+      naming it is pushed, or the outbox stalls silently
+- [ ] **CC** **Accounts.** Supabase Auth, open signup. The rule it must not
+      break: onboarding once per install, then the log opens offline and
+      indefinitely — an expired token never blocks a write
+- [ ] **CC** **RLS per baby**, through the join table, plus the explicit Data API
+      grants the spike learned the hard way (`.specify/memory/spike-spec.md`).
+      This is the gate: until it exists, nobody outside this family can sign up
+- [ ] **CC** **Onboarding: create a baby, or join one by code.** Replaces the
+      hard-coded baby id and the gate. A readable typed code, not a QR — no
+      camera, and it can be sent to someone who is not in the room
+- [ ] **CC** **Migrate Liana's rows into the new shape.** This is live data on two
+      phones in daily use, not a fixture. It cannot be recreated from the paper
+- [ ] **CC** **Retire the pilot scaffolding.** The hard-coded baby id,
+      `SECRET_CODE` and `RECOVERY_CODE` in `Welcome.tsx`, the gate fill in
+      `scripts/ui.mts` that eleven browser suites depend on, and `SpikePage` with
+      its printed device UUID
+- [ ] **CC** **JSON export.** Already the pre-reveal requirement (D-024); with
+      open signup the second person is a stranger, so it is a prerequisite
+- [ ] **CC** **Delete my data.** A family that signs up can take their baby's
+      data out and remove it. On this list only because signup is open
+- [ ] **CH** **Re-size the free tier and write the privacy posture.**
+      `technical-constraints.md` sizes Supabase against one family; open signup
+      has no ceiling by design
 - [ ] **H** Everything involving other people's children

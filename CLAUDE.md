@@ -61,7 +61,13 @@ Authority: `.specify/memory/technical-constraints.md` § Non-negotiables.
   background sync.
 - **Corrections are edits.** Rows are updated in place and deleted outright —
   D-003. No correction events, no tombstones, no revision history.
-- **Never require a login to log an event.** Shared baby ID, no accounts.
+- **Never require a login to log an event.** Signing in to *join* a baby is
+  expected since D-057 — accounts exist, the app is going multi-tenant. What is
+  forbidden is a session between a parent and a feed: onboarding once per
+  install, then the log opens offline and indefinitely.
+- **Never let one family read another's rows.** D-057. Today nothing stops it —
+  one anon key, a hard-coded baby id, a gate code in a public bundle — so this is
+  the gate on anyone outside this family signing up, not a polish item.
 - **Never resolve a duplicate silently.** Surface it, let the user decide.
 - **Every event type carries a free-text note.** It is the escape hatch that
   makes the app as accepting as paper.

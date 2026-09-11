@@ -67,27 +67,3 @@ question says.
 **Closed by:** Phase 7.
 
 ---
-
-### Q-013 — What does "product ready" mean here?
-
-A branch named `product-ready-enhancement` exists as of 2026-09-11, cut from
-`302ce22`. The name is the owner's; the scope is not written down, and the
-phrase reads three different ways in this repo:
-
-- **ready for the owner's own daily use** — which it already is, and has been
-  since the app went onto the phones;
-- **ready for a second household** — which has a named gate already:
-  `technical-constraints.md` requires JSON export before anyone else sees the
-  app, and D-022's pairing and join flow is deferred behind a third device;
-- **ready as a product** — accounts, a real name (Q-008), mascot rights
-  (Q-003), an install story that is not "here is my URL". That is a different
-  project shape from the one D-001 chose, and it is not implied by the other
-  two.
-
-They do not overlap much, and picking the wrong one costs whole features built
-for an audience that was never coming.
-
-**Closed by:** the owner saying which, in a sentence. Until then the branch is
-a container and `docs/status.md` § *Next action* is still the real list — the
-coverage run outranks anything on this branch either way, because it is the
-thing that can invalidate work already done.

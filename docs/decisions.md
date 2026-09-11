@@ -2498,3 +2498,80 @@ every setting, and a name is an identity rather than a preference.
 before it reaches the log — the button has nothing left to advertise, and the
 editor can go back into settings as a plain row. It would still need a save
 button.
+
+---
+
+## D-057 — Product ready means multi-tenant: many-to-many, open signup, sign in to join
+
+**This closes Q-013 and supersedes D-022.** "Product ready" means the app can be
+used by families who are not this one. Three answers from the owner, 2026-09-11:
+
+1. **Many accounts per baby, many babies per account.** A join table, not a
+   column. Both parents, a grandparent, a nanny; twins, a second child.
+2. **Open signup.** Anyone can create an account. Invite-only was offered and
+   declined.
+3. **Sign in to join a baby. Never to sign in to log an event.**
+
+D-022's revisit trigger was *"a third device, or anyone outside this family"*. It
+has fired, so the pairing work in `.specify/memory/baby-and-devices.md` is live
+again — with one change to what it says: it was drafted around one baby and a
+shared id, and the shape is now many-to-many.
+
+### What this does to the non-negotiable
+
+`technical-constraints.md` § Non-negotiables said *"never require a login to log
+an event"*, and `CLAUDE.md` summarised it as *"shared baby ID, no accounts"*.
+**The rule survives; the summary does not.** Accounts exist now. What must never
+happen is a session standing between a parent and a feed at 4am:
+
+> Onboarding happens **once per install**. After it, the app opens straight into
+> the log, offline, indefinitely. An expired token never blocks a write, and a
+> sync that cannot authenticate queues rather than refuses.
+
+This is D-030's argument extended rather than a new one — the gate was defended
+on exactly those grounds, that it runs once before any identity exists and no
+event was ever logged behind it.
+
+### What open signup makes mandatory rather than prudent
+
+- **RLS separating one family's rows from another's.** Today there is one anon
+  key, a hard-coded baby id, and nothing separating anybody. D-030 is explicit
+  that the gate is "a doormat, not a lock" and that nothing should be built on it
+  as if it were — with only Liana's data behind it that was a risk the owner
+  accepted under D-008, and with someone else's baby behind it it is a breach.
+  The gate code cannot be what separates two families, because the repo is public
+  and the bundle carries it in plain text.
+- **Export, D-024.** It was already the pre-reveal gate. "A second person" is now
+  a stranger, so it stops being a Phase 9 item and becomes a prerequisite.
+- **A deletion path.** Someone who signs up must be able to take their baby's
+  data out and remove it. This is the first thing on the list that exists only
+  because of open signup.
+- **The free tier.** `technical-constraints.md` sizes Supabase against one
+  family. Open signup has no ceiling by design, so the constraint document is
+  now describing a workload the app no longer has.
+
+### What is not reversible, and what is
+
+**The join table is not.** D-039 is additive-only: no column is ever dropped or
+narrowed, so the ownership shape has to be right the first time. That is why it
+was asked before anything was built.
+
+**Open signup is.** Narrowing to invite-only later costs nothing that would have
+been built anyway — the join code is the same mechanism either way. So if the
+abuse surface, the privacy exposure, or the free-tier ceiling turns out to bite,
+that is a switch, not a rewrite.
+
+### Sequence, stated plainly
+
+This is Phase 12 work — *Product exploration (conditional)* — and it is starting
+ahead of Phases 8 through 11, which are the solo run and the decision gate that
+was meant to authorise it. The owner's call, recorded because a later session
+will otherwise read the plan and think it slipped. **The coverage run still
+outranks it** (`docs/status.md` § *Next action*): it is the one remaining thing
+that can prove the app cannot record the real paper log, and anything built on
+top of that finding would be built twice.
+
+**Reversal condition.** If the coverage run or the solo run shows the app losing
+to the pen for this family, multi-tenancy is premature by definition — an app
+nobody here uses is not one to give away. That is Phase 11's gate doing its job
+late rather than a new decision.

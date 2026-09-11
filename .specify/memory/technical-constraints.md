@@ -67,18 +67,37 @@ Data API. Tutorials written before mid-2026 will not match.
 
 ## Identity
 
-Shared baby ID, no accounts, no passwords, no email.
+**Rewritten by D-057 (2026-09-11).** Accounts exist, because the app is becoming
+multi-tenant: many accounts per baby, many babies per account, open signup.
 
-Generated once on the first device. A second device joins by scanning a QR code.
-Nothing to reset, no session to expire, no login to fail at 3am.
+What survives from the original rule is the part that was load-bearing: **sign in
+to join a baby, never to log an event.** Onboarding happens once per install;
+after it the app opens straight into the log, offline, indefinitely. An expired
+token never blocks a write, and a sync that cannot authenticate queues rather
+than refuses.
 
-Rationale in `docs/decisions.md` D-004.
+What is gone is *"shared baby ID, no accounts, no passwords, no email"* and the
+QR join of D-004 — see D-057, and
+`.specify/memory/baby-and-devices.md` for the join design, whose shape is now
+many-to-many rather than one shared id.
+
+**Until the join table and RLS exist, nothing separates one family's rows from
+another's.** One anon key, one hard-coded baby id, and a gate code that ships in
+a public bundle (D-030: "a doormat, not a lock"). That was an accepted risk while
+the only data was this family's; it is not one after the first stranger signs up.
+
+Original rationale, now superseded: `docs/decisions.md` D-004, D-022.
 
 ## Non-negotiables
 
 - Never block a write on the network.
 - Corrections are updates and deletes are deletes (D-003). Last write wins.
 - Never resolve a duplicate silently.
-- Never require a login to log an event.
+- Never require a login to log an event. Signing in to *join* a baby is allowed
+  and expected (D-057); a session standing between a parent and a feed is not.
 - Export must work before the app is shown to a second person — the reveal, not
-  the first usable version. See D-024.
+  the first usable version. See D-024. **With open signup that second person is a
+  stranger, so this is a prerequisite rather than a Phase 9 item.**
+- Never let one family read another's rows. RLS per baby, not a shared key and a
+  gate code (D-057). This one is new and it is the reason the others now need
+  re-reading.
