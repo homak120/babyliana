@@ -1,3 +1,4 @@
+import { read } from '../settings'
 import type { DraftEntry, EventType, Moment, PoopColour, PoopConsistency, Source } from '../types'
 
 // What the sheet edits before ids and timestamps are attached. Kept out of the
@@ -5,9 +6,15 @@ import type { DraftEntry, EventType, Moment, PoopColour, PoopConsistency, Source
 // block say anything" rules are logic worth testing on their own.
 
 /**
- * `preset` marks a volume the app suggested rather than one a person entered —
- * the quick bottle's 60 mL. The first digit typed replaces it instead of being
- * appended to it, so the suggestion never costs a tap to get rid of.
+ * `preset` marks a volume the app suggested rather than one a person entered:
+ * the first digit typed replaces it instead of being appended to it, so the
+ * suggestion never costs a tap to get rid of.
+ *
+ * **Nothing sets it any more.** It was the quick bottle's 60 mL, back when the
+ * bottle opened a sheet; D-053 made that a direct write and D-055 took the flag
+ * off `quickMilk` with it. The keypad still honours it, so a future prefilled
+ * milk block gets the behaviour for free — but today every milk block is opened
+ * blank by `newMilk`, and this is never true.
  */
 export type MilkPart = { volume: number | null; source: Source; preset?: boolean }
 
@@ -37,18 +44,27 @@ export type DiaperDraft = {
 export const newMilk = (): MilkDraft => ({ parts: [{ volume: null, source: 'unknown' }], active: 0 })
 
 /**
- * What the bar's bottle opens with: 60 mL of formula, already filled in.
+ * What the bar's bottle writes: the volume and source held in settings, 60 mL
+ * of formula until someone changes them (D-055).
  *
- * The quick icon exists to make the commonest feed a two-tap entry, and the
- * commonest feed has a volume and a source. It is a suggestion, not a claim —
- * the first digit typed replaces the 60, and the source toggles off — so it
- * costs nothing to disagree with. `+ milk` inside the sheet still starts blank,
- * because a feed added by hand is as often the paper's `?` as it is 60.
+ * The quick icon exists to make the commonest feed a one-tap entry, and the
+ * commonest feed has a volume and a source. **Since D-053 there is no sheet
+ * between the tap and the row**, which is exactly why this became a setting:
+ * while it opened a sheet the number was a suggestion you could see and type
+ * over, and now a wrong one is a wrong row, corrected by a swipe-edit
+ * afterwards.
+ *
+ * No `preset` flag. It marked a suggestion nobody had touched so that focusing
+ * the field would select it — and there is no field, and `toEntries` drops the
+ * flag on the way to storage, so it has meant nothing here since D-053.
+ *
+ * `+ milk` inside the sheet still starts blank, because a feed added by hand is
+ * as often the paper's `?` as it is a bottle.
  */
-export const quickMilk = (): MilkDraft => ({
-  parts: [{ volume: 60, source: 'formula', preset: true }],
-  active: 0,
-})
+export const quickMilk = (): MilkDraft => {
+  const { volume, source } = read('bottle')
+  return { parts: [{ volume, source }], active: 0 }
+}
 
 /**
  * A new diaper block starts as a pee.
@@ -120,25 +136,29 @@ export type TemperatureDraft = { fahrenheit: string }
 export type SupplementDraft = { name: string; amount: string; preset?: boolean }
 
 /**
- * What a new supplement block arrives with, already filled in.
+ * What a new supplement block arrives with, already filled in — from settings
+ * now, defaulting to the daily vitamin D (D-055).
  *
- * The daily vitamin D is the supplement this app is actually used for, and it
- * is the same two words and the same dose every time — so typing them is pure
- * cost. Same argument as the quick bottle's 60 mL: a suggestion, not a claim.
+ * It is the same two words and the same dose every time, so typing them is pure
+ * cost. Same argument as the quick bottle. It became a setting rather than a
+ * constant because the constant was *one family's* routine hard-coded: a
+ * different vitamin, or a dose the paediatrician moves, and it is retyped every
+ * day for the life of the app.
+ *
+ * Unlike the bottle this one is still a suggestion in a field you can see, so
+ * `preset` keeps its job here: focusing selects it, and the first character
+ * typed replaces the whole thing.
  *
  * Weight and temperature get no prefill, deliberately — there is no number that
  * is right more often than any other, and a wrong one saved by accident is a
  * false reading rather than a mild annoyance.
  */
-export const SUPPLEMENT_PRESET = { name: 'Vitamin D', amount: '1 drop' }
-
 export const newWeight = (): WeightDraft => ({ lb: '' })
 export const newTemperature = (): TemperatureDraft => ({ fahrenheit: '' })
-export const newSupplement = (): SupplementDraft => ({
-  name: SUPPLEMENT_PRESET.name,
-  amount: SUPPLEMENT_PRESET.amount,
-  preset: true,
-})
+export const newSupplement = (): SupplementDraft => {
+  const { name, amount } = read('supplement')
+  return { name, amount, preset: true }
+}
 
 /**
  * `7.25` → `7 lb 4 oz`, for reading a stored weight back.

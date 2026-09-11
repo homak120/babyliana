@@ -333,5 +333,83 @@ check('day at 09:00', themeFor(new Date(2026, 8, 3, 9)) === 'day')
     crossed.length === 0, crossed.join(', '))
 }
 
+// --- the settings registry (D-055) ------------------------------------------
+//
+// Four keys now, on one `jsonb` object. The thing worth checking is not that a
+// value round-trips — it is the three ways a *bad* value can be read, because
+// each one silently corrupts a setting on a phone nobody is looking at.
+{
+  const {
+    DEFAULT_BOTTLE, DEFAULT_PREP_LEAD, DEFAULT_SUPPLEMENT, SETTING_KEYS,
+    hydrate, isDefault, read, resetSettings, unsynced, write,
+  } = await import('../src/settings.ts')
+
+  resetSettings()
+  check('every key on BabySettings is registered', SETTING_KEYS.length === 4,
+    SETTING_KEYS.join(', '))
+  check('an untouched phone reads the shipped defaults',
+    read('bottle').volume === DEFAULT_BOTTLE.volume
+    && read('supplement').name === DEFAULT_SUPPLEMENT.name
+    && read('prepLeadMinutes') === DEFAULT_PREP_LEAD)
+  check('and is recognised as untouched',
+    SETTING_KEYS.every((k) => isDefault(k)))
+
+  // The direction that is the sync: a row that carries a value wins.
+  check('a pulled bottle default is adopted',
+    hydrate({ bottle: { volume: 90, source: 'breast_milk' } })
+    && read('bottle').volume === 90 && read('bottle').source === 'breast_milk')
+  check('and adopting the same one again changes nothing',
+    !hydrate({ bottle: { volume: 90, source: 'breast_milk' } }))
+  // Key order is the D-052 bug, on a new key: `jsonb` does not preserve it.
+  check('the same value in a different key order is not a change',
+    !hydrate({ bottle: { source: 'breast_milk', volume: 90 } }))
+
+  // **Junk is not an instruction to reset.** This is the one the generic
+  // registry could easily have got wrong: `parse` returning the default for an
+  // unusable value would let one phone's corrupt write quietly undo a real
+  // setting on the other. It returns null, and `hydrate` skips the key.
+  check('a zero volume is skipped, not read as the default',
+    !hydrate({ bottle: { volume: 0, source: 'formula' } }) && read('bottle').volume === 90)
+  check('an empty cycle list is skipped too',
+    !hydrate({ cycles: [] }) && isDefault('cycles'))
+  check('and a lead time that is not a number',
+    !hydrate({ prepLeadMinutes: 'soon' as unknown as number })
+    && read('prepLeadMinutes') === DEFAULT_PREP_LEAD)
+  // A source this build has never heard of is the one field that *is*
+  // defaultable: showing something sane beats discarding the whole setting,
+  // and nothing is written back, so the newer value survives on the row.
+  check('an unknown source falls back without losing the volume',
+    hydrate({ bottle: { volume: 75, source: 'donor' as never } })
+    && read('bottle').volume === 75 && read('bottle').source === DEFAULT_BOTTLE.source)
+
+  // The other direction: a key the row lacks, where this phone has been
+  // changed, is what `reconcileSettings` pushes up.
+  check('a changed setting the row lacks is queued to push',
+    unsynced({}).includes('bottle'))
+  check('but an untouched one is not',
+    !unsynced({}).includes('supplement'))
+  check('and neither is one the row already carries',
+    !unsynced({ bottle: { volume: 90, source: 'formula' } }).includes('bottle'))
+
+  // Per key, not per object: the old reconcile returned on the first adopted
+  // value, which was indistinguishable from correct while `cycles` was alone.
+  write('supplement', { name: 'Iron', amount: '2 drops' })
+  const pending = unsynced({ cycles: DEFAULT_CYCLES })
+  check('a row with one key still pushes the others',
+    pending.includes('supplement') && pending.includes('bottle') && !pending.includes('cycles'),
+    pending.join(', '))
+
+  // Leave the module as the rest of the suites expect to find it — written, not
+  // just uncached: these values are in localStorage, so dropping the cache
+  // alone would have the next read fetch them straight back off disk.
+  write('bottle', DEFAULT_BOTTLE)
+  write('supplement', DEFAULT_SUPPLEMENT)
+  write('prepLeadMinutes', DEFAULT_PREP_LEAD)
+  write('cycles', DEFAULT_CYCLES)
+  resetSettings()
+  check('and the suite leaves every setting back at its default',
+    SETTING_KEYS.every((k) => isDefault(k)))
+}
+
 console.log(failures === 0 ? '\n  all checks passed' : `\n  ${failures} FAILED`)
 process.exit(failures === 0 ? 0 : 1)

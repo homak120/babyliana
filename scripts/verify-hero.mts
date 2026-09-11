@@ -186,8 +186,20 @@ check('and stays inside the card', wake.right <= wake.limit,
 // `by 9:23 PM` is four characters longer than `by 21:23`, on the line that is
 // already the narrowest thing on this card (D-041). Measured, then switched
 // back, because everything below this reads 24-hour times.
-await p.getByLabel('show 12-hour times').click()
-await p.waitForTimeout(250)
+//
+// The toggle is in the settings sheet now (D-055), not beside the clock in the
+// status row — so this opens it, taps, and closes. It applies on the tap: the
+// screen behind is repainted before the sheet is shut, which is the whole
+// no-save-button rule.
+const setClock = async (which: '12' | '24') => {
+  await p.getByLabel('settings').click()
+  await p.waitForTimeout(300)
+  await p.getByLabel(`show ${which}-hour times`).click()
+  await p.waitForTimeout(200)
+  await p.locator('.setsheet').getByLabel('close').click()
+  await p.waitForTimeout(300)
+}
+await setClock('12')
 const wake12 = await p.evaluate(() => {
   const el = document.querySelector('.wakeline') as HTMLElement
   const card = document.querySelector('.herocard') as HTMLElement
@@ -203,8 +215,7 @@ check('the target holds a 12-hour time too',
   /\d{1,2}:\d{2}\s*(AM|PM)/.test(wake12.text)
   && wake12.right <= wake12.limit && wake12.over === 0,
   `${wake12.text} — ends ${wake12.right} vs limit ${wake12.limit}, ${wake12.over}px overflow`)
-await p.getByLabel('show 24-hour times').click()
-await p.waitForTimeout(250)
+await setClock('24')
 
 // --- the bottle prompt ---
 //
@@ -358,18 +369,28 @@ check('and the whole lead stays inside the page', noOver === 0, `${noOver}px ove
 // The tune button, and the one thing it must do: change the gap and have both
 // the estimate and the ceiling follow it.
 const before = await p.locator('.nextfeed b').innerText()
-await p.getByLabel('feeding cycle settings').click()
+await p.getByLabel('settings').click()
 await p.waitForTimeout(350)
-check('the tune button opens the feeding cycle',
-  (await p.locator('.cyclesheet').count()) === 1 && (await p.locator('.cyclerow').count()) === 2,
-  `${await p.locator('.cyclerow').count()} window(s)`)
+// The cycle is one section of five now (D-055), and the button that opens them
+// says `settings` rather than `feeding cycle settings`.
+check('the tune button opens settings, with the cycle among them',
+  (await p.locator('.setsheet').count()) === 1 && (await p.locator('.setblock').count()) === 5,
+  `${await p.locator('.setblock').count()} section(s)`)
+check('and every section says whose setting it is',
+  (await p.locator('.scope.shared').count()) === 4
+  && (await p.locator('.scope.local').count()) === 1,
+  `${await p.locator('.scope.shared').count()} shared, ${await p.locator('.scope.local').count()} local`)
 // Both windows, so the check does not depend on which one the clock is in
 // when the suite runs — the fault this repo has spent two days removing.
-await p.getByLabel('less often, day').click()
+await p.getByLabel('decrease day gap').click()
 await p.waitForTimeout(150)
-await p.getByLabel('less often, night').click()
+await p.getByLabel('decrease night gap').click()
 await p.waitForTimeout(150)
-await p.getByRole('button', { name: 'save', exact: true }).click()
+// No save button: the write happened on the tap. Closing is just closing, and
+// the estimate behind has already moved.
+check('there is no save button to press',
+  (await p.locator('.setsheet .save').count()) === 0, 'every control commits itself')
+await p.locator('.setsheet').getByLabel('close').click()
 await p.waitForTimeout(500)
 const after = await p.locator('.nextfeed b').innerText()
 check('a changed gap moves the estimate', before !== after, `${before} → ${after}`)

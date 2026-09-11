@@ -79,8 +79,18 @@ const day24 = await p.evaluate(() => {
 })
 await p.getByRole('navigation').getByLabel('log', { exact: true }).click()
 await p.waitForTimeout(400)
-await p.getByLabel('show 12-hour times').click()
-await p.waitForTimeout(300)
+// The toggle is in the settings sheet now (D-055), not beside the clock in the
+// status row. It applies on the tap — there is no save button — so closing the
+// sheet is only closing it.
+const setClock = async (which: '12' | '24') => {
+  await p.getByLabel('settings').click()
+  await p.waitForTimeout(300)
+  await p.getByLabel(`show ${which}-hour times`).click()
+  await p.waitForTimeout(200)
+  await p.locator('.setsheet').getByLabel('close').click()
+  await p.waitForTimeout(300)
+}
+await setClock('12')
 
 const AMPM = /^\d{1,2}:\d{2}(AM|PM)[–-]\d{1,2}:\d{2}(AM|PM)$/
 const home12 = (await p.locator('.row time').first().innerText()).replace(/\s/g, '')
@@ -90,10 +100,17 @@ check('the hour is not padded', !/^0/.test(home12), home12)
 const status = await p.locator('.statusrow span').first().innerText()
 check('and so does the status clock', /\d{1,2}:\d{2}\s*(AM|PM)/.test(status), status.replace(/\n/g, ' '))
 
-// The label names the format it switches TO, so it has flipped with the state.
-check('the toggle now offers the way back',
-  (await p.getByLabel('show 24-hour times').count()) === 1,
-  `${await p.getByLabel('show 24-hour times').count()} button(s)`)
+// A segmented control, not a toggle: both formats are always on screen and the
+// *pressed* one says which is live. That is what replaced a button whose label
+// named the format it would switch to — which needed reading to be understood.
+await p.getByLabel('settings').click()
+await p.waitForTimeout(300)
+check('the settings screen shows which format is live',
+  (await p.getByLabel('show 12-hour times').getAttribute('aria-pressed')) === 'true'
+  && (await p.getByLabel('show 24-hour times').getAttribute('aria-pressed')) === 'false',
+  `12h pressed: ${await p.getByLabel('show 12-hour times').getAttribute('aria-pressed')}`)
+await p.locator('.setsheet').getByLabel('close').click()
+await p.waitForTimeout(300)
 
 // This screen is remounted by `key={saved}` on every save, which is what sank
 // the lead rail until it moved to localStorage. The format has to survive it.

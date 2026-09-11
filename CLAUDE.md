@@ -18,6 +18,7 @@ tasks.
 | About to argue for a different approach | `docs/decisions.md` |
 | About to guess at something unspecified | `docs/open-questions.md` |
 | Writing storage, sync, or merge code | `.specify/memory/event-model.md` |
+| Adding or changing a user-facing setting | `.specify/memory/settings.md` |
 | Touching infra, hosting, or offline | `.specify/memory/technical-constraints.md` |
 | Planning a phase | `docs/plan.md`, `docs/tasks.md` |
 

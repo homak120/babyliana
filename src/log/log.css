@@ -352,47 +352,159 @@ body {
      this button, so it never needed one. */
 }
 
-.cyclenote {
-  font-size: 0.8125rem;
-  color: var(--muted);
-  margin: 0 0 1rem;
+/* --- settings (D-055) ------------------------------------------------------
+   Was the feeding cycle alone (D-050). Five sections now, each headed by what
+   it is and *whose it is* — a setting that reaches the other parent's phone and
+   one that never leaves this one look identical otherwise. */
+
+.setblock { padding: 0.25rem 0 0.5rem; }
+.setblock + .setblock { border-top: 1px solid var(--hair); margin-top: 1rem; }
+
+.sethead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 1rem 0 0.375rem;
 }
 
-.cyclerow {
+.sethead h3 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 900;
+}
+
+/* Quiet on purpose. It answers a question you only ask once per setting, and
+   it must not compete with the value beside it at 4am. */
+.scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: none;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.1875rem 0.4375rem;
+  border-radius: 999px;
+}
+
+/* Peri for shared and bare grey for local: the difference has to survive being
+   read at a glance, so it is a fill and not just a word. */
+.scope.shared { background: var(--periFill); color: var(--periInk); }
+.scope.local { background: var(--chip); color: var(--muted); }
+
+.setnote {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin: 0 0 0.75rem;
+}
+
+.setnote.faint { opacity: 0.75; margin: 0.5rem 0 0; font-size: 0.75rem; }
+.setnote b { font-weight: 900; color: var(--ink); }
+
+.setrow {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.5rem;
-  padding: 0.875rem 0;
-  border-bottom: 1px solid var(--hair);
+  padding: 0.625rem 0;
 }
 
-.cyclewhen {
+.setrow + .setrow { border-top: 1px solid var(--hair); }
+
+.setlabel {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  margin: 0;
   font-size: 0.875rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
-.cyclegap { display: inline-flex; align-items: center; gap: 0.375rem; }
-.cyclegap span { font-size: 0.75rem; color: var(--muted); }
-.cyclegap b {
-  min-width: 3.25rem;
+.setstep { display: inline-flex; align-items: center; gap: 0.375rem; }
+
+/* Round and filled, like the date row's rather than the bare glyphs the cycle
+   sheet shipped with: these are thumb targets on a screen used one-handed. */
+.setstep .stepper {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 17px;
+  background: var(--chip);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.setstep .stepper:disabled { opacity: 0.35; cursor: default; }
+
+/* Wide enough for "at the time", so the steppers do not walk sideways as the
+   value changes under them. */
+.setstep b {
+  min-width: 6.25rem;
   text-align: center;
   font-size: 0.9375rem;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
 }
-.cyclegap .stepper:disabled { opacity: 0.35; cursor: default; }
 
-/* The last window has nothing under it to be divided from, and the save needs
-   air: without it the button sat on the row's own hairline. */
-.cyclerow:last-of-type { border-bottom: none; }
-.cyclesheet .save { margin-top: 1.5rem; }
+/* Two or three choices, not a dropdown: every option visible, one tap to
+   change, nothing that opens a second surface over the sheet.
+
+   `flex: none` so the group wraps to its own line when the label beside it
+   leaves too little room, rather than being squeezed until its options wrap
+   internally — "breast milk" broke across two lines and took the row's height
+   with it. `overflow: hidden` because the selected option's fill is a rectangle
+   inside a 999px pill: without clipping its corners escaped the rounded ends. */
+.segmented {
+  display: inline-flex;
+  flex: none;
+  gap: 0.25rem;
+  padding: 0.1875rem;
+  border-radius: 999px;
+  background: var(--chip);
+  overflow: hidden;
+}
+
+.seg {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  padding: 0.375rem 0.75rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.seg.on { background: var(--periFill); color: var(--periInk); }
+
+.setinput {
+  flex: 1;
+  min-width: 8rem;
+  max-width: 13rem;
+  border: 1px solid var(--hair);
+  border-radius: 0.625rem;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.625rem;
+  text-align: right;
+}
+
+.setinput:focus { outline: 2px solid var(--periFill); outline-offset: 1px; }
+
+/* No save button to leave room for — every control commits as you touch it —
+   so this is only the bottom breathing room an iPhone's home bar wants. */
+.setsheet .spacer { min-height: 2rem; }
 
 .endfeedmini,
 .endsleepmini {
@@ -1273,21 +1385,6 @@ body {
   padding: 0.5rem;
 }
 
-/* Sits inside the status row's first span, beside the clock it changes. Sized
-   and dimmed like `.namebtn` so the row keeps one weight — this is a control
-   you reach for rarely, not a thing to notice at 4am. */
-.fmtbtn {
-  border: none;
-  background: none;
-  color: var(--muted);
-  padding: 0;
-  margin-left: 0.125rem;
-  display: inline-flex;
-  align-items: center;
-  cursor: pointer;
-  opacity: 0.7;
-}
-
 /* --- the recovery page (D-042) --------------------------------------------- */
 
 /* One row per device, each a whole tap target. Card-shaped like everything else
@@ -1353,18 +1450,6 @@ body {
   padding: 0.5rem;
   margin-top: 0.5rem;
   cursor: pointer;
-}
-
-.namebtn {
-  border: none;
-  background: none;
-  color: var(--muted);
-  font: inherit;
-  font-size: 0.6875rem;
-  border-radius: 999px;
-  padding: 0.25rem 0.375rem;
-  cursor: pointer;
-  opacity: 0.7;
 }
 
 .nameSheet { padding-top: 1.5rem; }

@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-10
+Last updated: 2026-09-11
 
 ---
 
@@ -18,8 +18,8 @@ Last updated: 2026-09-10
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. **667 checks pass across twenty-one
-suites**, and the working tree is clean: everything through D-054 is committed
+delivered by the second design handoff. **689 checks pass across twenty-one
+suites**, and the working tree is clean: everything through D-055 is committed
 and pushed.
 
 **The schema is current through `0006`, and every migration is applied.**
@@ -54,6 +54,10 @@ push-then-reconcile sync with Supabase.
   two becomes an *end* pill while its period is running.
 - **First run** — a photograph gate, name entry, and a second gate code that
   hands a reinstalled phone its old identity back rather than minting a new one.
+- **Settings** — five sections behind the card's `tune` button: the quick
+  bottle's volume and source, the supplement prefill, the prep-prompt lead, the
+  feeding cycle, and this phone's clock format and name. Each row says whether
+  it reaches both phones or stays on this one.
 - Two mascot sets and a theme switched by the clock; 12- and 24-hour times, per
   phone.
 
@@ -67,6 +71,12 @@ precache sits where it does; the 1024 is excluded, being needed only at install.
 Newest first, and **this is an index, not a record** — `docs/decisions.md`
 carries the reasoning for every one of these, and for everything older.
 
+- **D-055** — the `tune` sheet becomes a settings screen. Three new keys on
+  `baby.settings` (bottle, supplement, prep lead), no migration — which is
+  D-052 paying off. `settings.ts` is now a registry so the *next* setting costs
+  an entry rather than a bespoke hydrate/isDefault/same trio, and `parse`
+  returning null for junk stops a corrupt row resetting the other phone. No
+  save button: every control commits on the tap.
 - **D-054** — the home list's feed chip counts in seconds while the feed is
   open, in rose, with its own *end* button — the mirror of the sleep chip. It
   said nothing at all before, which stopped being defensible when D-053 made
@@ -103,16 +113,13 @@ script — the point is thumbs, at speed, in the dark. If something cannot be
 entered, that finding outranks any further polish. It is the single biggest open
 item in the project.
 
-**2. Two build items, both small, both `CC`:**
+**2. One build item left, `CC`:**
 
 - **JSON export** — `technical-constraints.md` requires it before a second
   person sees the app, so it is a Phase 9 gate rather than a first-use one.
   Getting a file off an installed iOS PWA is the hard part, not the format.
-- **A settings screen** — the design has never had one. The `tune` sheet
-  (D-050) is the first thing that looks like one, but it holds the feeding
-  windows and nothing else; export needs somewhere real to live, and the
-  12/24-hour toggle and the name are currently two unrelated controls in the
-  status row.
+- ~~A settings screen~~ — **done, D-055.** Export now has somewhere to live,
+  which was half the reason it was on this list.
 
 **3. Three owner decisions, none blocking:** Q-003 (mascot identity and the
 rights caution), Q-008 (the final name, which gets dearer with every asset
@@ -196,7 +203,54 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-10 (latest) — the running feed gets the sleep chip's clock
+### 2026-09-11 (latest) — the tune sheet becomes a settings screen
+
+**Three more shared settings, and no migration** (D-055). The quick bottle's
+volume and source, the supplement prefill, and the prep-prompt lead are keys on
+`baby.settings` now. That is D-052 paying off exactly as designed: a key per
+setting is no migration, where a column per setting would have been three — and
+three pushes that could not go out ahead of them.
+
+**The bottle default earned its place first, and D-053 is why.** While the
+bottle opened a sheet, 60 mL was a prefill: visible, overwritable, wrong at no
+cost. Since D-053 it writes straight to the log, so a wrong default is a wrong
+*row*, fixed by a swipe-edit afterwards. The setting is what stops the one-tap
+entry from lying.
+
+**`cycles.ts`'s bespoke trio became a registry.** `hydrateCycles` /
+`isDefaultCycles` / `same` was right for one setting and would have been four
+copies drifting apart at four. Each key now declares its default, its parse and
+its comparison, and one `hydrate` walks them.
+
+**The interesting part is what `parse` returns for junk: null, not the
+default.** A row carrying an empty cycle list or a volume of zero means
+*nothing*, and reading it as the default would let one phone's corrupt write
+quietly reset a setting the other had deliberately changed. `hydrate` skips the
+key. The old `hydrateCycles` had that guard inline and it would have been lost
+in the generalisation — `verify-s3` now checks all three junk shapes.
+
+**And the reconcile lost its early return**, which was invisible while `cycles`
+was the only key: it stopped at the first adopted value, so a row carrying a
+cycle but no bottle default would never have pushed the bottle up.
+
+**No save button.** Every control commits on the tap — local write, repaint,
+push behind. A save button would also have been a regression on the clock
+toggle, which has always applied instantly. The *push* debounces 600ms so
+holding `+` does not queue twenty row writes; the local write never does.
+
+**Every row says whose it is.** With one shared setting, "the cycle syncs" was
+something you knew. With four, changing the bottle default and having the other
+parent's phone start logging 90 mL is a surprise. The clock format and the
+phone's name are in the same screen and marked *this phone* — they did not move
+into `baby.settings` and must not.
+
+**Six suites changed, and two labels were wrong before.** The cycle sheet said
+"less often" on the button that *shortens* the gap, which feeds her more often;
+the generic stepper says `decrease`/`increase`, which describes the number and
+cannot be inverted. And the clock toggle's label named the format it would
+switch *to* — a segmented control shows both and marks the live one instead.
+
+### 2026-09-10 — the running feed gets the sleep chip's clock
 
 **The home list said nothing about a feed that was happening** (D-054).
 `sleepCell` returns "sleeping…" for an open sleep and the row overrides it with
@@ -283,51 +337,3 @@ and it gains a paragraph on reopening a period, since clearing `ended_at` back
 to null is a model fact rather than a UI one. **Worth repeating as a habit: the
 artifacts go stale silently, and only a decision that reverses an earlier one
 leaves a trace to find them by.**
-
-### 2026-09-08 — the feeding cycle stops being a per-phone opinion
-
-**`0006` adds `baby.settings jsonb`** and the rhythm syncs (D-052). It went on
-`baby` rather than a new table because that row is the root of the schema
-(D-022), a setting like this is a fact about her rather than about a phone, and
-`pull()` already fetched it — half the work existed.
-
-**It was `cycles jsonb` first, and the owner asked the better question:** make
-it generic. A column per setting is a migration each; a key per setting is none.
-`0006` was rewritten rather than superseded — it had never been applied or
-committed, so no database and no client had seen it, and a file that never ran
-does not burn its number the way `0002` did.
-
-**Writes merge, never replace.** Saving the cycle by writing the whole object
-would drop every other key, including ones the writing build has never heard of.
-`verify-s2` checks a second key survives the first. What is still true: two
-phones editing *different* keys at once resolve last-write-wins over the object,
-and one loses.
-
-**And the round-trip found a bug.** `jsonb` does not preserve key order — a
-cycle written `{id, from, to, gap}` comes back `{id, to, gap, from}`, the same
-thing and a different string. `hydrateCycles` compared with `JSON.stringify`, so
-every pull read as a change and repainted the card before settling. It compares
-field by field now. The `verify-s2` check that caught it was making the same
-mistake, which is how both were found at once.
-
-**The write path did not.** `PUSH_ORDER` was device/timeslot/event and the
-outbox knew nothing of `baby`. Both widened, `baby` first, since it is the root
-every timeslot references.
-
-**localStorage stays, demoted to a cache.** `cycleFor` is called during render
-and IndexedDB is asynchronous, so a synchronous read has to come from somewhere.
-
-**The reconcile is asymmetric, and that is the interesting part.** A row with a
-cycle wins — that is the sync. A row with *none* takes this phone's, but only if
-this phone has been tuned. `saveCycles` needs a local `baby` row to update and
-cannot invent one (`baby.name` is `not null` and a fresh phone does not know
-it), so a cycle set before the first sync would otherwise sit local forever.
-Adopting a `null` would have thrown away exactly that change.
-
-**Last write wins, silently, and that is a choice** — for one pair of numbers
-there is nothing to merge, and "never resolve a duplicate silently" is about
-events.
-
-**This one blocks the deploy, and it is the case the rule was written for.**
-`verify-s2` is red on `the baby row carries a cycles column` until the migration
-runs.

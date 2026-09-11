@@ -237,6 +237,49 @@ check('the day table carries the fed line', (await p.locator('.tfeed').count()) 
 const cell = (await p.locator('.tmilk').first().innerText()).trim()
 check('and the milk column spells out the unit', /mL/.test(cell), cell)
 
+// --- the quick bottle's default is a setting (D-055) ------------------------
+//
+// The end-to-end half: change it on the settings screen, tap the bottle, and
+// read the row. Since D-053 there is no sheet between the tap and the write, so
+// the default IS the entry — a wrong one is a wrong row, not a wrong prefill.
+await p.getByRole('navigation').getByLabel('log', { exact: true }).click()
+await p.waitForTimeout(400)
+await p.getByLabel('settings').click()
+await p.waitForTimeout(350)
+// 60 → 90 in fives, and formula → breast milk.
+for (let i = 0; i < 6; i++) {
+  await p.getByLabel('increase bottle volume').click()
+  await p.waitForTimeout(60)
+}
+check('the volume stepper walks the default up',
+  /90 mL/.test(await p.locator('.setstep b').first().innerText()),
+  (await p.locator('.setstep b').first().innerText()).trim())
+await p.getByRole('button', { name: 'breast milk', exact: true }).click()
+await p.waitForTimeout(150)
+// No save button anywhere on the sheet — the taps above already wrote.
+check('and nothing had to be saved',
+  (await p.locator('.setsheet .save').count()) === 0, 'committed on the tap')
+await p.locator('.setsheet').getByLabel('close').click()
+await p.waitForTimeout(400)
+
+await p.getByLabel('log a feed').click()
+await p.waitForTimeout(900)
+const newRow = (await p.locator('.chip-rose').first().innerText()).replace(/\n/g, ' ')
+// `breast`, not `breast milk`: the column abbreviates the source (`cells.ts`),
+// and the settings screen spells it out. Two audiences, one value.
+check('the bottle logs the volume and source from settings',
+  /90 mL breast/.test(newRow), newRow)
+
+// And it survives a reload, because the local cache is written before the push
+// and the push is what a reload does not wait for.
+await p.reload({ waitUntil: 'load' })
+await p.waitForTimeout(900)
+await p.getByLabel('settings').click()
+await p.waitForTimeout(350)
+check('and the setting is still there after a reload',
+  /90 mL/.test(await p.locator('.setstep b').first().innerText()),
+  (await p.locator('.setstep b').first().innerText()).trim())
+
 await b.close()
 stop()
 console.log(fail === 0 ? '\n  a feed in progress works end to end' : `\n  ${fail} FAILED`)

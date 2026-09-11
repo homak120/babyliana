@@ -166,10 +166,11 @@ when". Read that first; this list is the checklist view of the same thing.
       `technical-constraints.md` requires it before a second person sees the
       app — that is Phase 9, not first use. Getting a file off an installed iOS
       PWA is the hard part, not the format
-- [ ] **CD/CC** Settings screen — the design does not have one, and export needs
-      somewhere to live. The `tune` sheet (D-050) is the first thing shaped like
-      one but holds only the feeding windows; the clock-format toggle and the
-      phone's name are still loose controls in the status row
+- [x] **CD/CC** Settings screen — D-055. The `tune` sheet is now five sections:
+      quick bottle, supplement preset, prep prompt, feeding cycle, and this
+      phone. The clock-format toggle and the phone's name came off the status
+      row into it. Every row says whether it reaches both phones or stays here.
+      **Export still has nowhere to live** — it is the next thing to land in it
 
 ## Post-MVP — deliberately deferred
 

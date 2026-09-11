@@ -14,9 +14,12 @@ const store = new Map<string, string>([['babyliana.device_id', '00000000-0000-40
 import type { Block } from '../src/log/drafts.ts'
 const {
   blocksFromMoment, canSave, newDiaper, newOther, newSupplement, newTemperature, newWeight,
-  poundsToLbOz, toEntries, OTHER_TYPES, SUPPLEMENT_PRESET,
+  poundsToLbOz, toEntries, OTHER_TYPES,
 } = await import('../src/log/drafts.ts')
 const { createThisDevice, logMoment, getMoments } = await import('../src/moments.ts')
+// The supplement prefill is a setting now (D-055); its shipped default lives in
+// the registry rather than in `drafts.ts`.
+const { DEFAULT_SUPPLEMENT } = await import('../src/settings.ts')
 
 const one = (b: Block) => toEntries(b)[0]
 let failures = 0
@@ -99,7 +102,7 @@ check('nor does something else', Object.keys(one(other('other'))).join() === 'ty
 // --- a new supplement block arrives filled in -------------------------------
 const picked = newSupplement()
 check('supplement comes with the usual name and dose',
-  picked.name === SUPPLEMENT_PRESET.name && picked.amount === SUPPLEMENT_PRESET.amount,
+  picked.name === DEFAULT_SUPPLEMENT.name && picked.amount === DEFAULT_SUPPLEMENT.amount,
   `${picked.name} / ${picked.amount}`)
 check('and it is marked a suggestion, not an entry', picked.preset === true)
 check('so it saves as typed if nobody disagrees',

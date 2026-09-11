@@ -1,7 +1,7 @@
 import { BABY_ID } from './config'
 import * as db from './db'
 import { createDeviceId, requireDeviceId } from './device-id'
-import { cycles, hydrateCycles, isDefaultCycles } from './cycles'
+import { hydrate, read, unsynced, type SettingKey } from './settings'
 import type { Baby, BabySettings, DraftEntry, LogEvent, Moment, Timeslot } from './types'
 
 // Everything above IndexedDB that the UI touches. Kept apart from db.ts so the
@@ -21,7 +21,7 @@ const now = () => new Date().toISOString()
  * **Silently local when the baby row has not arrived yet.** That is a fresh
  * install that has never synced; there is no row to update and one cannot be
  * invented, because `baby.name` is `not null` and this phone does not know it.
- * The value stays in its local cache and `reconcileCycles` sends it up once the
+ * The value stays in its local cache and `reconcileSettings` sends it up once the
  * row appears.
  */
 export async function saveSetting<K extends keyof BabySettings>(
@@ -41,22 +41,31 @@ export async function saveSetting<K extends keyof BabySettings>(
 }
 
 /**
- * Reconcile this phone's cycle with the shared row, after a pull.
+ * Reconcile this phone's settings with the shared row, after a pull.
  *
- * Two directions, and the asymmetry is deliberate. A row that *has* a cycle
- * wins — that is the sync. A row with none takes this phone's, but only if this
- * phone has actually been tuned, which closes the one hole `saveCycles` leaves:
- * a change made before the first sync would otherwise sit local forever.
+ * Two directions, and the asymmetry is deliberate. A row that *has* a setting
+ * wins — that is the sync. A row without one takes this phone's, but only if
+ * this phone has actually changed it, which closes the one hole `saveSetting`
+ * leaves: a change made before the first sync would otherwise sit local forever.
  *
- * Returns whether the local value changed, so the screen can repaint on
+ * **Per key, and no early return.** It used to stop at the first adopted value,
+ * which was indistinguishable from correct while `cycles` was the only setting.
+ * With four, a row carrying a cycle but no bottle default needs both halves
+ * done in the same pass — adopting theirs and pushing ours are independent
+ * facts about different keys (D-055).
+ *
+ * Returns whether any local value changed, so the screen can repaint on
  * something the other phone did.
  */
-export async function reconcileCycles(): Promise<boolean> {
+export async function reconcileSettings(): Promise<boolean> {
   const baby = (await db.getRow('baby', BABY_ID)) as Baby | undefined
   if (!baby) return false
-  if (hydrateCycles(baby.settings)) return true
-  if (!baby.settings?.cycles && !isDefaultCycles()) await saveSetting('cycles', cycles())
-  return false
+  const moved = hydrate(baby.settings)
+  // Generic so `K` stays bound to one key inside: called with the union
+  // directly, the value would have to satisfy every setting's type at once.
+  const push = <K extends SettingKey>(key: K) => saveSetting(key, read(key))
+  for (const key of unsynced(baby.settings)) await push(key)
+  return moved
 }
 
 /**

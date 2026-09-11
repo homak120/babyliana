@@ -13,6 +13,12 @@ import type { Cycle } from './cycles'
 export type BabySettings = {
   /** The feeding cycle: how long a feed is expected to hold, by window. */
   cycles?: Cycle[]
+  /** What the bar's bottle icon writes, since D-053 made it write directly. */
+  bottle?: { volume: number; source: Source }
+  /** The supplement block's prefill — one family's daily vitamin, not everyone's. */
+  supplement?: { name: string; amount: string }
+  /** How long before the target *make a bottle* goes up. */
+  prepLeadMinutes?: number
 }
 
 export type EventType =

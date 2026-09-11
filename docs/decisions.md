@@ -2349,3 +2349,93 @@ the wrong thing; the live count belongs to the screen that knows what is open.
 **Reversal condition.** If the rose chip is read as a second feed in practice —
 the reading `log.css` warned about — the running chip takes the neutral fill and
 keeps the count. The count itself reverses only with the sleep chip's.
+
+---
+
+## D-055 — A settings screen, and a registry so the next setting is free
+
+The `tune` sheet becomes **settings**: five sections behind the same button.
+Three new shared keys on `baby.settings` — `bottle`, `supplement`,
+`prepLeadMinutes` — plus the feeding cycle that was already there, and a *this
+phone* section holding the clock format and the device name that used to be two
+loose controls in the status row.
+
+**No migration and no deploy gate.** This is D-052 paying off exactly as
+intended: `settings` is one `jsonb` object keyed by setting name, so a new
+setting is a new key. Had it been `cycles jsonb`, this would have been three
+migrations and three pushes that could not go out before them.
+
+### Why the bottle default earned a setting first
+
+Before D-053 the bottle opened a sheet, so 60 mL was a *prefill*: visible,
+overwritable, wrong at no cost. Since D-053 it writes straight to the log, so a
+wrong default is **a wrong row** — corrected by a swipe-edit after the fact,
+which is a worse trade than the one tap it saved. The setting is not
+convenience; it is what stops a one-tap entry from lying.
+
+The screen offers breast milk or formula and not `unknown`. The quick icon is
+for the feed you do not have to think about, and that feed has a known source.
+The paper's unlabelled `30 + 30` is still reachable, because `newMilk()` starts
+at `unknown` and `+ milk` is where a feed you are unsure of is entered anyway.
+
+### The registry, and the bug it was written to prevent
+
+`cycles.ts` held a bespoke `hydrateCycles` / `isDefaultCycles` / `same` trio.
+That was right for one setting and would have been four copies drifting apart at
+four, so `settings.ts` is now a registry: each key declares its default, its
+parse and its field-wise comparison, and one `hydrate` and one `unsynced` walk
+them. `cycles.ts` keeps its names as thin adapters, because `cycles()` says more
+at a call site than `read('cycles')`.
+
+**`parse` returns `null` for an unusable value, and that distinction is the
+whole point.** A row carrying junk — an empty cycle list, a volume of zero —
+means *nothing*, and must not be read as meaning the default. If it were,
+hydrating from a corrupt row would quietly reset a setting the other phone had
+deliberately changed, and the two would fight over it. `read` falls back on
+null; `hydrate` skips the key and leaves local alone. The one exception is an
+unrecognised *source*, which falls back rather than discarding the whole
+setting: a newer build may write a source this one has never heard of, and
+nothing is written back, so the newer value survives on the row untouched.
+
+**And the reconcile lost its early return.** It used to stop at the first
+adopted value, which was indistinguishable from correct while `cycles` was the
+only key. With four, a row carrying a cycle but no bottle default needs both
+halves done in the same pass — adopting theirs and pushing ours are independent
+facts about different keys.
+
+### No save button
+
+Every control commits as you touch it: local write, the card repaints, the push
+follows. That is the rule the whole app runs on, and D-053 removed two
+confirmation steps for the same reason. A save button would also have been a
+regression on the clock toggle, which has always applied instantly. The steppers
+debounce the *push* by 600ms so holding `+` does not queue twenty row writes;
+the local write is never debounced, because the card behind the sheet has to
+repaint with or without a network.
+
+### Every row says whose it is
+
+With one shared setting, "the cycle syncs" was something you simply knew. With
+four, changing the bottle default and having the other parent's phone start
+logging 90 mL is a surprise — and a surprise in a shared log is worse than a
+word of chrome. *both phones* is a key on `baby.settings`; *this phone* never
+leaves the device.
+
+The two local ones did not move into `baby.settings` and must not: the clock
+format is a preference of the phone in your hand and the two phones are allowed
+to disagree forever, and the name *is* the device, syncing as a device row.
+
+### What was deliberately not made a setting
+
+`.specify/memory/settings.md` carries the list and the two tests any candidate
+has to pass. The ones worth naming here: **the insights watch-list thresholds**
+stay fixed, because D-032 says the owner chose those four with the broader rule
+in front of him and this is not the door to a fifth; **weight units** stay
+pounds, because that is D-036; and **`SCRUB_MAX`** should be *derived* from the
+largest feed logged rather than remembered by a person, since it goes stale as
+she grows.
+
+**Reversal condition.** If the per-control commit turns out to lose a change on
+a sheet closed fast, the fix is a longer debounce or a flush on close — not a
+save button, which is a confirmation step this app has spent two decisions
+removing.

@@ -25,14 +25,13 @@ import {
   avatarClass, describeMoment, feedCell, hhmm, milkCell, milkTotal, otherLabel, sleepCell,
   timeCell,
 } from '../day/cells'
-import { getDeviceId } from '../device-id'
 import { gapText, isNightCycle, upcomingFeeds } from '../cycles'
-import { setTimeFormat, timeFormat } from '../timeformat'
-import { getMoments, reconcileCycles, removeMoment, renameThisDevice } from '../moments'
+import { timeFormat } from '../timeformat'
+import { getMoments, reconcileSettings, removeMoment } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
 import type { Device, Moment } from '../types'
 import { AddSheet } from './AddSheet'
-import { CycleSheet } from './CycleSheet'
+import { SettingsSheet } from './SettingsSheet'
 import { PrepPill, usePrepTimer } from './PrepLine'
 import { BottleIcon } from './BottleIcon'
 import { EndSleepIcon } from './EndSleepIcon'
@@ -100,39 +99,6 @@ function dayLabel(iso: string) {
   return `${pad(d.getMonth() + 1)}/${pad(d.getDate())}`
 }
 
-function NamePrompt({
-  current,
-  onDone,
-}: {
-  current: string
-  onDone: (name: string | null) => void
-}) {
-  const [value, setValue] = useState(current)
-  return (
-    <div className="sheet nameSheet">
-      <header className="sheet-head">
-        <h2>who is logging?</h2>
-        <button type="button" className="x" onClick={() => onDone(null)} aria-label="close">
-          <Icon name="close" size={20} />
-        </button>
-      </header>
-      <p className="sub">
-        your name marks every entry you log, so Liana&rsquo;s other grown-ups know who did what.
-      </p>
-      <input
-        className="nameinput"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder="Anya"
-        autoFocus
-      />
-      <button type="button" className="save" onClick={() => onDone(value)}>
-        <Icon name="check_circle" size={24} /> save
-      </button>
-    </div>
-  )
-}
-
 export function LogScreen({ onEndOpen, onResumeSleep }: {
   /** Ends whatever is running — a feed or a sleep. One act, two pills (D-033). */
   onEndOpen: () => void
@@ -160,7 +126,6 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
   const [sheet, setSheet] = useState(false)
   const [sync_, setSync] = useState(syncState())
   const [justLogged, setJustLogged] = useState(false)
-  const [naming, setNaming] = useState(false)
   const [now, setNow] = useState(new Date())
 
   // Edit and delete from the home list too, not only the day view.
@@ -173,9 +138,9 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
   // Nothing is removed until the sheet is confirmed (Q-012).
   const [pendingDelete, setPendingDelete] = useState<Moment | null>(null)
   const [tuning, setTuning] = useState(false)
-  // Bumped when a pull brings a cycle from the other phone. Nothing reads it —
+  // Bumped when a pull brings a setting from the other phone. Nothing reads it —
   // it exists to re-render a card whose numbers come from a module cache.
-  const [, setCycleTick] = useState(0)
+  const [, setSettingTick] = useState(0)
 
   const refresh = useCallback(() => {
     getMoments().then((m) => {
@@ -183,11 +148,12 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
       setLoaded(true)
     })
     getDevices().then(setDevices)
-    // The feeding cycle is on the row both phones share (D-052), so a pull can
-    // bring one the other phone set. `cycles()` reads a synchronous cache, so
-    // the repaint has to be asked for rather than observed.
-    void reconcileCycles().then((changed) => {
-      if (changed) setCycleTick((n) => n + 1)
+    // The shared settings are on the row both phones share (D-052, D-055), so a
+    // pull can bring one the other phone set — a feeding cycle, a bottle volume.
+    // `read()` is a synchronous cache, so the repaint has to be asked for rather
+    // than observed.
+    void reconcileSettings().then((changed) => {
+      if (changed) setSettingTick((n) => n + 1)
     })
   }, [])
 
@@ -286,24 +252,12 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
     <main className="log">
       <div className="statusrow">
         <span>
+          {/* The format toggle that used to sit here, and the name button that
+              sat opposite it, are both in the settings sheet now (D-055). They
+              were two unrelated controls wedged into a status line because
+              there was nowhere else for them; there is now. */}
           <Icon name={theme === 'night' ? 'bedtime' : 'wb_sunny'} size={15} />
           {hhmm(now.toISOString(), clock)}
-          {/* Beside the clock it changes, so what it does needs no label. It
-              reaches every time in the app, not just this one — `hhmm` is the
-              only formatter (D-041) — and the label names the format being
-              switched *to*, which is what a screen reader should announce. */}
-          <button
-            type="button"
-            className="fmtbtn"
-            aria-label={clock === '24h' ? 'show 12-hour times' : 'show 24-hour times'}
-            onClick={() => {
-              const next = clock === '24h' ? '12h' : '24h'
-              setTimeFormat(next)
-              setClock(next)
-            }}
-          >
-            <Icon name="history_toggle_off" size={15} />
-          </button>
         </span>
         <span className="whos">
           {devices.filter((d) => d.name).map((d) => (
@@ -311,12 +265,6 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
               {d.name!.charAt(0).toUpperCase()}
             </i>
           ))}
-          {/* Without this the name set on first run could never be changed —
-              the design's settings screen is deferred, and this is the one
-              thing in it that is not optional. */}
-          <button type="button" className="namebtn" onClick={() => setNaming(true)}>
-            {devices.find((d) => d.id === getDeviceId())?.name ? 'edit' : 'name this phone'}
-          </button>
           <span className={`sync ${sync_.state}`}>
             <Icon name="cloud_done" size={15} />
           </span>
@@ -351,7 +299,7 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
           <button
             type="button"
             className="tunebtn"
-            aria-label="feeding cycle settings"
+            aria-label="settings"
             onClick={() => setTuning(true)}
           >
             <Icon name="tune" size={17} />
@@ -659,16 +607,6 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
         })}
       </ul>
 
-      {naming && (
-        <NamePrompt
-          current={devices.find((d) => d.id === getDeviceId())?.name ?? ''}
-          onDone={(name) => {
-            setNaming(false)
-            if (name !== null) void renameThisDevice(name).then(refresh)
-          }}
-        />
-      )}
-
       {pendingDelete && (
         <ConfirmDelete
           label={describeMoment(pendingDelete)}
@@ -689,7 +627,14 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
         />
       )}
 
-      {tuning && <CycleSheet onClose={() => setTuning(false)} />}
+      {tuning && (
+        <SettingsSheet
+          devices={devices}
+          onClose={() => setTuning(false)}
+          onRenamed={refresh}
+          onClockChange={setClock}
+        />
+      )}
 
       {sheet && (
         <AddSheet

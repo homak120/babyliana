@@ -1,4 +1,5 @@
 import { cycleFor } from './cycles'
+import { read } from './settings'
 import type { Moment } from './types'
 
 // Everything the home screen shows is computed from the log, never stored
@@ -113,20 +114,15 @@ export function targetWake(lastFeedStart: Date | null): Date | null {
 }
 
 /**
- * How long before the target the bottle prompt goes up.
- *
- * Fifteen minutes is roughly what warming one takes, which is the whole reason
- * the prompt exists: knowing the feed is due is not the same as having the
- * bottle ready when it is.
- */
-const PREP_LEAD_MINUTES = 15
-
-/**
  * Whether to say *make a bottle*.
  *
- * From fifteen minutes before the target **onwards** — it does not stop at the
+ * From the prep lead before the target **onwards** — it does not stop at the
  * target. A prompt that clears exactly when the feed comes due would vanish at
  * the moment it is most wanted.
+ *
+ * The lead is a setting, defaulting to the fifteen minutes it was a constant at
+ * (D-055): "roughly what warming a bottle takes" is per-household, and a bottle
+ * out of the fridge is not the same fifteen minutes as one left standing.
  *
  * Nothing clears it explicitly, and nothing needs to: the target is derived
  * from the last feed, so logging one pushes the target three or four hours out
@@ -137,7 +133,7 @@ const PREP_LEAD_MINUTES = 15
  */
 export function bottleDue(target: Date | null, now = new Date()): boolean {
   if (!target) return false
-  return now.getTime() >= target.getTime() - PREP_LEAD_MINUTES * 60_000
+  return now.getTime() >= target.getTime() - read('prepLeadMinutes') * 60_000
 }
 
 /**

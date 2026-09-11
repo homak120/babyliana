@@ -36,14 +36,31 @@ const diaper = (d: Partial<ReturnType<typeof newDiaper>> = {}): Block =>
 check('a new diaper block starts as a pee', newDiaper().pee && !newDiaper().poop)
 check('so the commonest change is savable with zero extra taps', canSave([diaper()]))
 
-// --- what the bar's bottle opens with ---------------------------------------
+// --- what the bar's bottle writes -------------------------------------------
 // The quick icon is for the commonest feed, so it arrives filled in. `+ milk`
 // inside the sheet does not — a feed added by hand is as often the paper's `?`.
 const quick = quickMilk().parts[0]
-check('the quick bottle opens on 60 mL of formula',
+check('the quick bottle defaults to 60 mL of formula',
   quick.volume === 60 && quick.source === 'formula', `${quick.volume} ${quick.source}`)
-check('and it is marked as a suggestion, so the first digit typed replaces it',
-  quick.preset === true)
+// It is a setting now (D-055), not a constant — and it is read at call time, so
+// a change made on the settings screen reaches the very next tap of the bottle.
+{
+  const { write, DEFAULT_BOTTLE } = await import('../src/settings.ts')
+  write('bottle', { volume: 90, source: 'breast_milk' })
+  const tuned = quickMilk().parts[0]
+  check('and follows the setting once it is changed',
+    tuned.volume === 90 && tuned.source === 'breast_milk', `${tuned.volume} ${tuned.source}`)
+  // Back to the default for whatever runs after this, and through `write` — the
+  // value is in localStorage, so clearing the in-memory cache would only make
+  // the next read fetch the tuned value back off disk.
+  write('bottle', DEFAULT_BOTTLE)
+}
+// **No `preset` flag, and that is the point.** It marked a suggestion nobody had
+// touched so that focusing the field would select it. Since D-053 the bottle
+// writes straight to the log: there is no field, no focus and no sheet — so the
+// flag meant nothing, and D-055 took it off rather than leave it looking live.
+check('and carries no suggestion flag, having no sheet to suggest into',
+  quick.preset === undefined)
 check('while + milk still starts blank', newMilk().parts[0].volume === null)
 check('a suggested feed saves as a real one',
   one({ key: 'm', type: 'milk', draft: quickMilk() }).volume_ml === 60)

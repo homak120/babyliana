@@ -6,6 +6,10 @@
 // constants; the tune screen made it something a person can change, so it had
 // to come out.
 
+import { DEFAULT_CYCLES, hydrate, isDefault, read, resetSettings, write } from './settings'
+
+export { DEFAULT_CYCLES }
+
 /** A window of the clock and the gap that applies inside it. */
 export type Cycle = {
   id: string
@@ -17,103 +21,45 @@ export type Cycle = {
 }
 
 /**
- * Day 3h, night 4h — the numbers `targetWake` already used, and the same
- * 22:00–06:00 boundary (D-036). The defaults reproduce the old behaviour
- * exactly, so nothing moves for anyone who never opens the tune screen.
- */
-export const DEFAULT_CYCLES: Cycle[] = [
-  { id: 'day', from: 6 * 60, to: 22 * 60, gap: 180 },
-  { id: 'night', from: 22 * 60, to: 6 * 60, gap: 240 },
-]
-
-const KEY = 'babyliana.cycles'
-
-/**
- * **The shared truth is `baby.cycles`** (D-052). localStorage is the local
- * *cache* of it, and exists for one reason: `cycleFor` is called during render,
- * by `targetWake` among others, and IndexedDB is asynchronous. A synchronous
- * read has to come from somewhere.
+ * The cycle is a key on `baby.settings`, and `settings.ts` is the registry that
+ * owns its default, its parse and its comparison — along with every other
+ * shared setting's (D-055).
  *
- * So the flow is: `hydrate` copies the pulled row down into the cache, and
- * `setCycles` writes the cache while `saveCycles` in `moments.ts` writes the
- * row and queues it for push. Both phones converge on whichever write reaches
- * the server last — there is no merge, and for one pair of numbers there does
- * not need to be.
+ * These five are thin adapters over it, kept because the cycle is read by name
+ * all over the app and `cycles()` says more at a call site than
+ * `read('cycles')` does. The bespoke cache, the bespoke parse and the bespoke
+ * default that used to live here are gone: they were right for one setting and
+ * would have been four copies drifting apart at four.
  */
-let cached: Cycle[] | null = null
+export const cycles = (): Cycle[] => read('cycles')
 
-const store = (): Storage | null =>
-  typeof localStorage === 'undefined' ? null : localStorage
+export const setCycles = (next: Cycle[]): void => write('cycles', next)
 
-/** Anything unparseable falls back to the defaults rather than throwing: a
- *  corrupt preference must not be able to stop the card rendering. */
-function parse(raw: string | null): Cycle[] {
-  if (!raw) return DEFAULT_CYCLES
-  try {
-    const v = JSON.parse(raw) as Cycle[]
-    if (!Array.isArray(v) || v.length === 0) return DEFAULT_CYCLES
-    if (!v.every((c) => typeof c.from === 'number' && typeof c.to === 'number' && c.gap > 0)) {
-      return DEFAULT_CYCLES
-    }
-    return v
-  } catch {
-    return DEFAULT_CYCLES
-  }
-}
+/** Whether this phone is holding something other than the defaults. Used to
+ *  decide if a local setting is worth pushing up to an empty row. */
+export const isDefaultCycles = () => isDefault('cycles')
 
-export function cycles(): Cycle[] {
-  if (cached) return cached
-  cached = parse(store()?.getItem(KEY) ?? null)
-  return cached
-}
-
-export function setCycles(next: Cycle[]): void {
-  cached = next
-  store()?.setItem(KEY, JSON.stringify(next))
-}
+/** Forgets every cached setting, for suites that write one behind the module. */
+export const resetCycles = resetSettings
 
 /**
  * Take the pulled row's cycle as the local answer.
  *
- * **Only when there is one.** A missing key means nobody has ever set a cycle,
- * and adopting it would throw away a change made on this phone before its first
- * successful sync — which is exactly when the row is missing.
- *
- * Returns whether anything moved, so the screen can re-render on a change that
- * arrived from the other phone rather than from a tap.
+ * The cycle's slice of `hydrate`, kept as a named export because `verify-s3`
+ * exercises this direction on its own — a pulled row with a cycle wins, a row
+ * without one changes nothing.
  */
-export function hydrateCycles(settings: { cycles?: Cycle[] } | null | undefined): boolean {
-  const theirs = settings?.cycles
-  if (!theirs || !Array.isArray(theirs) || theirs.length === 0) return false
-  const next = parse(JSON.stringify(theirs))
-  if (same(next, cycles())) return false
-  setCycles(next)
-  return true
-}
+export const hydrateCycles = (settings: { cycles?: Cycle[] } | null | undefined): boolean =>
+  hydrate(settings?.cycles === undefined ? null : { cycles: settings.cycles })
 
 /**
- * Two cycle lists compared by what they *say*, field by field.
- *
- * **Not `JSON.stringify`.** `jsonb` does not preserve key order — a cycle
- * written as `{id, from, to, gap}` comes back from Postgres as
- * `{id, to, gap, from}`, identical in meaning and different as a string. A
- * string comparison would call every pull a change, rewrite the cache and
- * repaint the card each time. Caught by a `verify-s2` check that compared the
- * round-trip the same wrong way.
+ * Two cycle lists compared by what they *say*, field by field — never
+ * `JSON.stringify`, for the reason `settings.ts` spells out at length.
  */
 export const same = (a: Cycle[], b: Cycle[]) =>
   a.length === b.length
   && a.every((c, i) => c.id === b[i].id && c.from === b[i].from
     && c.to === b[i].to && c.gap === b[i].gap)
-
-/** Whether this phone is holding something other than the defaults. Used to
- *  decide if a local setting is worth pushing up to an empty row. */
-export const isDefaultCycles = () => same(cycles(), DEFAULT_CYCLES)
-
-/** Forgets the cache, for suites that write the preference behind the module. */
-export function resetCycles(): void {
-  cached = null
-}
 
 const minutesOfDay = (d: Date) => d.getHours() * 60 + d.getMinutes()
 
