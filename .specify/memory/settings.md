@@ -4,7 +4,7 @@ Status: **being built** (D-055). The feeding cycle shipped first, alone, in
 D-050; `baby.settings` became a generic keyed object in D-052 so the second
 setting would cost no migration. This is the second through fifth.
 
-The authority on *how* a shared setting reaches the other phones is
+The authority on *how* a shared setting reaches everyone else is
 `.specify/memory/event-model.md`; this document is the list and the rules for
 adding to it.
 
@@ -12,16 +12,16 @@ adding to it.
 
 Every setting answers two questions before it is built.
 
-**1. Is it a fact about her, or a preference of the phone in your hand?**
+**1. Is it a fact about her, or a preference of the device in your hand?**
 
 A fact about her is **shared**: it lives as a key on `baby.settings` and every
-phone converges on it. How much a bottle usually holds is a fact about her. A
-preference of the phone is **local**: it lives in `localStorage`, never syncs,
-and phones are allowed to disagree forever — the clock format is the worked
+device converges on it. How much a bottle usually holds is a fact about her. A
+preference of the device is **local**: it lives in `localStorage`, never syncs,
+and devices are allowed to disagree forever — the clock format is the worked
 example (`timeformat.ts`), and the lead rail is another.
 
-Getting this wrong in the shared direction is the expensive one: it changes
-everyone else's phone without them touching it.
+Getting this wrong in the shared direction is the expensive one: it changes what
+everyone else sees without them touching it.
 
 **2. Does anyone actually retype it?**
 
@@ -63,26 +63,39 @@ so there is one place to look — it does not change where they live.
 
 | Setting | Home | Why local |
 | --- | --- | --- |
-| Clock format | `localStorage`, `timeformat.ts` | a preference of the phone; phones may disagree and that is correct |
-| This phone's name | the `device` row, via `renameThisDevice` | the name *is* the device; it syncs as a device, not as a setting |
+| Clock format | `localStorage`, `timeformat.ts` | a preference of the thing in your hand; devices may disagree and that is correct |
+| This device's name | the `device` row, via `renameThisDevice` | the name *is* the device; it syncs as a device, not as a setting |
 
 ## The screen
 
 One sheet behind the card's `tune` button, titled **settings**. The feeding
 cycle is now a section in it rather than the whole of it.
 
-**Every row says whose it is** — *every phone* or *this phone*. With one shared
+**Every row says whose it is** — *everyone* or *only here*. With one shared
 setting that was something you simply knew. With four, changing the bottle
-default and having someone else's phone start logging 90 mL is a surprise, and a
+default and having someone else start logging 90 mL is a surprise, and a
 surprise in a shared log is worse than a word of chrome.
 
-**The label is *every phone*, never *both phones*.** Nothing in the app caps the
-household at two: `device` has no limit, and any phone entering with the shared
-baby id mints its own row. A label that counts the phones describes today's
-household rather than the rule, and starts lying the first time a third one logs
-a feed. The same goes for prose anywhere near a user: *other phones*, not *the
-other phone*. Two is the number of people using it now, not a constraint the
-app enforces.
+**A scope label names neither a count nor a kind of hardware.** Two wordings
+shipped and were corrected in a day, and both were the same mistake at different
+depths:
+
+- *both phones* counted the household. Nothing caps it at two — `device` has no
+  limit, and anything entering with the shared baby id mints its own row — so
+  the label described this household rather than the rule, and would start lying
+  the first time a third one logged a feed.
+- *every phone* named the hardware. This is a PWA (D-001): it installs on a
+  laptop, a tablet, anything with a browser. The word was describing the owner's
+  devices rather than the rule.
+
+So the rule for any future label, and for prose anywhere near a user: **say who,
+not how many and not what kind.** A `verify-hero` check asserts both halves.
+
+**And *only here*, not *just you*.** The local side is per *device*, not per
+person — the clock format is in `localStorage` and the name is on the `device`
+row — so the same person on a laptop and a phone gets two answers. *only here*
+is true of a place; *just you* would be a claim about a person that the storage
+does not make.
 
 **No save button.** Every control commits as you touch it: local write, the card
 repaints, the push follows. That is the rule the whole app already runs on, and

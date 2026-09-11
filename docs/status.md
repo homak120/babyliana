@@ -18,7 +18,7 @@ Last updated: 2026-09-11
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. **690 checks pass across twenty-one
+delivered by the second design handoff. **691 checks pass across twenty-one
 suites**, and the working tree is clean: everything through D-055 is committed
 and pushed.
 
@@ -56,9 +56,9 @@ push-then-reconcile sync with Supabase.
   hands a reinstalled phone its old identity back rather than minting a new one.
 - **Settings** — five sections behind the card's `tune` button: the quick
   bottle's volume and source, the supplement prefill, the prep-prompt lead, the
-  feeding cycle, and this phone's clock format and name. Each row says whether
-  it reaches *every phone* or stays on *this phone* — every, not both: nothing
-  in the app caps the household at two.
+  feeding cycle, and this device's clock format and name. Each row says whether
+  it reaches *everyone* or stays *only here* — who, not how many and not what
+  kind.
 - Two mascot sets and a theme switched by the clock; 12- and 24-hour times, per
   phone.
 
@@ -242,7 +242,7 @@ holding `+` does not queue twenty row writes; the local write never does.
 **Every row says whose it is.** With one shared setting, "the cycle syncs" was
 something you knew. With four, changing the bottle default and having the other
 parent's phone start logging 90 mL is a surprise. The clock format and the
-phone's name are in the same screen and marked *this phone* — they did not move
+device's name are in the same screen and marked *only here* — they did not move
 into `baby.settings` and must not.
 
 **Six suites changed, and two labels were wrong before.** The cycle sheet said
@@ -251,13 +251,19 @@ the generic stepper says `decrease`/`increase`, which describes the number and
 cannot be inverted. And the clock toggle's label named the format it would
 switch *to* — a segmented control shows both and marks the live one instead.
 
-**A third label was wrong and the owner caught it after the push.** The scope
-chip read *both phones*. Two is the number of people using the app today, not a
-limit it imposes: `device` has no cap and any phone entering with the shared
-baby id mints its own row, so the label described this household rather than the
-rule and would have started lying the first time a third phone logged a feed. It
-reads *every phone* now — true at two and at ten, and the minimal pair against
-*this phone*. A check pins it, so the label cannot go back to counting.
+**A third label was wrong and took two goes to fix, both caught by the owner
+after the push.** The scope chip read *both phones* — but nothing caps the
+household at two, since `device` has no limit and anything entering with the
+shared baby id mints its own row. Corrected to *every phone*, which was the same
+mistake one level down: this is a PWA, so it installs on a laptop or a tablet as
+readily as a phone, and the word named the owner's hardware rather than the
+rule.
+
+It reads **everyone / only here** now, with the rule written down in
+`settings.md`: a scope label says *who*, not how many and not what kind. Two
+checks pin it — the wording, and the absence of any count or hardware noun. Not
+*just you* for the local side: that is per device, not per person, so the same
+person on a laptop and a phone gets two answers.
 
 ### 2026-09-10 — the running feed gets the sleep chip's clock
 

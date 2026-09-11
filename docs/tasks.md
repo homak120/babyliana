@@ -169,7 +169,7 @@ when". Read that first; this list is the checklist view of the same thing.
 - [x] **CD/CC** Settings screen — D-055. The `tune` sheet is now five sections:
       quick bottle, supplement preset, prep prompt, feeding cycle, and this
       phone. The clock-format toggle and the phone's name came off the status
-      row into it. Every row says whether it reaches every phone or stays here.
+      row into it. Every row says whether it reaches everyone or stays only here.
       **Export still has nowhere to live** — it is the next thing to land in it
 
 ## Post-MVP — deliberately deferred

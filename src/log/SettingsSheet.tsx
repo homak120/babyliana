@@ -16,15 +16,22 @@ import { Icon } from './Icon'
  *
  * **Every row says whose it is.** With one shared setting, "the cycle syncs" was
  * something you simply knew. With four, changing the bottle default and having
- * someone else's phone start logging 90 mL is a surprise — and a surprise in a
- * shared log is worse than a word of chrome. `every phone` is a key on
- * `baby.settings`; `this phone` never leaves this device.
+ * someone else start logging 90 mL is a surprise — and a surprise in a shared
+ * log is worse than a word of chrome. `everyone` is a key on `baby.settings`;
+ * `only here` never leaves this install.
  *
- * **`every phone`, not `both phones`.** Nothing in the app caps the household
- * at two. `device` has no limit, and any phone entering with the shared baby id
- * mints its own row — so a label that counted them was describing today's
- * household rather than the rule, and would quietly start lying the first time
- * a third phone logged a feed. `every` is true at two and at ten.
+ * **The labels name neither a count nor a kind of hardware**, and both of those
+ * were shipped and corrected. It read `both phones` first: nothing caps the
+ * household at two, since `device` has no limit and anything entering with the
+ * shared baby id mints its own row. Then `every phone`: this is a PWA, so it
+ * installs on a laptop or a tablet as readily as a phone, and the word was
+ * describing the owner's hardware rather than the rule.
+ *
+ * **`only here`, not `just you`.** The local side is per *device*, not per
+ * person — the clock format is in `localStorage` and the name is on the
+ * `device` row — so the same person on a laptop and a phone gets two answers.
+ * `only here` is true of a place; `just you` would be a claim about a person
+ * that the storage does not make.
  *
  * **No save button.** Every control commits as you touch it: local write, the
  * card repaints, the push follows. That is the rule the whole app runs on, and
@@ -102,8 +109,11 @@ function Section({ children, title, shared }: {
       <header className="sethead">
         <h3>{title}</h3>
         <span className={shared ? 'scope shared' : 'scope local'}>
-          <Icon name={shared ? 'group' : 'smartphone'} size={13} />
-          {shared ? 'every phone' : 'this phone'}
+          {/* People for the shared side and a pin for the local one. No
+              hardware glyph: a phone icon makes exactly the claim the words
+              were changed to stop making. */}
+          <Icon name={shared ? 'group' : 'push_pin'} size={13} />
+          {shared ? 'everyone' : 'only here'}
         </span>
       </header>
       {children}
@@ -300,10 +310,10 @@ export function SettingsSheet({ onClose, devices, onRenamed, onClockChange }: {
         </p>
       </Section>
 
-      <Section title="this phone" shared={false}>
+      <Section title="only on this device" shared={false}>
         <p className="setnote">
-          these two stay here. other phones may answer them differently, and
-          that is correct.
+          these two stay where they are set. everyone else may answer them
+          differently, and that is correct.
         </p>
         <div className="setrow">
           <span className="setlabel">times</span>
@@ -326,7 +336,7 @@ export function SettingsSheet({ onClose, devices, onRenamed, onClockChange }: {
           <span className="setlabel">name</span>
           <input
             className="setinput"
-            aria-label="name this phone"
+            aria-label="name this device"
             value={name}
             placeholder="Anya"
             onChange={(e) => setName(e.target.value)}

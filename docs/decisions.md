@@ -2416,20 +2416,29 @@ repaint with or without a network.
 ### Every row says whose it is
 
 With one shared setting, "the cycle syncs" was something you simply knew. With
-four, changing the bottle default and having someone else's phone start logging
-90 mL is a surprise — and a surprise in a shared log is worse than a word of
-chrome. *every phone* is a key on `baby.settings`; *this phone* never leaves the
-device.
+four, changing the bottle default and having someone else start logging 90 mL is
+a surprise — and a surprise in a shared log is worse than a word of chrome.
+*everyone* is a key on `baby.settings`; *only here* never leaves the device.
 
-**The label reads *every phone*, and it shipped for a few hours reading *both
-phones*.** The owner caught it: two is the number of people using the app today,
-not a limit the app imposes. `device` has no cap, and any phone entering with
-the shared baby id mints its own row — so a label that counted the phones was
-describing this household rather than the rule, and would have started lying the
-first time a third one logged a feed. *every phone* is true at two and at ten,
-and it is the minimal pair against *this phone*, so the two read as one
-distinction rather than two phrasings. The same correction applies to prose near
-a user: *other phones*, not *the other phone*.
+**The labels took two corrections to get right, and both were the same mistake
+at different depths.** They shipped as *both phones*, which counted the
+household: nothing caps it at two, since `device` has no limit and anything
+entering with the shared baby id mints its own row. Corrected to *every phone*,
+which named the hardware: this is a PWA (D-001), so it installs on a laptop or a
+tablet as readily as a phone. The owner caught both.
+
+**The rule that came out of it: a scope label says who, not how many and not
+what kind.** *everyone* is true at two devices or ten, on any of them. A
+`verify-hero` check asserts the labels and forbids a count or a hardware noun,
+so the chip cannot quietly reacquire either.
+
+**And *only here*, not *just you*.** The local side is per *device*, not per
+person — the clock format is in `localStorage` and the name is on the `device`
+row — so the same person on a laptop and a phone gets two answers. *only here*
+is true of a place; *just you* would be a claim about a person that the storage
+does not make. The section it heads is titled *only on this device*, which says
+the same thing at more length, so the chip and the heading reinforce rather than
+repeat.
 
 The two local ones did not move into `baby.settings` and must not: the clock
 format is a preference of the phone in your hand and the two phones are allowed
