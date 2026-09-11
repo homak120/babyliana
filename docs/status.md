@@ -18,8 +18,20 @@ Last updated: 2026-09-11
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. Everything through D-055 is committed
-and pushed; **D-056 is in the working tree, uncommitted** — see *In flight*.
+delivered by the second design handoff. **694 checks pass across twenty-one
+suites**, and everything through D-056 is committed and pushed to `main`.
+
+**Work has moved onto a branch, and this is the first one the repo has had.**
+`product-ready-enhancement`, cut from `302ce22` on 2026-09-11. Every commit
+before it landed on `main` directly, so nothing here assumes a branch: `main` is
+still what is deployed and what the phones run, and a branch that is not merged
+changes nothing on them.
+
+**What counts as *product ready* is not written down yet — that is Q-013.** The
+branch is a container, not a plan; do not read a scope into the name. The phrase
+reads at least three ways here (the owner's own daily use, a second household, a
+product with accounts and a name), they do not overlap much, and the question
+names them so nobody has to guess. *Next action* below is still the real list.
 
 **The schema is current through `0006`, and every migration is applied.**
 `supabase/README.md` is the record of what exists and when each one ran — trust
@@ -127,11 +139,13 @@ item in the project.
 - ~~A settings screen~~ — **done, D-055.** Export now has somewhere to live,
   which was half the reason it was on this list.
 
-**3. Three owner decisions, none blocking:** Q-003 (mascot identity and the
-rights caution), Q-008 (the final name, which gets dearer with every asset
-carrying it), Q-006 (which of the *remaining* secondary types earned promotion —
-sleep already went, by design in D-029 rather than by the solo run; weight,
-temperature, supplements and spit-up are still answered by use, not by thinking).
+**3. Four owner decisions. Q-013 now gates a branch; the rest do not block.**
+Q-013 (what *product ready* means — asked because a branch is named for it and
+its scope is unwritten), Q-003 (mascot identity and the rights caution), Q-008
+(the final name, which gets dearer with every asset carrying it), Q-006 (which
+of the *remaining* secondary types earned promotion — sleep already went, by
+design in D-029 rather than by the solo run; weight, temperature, supplements
+and spit-up are still answered by use, not by thinking).
 
 **4. Q-004 runs itself.** Whether Safari evicts IndexedDB on a backgrounded
 phone. The clock is running; nobody needs to do anything.
@@ -160,16 +174,11 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**D-056 — the name editor back in the status row.** Uncommitted, complete, and
-verified. `LogScreen` regains `NamePrompt` and the `.namebtn`; `SettingsSheet`
-loses the name row and the `devices` / `onRenamed` props; `.namebtn` comes back
-to `log.css`; `verify-hero` gains three checks — the button is in the status
-row, its sheet commits on a save button, and settings holds no name field.
-Docs: D-056 added and D-055 amended where it claimed the name, plus
-`settings.md`, `tasks.md`, and this file.
-
-Nothing at the data layer moved. `renameThisDevice` and `verify-s9` are
-unchanged — this was only ever about where the field is.
+**Two documents, on `product-ready-enhancement`.** This file — the branch's own
+record, plus the correction that followed the D-056 push, where *Position* still
+called D-056 uncommitted — and `docs/open-questions.md`, which gains Q-013.
+**No app code has changed on the branch:** it is identical to `main` at
+`302ce22`, and `origin` has never seen it.
 
 This section records **what is sitting uncommitted and why**, so a cold session
 can read `git status` and know what it is looking at. It is not a changelog:
@@ -250,6 +259,14 @@ button, and settings holds no field labelled *name this device*. The existing se
 untouched. The only prose consequence worth noting is that *only here* no longer
 has the name as half of its justification — it is the clock format alone, which
 is still per device rather than per person.
+
+**Then the session branched, which this repo had never done.** D-056 went to
+`main` and was pushed; after it, `product-ready-enhancement` was cut from
+`302ce22`. The branch is empty of app changes — it carries this file and
+`open-questions.md`, and `origin` has not seen it. **Its scope was not given and
+was not invented:** Q-013 asks what *product ready* means and lays out the three
+readings rather than picking one, because picking wrong here costs whole
+features built for an audience that was never coming.
 
 ### 2026-09-11 — the tune sheet becomes a settings screen
 
