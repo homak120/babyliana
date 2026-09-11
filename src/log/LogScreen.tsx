@@ -148,7 +148,7 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
       setLoaded(true)
     })
     getDevices().then(setDevices)
-    // The shared settings are on the row both phones share (D-052, D-055), so a
+    // The shared settings are on the row every phone shares (D-052, D-055), so a
     // pull can bring one the other phone set — a feeding cycle, a bottle volume.
     // `read()` is a synchronous cache, so the repaint has to be asked for rather
     // than observed.

@@ -18,7 +18,7 @@ Last updated: 2026-09-11
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. **689 checks pass across twenty-one
+delivered by the second design handoff. **690 checks pass across twenty-one
 suites**, and the working tree is clean: everything through D-055 is committed
 and pushed.
 
@@ -57,7 +57,8 @@ push-then-reconcile sync with Supabase.
 - **Settings** — five sections behind the card's `tune` button: the quick
   bottle's volume and source, the supplement prefill, the prep-prompt lead, the
   feeding cycle, and this phone's clock format and name. Each row says whether
-  it reaches both phones or stays on this one.
+  it reaches *every phone* or stays on *this phone* — every, not both: nothing
+  in the app caps the household at two.
 - Two mascot sets and a theme switched by the clock; 12- and 24-hour times, per
   phone.
 
@@ -249,6 +250,14 @@ into `baby.settings` and must not.
 the generic stepper says `decrease`/`increase`, which describes the number and
 cannot be inverted. And the clock toggle's label named the format it would
 switch *to* — a segmented control shows both and marks the live one instead.
+
+**A third label was wrong and the owner caught it after the push.** The scope
+chip read *both phones*. Two is the number of people using the app today, not a
+limit it imposes: `device` has no cap and any phone entering with the shared
+baby id mints its own row, so the label described this household rather than the
+rule and would have started lying the first time a third phone logged a feed. It
+reads *every phone* now — true at two and at ten, and the minimal pair against
+*this phone*. A check pins it, so the label cannot go back to counting.
 
 ### 2026-09-10 — the running feed gets the sleep chip's clock
 

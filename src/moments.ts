@@ -11,7 +11,7 @@ import type { Baby, BabySettings, DraftEntry, LogEvent, Moment, Timeslot } from 
 const now = () => new Date().toISOString()
 
 /**
- * Write one shared setting to the row both phones read (D-052).
+ * Write one shared setting to the row every phone reads (D-052).
  *
  * The local write and the queue entry, and nothing else — `sync()` is the
  * caller's, so this never blocks on the network. `updated_at` and `updated_by`

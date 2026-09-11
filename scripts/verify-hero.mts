@@ -380,6 +380,15 @@ check('and every section says whose setting it is',
   (await p.locator('.scope.shared').count()) === 4
   && (await p.locator('.scope.local').count()) === 1,
   `${await p.locator('.scope.shared').count()} shared, ${await p.locator('.scope.local').count()} local`)
+// **Not a label that counts the phones.** `device` has no cap and any phone
+// entering with the shared baby id mints its own row, so "both phones" was
+// describing today's household rather than the rule — and would have started
+// lying the first time a third one logged a feed.
+const scopeWords = (await p.locator('.scope').allInnerTexts()).join(' ').toLowerCase()
+check('and says it without counting them',
+  /every phone/.test(scopeWords) && /this phone/.test(scopeWords)
+  && !/\bboth\b|\btwo\b/.test(scopeWords),
+  scopeWords.replace(/\n/g, ' '))
 // Both windows, so the check does not depend on which one the clock is in
 // when the suite runs — the fault this repo has spent two days removing.
 await p.getByLabel('decrease day gap').click()

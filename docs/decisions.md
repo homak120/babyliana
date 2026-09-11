@@ -2416,10 +2416,20 @@ repaint with or without a network.
 ### Every row says whose it is
 
 With one shared setting, "the cycle syncs" was something you simply knew. With
-four, changing the bottle default and having the other parent's phone start
-logging 90 mL is a surprise — and a surprise in a shared log is worse than a
-word of chrome. *both phones* is a key on `baby.settings`; *this phone* never
-leaves the device.
+four, changing the bottle default and having someone else's phone start logging
+90 mL is a surprise — and a surprise in a shared log is worse than a word of
+chrome. *every phone* is a key on `baby.settings`; *this phone* never leaves the
+device.
+
+**The label reads *every phone*, and it shipped for a few hours reading *both
+phones*.** The owner caught it: two is the number of people using the app today,
+not a limit the app imposes. `device` has no cap, and any phone entering with
+the shared baby id mints its own row — so a label that counted the phones was
+describing this household rather than the rule, and would have started lying the
+first time a third one logged a feed. *every phone* is true at two and at ten,
+and it is the minimal pair against *this phone*, so the two read as one
+distinction rather than two phrasings. The same correction applies to prose near
+a user: *other phones*, not *the other phone*.
 
 The two local ones did not move into `baby.settings` and must not: the clock
 format is a preference of the phone in your hand and the two phones are allowed

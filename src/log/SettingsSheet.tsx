@@ -16,9 +16,15 @@ import { Icon } from './Icon'
  *
  * **Every row says whose it is.** With one shared setting, "the cycle syncs" was
  * something you simply knew. With four, changing the bottle default and having
- * the other parent's phone start logging 90 mL is a surprise — and a surprise in
- * a shared log is worse than a word of chrome. `both phones` is a key on
+ * someone else's phone start logging 90 mL is a surprise — and a surprise in a
+ * shared log is worse than a word of chrome. `every phone` is a key on
  * `baby.settings`; `this phone` never leaves this device.
+ *
+ * **`every phone`, not `both phones`.** Nothing in the app caps the household
+ * at two. `device` has no limit, and any phone entering with the shared baby id
+ * mints its own row — so a label that counted them was describing today's
+ * household rather than the rule, and would quietly start lying the first time
+ * a third phone logged a feed. `every` is true at two and at ten.
  *
  * **No save button.** Every control commits as you touch it: local write, the
  * card repaints, the push follows. That is the rule the whole app runs on, and
@@ -97,7 +103,7 @@ function Section({ children, title, shared }: {
         <h3>{title}</h3>
         <span className={shared ? 'scope shared' : 'scope local'}>
           <Icon name={shared ? 'group' : 'smartphone'} size={13} />
-          {shared ? 'both phones' : 'this phone'}
+          {shared ? 'every phone' : 'this phone'}
         </span>
       </header>
       {children}
@@ -296,7 +302,7 @@ export function SettingsSheet({ onClose, devices, onRenamed, onClockChange }: {
 
       <Section title="this phone" shared={false}>
         <p className="setnote">
-          these two stay here. the other phone may answer them differently and
+          these two stay here. other phones may answer them differently, and
           that is correct.
         </p>
         <div className="setrow">

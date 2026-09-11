@@ -354,8 +354,8 @@ body {
 
 /* --- settings (D-055) ------------------------------------------------------
    Was the feeding cycle alone (D-050). Five sections now, each headed by what
-   it is and *whose it is* — a setting that reaches the other parent's phone and
-   one that never leaves this one look identical otherwise. */
+   it is and *whose it is* — a setting that reaches everyone else's phone and one
+   that never leaves this one look identical otherwise. */
 
 .setblock { padding: 0.25rem 0 0.5rem; }
 .setblock + .setblock { border-top: 1px solid var(--hair); margin-top: 1rem; }

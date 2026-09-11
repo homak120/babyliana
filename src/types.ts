@@ -39,7 +39,7 @@ export type Baby = {
   id: string
   name: string
   /**
-   * Everything both phones should agree on, keyed by setting name (D-052).
+   * Everything every phone should agree on, keyed by setting name (D-052).
    * `null` until something is set, and every reader falls back to its own
    * default — so an app that does not know a key simply ignores it.
    */
