@@ -490,6 +490,21 @@ body {
 /* Neutral on purpose: the duration is a footnote to the volume beside it, and
    a second rose chip would read as a second feed. */
 .chip-timer { background: var(--chip); color: var(--ink); }
+
+/* The *running* feed is the exception to the line above, and rose for the same
+   reason the sleep chip is peri: while it is happening it is not a footnote to
+   the volume, it is the thing on the row that is moving. The second-chip
+   reading is what a finished feed would risk, and that one goes back to
+   `.chip-timer`. Padding to the right of `.chips span`'s 0.5rem so the end
+   button's negative margin has something to eat, and tabular figures for the
+   reason `.chip-peri` gives — the width changes every tick and the button must
+   not shuffle sideways once a second. */
+.chip-feeding {
+  background: var(--roseFill);
+  color: var(--roseInk);
+  padding-right: 0.625rem;
+  font-variant-numeric: tabular-nums;
+}
 .chip-yellow { background: var(--yellowFill); color: var(--yellowInk); }
 .chip-mint { background: var(--mintFill); color: var(--mintInk); }
 

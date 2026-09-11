@@ -2299,3 +2299,53 @@ meant to be a sideways move.
 A 14px mask fade at each end of the rail. The pills and `all days` share a fill,
 so a pill clipped mid-scroll butted straight against it and the two read for a
 moment as one wide pill.
+
+---
+
+## D-054 — The running feed gets the row clock the running sleep already had
+
+The home list's feed chip counts in seconds while the feed is open, in rose,
+carrying its own *end* button — the mirror of the sleep chip D-053 built.
+Finished, it goes back to the neutral `fed 25 min` it has always been.
+
+**Why.** The two halves of the same idea had drifted apart. `sleepCell` returns
+`sleeping…` for an open sleep and the row overrides it with a live count;
+`feedCell` returns **null** for an open feed, so the row said nothing at all
+about it. That was defensible while a feed arrived through the sheet — you had
+just typed a volume, and the card and the bar carried the number. D-053 removed
+the sheet from the bottle, which means **every quick feed is now an open one**,
+and the commonest entry in the log became the one the list was silent about.
+
+**Seconds, not minutes.** The same argument the sleep chip is built on: an open
+period is the one thing on the screen that is *happening*, and a figure that
+sits still for a minute reads as one the app has stopped watching. A feed runs
+in minutes rather than hours, so the seconds move visibly — more of the point
+here than on a sleep, not less.
+
+**Rose while it runs, neutral once it is over.** `log.css` already said a second
+rose chip beside the volume reads as a second feed, and that stays true of a
+*finished* one — a read-back is a footnote to the volume. A running one is not a
+footnote; it is the thing moving on the row, and the colour says it belongs to
+the feed beside it rather than to some other entry. The moment it ends it
+becomes a footnote and takes the neutral fill.
+
+**End in the chip, and no resume.** The end button is the third control that
+closes a feed, beside the bar pill and the card's — it is on the row that says
+what is running, which is where a thumb already is. There is deliberately **no
+resume** to match the sleep chip's. Reopening a sleep is the undo for a stir
+that turned out not to be a waking; a feed has no equivalent, and the same
+asymmetry is already written on the write side, where `closeOpenSleep` stamps an
+end on a sleep and refuses to on a feed.
+
+**One tick, not two.** A moment can carry both a feed and a sleep, and two
+1-second intervals would repaint that row twice a second to show one number. The
+interval is keyed on whichever period is open, feed first — the priority the
+card and the mascot state already use.
+
+**The day table keeps its read-back.** `feedCell` is unchanged and still returns
+null while a feed is open. A stopwatch on a row you scrolled back to is counting
+the wrong thing; the live count belongs to the screen that knows what is open.
+
+**Reversal condition.** If the rose chip is read as a second feed in practice —
+the reading `log.css` warned about — the running chip takes the neutral fill and
+keeps the count. The count itself reverses only with the sleep chip's.

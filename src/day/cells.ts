@@ -94,8 +94,10 @@ export function milkTotal(events: LogEvent[]): string | null {
  *
  * The mirror of `sleepCell`, and the only thing an ended feed says that an
  * instant one does not. Nothing when the moment carries no feed, and nothing
- * while the feed is still running: the card and the bar carry the live number,
- * and a row is a read-back rather than a clock.
+ * while the feed is still running — the live count is the home row's, drawn
+ * from `ongoingFeed` and `liveClock` where the screen already knows what is
+ * open. The day table is a read-back of a day that is over, so it stays one:
+ * a stopwatch on a row you scrolled back to is counting the wrong thing.
  */
 export function feedCell(m: Moment): string | null {
   if (!m.events.some((e) => e.type === 'feed')) return null

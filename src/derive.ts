@@ -293,16 +293,23 @@ export function sleepDuration(from: string, to: string | Date): string {
 }
 
 /**
- * "1h 05m 32s" / "45m 12s" / "38s" — a sleep that is still running, live.
+ * "1h 05m 32s" / "45m 12s" / "38s" — a period that is still running, live.
  *
- * The row's version of `sleepDuration`, and the only place in the app that
- * counts in seconds. It is there because a sleep with no end time is the one
- * thing on the screen that is *happening*: a figure that sits still for a
- * minute at a time reads as a number the app has stopped watching, and the
- * whole point of the chip is that it is watching. Everything finished still
- * reads in minutes — a slept 1h 20m does not become more true to the second.
+ * The row's version of `sleepDuration` and of `feedDuration`, and the only
+ * place in the app that counts in seconds. It is there because a period with no
+ * end time is the thing on the screen that is *happening*: a figure that sits
+ * still for a minute at a time reads as a number the app has stopped watching,
+ * and the whole point of the chip is that it is watching. Everything finished
+ * still reads in minutes — a slept 1h 20m does not become more true to the
+ * second, and neither does a fed 25 min.
+ *
+ * **One formatter for both, deliberately.** The finished forms differ — a sleep
+ * says `45m` and a feed says `25 min`, because the unit is doing more work on
+ * the feed — but a running count is a stopwatch either way, and two stopwatches
+ * drifting apart in format is how the same second ends up written two ways on
+ * one row.
  */
-export function sleepClock(from: string, to: string | Date): string {
+export function liveClock(from: string, to: string | Date): string {
   const secs = Math.max(0, Math.floor((new Date(to).getTime() - new Date(from).getTime()) / 1000))
   const pad = (n: number) => String(n).padStart(2, '0')
   const h = Math.floor(secs / 3600)

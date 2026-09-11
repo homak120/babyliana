@@ -114,6 +114,44 @@ check('the row reads the volume with its unit and its source',
   /60 mL formula/.test((await p.locator('.chip-rose').first().innerText()).replace(/\n/g, ' ')),
   (await p.locator('.chip-rose').first().innerText()).replace(/\n/g, ' '))
 
+// --- the row's own clock, the mirror of the sleep chip ----------------------
+//
+// A running feed used to say nothing at all on the row: `feedCell` returns null
+// while it is open, so the only live number was the card's and the bar's. Since
+// the bottle writes straight to the log, every quick feed is an open one, and a
+// row that says nothing about the thing that is happening is the wrong half of
+// the screen to be silent.
+check('the row reads "feeding" while it runs',
+  (await p.locator('.chip-feeding').innerText()).includes('feeding'),
+  (await p.locator('.chip-feeding').innerText()).replace(/\n/g, ' '))
+// Live to the second, and actually moving — read twice a couple of seconds
+// apart, because a chip that renders "0s" once and freezes would pass a check
+// on the format alone. The same pair verify-sleep runs.
+const feedChipAt = async () =>
+  (await p.locator('.chip-feeding').innerText()).replace(/\n/g, ' ').trim()
+const firstFeedRead = await feedChipAt()
+check('and counts in seconds', /feeding \d+s$/.test(firstFeedRead), firstFeedRead)
+await p.waitForTimeout(2100)
+const secondFeedRead = await feedChipAt()
+check('and the count is running, not painted once',
+  secondFeedRead !== firstFeedRead && /feeding \d+s$/.test(secondFeedRead),
+  `${firstFeedRead} then ${secondFeedRead}`)
+// Rose while it runs, neutral once it is a read-back: the running feed is the
+// thing happening, and `.chip-timer` is where a *finished* one belongs.
+check('the running chip is rose and the finished one is not',
+  (await p.locator('.chip-feeding').evaluate((el) => getComputedStyle(el).backgroundColor))
+    === (await p.locator('.chip-rose').first().evaluate((el) => getComputedStyle(el).backgroundColor)),
+  'same fill as the volume chip beside it')
+// A third control carries "end feed": the bar pill, the card's button, and this
+// one inside the chip that says what is running.
+check('the row carries its own end-feed button',
+  await p.locator('.chip-feeding [aria-label="end feed"]').isVisible(), 'in the chip')
+// No resume to match the sleep chip's. Reopening a sleep is the undo for a stir
+// that was not a waking; a feed has no equivalent, and `closeOpenSleep` records
+// the same asymmetry on the write side.
+check('and offers no resume once it is over',
+  (await p.locator('.row [aria-label="resume feed"]').count()) === 0, 'feeds do not reopen')
+
 // The direct child only: the end-feed button beside it is a Material icon in a
 // span of its own, where the end-sleep control is an SVG.
 const cardLine = p.locator('.feedline')
@@ -132,6 +170,8 @@ check('the card button closes it',
   /fed/.test((await p.locator('.chip-timer').first().innerText()).replace(/\n/g, ' ')),
   (await p.locator('.chip-timer').first().innerText()).replace(/\n/g, ' '))
 check('and the card drops its feeding line', (await p.locator('.feedline').count()) === 0, 'gone')
+check('and the row stops counting', (await p.locator('.chip-feeding').count()) === 0,
+  'the rose clock is gone')
 await p.locator('.quick.feed').waitFor({ state: 'visible', timeout: 5000 })
 check('and the bar goes back to offering a feed', true, 'bottle restored')
 

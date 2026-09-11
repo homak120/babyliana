@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-08
+Last updated: 2026-09-10
 
 ---
 
@@ -18,9 +18,9 @@ Last updated: 2026-09-08
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. **660 checks pass across twenty-one
-suites**, and the working tree is clean: everything through D-053, and the
-documentation pass that followed it, is committed and pushed.
+delivered by the second design handoff. **667 checks pass across twenty-one
+suites**, and the working tree is clean: everything through D-054 is committed
+and pushed.
 
 **The schema is current through `0006`, and every migration is applied.**
 `supabase/README.md` is the record of what exists and when each one ran — trust
@@ -67,6 +67,11 @@ precache sits where it does; the 1024 is excluded, being needed only at install.
 Newest first, and **this is an index, not a record** — `docs/decisions.md`
 carries the reasoning for every one of these, and for everything older.
 
+- **D-054** — the home list's feed chip counts in seconds while the feed is
+  open, in rose, with its own *end* button — the mirror of the sleep chip. It
+  said nothing at all before, which stopped being defensible when D-053 made
+  every quick bottle an open feed. No resume: reopening a sleep is the undo for
+  a stir, and a feed has no equivalent.
 - **D-053** — the bottle and the bedtime button write straight to the log, one
   tap and no sheet, so `+` is now the only route that asks for a volume. The
   home list's sleep chip counts in seconds while it runs and carries an *end*
@@ -147,10 +152,7 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 This section records **what is sitting uncommitted and why**, so a cold session
 can read `git status` and know what it is looking at. It is not a changelog:
 once work is committed its entry comes out, and `docs/decisions.md` carries the
-reasoning from then on. It had grown to four hundred lines of already-committed
-history and was emptied on 2026-09-08 — the facts in it that were not decisions,
-namely which migrations are applied and when, now live in `supabase/README.md`,
-which is the right home for them.
+reasoning from then on.
 
 ## Open threads
 
@@ -194,7 +196,39 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-08 (latest) — two taps become one, and the day strip scrolls
+### 2026-09-10 (latest) — the running feed gets the sleep chip's clock
+
+**The home list said nothing about a feed that was happening** (D-054).
+`sleepCell` returns "sleeping…" for an open sleep and the row overrides it with
+a live count; `feedCell` returns *null* for an open feed. That was fine while a
+feed came through the sheet — you had just typed a volume, and the card and the
+bar carried the number. D-053 took the sheet off the bottle, so every quick feed
+is an open one, and the commonest entry in the log was the one the list was
+silent about.
+
+**Seconds, rose, and an end button in the chip.** Seconds for the reason the
+sleep chip has them — an open period is the thing on the screen that is
+happening, and a figure sitting still for a minute reads as one the app stopped
+watching. Rose only *while* it runs: `log.css` already said a second rose chip
+beside the volume reads as a second feed, and that stays true of a finished one,
+which is a footnote to the volume and keeps the neutral fill.
+
+**No resume, deliberately.** The sleep chip has one because reopening a sleep is
+the undo for a stir that was not a waking. A feed has no equivalent, and the
+same asymmetry is already on the write side — `closeOpenSleep` stamps an end on
+a sleep and refuses to on a feed.
+
+**One tick for both.** A moment can carry a feed and a sleep, and two 1-second
+intervals would repaint that row twice a second to show one number. Keyed on
+whichever period is open, feed first, which is the priority the card and the
+mascot state already use.
+
+**`sleepClock` became `liveClock`.** Its own comment claimed to be the only
+place in the app that counts in seconds; a second caller made that false, and
+two stopwatches drifting apart in format is how one row ends up writing the same
+second two ways.
+
+### 2026-09-08 — two taps become one, and the day strip scrolls
 
 **The bottle and the bedtime button stopped opening the sheet** (D-053). Both
 write straight to the log now. The reasoning is short: the sheet was not asking
@@ -297,20 +331,3 @@ events.
 **This one blocks the deploy, and it is the case the rule was written for.**
 `verify-s2` is red on `the baby row carries a cycles column` until the migration
 runs.
-
-### 2026-09-07 — a fourth estimate, and the chip it caught
-
-**Next feeds shows four times** (D-051). Three reached about nine hours out — an
-evening. Four reaches past midnight from an afternoon feed, which is the
-question that tab is opened at 4am to answer.
-
-**And it put a bug on screen.** The interval chip named the window a row *landed
-in*, not the one whose gap produced it. Those differ only when a step crosses a
-boundary, which three rows rarely showed: `22:40` is three hours after `19:40`
-and carried a `4h` label, because 22:40 is itself inside the night window.
-`feedTimeline` returns `{ at, cycle }` now, the cycle being the one the step
-started in.
-
-**No check caught it** — `verify-hero` counted chips and `verify-s3` checked
-times, and both passed throughout. Reading the four times against each other did.
-Two checks guard it now.

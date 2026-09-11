@@ -6,13 +6,13 @@ import {
   formatElapsed,
   lastFeedAt,
   lastFeedMoment,
+  liveClock,
   mascotState,
   minutesSince,
   ongoingFeed,
   ongoingSleep,
   resumableSleep,
   sameDay,
-  sleepClock,
   sleepDuration,
   targetText,
   targetWake,
@@ -229,18 +229,23 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
   // Never both this and `asleep` — they are complements on the same moment.
   const resumable = resumableSleep(moments)
 
-  // The running sleep's chip counts in seconds, so it needs its own tick rather
-  // than the 30s one the hero runs on. Keyed on the sleep's id and torn down the
-  // moment there is no open sleep, so the app is not repainting once a second
-  // for the rest of the day because something was asleep an hour ago.
-  const openSleepId = asleep?.timeslot.id ?? null
+  // The running period's chip counts in seconds, so it needs its own tick rather
+  // than the 30s one the hero runs on. Keyed on the open moment's id and torn
+  // down the moment nothing is running, so the app is not repainting once a
+  // second for the rest of the day because something was asleep an hour ago.
+  //
+  // **One tick for both.** A feed and a sleep can be the same moment, and two
+  // intervals on the same row would paint it twice a second to show one number.
+  // The feed is named first for the reason the card gives: where a moment
+  // carries both, the feed is the one that is happening.
+  const openPeriodId = feeding?.timeslot.id ?? asleep?.timeslot.id ?? null
   const [second, setSecond] = useState(() => new Date())
   useEffect(() => {
-    if (!openSleepId) return
+    if (!openPeriodId) return
     setSecond(new Date())
     const t = setInterval(() => setSecond(new Date()), 1000)
     return () => clearInterval(t)
-  }, [openSleepId])
+  }, [openPeriodId])
   // The combined and mascot leads print the last feed itself, not just how long
   // ago it was: its volume as the paper writes it, its clock time, and who
   // logged it. An em dash where there is nothing yet, same as the elapsed lead.
@@ -538,13 +543,39 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
                       <Icon name="local_drink" size={14} /> {feeds.parts.join(' + ')}
                     </span>
                   )}
-                  {/* "fed 25 min", the mirror of "slept 1h 20m" — the one thing
-                      a finished feed says that an instant one does not. */}
-                  {fed && (
-                    <span className="chip-timer">
-                      <Icon name="timer" size={14} /> {fed}
-                    </span>
-                  )}
+                  {/* The feed's clock, the mirror of the sleep chip below.
+                      Running, it counts in seconds and carries the way out of
+                      itself; finished, it is "fed 25 min" — the one thing a
+                      finished feed says that an instant one does not. */}
+                  {(() => {
+                    // Only the latest moment can be running, and `ongoingFeed`
+                    // is the one rule that decides which — the same check the
+                    // card, the bar and the mascot are already reading.
+                    const running = feeding?.timeslot.id === m.timeslot.id
+                    if (!running && !fed) return null
+                    return (
+                      <span className={running ? 'chip-feeding' : 'chip-timer'}>
+                        <Icon name="timer" size={14} />{' '}
+                        {running ? `feeding ${liveClock(m.timeslot.occurred_at, second)}` : fed}
+                        {/* A third control carries "end feed", beside the bar
+                            pill and the card's button — the one inside the chip
+                            that says what is running. No resume to match the
+                            sleep chip's: reopening a sleep is the undo for a
+                            stir that was not a waking, and a feed has no
+                            equivalent — see `closeOpenSleep` on the asymmetry. */}
+                        {running && (
+                          <button
+                            type="button"
+                            className="chipbtn"
+                            aria-label="end feed"
+                            onClick={onEndOpen}
+                          >
+                            <BottleIcon size={14} />
+                          </button>
+                        )}
+                      </span>
+                    )
+                  })()}
                   {m.events.some((e) => e.pee) && (
                     <span className="chip-yellow">
                       <Icon name="water_drop" size={14} /> pee
@@ -569,7 +600,7 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
                         {/* Live to the second while it runs, so the row reads as
                             something happening rather than a figure that stopped
                             being watched. Finished, it is minutes again. */}
-                        {running ? `sleeping ${sleepClock(m.timeslot.occurred_at, second)}` : s.text}
+                        {running ? `sleeping ${liveClock(m.timeslot.occurred_at, second)}` : s.text}
                         {running && (
                           <button
                             type="button"
