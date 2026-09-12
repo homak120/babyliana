@@ -181,13 +181,14 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**The D-057 documentation, on `product-ready-enhancement`.** Q-013 struck from
-`open-questions.md`; D-057 written; `technical-constraints.md` § Identity
-rewritten and a fourth non-negotiable added; `CLAUDE.md`'s summary of the login
-rule amended; `baby-and-devices.md` revived with its token design marked stale;
-`tasks.md` § Phase 12 turned into a dependency-ordered list. **Still no app
-code** — `main` at `302ce22` is what is deployed and the branch has not touched
-the app.
+**Nothing.** The working tree is clean.
+
+`product-ready-enhancement` is three commits ahead of `main`: two of
+documentation — D-057 and the branch's own record — and one copy change, the
+welcome gate's heading now reading *Hello! Do you know me?*. Nothing structural
+has moved. `main` at `302ce22` is what is deployed, and the first Phase 12 task
+is the ownership schema, which must reach Supabase before any client code naming
+it is pushed.
 
 This section records **what is sitting uncommitted and why**, so a cold session
 can read `git status` and know what it is looking at. It is not a changelog:

@@ -143,7 +143,7 @@ export function Welcome({ onDone }: { onDone: () => void }) {
         </div>
 
         <p className="kickerup">hello there</p>
-        <h1>do you know me?</h1>
+        <h1>Hello! Do you know me?</h1>
         <p className="sub">only Liana&rsquo;s people get in. enter the secret code to confirm.</p>
 
         <label className="fieldlabel" htmlFor="code">secret code</label>
