@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-11
+Last updated: 2026-09-13
 
 ---
 
@@ -42,9 +42,11 @@ is this family's (D-008), a breach the moment a stranger signs up. `docs/tasks.m
 that was meant to authorise it. Owner's call, recorded so a later session does not
 read it as slippage. **The coverage run still outranks it** — see *Next action*.
 
-**The schema is current through `0006`, and every migration is applied.**
-`supabase/README.md` is the record of what exists and when each one ran — trust
-it over this file for migration state. Two rules sit around it. **Additive
+**`public` is current through `0006` and every one of those is applied. `0007`
+is written and has not been run.** It creates a second schema, `app`, and
+touches nothing in `public` — see *In flight*. `supabase/README.md` is the
+record of what exists and when each one ran — trust it over this file for
+migration state. Two rules sit around it. **Additive
 only** (D-039): no column is ever dropped or narrowed again, because "after
 every phone has updated" is not an observable moment when the service worker
 updates lazily, there is no forced update, and one of the phones belongs to the
@@ -181,14 +183,32 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**Nothing.** The working tree is clean.
+**`supabase/migrations/0007_app_schema.sql`, written and not run.** Plus the
+row for it in `supabase/README.md` and this file's edits.
+
+It creates a **second schema, `app`** — `baby`, `caregiver`, `baby_member`,
+`timeslot`, `event` — with RLS and policies written at creation, `is_member_of`,
+`create_baby`, grants to `authenticated` only, and realtime. **It does not touch
+`public`: not a column, not a policy, not a grant.** So it can be run whenever,
+and the two phones cannot notice. If it is wrong, drop the schema and run it
+again.
+
+That is the point of the approach and it is new this session. Every earlier plan
+altered `public` — a rename, a compatibility view, a staged policy drop — and
+each had a window where the phone that cannot be reached would stall its outbox.
+A parallel schema has no such window, and leaves `public` intact as the rollback.
+
+**Two things are decided and not yet written down in `decisions.md`:** the
+household account model (one `auth.users` row per household, many caregivers
+under it, sign in with a shared inbox and pick who you are) and the parallel
+schema itself. Both supersede parts of how D-057 was expected to land. A cold
+session should read this section and then write that decision record before
+building on either.
 
 `product-ready-enhancement` is three commits ahead of `main`: two of
 documentation — D-057 and the branch's own record — and one copy change, the
-welcome gate's heading now reading *Hello! Do you know me?*. Nothing structural
-has moved. `main` at `302ce22` is what is deployed, and the first Phase 12 task
-is the ownership schema, which must reach Supabase before any client code naming
-it is pushed.
+welcome gate's heading now reading *Hello! Do you know me?*. `main` at `302ce22`
+is what is deployed.
 
 This section records **what is sitting uncommitted and why**, so a cold session
 can read `git status` and know what it is looking at. It is not a changelog:
@@ -237,7 +257,51 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-11 (latest) — product ready gets a definition
+### 2026-09-13 (latest) — the new schema is built beside the old one
+
+**Multi-tenancy stops being a change to `public` and becomes a second schema.**
+`0007` is written and unrun. It creates `app` with five tables, policies at
+creation time, and no `anon` grant anywhere — that omission *is* the isolation,
+so there is no later migration that closes a door.
+
+**This replaced three progressively worse plans, and the reason each failed is
+the same one.** Renaming `device` in place breaks a client still calling it. A
+compatibility view fixes reads and not writes — PostgREST upserts with
+`ON CONFLICT`, and a view has no unique index to infer. Dropping the `anon`
+policies is a one-way door with no rollback. All three assumed every phone can
+be brought forward on demand, and D-039 already established that none can.
+
+**`device` was never a device.** `src/device-id.ts` explains its recovery flow
+as stopping a reinstalled phone from minting "a second device for a parent who
+already has one" — a second *parent*. It is `app.caregiver` now, renamed for
+free in a table nothing is running against yet.
+
+**The account is the household, not the person.** One `auth.users` row holding a
+shared inbox; Dad and Mum both sign in with it and pick who they are. That makes
+`caregiver` 1:N with the account, which deletes the `profile` table an earlier
+draft had proposed — 1:1 could never have held two parents. It also deletes
+`RECOVERY_CODE` outright: a reinstalled phone signs in and picks itself, which
+is the screen `Welcome.tsx` already has behind that code.
+
+**`app.event` does not create `grams` and `celsius`.** Dead in `public` since
+`0003`, dropped by `0004`, restored by `0005` when a phone stopped syncing, and
+frozen by D-039 ever since. A fresh table inherits none of it, and this was the
+only chance.
+
+**Three things surfaced that only fail at runtime**, all handled in the file: an
+RLS policy on `baby_member` that reads `baby_member` recurses infinitely;
+`with check (is_member_of(id))` deadlocks on the first baby insert, because the
+membership row cannot exist yet — hence `create_baby`; and `alter default
+privileges` is what stops the *next* table in the schema being silently
+unreachable.
+
+**Not everything in stage 1 is SQL.** Exposed schemas, the OTP expiry, the
+`{{ .Token }}` template edit and custom SMTP are dashboard work, and the SMTP
+domain verification is DNS, so it is the only item with a wait in it. The file's
+header carries the list. Stage 1 is done when a real code reaches a real inbox
+and `verify-s2` passes against `app`.
+
+### 2026-09-11 — product ready gets a definition
 
 **Q-013 is closed and the branch has a scope** (D-057). Multi-tenant: many
 accounts per baby, many babies per account, open signup, and *sign in to join a
@@ -306,64 +370,3 @@ is still per device rather than per person.
 was not invented:** Q-013 asks what *product ready* means and lays out the three
 readings rather than picking one, because picking wrong here costs whole
 features built for an audience that was never coming.
-
-### 2026-09-11 — the tune sheet becomes a settings screen
-
-**Three more shared settings, and no migration** (D-055). The quick bottle's
-volume and source, the supplement prefill, and the prep-prompt lead are keys on
-`baby.settings` now. That is D-052 paying off exactly as designed: a key per
-setting is no migration, where a column per setting would have been three — and
-three pushes that could not go out ahead of them.
-
-**The bottle default earned its place first, and D-053 is why.** While the
-bottle opened a sheet, 60 mL was a prefill: visible, overwritable, wrong at no
-cost. Since D-053 it writes straight to the log, so a wrong default is a wrong
-*row*, fixed by a swipe-edit afterwards. The setting is what stops the one-tap
-entry from lying.
-
-**`cycles.ts`'s bespoke trio became a registry.** `hydrateCycles` /
-`isDefaultCycles` / `same` was right for one setting and would have been four
-copies drifting apart at four. Each key now declares its default, its parse and
-its comparison, and one `hydrate` walks them.
-
-**The interesting part is what `parse` returns for junk: null, not the
-default.** A row carrying an empty cycle list or a volume of zero means
-*nothing*, and reading it as the default would let one phone's corrupt write
-quietly reset a setting the other had deliberately changed. `hydrate` skips the
-key. The old `hydrateCycles` had that guard inline and it would have been lost
-in the generalisation — `verify-s3` now checks all three junk shapes.
-
-**And the reconcile lost its early return**, which was invisible while `cycles`
-was the only key: it stopped at the first adopted value, so a row carrying a
-cycle but no bottle default would never have pushed the bottle up.
-
-**No save button.** Every control commits on the tap — local write, repaint,
-push behind. A save button would also have been a regression on the clock
-toggle, which has always applied instantly. The *push* debounces 600ms so
-holding `+` does not queue twenty row writes; the local write never does.
-
-**Every row says whose it is.** With one shared setting, "the cycle syncs" was
-something you knew. With four, changing the bottle default and having the other
-parent's phone start logging 90 mL is a surprise. The clock format and the
-device's name are in the same screen and marked *only here* — they did not move
-into `baby.settings` and must not.
-
-**Six suites changed, and two labels were wrong before.** The cycle sheet said
-"less often" on the button that *shortens* the gap, which feeds her more often;
-the generic stepper says `decrease`/`increase`, which describes the number and
-cannot be inverted. And the clock toggle's label named the format it would
-switch *to* — a segmented control shows both and marks the live one instead.
-
-**A third label was wrong and took two goes to fix, both caught by the owner
-after the push.** The scope chip read *both phones* — but nothing caps the
-household at two, since `device` has no limit and anything entering with the
-shared baby id mints its own row. Corrected to *every phone*, which was the same
-mistake one level down: this is a PWA, so it installs on a laptop or a tablet as
-readily as a phone, and the word named the owner's hardware rather than the
-rule.
-
-It reads **everyone / only here** now, with the rule written down in
-`settings.md`: a scope label says *who*, not how many and not what kind. Two
-checks pin it — the wording, and the absence of any count or hardware noun. Not
-*just you* for the local side: that is per device, not per person, so the same
-person on a laptop and a phone gets two answers.

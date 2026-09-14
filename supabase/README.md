@@ -21,6 +21,7 @@ Editor, paste each file in order, run it.
 | `migrations/0004_drop_metric_columns.sql` | Drops `event.grams` and `event.celsius` | **After both phones are on code that stops sending them** — the reverse of 0003, so the reverse order. Refuses to run if either column holds a value. Applied 2026-09-06, ahead of that code being deployed — see below |
 | `migrations/0005_restore_metric_columns.sql` | Puts `event.grams` and `event.celsius` back, nullable and dead | **Immediately** — it unblocks a phone that is silently not syncing. Additive and `if not exists`, so safe to re-run. Reverses 0004 and retires the idea; D-039 |
 | `migrations/0006_baby_settings.sql` | Adds `baby.settings jsonb` — one object keyed by setting name, the feeding cycle being the first key | **Before deploying the version that writes it.** Additive and `if not exists`, so safe to re-run. Applied 2026-09-08; D-052 |
+| `migrations/0007_app_schema.sql` | Creates the `app` schema — `baby`, `caregiver`, `baby_member`, `timeslot`, `event` — with RLS, policies, `is_member_of`, `create_baby`, grants and realtime. **Touches nothing in `public`** | **NOT YET RUN.** Whenever you like: it cannot affect the running phones. Safe to re-run. D-057 |
 
 **There is no `0002`, and the number is burned.** `0002_seed_household.sql`
 existed on 2026-09-03 and was **run against the database** before `0b14b40`
