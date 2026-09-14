@@ -41,9 +41,41 @@
 --      for testing and is hard rate-limited. Verifying the sending domain is a
 --      DNS change, so it is the one item here with a wait in it — start it
 --      before this file, not after.
---   5. Authentication → URL Configuration → Site URL: the deployed PWA. A
---      numeric OTP never redirects, so this does not gate the flow, but it
---      bites later if it is still localhost.
+--   5. Authentication → URL Configuration. There are two Vercel origins and
+--      they are not interchangeable:
+--
+--        https://babyliana.vercel.app    `main` — what the two phones run
+--        https://babylianav2.vercel.app  this branch — where the migration is built
+--
+--      **Site URL goes to the v2 origin** while this work is in progress, with
+--      both listed under Redirect URLs. Pointing it at staging costs production
+--      nothing: `main` never calls signInWithOtp, so it never reads this
+--      setting. **Flip it back at cutover** — that is a stage 5 item.
+--
+--      A numeric OTP never redirects, so this does not gate the flow either
+--      way. It bites later if it is left on localhost — or on v2.
+--
+-- All four of the above are **project-wide**. There is no staging-only value for
+-- any of them, because there is one Supabase project. That is deliberate; see
+-- below.
+--
+-- ---------------------------------------------------------------------------
+-- WHAT THE v2 ORIGIN IS NOT
+-- ---------------------------------------------------------------------------
+--
+-- It is not isolation. It is a second front end over the same Supabase project,
+-- and until stage 2 points the client at this schema it reads and writes
+-- `public` with the same key and the same hard-coded baby id as production.
+--
+-- Verified 2026-09-14 by fetching both bundles: they inline the same project
+-- URL, the same publishable key, and the same BABY_ID, and differ by 55 bytes —
+-- the welcome heading. **A tap on v2 today lands in the real log.** Treat it as
+-- production until stage 2 lands.
+--
+-- One project is the right call anyway. A second project for staging would turn
+-- stage 3's copy from `public` into one SQL statement across two schemas into an
+-- export and an import across two endpoints. **The schema boundary is the
+-- isolation; the origin never was.**
 --
 -- `auth.users` needs nothing. It exists in every Supabase project from day one;
 -- the foreign keys below just work.

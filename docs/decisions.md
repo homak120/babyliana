@@ -2575,3 +2575,86 @@ top of that finding would be built twice.
 to the pen for this family, multi-tenancy is premature by definition — an app
 nobody here uses is not one to give away. That is Phase 11's gate doing its job
 late rather than a new decision.
+
+## D-058 — local-first is settled, and stops being a design argument
+
+**2026-09-14. Owner's call, after the rule blocked a third design conversation.**
+
+**Decision.** The local-first invariants stay in the code and come *out* of the
+design conversation. They are built, they work, and they are no longer a
+question to be re-argued every time a feature is proposed.
+
+Concretely, from here on:
+
+- **No agent challenges a design with "but what about offline at 4am".** The
+  scenario is not a test a proposal has to pass. If a design breaks an invariant
+  below, say which line of code breaks and what to write instead — one sentence,
+  in the implementation notes, not a section heading.
+- **No work is added whose only justification is a scenario this deployment has
+  not hit.** Offline has been close to hypothetical for this family. Hardening
+  against it further is not MVP work.
+- **The rule is not a veto on the login feature.** A session cached in
+  `localStorage` and refreshed in the background satisfies it. That is the whole
+  answer, and it does not need re-deriving.
+
+**What does not change: the code.** Writes still go to IndexedDB and the UI
+still updates before the network is touched. Sync still queues and retries. The
+outbox still survives a reload. Nothing in `src/` moves because of this
+decision, and a change that broke any of it would still be wrong.
+
+**Why.** The rule is load-bearing as architecture and was becoming a rhetorical
+device. It was invoked against the design of the login flow, the session cache,
+and the bootstrap order, and in all three cases the proposal was already correct
+— the invocation produced a round trip and no design change. Meanwhile the thing
+that actually gates this project is getting a multi-tenant version out. Spending
+the conversation on a scenario measured at roughly never, while the gate goes
+untouched, is the cost this decision removes.
+
+It is also the same mistake D-032 corrected in a different area: a broad,
+always-applicable caution reads as licence to raise an objection anywhere, and
+the fix is to make it specific and finite rather than to delete it.
+
+**The narrower thing that is still true, stated once so it need not be argued
+again.** Do not `await` a network auth call before first paint — read the cached
+session synchronously and render. That is an implementation note about startup
+latency, costs nothing, and is not a design constraint anyone needs to defend.
+
+**Reversal condition.** A real report of a parent unable to log — not a
+hypothetical, an actual occurrence — puts offline back on the table
+immediately, with whatever hardening that report justifies. Until one exists,
+the invariants above are the whole of the requirement.
+
+**Consequence for `technical-constraints.md`.** § *Local-first is a hard
+requirement* and the *Non-negotiables* list are reframed as invariants to
+preserve rather than tests to apply. `CLAUDE.md` reflects it.
+
+## D-059 — the gate code is replaced by the login, not kept alongside it
+
+**2026-09-14. Owner's call.**
+
+**Decision.** `SECRET_CODE` and the gate page it guards come out when the login
+lands. First run becomes: email → OTP → pick or create a caregiver. There is no
+second code, and no "friendly front door" kept for its own sake.
+
+`RECOVERY_CODE` goes with it. The screen behind it — pick the caregiver you
+already are, rather than minting a second one — survives and becomes an ordinary
+step of onboarding. That screen was always the useful part; the code in front of
+it was the workaround.
+
+**Why.** The gate was standing in for authentication that did not exist. D-030
+said so at the time and called it "a doormat, not a lock": the repo is public,
+the bundle carries the code in plain text, and it stopped nobody who looked.
+It was the right call for a pilot with a hard-coded baby and no accounts,
+because it made a lightweight entry possible without building a login.
+
+Once a real login exists the substitute has no job. **The household email plus a
+time-limited OTP is the secret code**, and a better one — it is not in the
+bundle, it expires, and it is per household rather than per deployment. Keeping
+both would mean two challenges in front of a parent at first run, one of which
+protects nothing.
+
+**Consequence.** D-030's first-run description is superseded from the login
+onward; its mascot half is untouched. `Welcome.tsx` loses the `'gate'` stage,
+`verify-welcome` loses its gate assertions, and `scripts/ui.mts` § `enterApp`
+loses the code-filling branch that every browser suite depends on — that helper
+is the single edit point, which is why it exists.

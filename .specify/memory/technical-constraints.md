@@ -28,10 +28,10 @@ to log — not outside it.
 Going native is a separate future project, not a continuation of this one. See
 `docs/decisions.md` D-001.
 
-## Local-first is a hard requirement
+## Local-first — built, settled, not re-argued
 
-The app is used in a nursery, at night, possibly with poor signal, on a phone
-that may have been backgrounded for hours.
+**These are invariants to preserve, not tests to run against every proposal
+(D-058).** They describe code that already exists and works:
 
 - Writes go to IndexedDB and the UI updates immediately. The network is never in
   the write path.
@@ -40,6 +40,18 @@ that may have been backgrounded for hours.
 
 Supabase is the source of truth for sharing. IndexedDB is a full local replica,
 not a cache of recent items.
+
+**What D-058 changed is how this section gets used.** It is not a challenge to
+raise against a new feature, and "but what about offline at 4am" is not an
+argument. If a design would break one of the three lines above, name the line
+and say what to write instead. If it would not, this section has nothing to say
+about it. No work is justified by an offline scenario this deployment has not
+actually hit — a real report of a parent unable to log reopens it, a
+hypothetical does not.
+
+One implementation note, recorded so it need not be re-derived: don't `await` a
+network auth call before first paint. Read the cached session synchronously and
+render.
 
 ## Supabase free tier
 
@@ -90,11 +102,17 @@ Original rationale, now superseded: `docs/decisions.md` D-004, D-022.
 
 ## Non-negotiables
 
+**Invariants, not a checklist to re-run (D-058).** Preserve them in code; do not
+re-argue them in design.
+
 - Never block a write on the network.
 - Corrections are updates and deletes are deletes (D-003). Last write wins.
 - Never resolve a duplicate silently.
 - Never require a login to log an event. Signing in to *join* a baby is allowed
   and expected (D-057); a session standing between a parent and a feed is not.
+  **A session cached in `localStorage` and refreshed in the background satisfies
+  this.** That is the whole answer — D-058 settled it, and it is not an open
+  question against the login work.
 - Export must work before the app is shown to a second person — the reveal, not
   the first usable version. See D-024. **With open signup that second person is a
   stranger, so this is a prerequisite rather than a Phase 9 item.**

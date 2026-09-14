@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-13
+Last updated: 2026-09-14
 
 ---
 
@@ -26,6 +26,14 @@ suites**, and everything through D-056 is committed and pushed to `main`.
 before it landed on `main` directly, so nothing here assumes a branch: `main` is
 still what is deployed and what the phones run, and a branch that is not merged
 changes nothing on them.
+
+**The branch has an origin of its own now.** `https://babylianav2.vercel.app`
+builds `product-ready-enhancement`; `https://babyliana.vercel.app` builds `main`
+and is what the two phones run. Both are public; only the second was ever
+announced. **It is a staging front end, not a staging environment** — one
+Supabase project underneath, and until stage 2 points the client at `app`, v2
+reads and writes `public` with the same key and the same hard-coded baby id.
+A tap on v2 lands in the real log.
 
 **The branch has a scope now: multi-tenancy (D-057, Q-013 closed).** Many
 accounts per baby, many babies per account, **open signup**, and **sign in to
@@ -183,32 +191,35 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**`supabase/migrations/0007_app_schema.sql`, written and not run.** Plus the
-row for it in `supabase/README.md` and this file's edits.
+**Nothing is uncommitted.** `product-ready-enhancement` is four commits ahead of
+`main` and pushed; the working tree is clean. `main` at `302ce22` is what is
+deployed to the phones.
 
-It creates a **second schema, `app`** — `baby`, `caregiver`, `baby_member`,
+**What is in flight is configuration, not code — stage 1 is being applied by
+hand.** `0007` is committed and **not yet run**, and the four dashboard settings
+its header lists are not yet set. Nothing in stage 1 can affect the phones.
+
+`0007` creates a **second schema, `app`** — `baby`, `caregiver`, `baby_member`,
 `timeslot`, `event` — with RLS and policies written at creation, `is_member_of`,
 `create_baby`, grants to `authenticated` only, and realtime. **It does not touch
 `public`: not a column, not a policy, not a grant.** So it can be run whenever,
 and the two phones cannot notice. If it is wrong, drop the schema and run it
 again.
 
-That is the point of the approach and it is new this session. Every earlier plan
+That is the point of the approach, taken on 2026-09-13. Every earlier plan
 altered `public` — a rename, a compatibility view, a staged policy drop — and
 each had a window where the phone that cannot be reached would stall its outbox.
 A parallel schema has no such window, and leaves `public` intact as the rollback.
 
-**Two things are decided and not yet written down in `decisions.md`:** the
+**D-058 and D-059 landed this session** — the offline rule stops being a design
+argument, and the gate code is replaced by the login rather than kept beside it.
+
+**Two things are still decided and not written down in `decisions.md`:** the
 household account model (one `auth.users` row per household, many caregivers
 under it, sign in with a shared inbox and pick who you are) and the parallel
 schema itself. Both supersede parts of how D-057 was expected to land. A cold
 session should read this section and then write that decision record before
 building on either.
-
-`product-ready-enhancement` is three commits ahead of `main`: two of
-documentation — D-057 and the branch's own record — and one copy change, the
-welcome gate's heading now reading *Hello! Do you know me?*. `main` at `302ce22`
-is what is deployed.
 
 This section records **what is sitting uncommitted and why**, so a cold session
 can read `git status` and know what it is looking at. It is not a changelog:
@@ -257,7 +268,75 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-13 (latest) — the new schema is built beside the old one
+### 2026-09-14 (latest) — the offline rule stops being an argument
+
+**D-058. Local-first comes out of the design conversation and stays in the
+code.** The invariants are unchanged and nothing in `src/` moves. What changed
+is that they are no longer a test every proposal has to pass: no agent
+challenges a design with "but what about offline at 4am", and no work is
+justified by an offline scenario this deployment has not actually hit.
+
+**The owner raised it because it had cost three conversations in a row** — the
+login flow, the session cache, and the bootstrap order — and in all three the
+proposal was already correct. The invocation produced a round trip and no design
+change, while the thing that actually gates the project is getting a
+multi-tenant version out. A real report of a parent unable to log reopens it; a
+hypothetical does not.
+
+**The session answer, recorded so it is not re-derived:** a session cached in
+`localStorage` and refreshed in the background satisfies "never require a login
+to log an event". That is the whole of it. One implementation note survives —
+don't `await` a network auth call before first paint — and it is a note, not a
+constraint.
+
+**D-059. The gate code goes when the login lands.** `SECRET_CODE` was standing
+in for authentication that did not exist, and D-030 already called it a doormat.
+The household email plus an expiring OTP is the same idea done properly — not in
+the bundle, not per deployment. `RECOVERY_CODE` goes too; the caregiver picker
+behind it becomes an ordinary onboarding step.
+
+**The stage 2 bootstrap is agreed**, owner's design: session → baby (cached in
+`localStorage`, auto-selected when there is only one) → caregiver (the existing
+`babyliana.device_id`, renamed) → log. It needs **no change to `0007`**:
+`create_baby()` covers first run, and a second parent signing in with the
+household email already has the `baby_member` row. Three of its four pieces
+exist in the code already under older names.
+
+### 2026-09-14 — stage 1 starts, and staging gets its own front door
+
+**The branch is deployed at `https://babylianav2.vercel.app`**, built from
+`product-ready-enhancement`, public but unannounced. Production stays on
+`https://babyliana.vercel.app` off `main`. The owner set this up so the
+migration has somewhere to live that the phones never see.
+
+**What it is not is a staging environment, and the distinction matters.** One
+Supabase project sits under both origins. Verified by fetching the two bundles:
+identical project URL, identical publishable key, identical `BABY_ID`, 55 bytes
+apart — the welcome heading. So v2 is a second front door onto the real log
+until stage 2 switches the client to `app`. Do not hand it to anyone as a
+sandbox, and do not tap the bottle button on it.
+
+**One project is deliberate, not an oversight.** A separate project for staging
+would turn stage 3's copy into an export and an import across two endpoints
+instead of one SQL statement across two schemas. The schema boundary is the
+isolation.
+
+**Site URL goes to v2 for now, with both origins in Redirect URLs, and flips
+back at cutover.** Safe because `main` never calls `signInWithOtp` and so never
+reads the setting. All four auth settings are project-wide; there is no
+staging-only value for any of them. `0007`'s header carries this.
+
+**One correction to the stage-1 done-when.** The header said it ends with
+`verify-s2` pointed at `app`. That is not reachable from configuration:
+`verify-s2` uses the anon key, the `device` table and the hard-coded `BABY_ID`,
+so repointing it is stage 2 client work. Stage 1's real gate is an object count
+in the SQL Editor plus a six-digit code arriving in a real inbox.
+
+**Custom SMTP is parked, with a reason.** It needs a domain whose DNS the owner
+controls, and `*.vercel.app` is not one. The built-in sender proves a code
+arrives; SMTP becomes the gate on *opening signup*, not on building it.
+
+### 2026-09-13 — the new schema is built beside the old one
 
 **Multi-tenancy stops being a change to `public` and becomes a second schema.**
 `0007` is written and unrun. It creates `app` with five tables, policies at
@@ -300,73 +379,3 @@ unreachable.
 domain verification is DNS, so it is the only item with a wait in it. The file's
 header carries the list. Stage 1 is done when a real code reaches a real inbox
 and `verify-s2` passes against `app`.
-
-### 2026-09-11 — product ready gets a definition
-
-**Q-013 is closed and the branch has a scope** (D-057). Multi-tenant: many
-accounts per baby, many babies per account, open signup, and *sign in to join a
-baby, never to log an event*. The owner answered all three in one pass.
-
-**The third answer was the one that needed asking**, because accounts contradict
-a non-negotiable as written — `CLAUDE.md` said "never require a login to log an
-event. Shared baby ID, no accounts." The rule survives and the summary does not:
-onboarding happens once per install, and after it the log opens offline and
-indefinitely. That is D-030's own argument for the gate, extended.
-
-**Many-to-many was asked first because D-039 makes it permanent.** Additive-only
-means the ownership shape cannot be narrowed later, so a join table now is
-cheaper than a column ever was. Open signup, by contrast, narrows to invite-only
-for free — the join code is the same mechanism either way — so it was worth
-choosing quickly and is worth revisiting if the free tier or the abuse surface
-bites.
-
-**A fourth non-negotiable exists now: never let one family read another's rows.**
-Nothing enforces it yet. One anon key, a hard-coded baby id, and a gate code that
-D-030 already called "a doormat, not a lock" in a public bundle. That was an
-accepted risk with only this family's data behind it and is not one after the
-first stranger. RLS through the join table is the gate on signup opening at all.
-
-**Documentation only — no app code moved.** `tasks.md` § Phase 12 is the plan, in
-dependency order, and it says out loud that it is running ahead of Phases 8-11
-and that the coverage run outranks it.
-
-### 2026-09-11 — the name editor goes back to the status row
-
-**Half of D-055 is reversed, deliberately and by the owner** (D-056). The `tune`
-sheet keeps the clock format; the device-name row comes out of it and the
-status-row button that used to open a `NamePrompt` comes back, in the same
-place, with the same self-labelling — *name this phone* until there is a name,
-*edit* after.
-
-**The argument that settled it: a settings screen answers questions, it cannot
-ask one.** Inside settings, an unnamed install looks exactly like a named one
-until someone opens the sheet and scrolls to the last of five sections. The
-button is an advertisement on the home screen, and the comment that shipped with
-it in the first place had already said so — without it a name set at first run
-could never be changed.
-
-**The second reason was found reading the code, not the screen.** In settings
-the field committed on `blur`, and the sheet is `position: fixed; inset: 0` with
-no backdrop, so the only ordinary way out fires blur and saves. Backgrounding
-the app mid-word does not. Every other control in there is a tap that cannot be
-half-done, which is what makes commit-on-touch safe for them and not for a text
-field. `✕` discards and `save` writes, and that is not an exception to the
-no-save-button rule — it is why the rule works where it applies.
-
-**694 checks pass across twenty-one suites.** Three of them are new, in
-`verify-hero`: the button is in the status row, the sheet it opens has a save
-button, and settings holds no field labelled *name this device*. The existing section and scope-chip counts still hold, because the
-*only on this device* section survives with the clock toggle in it.
-
-**Nothing at the data layer moved.** `renameThisDevice` and `verify-s9` are
-untouched. The only prose consequence worth noting is that *only here* no longer
-has the name as half of its justification — it is the clock format alone, which
-is still per device rather than per person.
-
-**Then the session branched, which this repo had never done.** D-056 went to
-`main` and was pushed; after it, `product-ready-enhancement` was cut from
-`302ce22`. The branch is empty of app changes — it carries this file and
-`open-questions.md`, and `origin` has not seen it. **Its scope was not given and
-was not invented:** Q-013 asks what *product ready* means and lays out the three
-readings rather than picking one, because picking wrong here costs whole
-features built for an audience that was never coming.
