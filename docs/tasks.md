@@ -253,16 +253,25 @@ thing that can show the app cannot record the real paper log, and anything built
 over that finding gets built twice.
 
 - [x] **CH** Strategy — what "product ready" means. D-057
-- [ ] **CC** **Ownership schema.** `baby_member` as a join table — many accounts
+- [x] **CC** **Ownership schema.** `baby_member` as a join table — many accounts
       per baby, many babies per account. Additive only (D-039), so this has to be
       right the first time, and it must reach Supabase **before** any client code
-      naming it is pushed, or the outbox stalls silently
+      naming it is pushed, or the outbox stalls silently. **Done 2026-09-14** —
+      `0007` creates it in the `app` schema, applied and verified. Nothing in
+      `public` was touched, so the ordering rule cost nothing here
 - [ ] **CC** **Accounts.** Supabase Auth, open signup. The rule it must not
       break: onboarding once per install, then the log opens offline and
-      indefinitely — an expired token never blocks a write
-- [ ] **CC** **RLS per baby**, through the join table, plus the explicit Data API
+      indefinitely — an expired token never blocks a write. **Half done** —
+      email OTP works end to end (`src/auth.ts`, custom SMTP through Brevo,
+      both email templates on `{{ .Token }}`). The client bootstrap that uses
+      it is stage 2
+- [x] **CC** **RLS per baby**, through the join table, plus the explicit Data API
       grants the spike learned the hard way (`.specify/memory/spike-spec.md`).
-      This is the gate: until it exists, nobody outside this family can sign up
+      This is the gate: until it exists, nobody outside this family can sign up.
+      **Done 2026-09-14, and proved rather than assumed** — `npm run auth-check`
+      signs in for real and its last check is that an *unauthenticated* client
+      reads nothing at all from `app`. The gate is enforced in `app` only;
+      `public` still fails that same check by design, and closes at stage 5
 - [ ] **CC** **Onboarding: create a baby, or join one by code.** Replaces the
       hard-coded baby id and the gate. A readable typed code, not a QR — no
       camera, and it can be sent to someone who is not in the room

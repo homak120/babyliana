@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-14
+Last updated: 2026-09-14 (stage 1 complete)
 
 ---
 
@@ -50,9 +50,14 @@ is this family's (D-008), a breach the moment a stranger signs up. `docs/tasks.m
 that was meant to authorise it. Owner's call, recorded so a later session does not
 read it as slippage. **The coverage run still outranks it** — see *Next action*.
 
-**`public` is current through `0006` and every one of those is applied. `0007`
-is written and has not been run.** It creates a second schema, `app`, and
-touches nothing in `public` — see *In flight*. `supabase/README.md` is the
+**`public` is current through `0006`, and `0007` is applied.** It created a
+second schema, `app`, and touched nothing in `public`. **Stage 1 is complete as
+of 2026-09-14** — the migration ran, the six dashboard settings are configured,
+and `npm run auth-check` passes end to end: a real code reaches a real inbox,
+`create_baby` works, RLS scopes rows to one household, and **an unauthenticated
+client reads nothing at all from `app`**. That last one is the fourth
+non-negotiable actually enforced for the first time; `public` still fails it by
+design and closes at stage 5. `supabase/README.md` is the
 record of what exists and when each one ran — trust it over this file for
 migration state. Two rules sit around it. **Additive
 only** (D-039): no column is ever dropped or narrowed again, because "after
@@ -191,15 +196,22 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**Nothing is uncommitted.** `product-ready-enhancement` is four commits ahead of
-`main` and pushed; the working tree is clean. `main` at `302ce22` is what is
-deployed to the phones.
+**Uncommitted: `src/auth.ts`, `scripts/verify-auth.mts`, and edits to
+`package.json`, `supabase/migrations/0007_app_schema.sql`, `supabase/README.md`,
+`docs/tasks.md` and this file.** All of it is stage 1 and stage 2's first chunk;
+none of it changes a line the phones run. `main` at `302ce22` is still what is
+deployed to them.
 
-**What is in flight is configuration, not code — stage 1 is being applied by
-hand.** `0007` is committed and **not yet run**, and the four dashboard settings
-its header lists are not yet set. Nothing in stage 1 can affect the phones.
+**`src/auth.ts` is deliberately additive.** It wraps the four Supabase auth
+calls and nothing else. `src/supabase.ts` still points at `public`, and the
+schema flip is its own step with its own diff — so if something breaks later
+there is no ambiguity about which change did it.
 
-`0007` creates a **second schema, `app`** — `baby`, `caregiver`, `baby_member`,
+**`npm run auth-check` is not in `npm run verify`** and must not be added to it:
+it needs a human with an inbox. That is also what makes it the only thing that
+could have caught the email template still mailing a link.
+
+`0007` created a **second schema, `app`** — `baby`, `caregiver`, `baby_member`,
 `timeslot`, `event` — with RLS and policies written at creation, `is_member_of`,
 `create_baby`, grants to `authenticated` only, and realtime. **It does not touch
 `public`: not a column, not a policy, not a grant.** So it can be run whenever,
@@ -268,7 +280,51 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-14 (latest) — the offline rule stops being an argument
+### 2026-09-14 (latest) — stage 1 is done, and it was mostly not SQL
+
+**`npm run auth-check` passes end to end.** Real code, real inbox, real session,
+and the last check is the one that matters: **an unauthenticated client reads
+nothing at all from `app`**. D-057's gate is enforced rather than asserted.
+`public` fails the same check by design and closes at stage 5.
+
+**Running `0007` was one of seven things, and the other six were dashboard
+settings.** That distinction cost a round trip — "the migration" and "stage 1"
+were used interchangeably, and the owner reasonably read a finished migration as
+a finished stage. `supabase/README.md` now records all six, because none of them
+live in this repo and a rebuild from empty needs them.
+
+**Custom SMTP turned out to be required, not optional.** Supabase locks email
+template editing on the free tier while its built-in sender is in use — the
+button offers Pro as the alternative. Any outside SMTP unlocks it at no cost.
+An earlier revision of `0007`'s header called SMTP parked and said the built-in
+sender was enough; it is not, because the template cannot be edited and so the
+code is never a code.
+
+**It did not need a domain.** Brevo verifies a single address by emailing it a
+link. The cost is deliverability — a `gmail.com` From cannot be DKIM-aligned, so
+mail can land in spam. A domain becomes worth it before open signup.
+
+**Two templates, not one.** A new address gets *Confirm signup*; an existing one
+gets *Magic Link*. The first sign-in is always a new address, so editing only
+*Magic Link* leaves the first test arriving as a link with everything else
+perfect — and nothing in the dashboard or the API says which was used.
+
+**A magic link is not a fallback for the code**, for a device reason rather than
+a taste one. It creates the session in whichever browser opened the email, so
+mail read on a laptop signs the laptop in. On iOS a link opens Safari, and an
+installed PWA has its own storage container, so it can miss the app on the same
+device.
+
+**`src/auth.ts` landed, deliberately additive.** No existing file changed. The
+schema flip is its own step.
+
+**One process note worth keeping.** `verify-auth` first asked "code or link?"
+and *then* asked for the code; the first person to run it pasted the code into
+the first question and was told the template was broken when it was working.
+Ask for the thing you want and name the failure as the escape hatch — then the
+natural answer cannot be the wrong one.
+
+### 2026-09-14 — the offline rule stops being an argument
 
 **D-058. Local-first comes out of the design conversation and stays in the
 code.** The invariants are unchanged and nothing in `src/` moves. What changed
@@ -335,47 +391,3 @@ in the SQL Editor plus a six-digit code arriving in a real inbox.
 **Custom SMTP is parked, with a reason.** It needs a domain whose DNS the owner
 controls, and `*.vercel.app` is not one. The built-in sender proves a code
 arrives; SMTP becomes the gate on *opening signup*, not on building it.
-
-### 2026-09-13 — the new schema is built beside the old one
-
-**Multi-tenancy stops being a change to `public` and becomes a second schema.**
-`0007` is written and unrun. It creates `app` with five tables, policies at
-creation time, and no `anon` grant anywhere — that omission *is* the isolation,
-so there is no later migration that closes a door.
-
-**This replaced three progressively worse plans, and the reason each failed is
-the same one.** Renaming `device` in place breaks a client still calling it. A
-compatibility view fixes reads and not writes — PostgREST upserts with
-`ON CONFLICT`, and a view has no unique index to infer. Dropping the `anon`
-policies is a one-way door with no rollback. All three assumed every phone can
-be brought forward on demand, and D-039 already established that none can.
-
-**`device` was never a device.** `src/device-id.ts` explains its recovery flow
-as stopping a reinstalled phone from minting "a second device for a parent who
-already has one" — a second *parent*. It is `app.caregiver` now, renamed for
-free in a table nothing is running against yet.
-
-**The account is the household, not the person.** One `auth.users` row holding a
-shared inbox; Dad and Mum both sign in with it and pick who they are. That makes
-`caregiver` 1:N with the account, which deletes the `profile` table an earlier
-draft had proposed — 1:1 could never have held two parents. It also deletes
-`RECOVERY_CODE` outright: a reinstalled phone signs in and picks itself, which
-is the screen `Welcome.tsx` already has behind that code.
-
-**`app.event` does not create `grams` and `celsius`.** Dead in `public` since
-`0003`, dropped by `0004`, restored by `0005` when a phone stopped syncing, and
-frozen by D-039 ever since. A fresh table inherits none of it, and this was the
-only chance.
-
-**Three things surfaced that only fail at runtime**, all handled in the file: an
-RLS policy on `baby_member` that reads `baby_member` recurses infinitely;
-`with check (is_member_of(id))` deadlocks on the first baby insert, because the
-membership row cannot exist yet — hence `create_baby`; and `alter default
-privileges` is what stops the *next* table in the schema being silently
-unreachable.
-
-**Not everything in stage 1 is SQL.** Exposed schemas, the OTP expiry, the
-`{{ .Token }}` template edit and custom SMTP are dashboard work, and the SMTP
-domain verification is DNS, so it is the only item with a wait in it. The file's
-header carries the list. Stage 1 is done when a real code reaches a real inbox
-and `verify-s2` passes against `app`.

@@ -21,7 +21,7 @@ Editor, paste each file in order, run it.
 | `migrations/0004_drop_metric_columns.sql` | Drops `event.grams` and `event.celsius` | **After both phones are on code that stops sending them** — the reverse of 0003, so the reverse order. Refuses to run if either column holds a value. Applied 2026-09-06, ahead of that code being deployed — see below |
 | `migrations/0005_restore_metric_columns.sql` | Puts `event.grams` and `event.celsius` back, nullable and dead | **Immediately** — it unblocks a phone that is silently not syncing. Additive and `if not exists`, so safe to re-run. Reverses 0004 and retires the idea; D-039 |
 | `migrations/0006_baby_settings.sql` | Adds `baby.settings jsonb` — one object keyed by setting name, the feeding cycle being the first key | **Before deploying the version that writes it.** Additive and `if not exists`, so safe to re-run. Applied 2026-09-08; D-052 |
-| `migrations/0007_app_schema.sql` | Creates the `app` schema — `baby`, `caregiver`, `baby_member`, `timeslot`, `event` — with RLS, policies, `is_member_of`, `create_baby`, grants and realtime. **Touches nothing in `public`** | **NOT YET RUN.** Whenever you like: it cannot affect the running phones. Safe to re-run. D-057 |
+| `migrations/0007_app_schema.sql` | Creates the `app` schema — `baby`, `caregiver`, `baby_member`, `timeslot`, `event` — with RLS, policies, `is_member_of`, `create_baby`, grants and realtime. **Touches nothing in `public`** | **Applied 2026-09-14.** Object count verified at 5 tables / 2 functions / 5 policies, and `npm run auth-check` passes end to end against it. Safe to re-run. D-057 |
 
 **There is no `0002`, and the number is burned.** `0002_seed_household.sql`
 existed on 2026-09-03 and was **run against the database** before `0b14b40`
@@ -94,6 +94,39 @@ its own guard.
 the schema can hold the paper log. The gate in
 `.specify/memory/coverage-requirement.md` asks whether the *app* can capture it
 at 4am with thumbs, which no script can answer.
+
+## Stage 1 was not only SQL
+
+`0007` is half of standing the `app` schema up. The other half is dashboard
+configuration, and **none of it is in this directory** — which is exactly how it
+gets missed. Recorded here because a rebuild from empty needs both.
+
+| Setting | Value | Why it bites |
+| --- | --- | --- |
+| Settings → API → Exposed schemas | add `app` | PostgREST cannot see the schema otherwise and every query 404s — indistinguishable from a migration that never ran |
+| Auth → Sign In/Providers → Email | on, OTP expiry `900` | no sign-in at all |
+| Auth → SMTP Settings | Brevo, `smtp-relay.brevo.com:587` | **required, and it gates the template edit below.** Supabase locks template editing on the free tier while its own sender is in use |
+| Auth → Emails → **Magic Link** *and* **Confirm signup** | `{{ .Token }}`, no `{{ .ConfirmationURL }}` | both, not one — a new address gets *Confirm signup*, an existing one gets *Magic Link*, and the first sign-in is always a new address |
+| Auth → Sessions | time-box and inactivity both off | phones sign out on a schedule weeks later |
+| Auth → URL Configuration | Site URL `https://babylianav2.vercel.app` | flips to the production origin at cutover |
+
+**SMTP does not need a domain.** Brevo verifies a single address by emailing it
+a confirmation link. The cost is deliverability: a `gmail.com` From address
+cannot be DKIM-aligned, so mail can land in spam. A real domain becomes worth
+doing before open signup, not before this.
+
+**A magic link is not an acceptable fallback for the code**, and the reason is
+the device rather than the taste. A link creates the session in whichever
+browser opened the email, so reading the mail on a laptop signs the laptop in
+and leaves the phone out. On iOS a link in Mail opens Safari, and an installed
+home-screen PWA has its own storage container — so the session can miss the app
+on the same device. A typed code always lands on the device in your hand.
+
+**`npm run auth-check` is the verification**, and it is deliberately not in
+`npm run verify`: it needs a human with an inbox. It signs in for real, exercises
+`create_baby`, the membership scoping and the caregiver → timeslot → event chain,
+and finishes by confirming an unauthenticated client reads **nothing** from
+`app`. That last check is D-057's gate, and `public` fails it by design.
 
 ## The baby row
 

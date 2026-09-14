@@ -36,11 +36,34 @@
 --   3. Authentication → Emails → Magic Link template: replace
 --      {{ .ConfirmationURL }} with {{ .Token }}. Out of the box Supabase mails
 --      a clickable link, not a code. Until this is edited no code is ever sent,
---      and no client change fixes it.
---   4. Authentication → SMTP Settings: a real provider. The built-in sender is
---      for testing and is hard rate-limited. Verifying the sending domain is a
---      DNS change, so it is the one item here with a wait in it — start it
---      before this file, not after.
+--      and no client change fixes it. **Do item 4 first** — the editor is locked
+--      until custom SMTP is configured.
+--
+--      A link is not an acceptable fallback, and the reason is the device rather
+--      than the taste. A magic link creates the session in whichever browser
+--      opened the email: read the mail on a laptop and the session lands on the
+--      laptop while the phone stays signed out. On iOS it is worse — a link in
+--      Mail opens Safari, and an installed home-screen PWA has its own storage
+--      container, so the session can miss the app on the same device. A six-digit
+--      code is read anywhere and typed into the device in your hand, which is the
+--      only flow that survives a shared household inbox.
+--   4. Authentication → SMTP Settings: a real provider. **This is required, and
+--      it gates item 3 rather than following it.** Supabase locks email template
+--      editing on the free tier while the built-in sender is in use — the button
+--      reads "Set up SMTP" and offers Pro as the alternative. Configure any
+--      custom SMTP and the same template screen unlocks, at no cost.
+--
+--      It does NOT need a domain. Brevo, Mailjet, Postmark and SendGrid all
+--      verify a single address by emailing it a confirmation link, which skips
+--      SPF/DKIM entirely; a Gmail app password skips the signup too. A real
+--      domain becomes worth it before open signup, for deliverability — a
+--      single-sender From address does not align with the sending domain and
+--      some mail lands in spam.
+--
+--      Recorded because an earlier revision of this header called SMTP optional
+--      for stage 1 and said the built-in sender was enough to prove a code
+--      arrives. It is not: with the built-in sender the template cannot be
+--      edited, so the code is never a code.
 --   5. Authentication → URL Configuration. There are two Vercel origins and
 --      they are not interchangeable:
 --
