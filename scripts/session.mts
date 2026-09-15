@@ -19,17 +19,23 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 // parameter, so a client pointed at `app` is not assignable to one typed for
 // `public` — and this function does not care: setSession is auth, and auth is
 // the same whatever schema the Data API side is reading.
+type Session = { access_token: string; refresh_token: string; expires_at?: number }
 type HasAuth = {
   auth: {
-    setSession(t: { access_token: string; refresh_token: string }): Promise<{ error: unknown }>
+    setSession(t: { access_token: string; refresh_token: string }): Promise<{
+      data?: { session: Session | null } | null
+      error: unknown
+    }>
   }
 }
 
 const FILE = '.auth-session.json'
 
-export function saveSession(access_token: string, refresh_token: string, expires_at?: number) {
+export function saveSession(
+  access_token: string, refresh_token: string, expires_at?: number, quiet = false,
+) {
   writeFileSync(FILE, JSON.stringify({ access_token, refresh_token, expires_at }, null, 2))
-  console.log(`\n  session saved to ${FILE} — verify-s2 and verify-s8 can run now`)
+  if (!quiet) console.log(`\n  session saved to ${FILE} — verify-s2 and verify-s8 can run now`)
 }
 
 /**
@@ -44,8 +50,19 @@ export async function restoreSession(sb: HasAuth): Promise<boolean> {
   if (!existsSync(FILE)) return false
   try {
     const { access_token, refresh_token } = JSON.parse(readFileSync(FILE, 'utf8'))
-    const { error } = await sb.auth.setSession({ access_token, refresh_token })
-    return !error
+    const { data, error } = await sb.auth.setSession({ access_token, refresh_token })
+    if (error) return false
+
+    // **Write back whatever came out.** Supabase rotates refresh tokens: using
+    // one returns a replacement and revokes the original. So a file left as
+    // written is good for exactly one restore, and the second attempt fails with
+    // `refresh_token_not_found` — which reads like the session expired, or like
+    // the app broke, rather than like this file being stale.
+    const s = data?.session
+    if (s?.refresh_token && s.refresh_token !== refresh_token) {
+      saveSession(s.access_token, s.refresh_token, s.expires_at, true)
+    }
+    return true
   } catch {
     return false
   }

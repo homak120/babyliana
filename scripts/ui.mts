@@ -34,7 +34,36 @@ const REF = (env.VITE_SUPABASE_URL ?? '').replace(/^https:\/\//, '').split('.')[
 /** A fixed id, so a suite can assert on it without knowing how it got there. */
 export const TEST_BABY = '00000000-1111-2222-3333-444444444444'
 
+/**
+ * Records every write the app attempts to push, so a suite can assert that a
+ * screen actually *sent* what it saved.
+ *
+ * Worth its own helper because the failure it catches is invisible from the UI:
+ * a local write lands in IndexedDB, the list repaints, and the screen looks
+ * exactly as correct as one that also reached the server. The only difference
+ * is on the other phone, an hour later.
+ */
+export function recordPushes(p: Page): string[] {
+  const seen: string[] = []
+  void p.route('**://*.supabase.co/rest/v1/**', (r) => {
+    const req = r.request()
+    if (req.method() !== 'GET') {
+      seen.push(`${req.method()} ${new URL(req.url()).pathname.split('/').pop()}`)
+    }
+    return r.fulfill({ status: 200, contentType: 'application/json', body: '[]' })
+  })
+  return seen
+}
+
 export async function enterApp(p: Page, name = 'Anya') {
+  // Everything to Supabase fails unless a suite stubs it deliberately. These
+  // run against a preview server with a fixture session, so an unstubbed call
+  // would otherwise reach the **production** project and either write there or
+  // come back 401 — noise at best, and at worst a browser suite quietly
+  // depending on the live database. Registered first; Playwright gives later
+  // routes precedence, so the specific stubs below still win.
+  await p.route('**://*.supabase.co/**', (r) => r.abort())
+
   // Exactly one baby, so the app takes it without asking — the same path a real
   // household with one child walks. Seeding `babyliana.baby_id` below is not
   // enough on its own and deliberately so: the app re-asks the server even when

@@ -311,10 +311,19 @@ export default function App() {
           onClose={() => setAdding(null)}
           onSaved={() => {
             setAdding(null)
-            // A local write does not go through `subscribe`, and the bar's
-            // first and third buttons depend on what is now open.
-            refreshMoments()
-            setSaved((n) => n + 1)
+            // `afterWrite`, not a hand-rolled copy of two thirds of it.
+            //
+            // This used to refresh the list and bump `saved` and stop there, so
+            // a moment logged through the sheet reached IndexedDB and sat in the
+            // outbox — no push, and therefore no realtime event, so the other
+            // phone learned nothing until something else happened to sync. The
+            // quick buttons were fine because they go through `afterWrite`,
+            // which is why the bug looked like "only the bar works".
+            //
+            // Three call sites mount this sheet — here and twice in LogScreen —
+            // and the other two already called sync. Sharing the one helper is
+            // what stops a fourth drifting the same way.
+            afterWrite()
           }}
         />
       )}

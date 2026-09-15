@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 import { chromium, devices } from 'playwright'
-import { enterApp } from './ui.mts'
+import { enterApp, recordPushes } from './ui.mts'
 
 // Weight, temperature and supplement each have a tile of their own now (D-038),
 // beside milk, diaper and sleep. They used to be three of five rows behind
@@ -224,6 +224,32 @@ check('supplement shares its row with temp rather than taking one',
 check('and reads whole at 390, with nothing pushed sideways',
   grid.clipped.length === 0 && grid.over === 0,
   `clipped: ${grid.clipped.join(',') || 'none'}, ${grid.over}px overflow`)
+
+// --- what the sheet saves, it also sends -------------------------------------
+//
+// The regression this exists for: App mounted AddSheet with an `onSaved` that
+// refreshed the list and bumped a counter and never called sync. So a moment
+// logged through the sheet reached IndexedDB, repainted correctly, and sat in
+// the outbox — no push, so no realtime event, so the other phone learned
+// nothing. The quick bar buttons were fine because they went through a helper
+// that did sync, which is why it looked like "only the bar works".
+//
+// Invisible from the UI, which is why it survived until someone had two phones.
+// The only observable difference is whether a request went out.
+const pushes = recordPushes(p)
+// The suite leaves the sheet open on its last grid check, and the bar is behind
+// it. Close it first rather than assuming the screen is where it started.
+await p.locator('.x').first().click().catch(() => {})
+await p.waitForTimeout(400)
+await p.getByLabel('log a moment').click()
+await p.waitForTimeout(400)
+await p.getByRole('button', { name: /diaper/i }).first().click()
+await p.waitForTimeout(300)
+await p.getByRole('button', { name: 'save', exact: true }).click()
+await p.waitForTimeout(1500)
+check('a moment saved from the sheet is pushed, not just stored',
+  pushes.some((x) => x.includes('timeslot')),
+  pushes.length ? pushes.join(', ') : 'nothing was sent')
 
 await b.close()
 stop()

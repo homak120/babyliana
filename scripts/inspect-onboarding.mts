@@ -8,7 +8,7 @@
 // never into a form by a script.
 //
 // Run:  npx tsx scripts/inspect-onboarding.mts
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { chromium, devices } from 'playwright'
 
 const URL = 'https://babylianav2.vercel.app'
@@ -89,13 +89,65 @@ if (await nameField.isVisible().catch(() => false)) {
   await nameField.fill(CAREGIVER)
   await p.getByRole('button', { name: /start logging/ }).click()
   await p.waitForTimeout(4000)
+} else if (await p.locator('.devlist button').first().isVisible().catch(() => false)) {
+  // A household that already has caregivers offers the picker instead, which is
+  // the returning-phone path and just as valid a way into the log.
+  log.push('  --- caregivers already exist; picking the first')
+  await p.locator('.devlist button').first().click()
+  await p.waitForTimeout(4000)
 }
 await shot('3-after-caregiver')
+
+// --- and then actually log something ------------------------------------
+// Onboarding succeeding proves the baby and the caregiver reach the server. It
+// proves nothing about a timeslot or an event, which go through a different
+// policy and a different position in PUSH_ORDER — and those are what a person
+// does every twenty minutes.
+const feed = p.getByLabel('log a feed')
+if (await feed.isVisible().catch(() => false)) {
+  log.push('  --- tapping the bottle')
+  await feed.click()
+  await p.waitForTimeout(5000)
+} else {
+  log.push('  --- no bottle button on screen; did onboarding finish?')
+}
+await shot('4-after-feed')
+
+log.push(`  outbox after the write  ${await p.evaluate(async () => {
+  const db = await new Promise<IDBDatabase>((res, rej) => {
+    const r = indexedDB.open('babyliana')
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error)
+  })
+  return await new Promise<string>((res) => {
+    const tx = db.transaction('outbox').objectStore('outbox').getAll()
+    tx.onsuccess = () => res(JSON.stringify(tx.result))
+    tx.onerror = () => res('(could not read)')
+  })
+})}`)
 
 log.push(`  localStorage baby_id   ${await p.evaluate(() => localStorage.getItem('babyliana.baby_id'))}`)
 log.push(`  localStorage caregiver ${await p.evaluate(() => localStorage.getItem('babyliana.caregiver_id'))}`)
 log.push(`  button disabled?       ${await p.locator('.save').isDisabled().catch(() => '(no button)')}`)
 log.push(`  on screen              ${(await p.locator('main').innerText().catch(() => '')).slice(0, 300).replace(/\n/g, ' / ')}`)
+
+// Take the rotated session back out of the browser. supabase-js refreshes as it
+// goes, and each refresh revokes the token before it — so a run that does not
+// write back leaves .auth-session.json holding a dead token, and the *next* run
+// fails with `refresh_token_not_found`: a message that reads like the session
+// expired rather than like this script ate it.
+const after = await p.evaluate((ref) => localStorage.getItem(`sb-${ref}-auth-token`), REF)
+if (after) {
+  try {
+    const s = JSON.parse(after)
+    if (s?.refresh_token && s.refresh_token !== session.refresh_token) {
+      writeFileSync('.auth-session.json', JSON.stringify(
+        { access_token: s.access_token, refresh_token: s.refresh_token, expires_at: s.expires_at },
+        null, 2,
+      ))
+      log.push('  (session refreshed; .auth-session.json updated)')
+    }
+  } catch { /* leave the file alone rather than corrupt it */ }
+}
 
 console.log('\n' + log.join('\n') + '\n')
 await ctx.close(); await b.close()
