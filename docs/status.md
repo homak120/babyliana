@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-14 (stage 2 complete)
+Last updated: 2026-09-15 (stage 2 complete and tested on two devices)
 
 ---
 
@@ -18,7 +18,7 @@ Last updated: 2026-09-14 (stage 2 complete)
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. **698 checks pass across twenty-two
+delivered by the second design handoff. **699 checks pass across twenty-two
 suites** — `verify-schema` is the new one — and everything through D-056 is
 committed and pushed to `main`.
 
@@ -32,9 +32,14 @@ changes nothing on them.
 builds `product-ready-enhancement`; `https://babyliana.vercel.app` builds `main`
 and is what the two phones run. Both are public; only the second was ever
 announced. **It is a staging front end, not a staging environment** — one
-Supabase project underneath, and until stage 2 points the client at `app`, v2
-reads and writes `public` with the same key and the same hard-coded baby id.
-A tap on v2 lands in the real log.
+Supabase project sits under both origins, and that is deliberate: a second
+project would turn stage 3's copy into an export and an import across two
+endpoints instead of one statement across two schemas.
+
+**Since stage 2 the two origins are genuinely separated, by schema rather than by
+project.** v2 reads and writes `app`; `main` still reads and writes `public`. Up
+until the schema flip v2 was a second front door onto the real log — it is not
+any more, and a tap on it now lands in test data.
 
 **The branch has a scope now: multi-tenancy (D-057, Q-013 closed).** Many
 accounts per baby, many babies per account, **open signup**, and **sign in to
@@ -42,10 +47,13 @@ join a baby — never to log an event**. That supersedes D-022's one hard-coded
 baby and rewrites the *Identity* section of `technical-constraints.md`; the
 non-negotiable about logging survives, narrowed to onboarding.
 
-**The gate on it is RLS.** Today one anon key, one hard-coded baby id and a gate
-code in a public bundle separate nobody from anybody — fine while the only data
-is this family's (D-008), a breach the moment a stranger signs up. `docs/tasks.md`
-§ Phase 12 is the list, in dependency order.
+**The gate on it was RLS, and that gate is now shut in `app`.** Stage 2 is done:
+the client runs entirely on the `app` schema, sign-in is email OTP, onboarding is
+four steps, `device` is `caregiver` throughout, and the hard-coded baby id is
+gone. `public` still has one anon key and a `using (true)` policy on everything —
+unchanged on purpose, because it is the rollback — and it closes at stage 5.
+**Stage 3, copying the real log into `app`, is next and is the first
+irreversible step.** `docs/tasks.md` § Phase 12 is the list, in dependency order.
 
 **Phase 12 is running ahead of Phases 8-11**, which are the solo run and the gate
 that was meant to authorise it. Owner's call, recorded so a later session does not
@@ -148,6 +156,29 @@ settings screen — and the rest is the owner's judgement. See *Next action*.
 
 ## Next action
 
+**0. Stage 3 — the data migration — is the next migration step, and it is the
+first irreversible one.** 325 timeslots and 395 events in `public`, written by
+two phones over weeks and not recreatable from the paper. Everything up to here
+could be undone by changing nothing. This cannot.
+
+Three things need the owner's answer before the copy script is written, and none
+are guessable:
+
+- **Which caregiver each `public.device` becomes.** The copy maps old device ids
+  onto `app.caregiver` rows, and only he knows which is which.
+- **Which baby id survives.** Every `public.timeslot` points at
+  `94c55231-…`; `app.baby` holds a different id from testing.
+  **Recommended: keep the original**, so the copy is a straight insert and a row
+  in `app` is the same row as its twin in `public`.
+- **What happens to the test rows** currently in `app`.
+
+Two things to do first, in this order: **the JSON export of `public`** (item 2
+below — it is the only thing standing between a bad `delete` and 395
+unrecoverable events), and **hardening `verify-s2`/`verify-s8` to provision their
+own baby**. Those two write and delete rows in whatever baby the household has,
+which is harmless against today's test data and is not once the real log is
+there.
+
 **1. The coverage run. This is the gate and it is the owner's.** Enter the
 photographed days from `.specify/memory/paper-log/` into the app on the phone,
 against the checklist in `coverage-requirement.md`. **Ten days, not seven** — the
@@ -215,96 +246,58 @@ schema flip. They are the two that hit the live database, and `verify-s2`'s firs
 assertion — *caregiver reached the server* — is exactly the one that would have
 caught the `user_id` bug before a person ever saw it.
 
-**Three of the bugs found today were in test tooling, not the app.** `enterApp`
-typing a gate code that no longer exists; the no-session guard scoped so it broke
-six offline suites; and `verify-auth` calling `signOut()` in its `finally`, which
-revoked the session it had just saved and made every restore fail with
-`session_not_found` — a message that reads like an app bug and was not. The
-harness is the part getting the least scrutiny and has produced the most false
-alarms.
+**Then it was tested on two real devices, which found things no suite could.**
+New-user onboarding, a returning user on a second device, household scoping
+across both, and realtime between them. All pass.
+
+**The one that matters: a moment logged through the sheet never left the phone.**
+`App` mounted `AddSheet` with an `onSaved` that refreshed the list and bumped a
+counter and did not call `sync`. The write reached IndexedDB, the screen
+repainted correctly, and it sat in the outbox — no push, so no realtime event, so
+the other device learned nothing. The bar's quick buttons were fine because they
+go through `afterWrite`, which is why it presented as *only the bar works*.
+
+**It was invisible to every automated check, and that is the lesson.** A local
+write repaints identically whether or not it reached the server; the only
+observable difference is on the other phone, later. `verify-other` covers it now
+by asserting a request actually went out, and that test was confirmed to fail on
+the old code before being kept. `recordPushes` in `scripts/ui.mts` is a helper
+rather than an inline stub because this is a class of bug, not one instance.
+
+**Three call sites mount that sheet and only one drifted.** The other two, both
+in `LogScreen`, called `sync`. The fix is to share `afterWrite` rather than
+hand-roll two thirds of it, so a fourth cannot drift the same way.
+
+**Five bugs in two days, and three were in test tooling, not the app.**
+`enterApp` typing a gate code that no longer exists; the no-session guard scoped
+so it broke six offline suites; and `verify-auth` calling `signOut()` in its
+`finally`, revoking the session it had just saved so every restore failed with
+`session_not_found` — which reads like an app bug and is not. Add to those two
+checks that encoded *"nothing exists yet"* as if it were a rule: `verify-s2`'s
+hard-coded baby id, and `verify-auth` asserting the household sees exactly one
+baby. Both were correct until the system had real data in it, which is when a
+test is supposed to start being useful. **The harness gets the least scrutiny and
+has produced the most false alarms.**
+
+**The app's own two were `caregiver.user_id` and the blocked IndexedDB upgrade**,
+plus the sheet not syncing. All three needed either a real phone or a real
+server; none were reachable from a stub.
 
 ## In flight
 
-**Uncommitted: stage 2's first chunk — the rename and the schema flip.** 39 files
-in `src/` and `scripts/`, plus `src/device-id.ts` renamed to
-`src/caregiver-id.ts`. `main` at `302ce22` is untouched and is still what the
-phones run.
+**Nothing.** The working tree is clean and `product-ready-enhancement` is
+fourteen commits ahead of `main` and pushed. `main` at `302ce22` is what the two
+phones run and has not moved since this branch was cut.
 
-**`device` is `caregiver` everywhere now.** Identifiers, the IndexedDB store, the
-localStorage key, the type, the outbox union. Three things were deliberately
-*not* renamed and each is correct as it stands: `devicePixelRatio` (a browser
-API), `only on this device` in settings (the clock format genuinely is per
-handset), and a comment in `db.ts` recording that the Phase 3 spike wrote
-`babyliana.device_id` — a fact about the past that a rename would falsify.
-**User-visible copy was left alone on purpose** — `name this phone`, the recovery
-screen's wording — because that copy is rewritten in the next chunk, when the
-caregiver picker is designed.
+**What is deployed where.** `https://babylianav2.vercel.app` builds this branch
+and is where all of the above was tested; `https://babyliana.vercel.app` builds
+`main`. Both public, only the second announced.
 
-**`src/supabase.ts` now points at `app`.** One option, `db: { schema: 'app' }`,
-and every `.from()` call in `sync.ts` follows without changing. The realtime
-subscription in `sync.ts` had to be changed **separately**: its `schema` filter
-is a literal sent to the realtime server and does not follow `db.schema`, so
-flipping only the client leaves live updates silently dead while every read and
-write works.
-
-**`DB_VERSION` is 3.** A store cannot be renamed in place, so `device` is dropped
-and `caregiver` created. Rows are not carried across: they are a replica and
-reconcile refills them. The upgrade only ever runs on a phone crossing from
-`public` to `app`, which re-onboards anyway.
-
-**The bootstrap landed too, so stage 2 is essentially done.** First run is
-email → code → which baby → which caregiver, in `Welcome.tsx`. Two of the four
-skip themselves: a household with one baby is never asked to pick it, and a
-session that outlived the install goes straight past the email. `config.ts` is
-deleted and `src/household.ts` owns the baby id — which is what that constant's
-own comment predicted would happen.
-
-**The baby photograph came off first run.** D-030 put a real picture of Liana
-there when only this family had the URL; with open signup it would be the first
-thing a stranger sees. The mascot does the same job and belongs to nobody. The
-build dropped from 24 precached entries to 23.
-
-**`verify-s2` and `verify-s8` need a session and say so.** They hit the live
-database, `app` answers nothing without one, and OTP needs a human with an
-inbox — so `npm run auth-check` now saves the session to `.auth-session.json`
-(gitignored) and those two restore it. Without it they print one line naming the
-command and exit 1, rather than a wall of FAILs or a silent green. **That file
-holds a real refresh token for the household account** — the owner should say if
-that trade is unwanted, in which case the two suites simply stop until someone
-signs in.
-
-**Everything else is green:** typecheck, lint, build, eight data suites and all
-eleven browser suites. `scripts/ui.mts` § `enterApp` now seeds a session and a
-baby instead of typing a gate code — it is still the single edit point, which is
-why eleven suites cost one edit. `verify-welcome` was rewritten for the four new
-steps and stubs every Supabase call, aborting anything it did not stub so a
-screen quietly depending on an unnoticed call fails rather than passes.
-
-**`npm run auth-check` is not in `npm run verify`** and must not be added to it:
-it needs a human with an inbox. That is also what makes it the only thing that
-could have caught the email template still mailing a link.
-
-`0007` created a **second schema, `app`** — `baby`, `caregiver`, `baby_member`,
-`timeslot`, `event` — with RLS and policies written at creation, `is_member_of`,
-`create_baby`, grants to `authenticated` only, and realtime. **It does not touch
-`public`: not a column, not a policy, not a grant.** So it can be run whenever,
-and the two phones cannot notice. If it is wrong, drop the schema and run it
-again.
-
-That is the point of the approach, taken on 2026-09-13. Every earlier plan
-altered `public` — a rename, a compatibility view, a staged policy drop — and
-each had a window where the phone that cannot be reached would stall its outbox.
-A parallel schema has no such window, and leaves `public` intact as the rollback.
-
-**D-058 and D-059 landed this session** — the offline rule stops being a design
-argument, and the gate code is replaced by the login rather than kept beside it.
-
-**Two things are still decided and not written down in `decisions.md`:** the
-household account model (one `auth.users` row per household, many caregivers
-under it, sign in with a shared inbox and pick who you are) and the parallel
-schema itself. Both supersede parts of how D-057 was expected to land. A cold
-session should read this section and then write that decision record before
-building on either.
+**One credential lives outside git.** `.auth-session.json`, gitignored, holding a
+real refresh token for the household account. `npm run auth-check` writes it and
+`verify-s2`/`verify-s8` restore it, because `app` answers nothing without a
+session and an OTP needs a human with an inbox. Deleting it stops those two
+suites and breaks nothing else.
 
 This section records **what is sitting uncommitted and why**, so a cold session
 can read `git status` and know what it is looking at. It is not a changelog:
@@ -371,7 +364,42 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-14 (latest) — stage 1 is done, and it was mostly not SQL
+### 2026-09-15 (latest) — two devices found what no suite could
+
+**Stage 2 is complete and tested for real.** New-user onboarding, a returning
+user on a second device, household scoping across both, realtime between them.
+`npm run verify` is green end to end — 699 checks, exit 0, including `verify-s2`
+and `verify-s8`.
+
+**A moment logged through the sheet never left the phone.** `App` mounted
+`AddSheet` with an `onSaved` that refreshed the list and never called `sync`, so
+the write reached IndexedDB, repainted correctly, and sat in the outbox. No push,
+no realtime event, nothing on the other device. The bar's quick buttons went
+through `afterWrite`, which does sync — hence *only the bar works*.
+
+**No automated check could have seen it.** A local write repaints identically
+whether or not it reached the server; the only difference is on the other phone,
+later. It took two devices and someone noticing that one path behaved differently
+from another. `verify-other` covers it now, and the test was confirmed to fail on
+the old code before being kept.
+
+**The harness is the least-scrutinised part of this project and the loudest.**
+Of five bugs in two days, three were in test tooling: `enterApp` typing a gate
+code that no longer exists, the no-session guard scoped so it broke six offline
+suites, and `verify-auth` calling `signOut()` in its `finally` — revoking the
+session it had just saved, so every restore failed with `session_not_found`,
+which reads exactly like an app bug.
+
+**Two checks encoded "nothing exists yet" as though it were a rule** —
+`verify-s2`'s hard-coded baby id, and `verify-auth` asserting the household sees
+exactly one baby. Both were correct until the system had real data in it, which
+is precisely when a test starts being worth having. Worth watching for a third.
+
+**Supabase rotates refresh tokens**, so `.auth-session.json` was good for one
+restore and then failed. `restoreSession` and the inspector write the replacement
+back now.
+
+### 2026-09-14 — stage 1 is done, and it was mostly not SQL
 
 **`npm run auth-check` passes end to end.** Real code, real inbox, real session,
 and the last check is the one that matters: **an unauthenticated client reads
@@ -448,37 +476,3 @@ behind it becomes an ordinary onboarding step.
 `create_baby()` covers first run, and a second parent signing in with the
 household email already has the `baby_member` row. Three of its four pieces
 exist in the code already under older names.
-
-### 2026-09-14 — stage 1 starts, and staging gets its own front door
-
-**The branch is deployed at `https://babylianav2.vercel.app`**, built from
-`product-ready-enhancement`, public but unannounced. Production stays on
-`https://babyliana.vercel.app` off `main`. The owner set this up so the
-migration has somewhere to live that the phones never see.
-
-**What it is not is a staging environment, and the distinction matters.** One
-Supabase project sits under both origins. Verified by fetching the two bundles:
-identical project URL, identical publishable key, identical `BABY_ID`, 55 bytes
-apart — the welcome heading. So v2 is a second front door onto the real log
-until stage 2 switches the client to `app`. Do not hand it to anyone as a
-sandbox, and do not tap the bottle button on it.
-
-**One project is deliberate, not an oversight.** A separate project for staging
-would turn stage 3's copy into an export and an import across two endpoints
-instead of one SQL statement across two schemas. The schema boundary is the
-isolation.
-
-**Site URL goes to v2 for now, with both origins in Redirect URLs, and flips
-back at cutover.** Safe because `main` never calls `signInWithOtp` and so never
-reads the setting. All four auth settings are project-wide; there is no
-staging-only value for any of them. `0007`'s header carries this.
-
-**One correction to the stage-1 done-when.** The header said it ends with
-`verify-s2` pointed at `app`. That is not reachable from configuration:
-`verify-s2` uses the anon key, the `device` table and the hard-coded `BABY_ID`,
-so repointing it is stage 2 client work. Stage 1's real gate is an object count
-in the SQL Editor plus a six-digit code arriving in a real inbox.
-
-**Custom SMTP is parked, with a reason.** It needs a domain whose DNS the owner
-controls, and `*.vercel.app` is not one. The built-in sender proves a code
-arrives; SMTP becomes the gate on *opening signup*, not on building it.
