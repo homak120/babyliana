@@ -37,6 +37,20 @@ import { Mascot } from './Mascot'
 
 type Stage = 'email' | 'code' | 'baby' | 'caregiver'
 
+/**
+ * Every step here ends in a write, and a write can fail.
+ *
+ * **The button must always come back.** The first version of the last two steps
+ * set `busy` and awaited without a catch, so a write that threw — or one that
+ * never returned, which is what a blocked IndexedDB upgrade does — left a greyed
+ * button, no message, and no way forward but closing the app. A dead control
+ * that explains nothing is worse than an error, because the person cannot even
+ * tell you what happened.
+ */
+function readable(e: unknown): string {
+  return e instanceof Error && e.message ? e.message : 'that did not save — try again'
+}
+
 /** Enough of a UUID to tell two caregivers apart without printing all 36. */
 const shortId = (id: string) => `${id.slice(0, 4)}…${id.slice(-3)}`
 
@@ -143,9 +157,14 @@ export function Welcome({ onDone }: { onDone: () => void }) {
   const beCaregiver = async (c: Caregiver) => {
     if (busy) return
     setBusy(true)
-    await putCaregiver(c)
-    adoptCaregiverId(c.id)
-    onDone()
+    try {
+      await putCaregiver(c)
+      adoptCaregiverId(c.id)
+      onDone()
+    } catch (e) {
+      setBusy(false)
+      setError(readable(e))
+    }
   }
 
   // Where a caregiver comes into existence — nothing before this creates one.
@@ -154,8 +173,13 @@ export function Welcome({ onDone }: { onDone: () => void }) {
   const makeCaregiver = async () => {
     if (busy || !name.trim()) return
     setBusy(true)
-    await createThisCaregiver(name)
-    onDone()
+    try {
+      await createThisCaregiver(name)
+      onDone()
+    } catch (e) {
+      setBusy(false)
+      setError(readable(e))
+    }
   }
 
   const problem = error && (

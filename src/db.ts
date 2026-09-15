@@ -36,8 +36,43 @@ interface Schema extends DBSchema {
 
 let dbp: Promise<IDBPDatabase<Schema>> | null = null
 
+/**
+ * How long to wait for the database before deciding something is holding it.
+ *
+ * An IndexedDB version change cannot proceed while another connection has the
+ * old version open, and the API's answer to that is to **wait forever**. No
+ * error, no rejection — `openDB` simply never settles, and every caller awaiting
+ * it hangs with nothing on screen to say why. That is how a version bump turns
+ * into a dead button.
+ *
+ * Five seconds is far longer than an unblocked open ever takes and short enough
+ * that a person has not yet decided the app is broken.
+ */
+const OPEN_TIMEOUT_MS = 5000
+
 function db() {
-  dbp ??= openDB<Schema>(DB_NAME, DB_VERSION, {
+  dbp ??= withTimeout(openDB<Schema>(DB_NAME, DB_VERSION, {
+    /**
+     * Another tab wants to upgrade and this connection is what stops it.
+     *
+     * Closing is right: whatever this tab was doing, the version it holds is
+     * about to be superseded, and refusing to let go only strands the tab that
+     * is trying to move forward. `dbp` is cleared so the next call reopens at
+     * the new version rather than reusing a closed handle.
+     */
+    blocking() {
+      void dbp?.then((d) => d.close()).catch(() => {})
+      dbp = null
+    },
+
+    /** The mirror: something else is holding the old version and will not let go. */
+    blocked() {
+      console.error(
+        '[babyliana] the local database is held open at an older version by ' +
+          'another tab or the installed app. Close the others and reload.',
+      )
+    },
+
     upgrade(d, oldVersion) {
       // Guarded per version so an existing browser upgrades rather than
       // needing its data cleared.
@@ -76,8 +111,34 @@ function db() {
         }
       }
     },
-  })
+  }))
   return dbp
+}
+
+/**
+ * Turn "never settles" into a real rejection.
+ *
+ * `dbp` is cleared on failure, deliberately: a cached rejected promise would
+ * make every later call fail with the same stale error, so closing the offending
+ * tab would fix nothing until the app was restarted. Clearing it means a retry
+ * is a retry.
+ */
+function withTimeout(p: Promise<IDBPDatabase<Schema>>): Promise<IDBPDatabase<Schema>> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      dbp = null
+      reject(
+        new Error(
+          'the local database is open at an older version somewhere else — ' +
+            'close any other tabs or the installed app, then try again',
+        ),
+      )
+    }, OPEN_TIMEOUT_MS)
+    p.then(
+      (d) => { clearTimeout(timer); resolve(d) },
+      (e) => { clearTimeout(timer); dbp = null; reject(e) },
+    )
+  })
 }
 
 /**
