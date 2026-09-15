@@ -32,7 +32,7 @@ for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
 const url = process.env.VITE_SUPABASE_URL!
 const key = process.env.VITE_SUPABASE_ANON_KEY!
 
-const { sendCode, verifyCode, currentUserId, signOut } = await import('../src/auth.ts')
+const { sendCode, verifyCode, currentUserId } = await import('../src/auth.ts')
 
 // Its own client, pointed at `app`. src/supabase.ts now targets `app` too, but
 // this keeps its own: the script has to be able to prove the schema is reachable
@@ -106,7 +106,7 @@ try {
 
   // Leave it where the automated suites can find it. They hit the live database
   // and cannot sign in for themselves, because OTP needs a human with an inbox.
-  saveSession(session.access_token, session.refresh_token)
+  saveSession(session.access_token, session.refresh_token, session.expires_at)
 
   // 2. the schema is reachable at all
   const reach = await app.from('baby').select('id').limit(1)
@@ -180,7 +180,17 @@ try {
   await app.from('caregiver').delete().eq('id', caregiverId)
   const left = await app.from('baby').select('id').eq('id', babyId.id || crypto.randomUUID())
   console.log(`\n  cleanup: ${left.data?.length ?? 0} of this run's babies left`)
-  await signOut()
+  // **Deliberately no signOut.**
+  //
+  // It used to sign out here, out of tidiness, and that silently destroyed the
+  // one thing this script exists to leave behind: signOut revokes the session on
+  // the server, so the tokens written to .auth-session.json a moment earlier were
+  // already dead. Everything that restored them got
+  // `session_not_found: Session from session_id claim in JWT does not exist`,
+  // which reads like a bug in the app and is a bug in this file.
+  //
+  // Signing out is also not this script's business. The session belongs to the
+  // person who just typed a code to create it.
   rl.close()
 }
 

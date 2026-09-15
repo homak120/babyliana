@@ -259,12 +259,13 @@ over that finding gets built twice.
       naming it is pushed, or the outbox stalls silently. **Done 2026-09-14** —
       `0007` creates it in the `app` schema, applied and verified. Nothing in
       `public` was touched, so the ordering rule cost nothing here
-- [ ] **CC** **Accounts.** Supabase Auth, open signup. The rule it must not
+- [x] **CC** **Accounts.** Supabase Auth, open signup. The rule it must not
       break: onboarding once per install, then the log opens offline and
-      indefinitely — an expired token never blocks a write. **Half done** —
-      email OTP works end to end (`src/auth.ts`, custom SMTP through Brevo,
-      both email templates on `{{ .Token }}`). The client bootstrap that uses
-      it is stage 2
+      indefinitely — an expired token never blocks a write. **Done 2026-09-14**
+      — email OTP end to end (`src/auth.ts`, custom SMTP through Brevo, both
+      templates on `{{ .Token }}`), and the client bootstrap on top of it:
+      email → code → baby → caregiver, gated on localStorage rather than on the
+      session so a phone with no network still opens its log
 - [x] **CC** **RLS per baby**, through the join table, plus the explicit Data API
       grants the spike learned the hard way (`.specify/memory/spike-spec.md`).
       This is the gate: until it exists, nobody outside this family can sign up.

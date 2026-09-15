@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-14 (stage 1 complete)
+Last updated: 2026-09-14 (stage 2 complete)
 
 ---
 
@@ -18,8 +18,9 @@ Last updated: 2026-09-14 (stage 1 complete)
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. **694 checks pass across twenty-one
-suites**, and everything through D-056 is committed and pushed to `main`.
+delivered by the second design handoff. **698 checks pass across twenty-two
+suites** — `verify-schema` is the new one — and everything through D-056 is
+committed and pushed to `main`.
 
 **Work has moved onto a branch, and this is the first one the repo has had.**
 `product-ready-enhancement`, cut from `302ce22` on 2026-09-11. Every commit
@@ -193,6 +194,34 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 - **When a design detail and the handoff prose disagree, the prototype wins.**
   The README said the elapsed hero was 64px and the mascot 108px; the prototype
   draws 44px in a 100×96 slot. Following the prose broke the layout twice.
+
+## Stage 2 is done, and verified against the real thing
+
+**Onboarding works end to end on the deployed staging app.** Driven through
+`scripts/inspect-onboarding.mts`, which seeds a real session and reports what the
+network actually did rather than what a stub agreed to:
+
+```
+200  GET  /auth/v1/user                           session valid
+200  GET  /rest/v1/baby                           empty -> "who are we logging for?"
+200  POST /rest/v1/rpc/create_baby                Liana
+200  GET  /rest/v1/caregiver                      empty -> "what should we call you?"
+201  POST /rest/v1/caregiver?columns=...user_id   Dad
+200  GET  timeslot / event / baby                 the log opens, cloud_done
+```
+
+**`verify-s2` and `verify-s8` are green**, which they had not been since the
+schema flip. They are the two that hit the live database, and `verify-s2`'s first
+assertion — *caregiver reached the server* — is exactly the one that would have
+caught the `user_id` bug before a person ever saw it.
+
+**Three of the bugs found today were in test tooling, not the app.** `enterApp`
+typing a gate code that no longer exists; the no-session guard scoped so it broke
+six offline suites; and `verify-auth` calling `signOut()` in its `finally`, which
+revoked the session it had just saved and made every restore fail with
+`session_not_found` — a message that reads like an app bug and was not. The
+harness is the part getting the least scrutiny and has produced the most false
+alarms.
 
 ## In flight
 

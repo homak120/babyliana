@@ -27,8 +27,8 @@ type HasAuth = {
 
 const FILE = '.auth-session.json'
 
-export function saveSession(access_token: string, refresh_token: string) {
-  writeFileSync(FILE, JSON.stringify({ access_token, refresh_token }, null, 2))
+export function saveSession(access_token: string, refresh_token: string, expires_at?: number) {
+  writeFileSync(FILE, JSON.stringify({ access_token, refresh_token, expires_at }, null, 2))
   console.log(`\n  session saved to ${FILE} — verify-s2 and verify-s8 can run now`)
 }
 
