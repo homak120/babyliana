@@ -6,7 +6,6 @@ import {
   createBaby,
   fetchBabies,
   fetchCaregiversForHousehold,
-  getBabyId,
   setBabyId,
 } from '../household'
 import { createThisCaregiver } from '../moments'
@@ -72,9 +71,21 @@ export function Welcome({ onDone }: { onDone: () => void }) {
   // A session that outlived the last install skips straight past the email.
   // Runs once, reads the cached session, and touches the network only if the
   // access token needs refreshing.
+  //
+  // **It resumes at the baby step even when one is cached, deliberately.** Being
+  // here at all means onboarding is unfinished, and a cached id is exactly the
+  // thing most likely to be why: a baby can stop being reachable without anything
+  // happening on this phone — membership removed, the row deleted from the other
+  // parent's phone, an account deleted out from under it. Trusting the cache
+  // would skip the step and open a log whose every write fails a foreign key
+  // against a row this household cannot see.
+  //
+  // It costs nothing. `loadBabies` takes the single baby without asking, so a
+  // household with one is no more asked than before — the fetch happens either
+  // way, and now its answer is believed over the cache.
   useEffect(() => {
     void currentUserId().then((uid) => {
-      if (uid) setStage(getBabyId() ? 'caregiver' : 'baby')
+      if (uid) setStage('baby')
     })
   }, [])
 

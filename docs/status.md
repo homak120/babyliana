@@ -282,6 +282,24 @@ can read `git status` and know what it is looking at. It is not a changelog:
 once work is committed its entry comes out, and `docs/decisions.md` carries the
 reasoning from then on.
 
+## A cutover hazard, found by testing
+
+**`DB_VERSION` 2 → 3 blocks on any connection still holding version 2**, and
+IndexedDB's answer to that is to wait forever — no error, no rejection. Found the
+first time a real person walked the new first run: the button greyed out and
+stayed that way, with nothing in the console.
+
+**It will recur at stage 4, on the phones, and cannot be prevented from here.**
+The `blocking` handler releases a held connection, but only from the side running
+the *new* code — and at cutover the thing holding version 2 is the old build,
+which does not have it. An installed PWA sitting backgrounded is enough.
+
+What exists instead is a way through: the open races a five-second timeout, the
+failure is broadcast once, and `App` renders a screen naming the cause with a
+reload button. So the outcome is "close your other tabs" rather than an app that
+stops. **Tell both parents to fully close the app once on cutover day**; it costs
+a sentence and saves the one support call nobody can answer at 4am.
+
 ## Open threads
 
 Noticed, not blocking, no owner yet.

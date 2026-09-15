@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { forgetCaregiver, getCaregiverId } from './caregiver-id'
-import { getBabyId } from './household'
+import { forgetBaby, getBabyId } from './household'
 import { DayScreen } from './day/DayScreen'
 import { BottleIcon } from './log/BottleIcon'
 import { EndSleepIcon } from './log/EndSleepIcon'
@@ -10,7 +10,7 @@ import { Welcome } from './log/Welcome'
 import SpikePage from './spike/SpikePage'
 import { useOverlayOpen } from './overlay'
 import TouchProbe from './probe/TouchProbe'
-import { getCaregivers } from './db'
+import { dbFatal, getCaregivers, getRow, onDbFatal } from './db'
 import { startSync, subscribe, sync, syncState } from './sync'
 import { registerUpdates } from './updates'
 import './tokens.css'
@@ -43,6 +43,9 @@ export default function App() {
   //
   // Both, not either: a caregiver with no baby has nothing for `logged_by` to
   // hang off, and a baby with no caregiver cannot attribute a row.
+  const [fatalDb, setFatalDb] = useState<Error | null>(() => dbFatal())
+  useEffect(() => onDbFatal(setFatalDb), [])
+
   const [onboarded, setOnboarded] = useState(
     () => getCaregiverId() !== null && getBabyId() !== null,
   )
@@ -120,6 +123,35 @@ export default function App() {
     return () => clearInterval(t)
   }, [])
 
+  // The **baby** id can fall out of step the same way, and more easily: a baby
+  // reachable when this phone cached it can stop being reachable without anything
+  // happening on this phone at all — the household's membership removed, the row
+  // deleted from the other parent's phone, an account deleted out from under it.
+  //
+  // The symptom is nasty if it goes unchecked. The cached id makes onboarding
+  // skip the baby step, so the app opens on a log whose every write fails its
+  // foreign key against a row this household cannot see. Forgetting the id sends
+  // the next launch back to "pick a little one", which is the honest answer.
+  //
+  // Same guard as below: only after a *successful* sync, so being offline — when
+  // the pull returned nothing because there was no network, not because the baby
+  // is gone — never throws away a good id.
+  useEffect(
+    () =>
+      subscribe(() => {
+        if (syncState().state !== 'idle') return
+        const id = getBabyId()
+        if (!id) return
+        void getRow('baby', id).then((row) => {
+          if (!row) {
+            forgetBaby()
+            setOnboarded(false)
+          }
+        })
+      }),
+    [],
+  )
+
   // The id in localStorage and the row on the server can fall out of step — a
   // row deleted elsewhere leaves this phone holding an id that references
   // nothing, and every write then fails its foreign key silently. Checked only
@@ -139,6 +171,24 @@ export default function App() {
       }),
     [],
   )
+
+  // Fatal, and worth its own screen. Everything the UI reads comes from
+  // IndexedDB, so there is nothing to render *around* this failure — and the
+  // commonest cause has a fix the person can actually carry out, which is the
+  // only reason a screen beats a silent stop.
+  if (fatalDb) {
+    return (
+      <main className="welcome">
+        <p className="kickerup">something is in the way</p>
+        <h1>can&rsquo;t open the log</h1>
+        <p className="sub">{fatalDb.message}</p>
+        <div className="spacer" />
+        <button type="button" className="save" onClick={() => window.location.reload()}>
+          <Icon name="refresh" size={22} /> try again
+        </button>
+      </main>
+    )
+  }
 
   if (window.location.pathname.startsWith('/spike')) return <SpikePage />
   if (window.location.pathname.startsWith('/touch')) return <TouchProbe />

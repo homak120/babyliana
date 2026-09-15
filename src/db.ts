@@ -50,6 +50,40 @@ let dbp: Promise<IDBPDatabase<Schema>> | null = null
  */
 const OPEN_TIMEOUT_MS = 5000
 
+/**
+ * The local database failing is fatal, and has to be said out loud.
+ *
+ * Everything the UI reads comes from here, so there is no degraded mode to fall
+ * back to — this is not the network being away. Turning the original hang into a
+ * rejection made the failure *visible in the console*, which is not the same as
+ * visible to the person holding the phone: every other caller here is a render
+ * path that does not catch, so the app simply stops with a blank or half-drawn
+ * screen and an uncaught promise nobody sees.
+ *
+ * So the failure is broadcast once, and `App` renders it as a screen with a way
+ * out. One flag rather than error handling threaded through every call site,
+ * because there is exactly one useful response to any of them and it is the same
+ * response: say what happened, offer a reload.
+ */
+let fatalError: Error | null = null
+const fatalWatchers = new Set<(e: Error) => void>()
+
+function fatal(e: Error) {
+  if (fatalError) return
+  fatalError = e
+  for (const w of fatalWatchers) w(e)
+}
+
+export function dbFatal(): Error | null {
+  return fatalError
+}
+
+export function onDbFatal(fn: (e: Error) => void) {
+  fatalWatchers.add(fn)
+  if (fatalError) fn(fatalError)
+  return () => void fatalWatchers.delete(fn)
+}
+
 function db() {
   dbp ??= withTimeout(openDB<Schema>(DB_NAME, DB_VERSION, {
     /**
@@ -127,12 +161,12 @@ function withTimeout(p: Promise<IDBPDatabase<Schema>>): Promise<IDBPDatabase<Sch
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       dbp = null
-      reject(
-        new Error(
-          'the local database is open at an older version somewhere else — ' +
-            'close any other tabs or the installed app, then try again',
-        ),
+      const e = new Error(
+        'the local database is open at an older version somewhere else — ' +
+          'close any other tabs or the installed app, then try again',
       )
+      fatal(e)
+      reject(e)
     }, OPEN_TIMEOUT_MS)
     p.then(
       (d) => { clearTimeout(timer); resolve(d) },

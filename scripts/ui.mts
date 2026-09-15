@@ -35,6 +35,19 @@ const REF = (env.VITE_SUPABASE_URL ?? '').replace(/^https:\/\//, '').split('.')[
 export const TEST_BABY = '00000000-1111-2222-3333-444444444444'
 
 export async function enterApp(p: Page, name = 'Anya') {
+  // Exactly one baby, so the app takes it without asking — the same path a real
+  // household with one child walks. Seeding `babyliana.baby_id` below is not
+  // enough on its own and deliberately so: the app re-asks the server even when
+  // an id is cached, because a cached baby is the thing most likely to have
+  // stopped being reachable.
+  await p.route('**://*.supabase.co/rest/v1/baby*', (r) =>
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([{ id: TEST_BABY, name: 'Liana', settings: null }]),
+    }),
+  )
+
   // The caregiver list comes back empty, which is what makes the name field
   // appear rather than a picker. Suites that want a populated list route this
   // themselves before calling in — a later route wins in Playwright.
