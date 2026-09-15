@@ -116,6 +116,13 @@ try {
     console.log('        → Settings → API → Exposed schemas: add `app`')
 
   // 3. create_baby writes the baby and the membership together
+  //
+  // Counted as a delta, not an absolute. This asserted "exactly one baby comes
+  // back", which was true only while the household was empty — the first time
+  // the owner had a real baby in `app`, a correct run reported two and failed.
+  // What the check is for is that creating one baby makes exactly one more baby
+  // visible, and nobody else's.
+  const before = (await app.from('baby').select('id')).data?.length ?? 0
   const made = await app.rpc('create_baby', { baby_name: 'Verify' })
   check('create_baby() returned an id', !made.error && !!made.data,
     made.error ? made.error.message : '')
@@ -125,8 +132,9 @@ try {
   const mine = await app.from('baby').select('id')
   check('the new baby is visible to its household',
     !!mine.data?.some((b: { id: string }) => b.id === babyId.id))
-  check('and nothing else is', (mine.data?.length ?? 0) === 1,
-    `${mine.data?.length} rows came back`)
+  check('and creating one made exactly one more visible',
+    (mine.data?.length ?? 0) === before + 1,
+    `${before} before, ${mine.data?.length} after`)
 
   // 5. the foreign key chain, caregiver → timeslot → event
   const cg = await app.from('caregiver')
