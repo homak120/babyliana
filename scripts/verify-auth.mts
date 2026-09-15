@@ -19,6 +19,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'node:fs'
 import { createInterface } from 'node:readline/promises'
+import { saveSession } from './session.mts'
 
 for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
   const m = line.match(/^([A-Z_]+)=(.*)$/)
@@ -33,9 +34,10 @@ const key = process.env.VITE_SUPABASE_ANON_KEY!
 
 const { sendCode, verifyCode, currentUserId, signOut } = await import('../src/auth.ts')
 
-// Its own client, pointed at `app`. src/supabase.ts still targets `public` at
-// this point in the migration, and this script must not be the thing that
-// changes that — the schema flip is its own step, with its own diff.
+// Its own client, pointed at `app`. src/supabase.ts now targets `app` too, but
+// this keeps its own: the script has to be able to prove the schema is reachable
+// even when the app's client is misconfigured, which it cannot do through the
+// thing it is testing.
 const app = createClient(url, key, { db: { schema: 'app' } })
 
 let failures = 0
@@ -101,6 +103,10 @@ try {
   const { supabase } = await import('../src/supabase.ts')
   const session = (await supabase!.auth.getSession()).data.session!
   await app.auth.setSession(session)
+
+  // Leave it where the automated suites can find it. They hit the live database
+  // and cannot sign in for themselves, because OTP needs a human with an inbox.
+  saveSession(session.access_token, session.refresh_token)
 
   // 2. the schema is reachable at all
   const reach = await app.from('baby').select('id').limit(1)

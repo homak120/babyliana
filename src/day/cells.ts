@@ -210,13 +210,13 @@ export const initialOf = (name: string | null) =>
   name ? name.trim().charAt(0).toUpperCase() : null
 
 /**
- * Which of the design's two parent colours a device gets.
+ * Which of the design's two parent colours a caregiver gets.
  *
  * By position in a stable sort of the ids, so both phones agree on who is amber
  * and who is blue without anything having to be stored.
  */
-export function avatarClass(deviceId: string, allIds: string[]): string {
-  const i = [...allIds].sort().indexOf(deviceId)
+export function avatarClass(caregiverId: string, allIds: string[]): string {
+  const i = [...allIds].sort().indexOf(caregiverId)
   return i % 2 === 0 ? 'avatar avatar-m' : 'avatar avatar-a'
 }
 

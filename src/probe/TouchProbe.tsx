@@ -57,7 +57,7 @@ function Viewport() {
   return (
     <>
       {/* Its padding *is* the four insets; reading it back is the only way to
-          see what env() actually resolves to on the device. */}
+          see what env() actually resolves to on the caregiver. */}
       <div
         ref={probe}
         style={{

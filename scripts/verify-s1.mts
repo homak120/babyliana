@@ -3,7 +3,7 @@
 // correct. fake-indexeddb gives us the same IndexedDB the browser has.
 import 'fake-indexeddb/auto'
 
-// deviceId() reaches for localStorage; the write path only needs a stable id.
+// caregiverId() reaches for localStorage; the write path only needs a stable id.
 const store = new Map<string, string>()
 ;(globalThis as unknown as { localStorage: Storage }).localStorage = {
   getItem: (k: string) => store.get(k) ?? null,
@@ -14,8 +14,13 @@ const store = new Map<string, string>()
   length: 0,
 } as Storage
 
-const { createThisDevice, logMoment, getMoments, removeMoment } = await import('../src/moments.ts')
-const { getDevices } = await import('../src/db.ts')
+// The baby id is no longer a constant — it arrives from a join and lives in
+// localStorage (D-057), so the shim seeds one. Any uuid will do: these suites
+// never reach the network, and nothing checks which baby it is.
+store.set('babyliana.baby_id', '00000000-1111-2222-3333-444444444444')
+
+const { createThisCaregiver, logMoment, getMoments, removeMoment } = await import('../src/moments.ts')
+const { getCaregivers } = await import('../src/db.ts')
 
 let failures = 0
 const check = (label: string, ok: boolean, detail = '') => {
@@ -23,9 +28,9 @@ const check = (label: string, ok: boolean, detail = '') => {
   if (!ok) failures++
 }
 
-check('nothing exists before a name is submitted', (await getDevices()).length === 0)
-await createThisDevice('Test')
-check('submitting creates exactly one device', (await getDevices()).length === 1)
+check('nothing exists before a name is submitted', (await getCaregivers()).length === 0)
+await createThisCaregiver('Test')
+check('submitting creates exactly one caregiver', (await getCaregivers()).length === 1)
 
 await logMoment({ entries: [{ type: 'feed', volume_ml: 60, source: 'formula' }] })
 await logMoment({
@@ -47,7 +52,7 @@ check('both halves keep their own source',
   split.events.map((e) => e.source).sort().join() === 'breast_milk,formula')
 check('entries share their moment id', split.events.every((e) => e.timeslot_id === split.timeslot.id))
 check('ids are distinct per entry', split.events[0].id !== split.events[1].id)
-check('baby and device stamped on the moment',
+check('baby and caregiver stamped on the moment',
   !!split.timeslot.baby_id && !!split.timeslot.logged_by)
 
 // the real test: reopen as a cold start would

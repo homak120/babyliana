@@ -274,13 +274,23 @@ over that finding gets built twice.
       `public` still fails that same check by design, and closes at stage 5
 - [ ] **CC** **Onboarding: create a baby, or join one by code.** Replaces the
       hard-coded baby id and the gate. A readable typed code, not a QR — no
-      camera, and it can be sent to someone who is not in the room
+      camera, and it can be sent to someone who is not in the room.
+      **Create is done 2026-09-14; join by code is not.** First run is email →
+      code → baby → caregiver, and a household with one baby is never asked to
+      pick it. Joining an *existing* baby from a second household still has no
+      path, and `0007` has no insert policy on `baby_member` for one — deliberate
+      while a household shares an inbox, and the next thing to build when it
+      does not
 - [ ] **CC** **Migrate Liana's rows into the new shape.** This is live data on two
       phones in daily use, not a fixture. It cannot be recreated from the paper
-- [ ] **CC** **Retire the pilot scaffolding.** The hard-coded baby id,
+- [x] **CC** **Retire the pilot scaffolding.** The hard-coded baby id,
       `SECRET_CODE` and `RECOVERY_CODE` in `Welcome.tsx`, the gate fill in
       `scripts/ui.mts` that eleven browser suites depend on, and `SpikePage` with
-      its printed device UUID
+      its printed device UUID. **Done 2026-09-14** — `config.ts` deleted,
+      D-059 took both codes, `enterApp` seeds a session instead of typing a code,
+      and the baby photograph came off first run because open signup would show
+      it to strangers. `SpikePage` survives, rewired to the cached baby id; it is
+      a diagnostic at `/spike`, not a screen anyone navigates to
 - [ ] **CC** **JSON export.** Already the pre-reveal requirement (D-024); with
       open signup the second person is a stranger, so it is a prerequisite
 - [ ] **CC** **Delete my data.** A family that signs up can take their baby's

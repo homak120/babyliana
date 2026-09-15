@@ -39,7 +39,7 @@ const browser = await chromium.launch()
 const ctx = await browser.newContext({ ...devices['iPhone 13'], viewport: { width: 390, height: 844 } })
 const page = await ctx.newPage()
 
-// Nothing here reaches Supabase. Completing the welcome creates a device, and
+// Nothing here reaches Supabase. Completing the welcome creates a caregiver, and
 // with sync live that landed a real row in the production database on every
 // run — which is exactly what happened, three times. Screenshots are about
 // pixels; the local write path is enough for them.

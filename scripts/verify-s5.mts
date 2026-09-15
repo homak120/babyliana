@@ -2,13 +2,19 @@
 // check is that the arithmetic underneath is right — and the midnight cases are
 // exactly the ones a tired person hits and would not notice going wrong.
 import 'fake-indexeddb/auto'
-const store = new Map<string, string>([['babyliana.device_id', '00000000-0000-4000-8000-0000000d0d0d']])
+const store = new Map<string, string>([['babyliana.caregiver_id', '00000000-0000-4000-8000-0000000d0d0d']])
 ;(globalThis as unknown as { localStorage: Storage }).localStorage = {
   getItem: (k: string) => store.get(k) ?? null,
   setItem: (k: string, v: string) => void store.set(k, v),
   removeItem: (k: string) => void store.delete(k),
   clear: () => store.clear(), key: () => null, length: 0,
 } as Storage
+
+// The baby id is no longer a constant — it arrives from a join and lives in
+// localStorage (D-057), so the shim seeds one. Any uuid will do: these suites
+// never reach the network, and nothing checks which baby it is.
+store.set('babyliana.baby_id', '00000000-1111-2222-3333-444444444444')
+
 
 import {
   endAgo, endNow, formatDuration, minutesAfter, minutesAgo, resolveEnd, stepFor,
@@ -216,8 +222,8 @@ check('hours wrap rather than stick', wrapHour(-1) === 23 && wrapHour(24) === 0)
 check('minutes wrap too', wrapMinute(-1) === 59 && wrapMinute(60) === 0)
 
 // --- does a period actually survive being stored? --------------------------
-const { createThisDevice, logMoment, getMoments } = await import('../src/moments.ts')
-await createThisDevice('Test')
+const { createThisCaregiver, logMoment, getMoments } = await import('../src/moments.ts')
+await createThisCaregiver('Test')
 
 const sleep = await logMoment({
   occurredAt: t(19, 0),

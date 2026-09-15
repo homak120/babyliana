@@ -1,6 +1,6 @@
 import { totalsOf } from '../derive'
 import { Icon } from '../log/Icon'
-import type { Device, Moment } from '../types'
+import type { Caregiver, Moment } from '../types'
 import { DayRow } from './DayRow'
 
 // One page of the read-back: the heading, the totals and the table.
@@ -11,18 +11,18 @@ import { DayRow } from './DayRow'
 // pills, the date strip) is chrome and stays put while these slide.
 
 export function DayPage({
-  label, rows, devices, empty,
+  label, rows, caregivers, empty,
 }: {
   label: string
   rows: Moment[]
-  devices: Device[]
+  caregivers: Caregiver[]
   /** What to say when the period has nothing in it. */
   empty: string
 }) {
   // Totalled over what is actually on this page, so the numbers match the
   // heading rather than the whole log.
   const totals = totalsOf(rows)
-  const nameFor = (id: string) => devices.find((d) => d.id === id)?.name ?? null
+  const nameFor = (id: string) => caregivers.find((d) => d.id === id)?.name ?? null
 
   return (
     <div className="daypage">
@@ -55,7 +55,7 @@ export function DayPage({
             moment={m}
             previous={rows[i - 1]}
             name={nameFor(m.timeslot.logged_by)}
-            allDeviceIds={devices.map((d) => d.id)}
+            allCaregiverIds={caregivers.map((d) => d.id)}
           />
         ))}
       </div>

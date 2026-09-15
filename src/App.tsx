@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { forgetDevice, getDeviceId } from './device-id'
+import { forgetCaregiver, getCaregiverId } from './caregiver-id'
+import { getBabyId } from './household'
 import { DayScreen } from './day/DayScreen'
 import { BottleIcon } from './log/BottleIcon'
 import { EndSleepIcon } from './log/EndSleepIcon'
@@ -9,7 +10,7 @@ import { Welcome } from './log/Welcome'
 import SpikePage from './spike/SpikePage'
 import { useOverlayOpen } from './overlay'
 import TouchProbe from './probe/TouchProbe'
-import { getDevices } from './db'
+import { getCaregivers } from './db'
 import { startSync, subscribe, sync, syncState } from './sync'
 import { registerUpdates } from './updates'
 import './tokens.css'
@@ -33,7 +34,18 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('log')
   // Read at initialisation, not in an effect: nothing async happens here, and
   // opening the app must not create an identity.
-  const [hasDevice, setHasDevice] = useState(() => getDeviceId() !== null)
+  // **Onboarding is done when both ids are cached, and that is the whole test.**
+  //
+  // Read at initialisation from localStorage — synchronous, local, no await, and
+  // in particular no session check. A cached session is what sync uses; it is
+  // never what decides whether the log opens (D-058). A phone that cannot reach
+  // the network still gets its log, because both answers are already here.
+  //
+  // Both, not either: a caregiver with no baby has nothing for `logged_by` to
+  // hang off, and a baby with no caregiver cannot attribute a row.
+  const [onboarded, setOnboarded] = useState(
+    () => getCaregiverId() !== null && getBabyId() !== null,
+  )
   // What the sheet opens with, or null when it is closed. A quick icon opens the
   // same sheet with one block already added — not a screen of its own.
   const [adding, setAdding] = useState<Block['type'] | 'none' | null>(null)
@@ -46,10 +58,10 @@ export default function App() {
   const [saved, setSaved] = useState(0)
 
   useEffect(() => {
-    if (!hasDevice) return
+    if (!onboarded) return
     startSync()
     registerUpdates()
-  }, [hasDevice])
+  }, [onboarded])
 
   // Defaulted to the render-time clock, not the ticking `now`. That state only
   // moves every 30s, and a sleep logged *just now* would fail its own
@@ -116,12 +128,12 @@ export default function App() {
     () =>
       subscribe(() => {
         if (syncState().state !== 'idle') return
-        const id = getDeviceId()
+        const id = getCaregiverId()
         if (!id) return
-        void getDevices().then((all) => {
+        void getCaregivers().then((all) => {
           if (all.length > 0 && !all.some((d) => d.id === id)) {
-            forgetDevice()
-            setHasDevice(false)
+            forgetCaregiver()
+            setOnboarded(false)
           }
         })
       }),
@@ -130,12 +142,8 @@ export default function App() {
 
   if (window.location.pathname.startsWith('/spike')) return <SpikePage />
   if (window.location.pathname.startsWith('/touch')) return <TouchProbe />
-  if (!hasDevice) {
-    return (
-      <Welcome
-        onDone={() => setHasDevice(true)}
-      />
-    )
+  if (!onboarded) {
+    return <Welcome onDone={() => setOnboarded(true)} />
   }
 
   return (

@@ -3,7 +3,7 @@
  *
  * A preference of the phone in your hand, not a fact about the baby, so it
  * stays in localStorage and never syncs — the same reasoning as the lead rail
- * (`LogScreen`) and the device id. Two phones may disagree and that is correct.
+ * (`LogScreen`) and the caregiver id. Two phones may disagree and that is correct.
  *
  * **24h is the default**, because that is what the paper log is written in and
  * the day table is read side by side with the photographs of it.

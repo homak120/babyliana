@@ -13,12 +13,12 @@ import {
  * days instead: one screen, one meaning for a horizontal drag.
  */
 export function DayRow({
-  moment, previous, name, allDeviceIds,
+  moment, previous, name, allCaregiverIds,
 }: {
   moment: Moment
   previous: Moment | undefined
   name: string | null
-  allDeviceIds: string[]
+  allCaregiverIds: string[]
 }) {
   const date = dateCell(moment, previous)
   const milk = milkCell(moment.events)
@@ -59,7 +59,7 @@ export function DayRow({
         </span>
         <span className="twho">
           {initial && (
-            <i className={avatarClass(moment.timeslot.logged_by, allDeviceIds)}>{initial}</i>
+            <i className={avatarClass(moment.timeslot.logged_by, allCaregiverIds)}>{initial}</i>
           )}
         </span>
       </div>

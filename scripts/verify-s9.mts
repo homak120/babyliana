@@ -12,8 +12,8 @@ const store = new Map<string, string>()
   clear: () => store.clear(), key: () => null, length: 0,
 } as Storage
 
-const { getDeviceId } = await import('../src/device-id.ts')
-const { createThisDevice, renameThisDevice } = await import('../src/moments.ts')
+const { getCaregiverId } = await import('../src/caregiver-id.ts')
+const { createThisCaregiver, renameThisCaregiver } = await import('../src/moments.ts')
 const db = await import('../src/db.ts')
 
 let failures = 0
@@ -23,28 +23,28 @@ const check = (label: string, ok: boolean, detail = '') => {
 }
 
 // --- nothing exists until a name is submitted -----------------------------
-// Merely opening the app used to mint a device id and insert a row, so anyone
+// Merely opening the app used to mint a caregiver id and insert a row, so anyone
 // who looked at the URL left a phantom identity behind.
-check('a fresh install has no device id', getDeviceId() === null)
-check('and no device row', (await db.getDevices()).length === 0)
+check('a fresh install has no caregiver id', getCaregiverId() === null)
+check('and no caregiver row', (await db.getCaregivers()).length === 0)
 
-await createThisDevice('  Mona  ')
-check('submitting a name creates the id', getDeviceId() !== null)
-check('and exactly one row', (await db.getDevices()).length === 1)
-check('the name is trimmed', (await db.getDevices())[0].name === 'Mona')
+await createThisCaregiver('  Mona  ')
+check('submitting a name creates the id', getCaregiverId() !== null)
+check('and exactly one row', (await db.getCaregivers()).length === 1)
+check('the name is trimmed', (await db.getCaregivers())[0].name === 'Mona')
 check('the id is what says setup is done — no separate flag to drift',
-  getDeviceId() === (await db.getDevices())[0].id)
-check('creating queues a push', (await db.outbox()).some((i) => i.table === 'device'))
+  getCaregiverId() === (await db.getCaregivers())[0].id)
+check('creating queues a push', (await db.outbox()).some((i) => i.table === 'caregiver'))
 
 // --- a name has to be changeable after first run ---------------------------
 // Without this, the name set (or skipped) on first run was permanent unless
 // storage was cleared by hand — the settings screen that would hold it is
 // deferred, and this is the one thing in it that is not optional.
-await renameThisDevice('Ada')
+await renameThisCaregiver('Ada')
 check('a name can be changed after it is first set',
-  (await db.getDevices())[0].name === 'Ada')
+  (await db.getCaregivers())[0].name === 'Ada')
 check('changing it queues a push so the other phone sees the new initial',
-  (await db.outbox()).some((i) => i.table === 'device'))
+  (await db.outbox()).some((i) => i.table === 'caregiver'))
 
 // --- the update rule --------------------------------------------------------
 // Modelled rather than imported: updates.ts talks to a real service worker.

@@ -49,7 +49,7 @@ export type Baby = {
   updated_by: string | null
 }
 
-export type Device = {
+export type Caregiver = {
   id: string
   name: string | null
   created_at: string

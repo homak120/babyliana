@@ -1,231 +1,314 @@
 import { useCallback, useEffect, useState } from 'react'
-import { putDevice } from '../db'
-import { adoptDeviceId } from '../device-id'
-import { createThisDevice } from '../moments'
-import { fetchDevices } from '../sync'
-import type { Device } from '../types'
+import { sendCode, verifyCode, currentUserId } from '../auth'
+import { putCaregiver } from '../db'
+import { adoptCaregiverId } from '../caregiver-id'
+import {
+  createBaby,
+  fetchBabies,
+  fetchCaregiversForHousehold,
+  getBabyId,
+  setBabyId,
+} from '../household'
+import { createThisCaregiver } from '../moments'
+import type { Baby, Caregiver } from '../types'
 import { Icon } from './Icon'
 import { Mascot } from './Mascot'
-import gateWebp from '../assets/mascot/gate.webp'
-// JPEG, not PNG: it is a photograph, and the PNG fallback was 1.8MB against
-// 258KB for the same picture.
-import gateJpg from '../assets/mascot/gate.jpg'
 
-// Shown once, when this device has no name yet.
+// First run, in four steps: email, code, which baby, which caregiver.
 //
-// Shown when this device has no id yet, which is the only thing that says
-// setup has happened. Submitting is what creates both the id and the row —
-// opening the app must not mint an identity, or merely looking at the URL
-// leaves a phantom device behind.
+// **The gate is gone** (D-059). `SECRET_CODE` stood in for authentication that
+// did not exist, and D-030 already called it a doormat — public repo, code in
+// the bundle in plain text. The household email plus an expiring OTP is the same
+// idea done properly: not in the bundle, not per deployment, and it expires.
+// `RECOVERY_CODE` went with it, but **the screen behind it survives** as the
+// caregiver step. That list was always the useful part; the code in front of it
+// was the workaround.
 //
-// A name is required, because with no device there is nothing for a moment's
-// logged_by to reference. The cost, accepted: if storage is ever cleared this
-// has to be retyped before logging.
+// **The photograph is gone from here too**, and that is not a styling choice.
+// D-030 put a real picture of the baby on the first screen because only this
+// family had the URL. With open signup (D-057) the first thing a stranger sees
+// would be a photograph of someone's child. The mascot does the same job and
+// belongs to nobody.
 //
-// No device id and no pairing here: D-022 has one baby, one hard-coded id and
-// no join flow for MVP. `baby-and-devices.md` has the shape for when that
-// changes.
-//
-// Two pages, per the third handoff: a gate, then the name. See D-030 — the gate
-// is a doormat, not a lock, and the code ships in a public bundle.
+// **Two of the four steps skip themselves.** One baby is chosen for you; a
+// household that has already signed in does not see the email step again. The
+// shortest real path from a cold install is email, code, name — and from a
+// reinstall it is email, code, tap yourself.
 
-/**
- * The answer to "when did you first time to meet me".
- *
- * Deliberately the only place it appears, because it *will* need changing: this
- * repo is public and the built bundle carries it in plain text. It keeps a
- * stranger who finds the URL from typing into the real log; it stops nobody who
- * opens dev tools. D-030 says so out loud.
- */
-const SECRET_CODE = '08242026'
+type Stage = 'email' | 'code' | 'baby' | 'caregiver'
 
-/**
- * The second answer: the same gate, a different door (D-042).
- *
- * Typing this instead of the code above skips the name page entirely and lists
- * the devices already on the server, so a reinstalled phone can take its own
- * identity back rather than minting a second one under the same name.
- *
- * It is not more secret than `SECRET_CODE` — same bundle, same plain text, same
- * D-030 caveat. It is a different destination, not a higher privilege.
- */
-const RECOVERY_CODE = '01202012'
-
-/** Enough of a UUID to tell two devices apart without printing all 36. */
+/** Enough of a UUID to tell two caregivers apart without printing all 36. */
 const shortId = (id: string) => `${id.slice(0, 4)}…${id.slice(-3)}`
 
-type Stage = 'gate' | 'name' | 'devices'
-
 export function Welcome({ onDone }: { onDone: () => void }) {
-  const [stage, setStage] = useState<Stage>('gate')
+  const [stage, setStage] = useState<Stage>('email')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
-  const [wrong, setWrong] = useState(false)
   const [name, setName] = useState('')
+  const [babyName, setBabyName] = useState('')
 
-  const [saving, setSaving] = useState(false)
+  // `null` is "not fetched yet". An empty array is a real answer and a different
+  // one — a household that has signed in and made nothing yet.
+  const [babies, setBabies] = useState<Baby[] | null>(null)
+  const [carers, setCarers] = useState<Caregiver[] | null>(null)
 
-  // The recovery list. `null` is "not fetched"; the failure is its own flag,
-  // because an empty list is a real answer — a server nobody has set up yet.
-  const [list, setList] = useState<Device[] | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [failed, setFailed] = useState(false)
+  // A session that outlived the last install skips straight past the email.
+  // Runs once, reads the cached session, and touches the network only if the
+  // access token needs refreshing.
+  useEffect(() => {
+    void currentUserId().then((uid) => {
+      if (uid) setStage(getBabyId() ? 'caregiver' : 'baby')
+    })
+  }, [])
 
-  const loadDevices = useCallback(async () => {
-    setLoading(true)
-    setFailed(false)
-    const rows = await fetchDevices()
-    if (rows) {
-      // Named first and alphabetical, so the two phones that matter are at the
-      // top however many test rows are behind them.
-      setList([...rows].sort((a, b) => (a.name ?? '~').localeCompare(b.name ?? '~')))
-    } else {
-      setFailed(true)
-    }
-    setLoading(false)
+  const loadBabies = useCallback(async () => {
+    setBusy(true)
+    setError(null)
+    const rows = await fetchBabies()
+    if (!rows) setError('cannot reach the server right now')
+    else if (rows.length === 1) {
+      // One baby is not a choice. Take it and move on — a picker with a single
+      // option is a tap that asks nothing.
+      setBabyId(rows[0].id)
+      setStage('caregiver')
+    } else setBabies(rows)
+    setBusy(false)
+  }, [])
+
+  const loadCarers = useCallback(async () => {
+    setBusy(true)
+    setError(null)
+    const rows = await fetchCaregiversForHousehold()
+    if (!rows) setError('cannot reach the server right now')
+    // Named first and alphabetical, so the people who matter sit above any test
+    // rows behind them.
+    else setCarers([...rows].sort((a, b) => (a.name ?? '~').localeCompare(b.name ?? '~')))
+    setBusy(false)
   }, [])
 
   useEffect(() => {
-    if (stage === 'devices' && list === null && !failed && !loading) void loadDevices()
-  }, [stage, list, failed, loading, loadDevices])
+    if (stage === 'baby' && babies === null && !busy && !error) void loadBabies()
+    if (stage === 'caregiver' && carers === null && !busy && !error) void loadCarers()
+  }, [stage, babies, carers, busy, error, loadBabies, loadCarers])
 
-  const submitCode = () => {
-    if (code === SECRET_CODE) {
-      setStage('name')
-      setWrong(false)
-    } else if (code === RECOVERY_CODE) {
-      setStage('devices')
-      setWrong(false)
-    } else {
-      setWrong(true)
-    }
+  const submitEmail = async () => {
+    if (busy || !email.includes('@')) return
+    setBusy(true)
+    setError(null)
+    const r = await sendCode(email)
+    setBusy(false)
+    if (r.ok) setStage('code')
+    else setError(r.message)
+  }
+
+  const submitCode = async () => {
+    if (busy || code.length < 6) return
+    setBusy(true)
+    setError(null)
+    const r = await verifyCode(email, code)
+    setBusy(false)
+    if (r.ok) setStage('baby')
+    else setError(r.message)
+  }
+
+  const chooseBaby = (id: string) => {
+    setBabyId(id)
+    setStage('caregiver')
+  }
+
+  const makeBaby = async () => {
+    if (busy || !babyName.trim()) return
+    setBusy(true)
+    setError(null)
+    const id = await createBaby(babyName)
+    setBusy(false)
+    if (id) chooseBaby(id)
+    else setError('could not create that — try again')
   }
 
   /**
-   * Straight through, deliberately — no confirm step. The owner chose that with
-   * the consequence in front of him: if the other phone still holds this id,
-   * both write as the same device. That is the recovery case working, not a
-   * mistake, and anyone who got here typed an eight-digit code to do it.
+   * Take on a caregiver that already exists rather than minting a second one.
    *
-   * The row is written locally before the app opens so the first render already
-   * knows the name; the normal sync brings the rest down behind it.
+   * This is `RECOVERY_CODE`'s whole purpose, now an ordinary step. A reinstalled
+   * phone has empty storage, so without it the next screen would create a second
+   * "Dad" and every entry after that would be attributed to a stranger with the
+   * same name.
+   *
+   * Written locally before the app opens so the first render already knows the
+   * name; the normal sync brings the rest down behind it.
    */
-  const adopt = async (d: Device) => {
-    if (saving) return
-    setSaving(true)
-    await putDevice(d)
-    adoptDeviceId(d.id)
+  const beCaregiver = async (c: Caregiver) => {
+    if (busy) return
+    setBusy(true)
+    await putCaregiver(c)
+    adoptCaregiverId(c.id)
     onDone()
   }
 
-  // This is where the device comes into existence — nothing before it. Which is
-  // also why a name is required: with no device there is nothing for a moment's
-  // logged_by to reference, so there is no useful "skip" to offer.
-  const finish = async () => {
-    if (!name.trim()) return
-    setSaving(true)
-    await createThisDevice(name)
+  // Where a caregiver comes into existence — nothing before this creates one.
+  // A name is required because with no caregiver there is nothing for a
+  // moment's `logged_by` to reference, so there is no useful "skip" to offer.
+  const makeCaregiver = async () => {
+    if (busy || !name.trim()) return
+    setBusy(true)
+    await createThisCaregiver(name)
     onDone()
   }
 
-  if (stage === 'gate') {
+  const problem = error && (
+    <p className="gateerr">
+      <Icon name="error" size={18} /> {error}
+    </p>
+  )
+
+  // ---------------------------------------------------------------- email ---
+  if (stage === 'email') {
     return (
-      <main className="welcome gate">
-        {/* The photograph the design asks for, `assets/liana-photo.png`, which
-            arrived in a later drop of the same package.
-
-            It renders before the code is entered, so it is what anyone holding
-            the URL sees. That is deliberate and the owner's call — see D-030. */}
-        <div className="gatephoto">
-          <picture>
-            <source srcSet={gateWebp} type="image/webp" />
-            <img src={gateJpg} alt="" />
-          </picture>
-        </div>
+      <main className="welcome">
+        <Mascot state="settled" size={88} welcome />
 
         <p className="kickerup">hello there</p>
-        <h1>Hello! Do you know me?</h1>
-        <p className="sub">only Liana&rsquo;s people get in. enter the secret code to confirm.</p>
+        <h1>let&rsquo;s get you in</h1>
+        <p className="sub">
+          we&rsquo;ll email you a six-digit code. there&rsquo;s no password to remember, and
+          you&rsquo;ll only do this once on this phone.
+        </p>
 
-        <label className="fieldlabel" htmlFor="code">secret code</label>
+        <label className="fieldlabel" htmlFor="email">email address</label>
         <input
-          id="code"
-          className={wrong ? 'nameinput code wrong' : 'nameinput code'}
-          value={code}
-          inputMode="numeric"
-          autoComplete="off"
-          placeholder="••••••••"
+          id="email"
+          className="nameinput"
+          type="email"
+          value={email}
+          inputMode="email"
+          autoComplete="email"
+          autoCapitalize="none"
+          placeholder="you@example.com"
           onChange={(e) => {
-            setCode(e.target.value.replace(/\D/g, '').slice(0, 8))
-            setWrong(false)
+            setEmail(e.target.value)
+            setError(null)
           }}
-          onKeyDown={(e) => e.key === 'Enter' && submitCode()}
+          onKeyDown={(e) => e.key === 'Enter' && void submitEmail()}
         />
 
         <div className="hintcard">
-          <Icon name="lightbulb" size={19} />
+          <Icon name="group" size={19} />
           <div>
-            <p className="hintlabel">hint</p>
-            <p className="hinttext">when did you first time to meet me</p>
+            <p className="hintlabel">both of you</p>
+            <p className="hinttext">
+              use the same address on both phones — you each pick who you are next
+            </p>
           </div>
         </div>
 
-        {wrong && (
-          <p className="gateerr">
-            <Icon name="error" size={18} /> that&rsquo;s not it. try the day we met.
-          </p>
-        )}
+        {problem}
 
         <div className="spacer" />
 
         <button
           type="button"
           className="save"
-          disabled={code.length < 4}
-          onClick={submitCode}
+          disabled={busy || !email.includes('@')}
+          onClick={() => void submitEmail()}
         >
-          <Icon name="lock_open" size={26} /> that&rsquo;s me
+          <Icon name="mail" size={24} /> {busy ? 'sending…' : 'send the code'}
         </button>
       </main>
     )
   }
 
-  if (stage === 'devices') {
+  // ----------------------------------------------------------------- code ---
+  if (stage === 'code') {
     return (
-      <main className="welcome recover">
-        <Mascot state="settled" size={88} welcome />
+      <main className="welcome gate">
+        <Mascot state="awake" size={88} welcome />
 
-        <p className="kickerup">you&rsquo;re my dad or mom</p>
-        <h1>so good to see you</h1>
+        <p className="kickerup">check your email</p>
+        <h1>type the code</h1>
         <p className="sub">
-          pick the phone you were logging on before, and this one carries on as it.
+          six digits, sent to {email}. it&rsquo;s good for fifteen minutes.
         </p>
 
-        {loading && <p className="recovnote">looking for your phones&hellip;</p>}
+        <label className="fieldlabel" htmlFor="code">the code</label>
+        <input
+          id="code"
+          className={error ? 'nameinput code wrong' : 'nameinput code'}
+          value={code}
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          placeholder="••••••"
+          onChange={(e) => {
+            setCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+            setError(null)
+          }}
+          onKeyDown={(e) => e.key === 'Enter' && void submitCode()}
+        />
 
-        {failed && (
-          <>
-            <p className="gateerr">
-              <Icon name="error" size={18} /> can&rsquo;t reach the list of devices right now.
-            </p>
-            <button type="button" className="save" onClick={() => void loadDevices()}>
-              <Icon name="refresh" size={22} /> try again
-            </button>
-          </>
+        {problem}
+
+        <div className="spacer" />
+
+        <button
+          type="button"
+          className="save"
+          disabled={busy || code.length < 6}
+          onClick={() => void submitCode()}
+        >
+          <Icon name="lock_open" size={26} /> that&rsquo;s me
+        </button>
+
+        {/* Not "resend": one tap sends again, and the same tap is also how you
+            fix a typo in the address. Supabase rate-limits a resend to one a
+            minute, and `readable()` in auth.ts turns that into a sentence. */}
+        <button
+          type="button"
+          className="backlink"
+          onClick={() => {
+            setStage('email')
+            setCode('')
+            setError(null)
+          }}
+        >
+          <Icon name="arrow_back" size={18} /> different email, or send it again
+        </button>
+      </main>
+    )
+  }
+
+  // ----------------------------------------------------------------- baby ---
+  if (stage === 'baby') {
+    const none = babies !== null && babies.length === 0
+
+    return (
+      <main className="welcome">
+        <Mascot state="settled" size={88} welcome />
+
+        <p className="kickerup">{none ? 'first time' : 'whose log is this'}</p>
+        <h1>{none ? 'who are we logging for?' : 'pick a little one'}</h1>
+        <p className="sub">
+          {none
+            ? 'just a name — it goes at the top of the log and you can change it later.'
+            : 'this phone will open straight into the one you choose.'}
+        </p>
+
+        {busy && babies === null && <p className="recovnote">looking&hellip;</p>}
+        {problem}
+        {error && (
+          <button type="button" className="save" onClick={() => void loadBabies()}>
+            <Icon name="refresh" size={22} /> try again
+          </button>
         )}
 
-        {list && list.length === 0 && (
-          <p className="recovnote">
-            no devices on the server yet — there is nothing to come back to.
-          </p>
-        )}
-
-        {list && list.length > 0 && (
+        {babies && babies.length > 0 && (
           <ul className="devlist">
-            {list.map((d) => (
-              <li key={d.id}>
-                <button type="button" onClick={() => void adopt(d)} disabled={saving}>
-                  <b>{d.name ?? 'unnamed'}</b>
-                  <span>{shortId(d.id)}</span>
+            {babies.map((b) => (
+              <li key={b.id}>
+                <button type="button" onClick={() => chooseBaby(b.id)} disabled={busy}>
+                  <b>{b.name}</b>
+                  <span>{shortId(b.id)}</span>
                   <Icon name="arrow_forward" size={20} />
                 </button>
               </li>
@@ -233,61 +316,113 @@ export function Welcome({ onDone }: { onDone: () => void }) {
           </ul>
         )}
 
+        {none && (
+          <>
+            <label className="fieldlabel" htmlFor="babyname">their name</label>
+            <input
+              id="babyname"
+              className="nameinput"
+              value={babyName}
+              autoComplete="off"
+              placeholder="Liana"
+              onChange={(e) => setBabyName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && void makeBaby()}
+            />
+          </>
+        )}
+
         <div className="spacer" />
 
-        {/* The way out. Without it a failed fetch is a dead end, and the only
-            escape from a hidden page is closing the app. */}
-        <button
-          type="button"
-          className="backlink"
-          onClick={() => {
-            setStage('gate')
-            setCode('')
-            setList(null)
-            setFailed(false)
-          }}
-        >
-          <Icon name="arrow_back" size={18} /> back
-        </button>
+        {none && (
+          <button
+            type="button"
+            className="save"
+            disabled={busy || !babyName.trim()}
+            onClick={() => void makeBaby()}
+          >
+            <Icon name="arrow_forward" size={22} /> start the log
+          </button>
+        )}
+
+        {babies && babies.length > 0 && (
+          <button type="button" className="skiplink" onClick={() => setBabies([])}>
+            someone new
+          </button>
+        )}
       </main>
     )
   }
 
+  // ------------------------------------------------------------ caregiver ---
+  const none = carers !== null && carers.length === 0
+
   return (
-    <main className="welcome">
+    <main className="welcome recover">
       <Mascot state="settled" size={88} welcome />
 
-      <p className="kickerup">welcome</p>
-      <h1>
-        what should we
-        <br />
-        call you?
-      </h1>
+      <p className="kickerup">{none ? 'welcome' : 'you’re mum or dad'}</p>
+      <h1>{none ? 'what should we call you?' : 'which one are you?'}</h1>
       <p className="sub">
-        your name marks every entry you log, so Liana&rsquo;s other grown-ups know who did
-        what.
+        {none
+          ? 'your name marks every entry you log, so the other grown-ups know who did what.'
+          : 'tap yourself and this phone carries on as you. tap someone new if you are not on the list.'}
       </p>
 
-      <label htmlFor="yourname">your name</label>
-      <input
-        id="yourname"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Anya"
-        autoComplete="given-name"
-      />
+      {busy && carers === null && <p className="recovnote">looking&hellip;</p>}
+      {problem}
+      {error && (
+        <button type="button" className="save" onClick={() => void loadCarers()}>
+          <Icon name="refresh" size={22} /> try again
+        </button>
+      )}
+
+      {carers && carers.length > 0 && (
+        <ul className="devlist">
+          {carers.map((c) => (
+            <li key={c.id}>
+              <button type="button" onClick={() => void beCaregiver(c)} disabled={busy}>
+                <b>{c.name ?? 'unnamed'}</b>
+                <span>{shortId(c.id)}</span>
+                <Icon name="arrow_forward" size={20} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {none && (
+        <>
+          <label className="fieldlabel" htmlFor="yourname">your name</label>
+          <input
+            id="yourname"
+            className="nameinput"
+            value={name}
+            autoComplete="given-name"
+            placeholder="Anya"
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && void makeCaregiver()}
+          />
+        </>
+      )}
 
       <div className="spacer" />
 
-      <button
-        type="button"
-        className="save"
-        disabled={!name.trim() || saving}
-        onClick={finish}
-      >
-        <Icon name="arrow_forward" size={22} />
-        start logging
-      </button>
+      {none && (
+        <button
+          type="button"
+          className="save"
+          disabled={busy || !name.trim()}
+          onClick={() => void makeCaregiver()}
+        >
+          <Icon name="arrow_forward" size={22} /> start logging
+        </button>
+      )}
+
+      {carers && carers.length > 0 && (
+        <button type="button" className="skiplink" onClick={() => setCarers([])}>
+          someone new
+        </button>
+      )}
     </main>
   )
 }

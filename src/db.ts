@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
-import type { Baby, Device, LogEvent, Moment, Timeslot } from './types'
+import type { Baby, Caregiver, LogEvent, Moment, Timeslot } from './types'
 
 // The local replica. Holds the whole log, not a cache of recent items —
 // event-model.md § Where each fact lives. Everything the UI reads comes from
@@ -10,7 +10,7 @@ import type { Baby, Device, LogEvent, Moment, Timeslot } from './types'
 // the transaction plumbing is unreadable by hand.
 
 const DB_NAME = 'babyliana'
-const DB_VERSION = 2
+const DB_VERSION = 3
 
 /**
  * What has been written locally but not yet accepted by the server.
@@ -21,7 +21,7 @@ const DB_VERSION = 2
  */
 export type OutboxItem = {
   key: string
-  table: 'baby' | 'device' | 'timeslot' | 'event'
+  table: 'baby' | 'caregiver' | 'timeslot' | 'event'
   rowId: string
   op: 'put' | 'delete'
 }
@@ -29,7 +29,7 @@ export type OutboxItem = {
 interface Schema extends DBSchema {
   baby: { key: string; value: Baby }
   outbox: { key: string; value: OutboxItem }
-  device: { key: string; value: Device }
+  caregiver: { key: string; value: Caregiver }
   timeslot: { key: string; value: Timeslot; indexes: { occurred_at: string } }
   event: { key: string; value: LogEvent; indexes: { timeslot_id: string } }
 }
@@ -43,7 +43,7 @@ function db() {
       // needing its data cleared.
       if (oldVersion < 1) {
         d.createObjectStore('baby', { keyPath: 'id' })
-        d.createObjectStore('device', { keyPath: 'id' })
+        d.createObjectStore('caregiver', { keyPath: 'id' })
         d.createObjectStore('timeslot', { keyPath: 'id' }).createIndex(
           'occurred_at',
           'occurred_at',
@@ -55,6 +55,25 @@ function db() {
       }
       if (oldVersion < 2) {
         d.createObjectStore('outbox', { keyPath: 'key' })
+      }
+      // `device` became `caregiver`. A store cannot be renamed in place, so the
+      // old one is dropped and the new one created — which a fresh browser never
+      // sees, because `oldVersion < 1` above already made `caregiver`.
+      //
+      // **The rows are not carried across, deliberately.** They are a replica:
+      // reconcile refills them from the server on the next sync. The one thing
+      // that could be lost is a caregiver rename queued in the outbox and never
+      // pushed, and that is acceptable here because this upgrade only ever runs
+      // on a phone crossing from `public` to `app` — a cutover that re-onboards
+      // the install and rebuilds the replica anyway. It is not a silent loss in
+      // the middle of ordinary use.
+      if (oldVersion < 3) {
+        if (d.objectStoreNames.contains('device' as never)) {
+          d.deleteObjectStore('device' as never)
+        }
+        if (!d.objectStoreNames.contains('caregiver')) {
+          d.createObjectStore('caregiver', { keyPath: 'id' })
+        }
       }
     },
   })
@@ -108,7 +127,7 @@ export async function deleteMoment(timeslotId: string) {
 }
 
 /**
- * Create if absent, leave alone if present. One row per device, forever.
+ * Create if absent, leave alone if present. One row per caregiver, forever.
  *
  * Deliberately not "if there is no localStorage key, this is a first run" —
  * the Phase 3 spike already wrote `babyliana.device_id` on both phones and it
@@ -117,11 +136,11 @@ export async function deleteMoment(timeslotId: string) {
  * would then fail its foreign key. It is also wrong after a storage eviction,
  * which is what Q-004 is measuring.
  */
-export async function ensureDevice(device: Device): Promise<boolean> {
+export async function ensureCaregiver(caregiver: Caregiver): Promise<boolean> {
   const d = await db()
-  const existing = await d.get('device', device.id)
+  const existing = await d.get('caregiver', caregiver.id)
   if (existing) return false
-  await d.put('device', device)
+  await d.put('caregiver', caregiver)
   return true
 }
 
@@ -130,12 +149,12 @@ export async function eventIdsFor(timeslotId: string): Promise<string[]> {
   return d.getAllKeysFromIndex('event', 'timeslot_id', timeslotId)
 }
 
-export async function putDevice(device: Device) {
-  await (await db()).put('device', device)
+export async function putCaregiver(caregiver: Caregiver) {
+  await (await db()).put('caregiver', caregiver)
 }
 
-export async function getDevices(): Promise<Device[]> {
-  return (await db()).getAll('device')
+export async function getCaregivers(): Promise<Caregiver[]> {
+  return (await db()).getAll('caregiver')
 }
 
 export async function putBaby(baby: Baby) {
@@ -179,21 +198,21 @@ export async function dequeue(keys: string[]) {
  */
 export async function replaceAll(rows: {
   baby: Baby[]
-  device: Device[]
+  caregiver: Caregiver[]
   timeslot: Timeslot[]
   event: LogEvent[]
 }) {
   const d = await db()
-  const tx = d.transaction(['baby', 'device', 'timeslot', 'event'], 'readwrite')
+  const tx = d.transaction(['baby', 'caregiver', 'timeslot', 'event'], 'readwrite')
   await Promise.all([
     tx.objectStore('baby').clear(),
-    tx.objectStore('device').clear(),
+    tx.objectStore('caregiver').clear(),
     tx.objectStore('timeslot').clear(),
     tx.objectStore('event').clear(),
   ])
   await Promise.all([
     ...rows.baby.map((r) => tx.objectStore('baby').put(r)),
-    ...rows.device.map((r) => tx.objectStore('device').put(r)),
+    ...rows.caregiver.map((r) => tx.objectStore('caregiver').put(r)),
     ...rows.timeslot.map((r) => tx.objectStore('timeslot').put(r)),
     ...rows.event.map((r) => tx.objectStore('event').put(r)),
     tx.done,
@@ -204,6 +223,6 @@ export async function deleteEvent(id: string) {
   await (await db()).delete('event', id)
 }
 
-export async function getRow(table: 'baby' | 'device' | 'timeslot' | 'event', id: string) {
+export async function getRow(table: 'baby' | 'caregiver' | 'timeslot' | 'event', id: string) {
   return (await db()).get(table, id)
 }

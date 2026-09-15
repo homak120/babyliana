@@ -196,16 +196,60 @@ Read `CLAUDE.md` first, then this file. Beyond that:
 
 ## In flight
 
-**Uncommitted: `src/auth.ts`, `scripts/verify-auth.mts`, and edits to
-`package.json`, `supabase/migrations/0007_app_schema.sql`, `supabase/README.md`,
-`docs/tasks.md` and this file.** All of it is stage 1 and stage 2's first chunk;
-none of it changes a line the phones run. `main` at `302ce22` is still what is
-deployed to them.
+**Uncommitted: stage 2's first chunk — the rename and the schema flip.** 39 files
+in `src/` and `scripts/`, plus `src/device-id.ts` renamed to
+`src/caregiver-id.ts`. `main` at `302ce22` is untouched and is still what the
+phones run.
 
-**`src/auth.ts` is deliberately additive.** It wraps the four Supabase auth
-calls and nothing else. `src/supabase.ts` still points at `public`, and the
-schema flip is its own step with its own diff — so if something breaks later
-there is no ambiguity about which change did it.
+**`device` is `caregiver` everywhere now.** Identifiers, the IndexedDB store, the
+localStorage key, the type, the outbox union. Three things were deliberately
+*not* renamed and each is correct as it stands: `devicePixelRatio` (a browser
+API), `only on this device` in settings (the clock format genuinely is per
+handset), and a comment in `db.ts` recording that the Phase 3 spike wrote
+`babyliana.device_id` — a fact about the past that a rename would falsify.
+**User-visible copy was left alone on purpose** — `name this phone`, the recovery
+screen's wording — because that copy is rewritten in the next chunk, when the
+caregiver picker is designed.
+
+**`src/supabase.ts` now points at `app`.** One option, `db: { schema: 'app' }`,
+and every `.from()` call in `sync.ts` follows without changing. The realtime
+subscription in `sync.ts` had to be changed **separately**: its `schema` filter
+is a literal sent to the realtime server and does not follow `db.schema`, so
+flipping only the client leaves live updates silently dead while every read and
+write works.
+
+**`DB_VERSION` is 3.** A store cannot be renamed in place, so `device` is dropped
+and `caregiver` created. Rows are not carried across: they are a replica and
+reconcile refills them. The upgrade only ever runs on a phone crossing from
+`public` to `app`, which re-onboards anyway.
+
+**The bootstrap landed too, so stage 2 is essentially done.** First run is
+email → code → which baby → which caregiver, in `Welcome.tsx`. Two of the four
+skip themselves: a household with one baby is never asked to pick it, and a
+session that outlived the install goes straight past the email. `config.ts` is
+deleted and `src/household.ts` owns the baby id — which is what that constant's
+own comment predicted would happen.
+
+**The baby photograph came off first run.** D-030 put a real picture of Liana
+there when only this family had the URL; with open signup it would be the first
+thing a stranger sees. The mascot does the same job and belongs to nobody. The
+build dropped from 24 precached entries to 23.
+
+**`verify-s2` and `verify-s8` need a session and say so.** They hit the live
+database, `app` answers nothing without one, and OTP needs a human with an
+inbox — so `npm run auth-check` now saves the session to `.auth-session.json`
+(gitignored) and those two restore it. Without it they print one line naming the
+command and exit 1, rather than a wall of FAILs or a silent green. **That file
+holds a real refresh token for the household account** — the owner should say if
+that trade is unwanted, in which case the two suites simply stop until someone
+signs in.
+
+**Everything else is green:** typecheck, lint, build, eight data suites and all
+eleven browser suites. `scripts/ui.mts` § `enterApp` now seeds a session and a
+baby instead of typing a gate code — it is still the single edit point, which is
+why eleven suites cost one edit. `verify-welcome` was rewritten for the four new
+steps and stubs every Supabase call, aborting anything it did not stub so a
+screen quietly depending on an unnoticed call fails rather than passes.
 
 **`npm run auth-check` is not in `npm run verify`** and must not be added to it:
 it needs a human with an inbox. That is also what makes it the only thing that

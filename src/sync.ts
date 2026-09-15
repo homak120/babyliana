@@ -1,7 +1,7 @@
-import { BABY_ID } from './config'
+import { getBabyId } from './household'
 import * as db from './db'
 import { supabase } from './supabase'
-import type { Baby, Device, LogEvent, Timeslot } from './types'
+import type { Baby, Caregiver, LogEvent, Timeslot } from './types'
 
 // Sync is push-then-pull, and the order matters more than it looks.
 //
@@ -38,11 +38,11 @@ function setState(next: SyncState) {
   notify()
 }
 
-/** Devices before timeslots: `logged_by` is a foreign key and will reject. */
+/** Caregivers before timeslots: `logged_by` is a foreign key and will reject. */
 // `baby` first: it is the root every timeslot references, so it has to exist
 // on the server before anything points at it. It is only ever *updated* here —
 // the row is seeded by `0002` and no client creates one (D-052).
-const PUSH_ORDER = ['baby', 'device', 'timeslot', 'event'] as const
+const PUSH_ORDER = ['baby', 'caregiver', 'timeslot', 'event'] as const
 
 async function push(): Promise<boolean> {
   if (!supabase) return false
@@ -81,39 +81,46 @@ async function push(): Promise<boolean> {
 }
 
 /**
- * Every device on the server, for the recovery page (D-042).
+ * Every caregiver on the server, for the recovery page (D-042).
  *
  * Read directly rather than through `pull()`, which calls `replaceAll` and
  * would wipe the local database — wrong for a screen that is only offering a
  * list. It also has to work before this phone has an identity at all, which is
- * why it filters on nothing: `device` is not scoped by `baby_id`.
+ * why it filters on nothing: `caregiver` is not scoped by `baby_id`.
  *
  * `null` means the list could not be fetched — offline, unreachable, or no
  * Supabase configured. The page says so rather than showing an empty list,
  * because "nobody has ever set this up" and "I cannot see" are different
  * answers and only one of them is recoverable by waiting.
  */
-export async function fetchDevices(): Promise<Device[] | null> {
+export async function fetchCaregivers(): Promise<Caregiver[] | null> {
   if (!supabase) return null
-  const { data, error } = await supabase.from('device').select('*')
+  const { data, error } = await supabase.from('caregiver').select('*')
   if (error) return null
-  return (data ?? []) as Device[]
+  return (data ?? []) as Caregiver[]
 }
 
 async function pull(): Promise<boolean> {
   if (!supabase) return false
-  const [baby, device, timeslot, event] = await Promise.all([
-    supabase.from('baby').select('*').eq('id', BABY_ID),
-    supabase.from('device').select('*'),
-    supabase.from('timeslot').select('*').eq('baby_id', BABY_ID),
+  // Onboarding has not finished, so there is nothing to pull *for*. Returning
+  // false rather than throwing keeps this the same shape as every other reason
+  // a pull cannot happen — offline, unauthenticated, a server error — all of
+  // which sync() already treats as "try again later" rather than as a fault.
+  const babyId = getBabyId()
+  if (!babyId) return false
+
+  const [baby, caregiver, timeslot, event] = await Promise.all([
+    supabase.from('baby').select('*').eq('id', babyId),
+    supabase.from('caregiver').select('*'),
+    supabase.from('timeslot').select('*').eq('baby_id', babyId),
     supabase.from('event').select('*'),
   ])
-  const failed = [baby, device, timeslot, event].find((r) => r.error)
+  const failed = [baby, caregiver, timeslot, event].find((r) => r.error)
   if (failed) return false
 
   await db.replaceAll({
     baby: (baby.data ?? []) as Baby[],
-    device: (device.data ?? []) as Device[],
+    caregiver: (caregiver.data ?? []) as Caregiver[],
     timeslot: (timeslot.data ?? []) as Timeslot[],
     event: (event.data ?? []) as LogEvent[],
   })
@@ -179,10 +186,14 @@ export function startSync() {
   if (supabase) {
     supabase
       .channel('log')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'timeslot' }, () =>
+      // **These do not follow the client's `db.schema` option.** The filter is
+      // sent to the realtime server as its own literal, so flipping supabase.ts
+      // leaves these on `public` — and the failure is silent: every read and
+      // write works, and only live updates between the two phones stop arriving.
+      .on('postgres_changes', { event: '*', schema: 'app', table: 'timeslot' }, () =>
         void sync(),
       )
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'event' }, () =>
+      .on('postgres_changes', { event: '*', schema: 'app', table: 'event' }, () =>
         void sync(),
       )
       .subscribe()

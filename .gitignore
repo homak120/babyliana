@@ -12,5 +12,9 @@ dev-dist/
 .vscode/
 scripts/shots/
 
+# A real refresh token for the household account, left by `npm run auth-check`
+# so verify-s2 and verify-s8 can reach `app`. Never commit it.
+.auth-session.json
+
 # Built by scripts/ios/mouse.swift; rebuild with swiftc.
 scripts/ios/mouse

@@ -20,17 +20,17 @@ import {
   totalsFor,
   type MascotState,
 } from '../derive'
-import { getDevices } from '../db'
+import { getCaregivers } from '../db'
 import {
   avatarClass, describeMoment, feedCell, hhmm, milkCell, milkTotal, otherLabel, sleepCell,
   timeCell,
 } from '../day/cells'
-import { getDeviceId } from '../device-id'
+import { getCaregiverId } from '../caregiver-id'
 import { gapText, isNightCycle, upcomingFeeds } from '../cycles'
 import { timeFormat } from '../timeformat'
-import { getMoments, reconcileSettings, removeMoment, renameThisDevice } from '../moments'
+import { getMoments, reconcileSettings, removeMoment, renameThisCaregiver } from '../moments'
 import { subscribe, sync, syncState } from '../sync'
-import type { Device, Moment } from '../types'
+import type { Caregiver, Moment } from '../types'
 import { AddSheet } from './AddSheet'
 import { SettingsSheet } from './SettingsSheet'
 import { PrepPill, usePrepTimer } from './PrepLine'
@@ -101,10 +101,10 @@ function dayLabel(iso: string) {
 }
 
 /**
- * Editing this device's name, from the status row (D-056).
+ * Editing this caregiver's name, from the status row (D-056).
  *
  * It went into the settings sheet with D-055 and came back out. Two reasons,
- * and neither is about tidiness. **An unnamed device has to say so** — the
+ * and neither is about tidiness. **An unnamed caregiver has to say so** — the
  * button labels itself `name this phone` until there is a name, which is an
  * advertisement on the home screen that a row four gestures deep cannot be.
  * And **a name is typed, so it commits on a button, not on blur**: every other
@@ -171,7 +171,7 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
   // this screen is remounted on every save, and `hhmm` reads the stored value,
   // so what state buys is the re-render that repaints every clock time at once.
   const [clock, setClock] = useState(timeFormat)
-  const [devices, setDevices] = useState<Device[]>([])
+  const [caregivers, setCaregivers] = useState<Caregiver[]>([])
   const [sheet, setSheet] = useState(false)
   const [sync_, setSync] = useState(syncState())
   const [justLogged, setJustLogged] = useState(false)
@@ -197,7 +197,7 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
       setMoments(m)
       setLoaded(true)
     })
-    getDevices().then(setDevices)
+    getCaregivers().then(setCaregivers)
     // The shared settings are on the row every phone shares (D-052, D-055), so a
     // pull can bring one the other phone set — a feeding cycle, a bottle volume.
     // `read()` is a synchronous cache, so the repaint has to be asked for rather
@@ -295,7 +295,7 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
   // figure slot holds — so these two leads print one number.
   const lastVol = (lastFeed && milkTotal(lastFeed.events)) || '—'
   const lastBy = lastFeed
-    ? devices.find((d) => d.id === lastFeed.timeslot.logged_by)?.name ?? null
+    ? caregivers.find((d) => d.id === lastFeed.timeslot.logged_by)?.name ?? null
     : null
 
   return (
@@ -306,22 +306,22 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
               now (D-055): it restyles every time in the app, so it belongs with
               the settings rather than beside one clock. The name button opposite
               it went there too and came back (D-056) — it is not a setting, it
-              is the one thing a device that has never been named must be asked. */}
+              is the one thing a caregiver that has never been named must be asked. */}
           <Icon name={theme === 'night' ? 'bedtime' : 'wb_sunny'} size={15} />
           {hhmm(now.toISOString(), clock)}
         </span>
         <span className="whos">
-          {devices.filter((d) => d.name).map((d) => (
-            <i key={d.id} className={avatarClass(d.id, devices.map((x) => x.id))}>
+          {caregivers.filter((d) => d.name).map((d) => (
+            <i key={d.id} className={avatarClass(d.id, caregivers.map((x) => x.id))}>
               {d.name!.charAt(0).toUpperCase()}
             </i>
           ))}
           {/* It labels itself: `name this phone` until there is one, `edit`
-              after. Without it a device named at first run could never be
+              after. Without it a caregiver named at first run could never be
               renamed, and one that skipped the step would look identical to
               one that did not (D-056). */}
           <button type="button" className="namebtn" onClick={() => setNaming(true)}>
-            {devices.find((d) => d.id === getDeviceId())?.name ? 'edit' : 'name this phone'}
+            {caregivers.find((d) => d.id === getCaregiverId())?.name ? 'edit' : 'name this phone'}
           </button>
           <span className={`sync ${sync_.state}`}>
             <Icon name="cloud_done" size={15} />
@@ -647,9 +647,9 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
                     ))}
                 </span>
                 {(() => {
-                  const who = devices.find((d) => d.id === m.timeslot.logged_by)?.name
+                  const who = caregivers.find((d) => d.id === m.timeslot.logged_by)?.name
                   return who ? (
-                    <i className={avatarClass(m.timeslot.logged_by, devices.map((d) => d.id))}>
+                    <i className={avatarClass(m.timeslot.logged_by, caregivers.map((d) => d.id))}>
                       {who.charAt(0).toUpperCase()}
                     </i>
                   ) : null
@@ -667,10 +667,10 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
 
       {naming && (
         <NamePrompt
-          current={devices.find((d) => d.id === getDeviceId())?.name ?? ''}
+          current={caregivers.find((d) => d.id === getCaregiverId())?.name ?? ''}
           onDone={(name) => {
             setNaming(false)
-            if (name !== null) void renameThisDevice(name).then(refresh)
+            if (name !== null) void renameThisCaregiver(name).then(refresh)
           }}
         />
       )}

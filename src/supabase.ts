@@ -16,4 +16,14 @@ const anonKey = env.VITE_SUPABASE_ANON_KEY
 export const isConfigured =
   Boolean(url && anonKey) && !url!.includes('your-project-ref')
 
-export const supabase = isConfigured ? createClient(url!, anonKey!) : null
+// `db.schema` is the whole cutover at this end: every `.from('timeslot')` in
+// sync.ts resolves against `app` instead of `public` without one call changing.
+// PostgREST picks the schema off an `Accept-Profile` header the client sets from
+// this option — which is also why `app` has to be on Settings → API → Exposed
+// schemas, or every request 404s.
+//
+// Auth is unaffected either way: signInWithOtp and verifyOtp go to /auth/v1,
+// not through PostgREST.
+export const supabase = isConfigured
+  ? createClient(url!, anonKey!, { db: { schema: 'app' } })
+  : null
