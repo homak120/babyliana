@@ -3,6 +3,7 @@
 // nightstand, so it is worth checking against real entries from the paper log
 // rather than invented ones.
 import 'fake-indexeddb/auto'
+import { seedOnboarded } from './local-session.mts'
 const store = new Map<string, string>([['babyliana.caregiver_id', '00000000-0000-4000-8000-0000000d0d0d']])
 ;(globalThis as unknown as { localStorage: Storage }).localStorage = {
   getItem: (k: string) => store.get(k) ?? null,
@@ -11,10 +12,10 @@ const store = new Map<string, string>([['babyliana.caregiver_id', '00000000-0000
   clear: () => store.clear(), key: () => null, length: 0,
 } as Storage
 
-// The baby id is no longer a constant — it arrives from a join and lives in
-// localStorage (D-057), so the shim seeds one. Any uuid will do: these suites
-// never reach the network, and nothing checks which baby it is.
-store.set('babyliana.baby_id', '00000000-1111-2222-3333-444444444444')
+// Onboarding's two answers — which baby, and a session — both live in
+// localStorage now (D-057), and the write path refuses to create a caregiver
+// without the second. Neither reaches the network; see scripts/local-session.mts.
+seedOnboarded(store)
 
 
 import type { Block } from '../src/log/drafts.ts'

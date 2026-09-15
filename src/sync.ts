@@ -44,10 +44,35 @@ function setState(next: SyncState) {
 // the row is seeded by `0002` and no client creates one (D-052).
 const PUSH_ORDER = ['baby', 'caregiver', 'timeslot', 'event'] as const
 
+/**
+ * Why the last push stopped, or null.
+ *
+ * `push` returned false and nothing else, so every reason it can fail — a
+ * column the table does not have, a policy refusing the row, an expired
+ * session, a dropped connection — arrived on screen as the same red dot, which
+ * is also the dot for being offline (D-045). The difference matters: one of
+ * those clears itself when the signal comes back and the rest never do.
+ *
+ * Retained and logged rather than rendered, for now. Putting it in front of
+ * someone mid-feed is a design question; having it available when they ask what
+ * went wrong is not.
+ */
+let lastError: string | null = null
+export const lastSyncError = () => lastError
+
+/** Uniform handling, so no call site can drop an error by forgetting to look. */
+function failed(where: string, error: { message: string; code?: string } | null): boolean {
+  if (!error) return false
+  lastError = `${where}: ${error.message}${error.code ? ` (${error.code})` : ''}`
+  console.error(`[babyliana] sync stopped — ${lastError}`)
+  return true
+}
+
 async function push(): Promise<boolean> {
   if (!supabase) return false
   const items = await db.outbox()
   if (items.length === 0) return true
+  lastError = null
 
   for (const table of PUSH_ORDER) {
     const mine = items.filter((i) => i.table === table)
@@ -59,7 +84,7 @@ async function push(): Promise<boolean> {
         .from(table)
         .delete()
         .in('id', deletes.map((d) => d.rowId))
-      if (error) return false
+      if (failed(`deleting from ${table}`, error)) return false
       await db.dequeue(deletes.map((d) => d.key))
     }
 
@@ -72,7 +97,7 @@ async function push(): Promise<boolean> {
         // The row came out of the store named by `table`, so its shape is
         // right; the typed client cannot see that through the union.
         const { error } = await supabase.from(table).upsert(rows as never[])
-        if (error) return false
+        if (failed(`writing ${rows.length} row(s) to ${table}`, error)) return false
       }
       await db.dequeue(puts.map((p) => p.key))
     }
@@ -115,8 +140,11 @@ async function pull(): Promise<boolean> {
     supabase.from('timeslot').select('*').eq('baby_id', babyId),
     supabase.from('event').select('*'),
   ])
-  const failed = [baby, caregiver, timeslot, event].find((r) => r.error)
-  if (failed) return false
+  const bad = [
+    ['reading baby', baby], ['reading caregiver', caregiver],
+    ['reading timeslot', timeslot], ['reading event', event],
+  ] as const
+  for (const [where, r] of bad) if (failed(where, r.error)) return false
 
   await db.replaceAll({
     baby: (baby.data ?? []) as Baby[],

@@ -1,4 +1,5 @@
 import { currentUserId } from './auth'
+import { isConfigured } from './supabase'
 import { requireBabyId } from './household'
 import * as db from './db'
 import { createCaregiverId, requireCaregiverId } from './caregiver-id'
@@ -86,6 +87,23 @@ export async function createThisCaregiver(name: string): Promise<string> {
   // succeeded. Null only when there is no session, which onboarding has already
   // ruled out by the time anyone reaches this.
   const user_id = await currentUserId()
+  // Refuse rather than write a row that can never sync.
+  //
+  // Without a session `user_id` is null, the policy's `with check` refuses the
+  // insert, and the outbox jams on a row nothing will ever accept — taking the
+  // rest of the log with it, because push stops at the first failure. Throwing
+  // here surfaces it on the button that caused it, while the person is still
+  // looking at the screen, instead of as a red sync dot an hour later that says
+  // the same thing as being offline.
+  //
+  // Gated on `isConfigured`, not on the id alone. With no Supabase project there
+  // is nothing to sync to and nothing to refuse — that is the spike's case and
+  // the data-layer suites', both of which exercise the local write path with no
+  // server behind it and are right to. The guard is about a row that *would*
+  // have gone somewhere and cannot.
+  if (isConfigured && !user_id) {
+    throw new Error('not signed in — the log needs an account before it can save who you are')
+  }
   await db.putCaregiver({
     id,
     name: name.trim() || null,
