@@ -1,3 +1,4 @@
+import { currentUserId } from './auth'
 import { requireBabyId } from './household'
 import * as db from './db'
 import { createCaregiverId, requireCaregiverId } from './caregiver-id'
@@ -78,9 +79,17 @@ export async function reconcileSettings(): Promise<boolean> {
 export async function createThisCaregiver(name: string): Promise<string> {
   const id = createCaregiverId()
   const t = now()
+  // Read here rather than passed in, so no caller can forget it. The policy on
+  // `app.caregiver` is `with check (user_id = auth.uid())`: a row without this
+  // is refused by the server, stalls the outbox, and stops the whole log
+  // syncing — while the app carries on looking correct, because the local write
+  // succeeded. Null only when there is no session, which onboarding has already
+  // ruled out by the time anyone reaches this.
+  const user_id = await currentUserId()
   await db.putCaregiver({
     id,
     name: name.trim() || null,
+    user_id,
     created_at: t,
     updated_at: t,
     updated_by: null, // only ever set by a manual script
