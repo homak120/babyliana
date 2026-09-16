@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-15 (stage 2 complete and tested on two devices)
+Last updated: 2026-09-15 (a second baby is reachable — D-060)
 
 ---
 
@@ -18,8 +18,8 @@ Last updated: 2026-09-15 (stage 2 complete and tested on two devices)
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. **699 checks pass across twenty-two
-suites** — `verify-schema` is the new one — and everything through D-056 is
+delivered by the second design handoff. **719 checks pass across twenty-three
+suites** — `verify-baby` is the new one — and everything through D-056 is
 committed and pushed to `main`.
 
 **Work has moved onto a branch, and this is the first one the repo has had.**
@@ -55,6 +55,14 @@ unchanged on purpose, because it is the rollback — and it closes at stage 5.
 **Stage 3, copying the real log into `app`, is next and is the first
 irreversible step.** `docs/tasks.md` § Phase 12 is the list, in dependency order.
 
+**A second baby is reachable from the app as of D-060**, which is the first
+feature to use what D-057's schema made possible rather than only migrating onto
+it. The status row names the baby being logged for and is the way to the others;
+the picker is shared with onboarding rather than copied. Three things the switch
+had to get right are in D-060 — local rows outliving the id, a pull landing after
+the id moved, and `baby.settings` following the install across. It refuses while
+offline or with writes pending rather than holding a half-finished swap.
+
 **Phase 12 is running ahead of Phases 8-11**, which are the solo run and the gate
 that was meant to authorise it. Owner's call, recorded so a later session does not
 read it as slippage. **The coverage run still outranks it** — see *Next action*.
@@ -85,7 +93,8 @@ push-then-reconcile sync with Supabase.
   (elapsed / next feeds / mascot) chosen from a rail beside it, a prep-timer
   pill, totals, and the recent list with swipe-to-edit-and-delete behind a
   confirm sheet. The status row carries the clock, who is logging, the sync
-  state, and the button that names this device.
+  state, the name of the baby being logged for — which is also the way to the
+  household's other babies (D-060) — and the button that names this device.
 - **Report** — the paper-shaped day table with a scrolling date rail and a
   period picker, plus an insights mode: milk intake, daily rhythm, wet and poop,
   diapers a day, milk by source, poop colours, sleep, and growth when there is
@@ -97,8 +106,10 @@ push-then-reconcile sync with Supabase.
 - **The bar** — a bottle and a bedtime button that write straight to the log, a
   diaper that opens the sheet, and `+` for everything else. Each of the first
   two becomes an *end* pill while its period is running.
-- **First run** — a photograph gate, name entry, and a second gate code that
-  hands a reinstalled phone its old identity back rather than minting a new one.
+- **First run** — email, a six-digit code, which baby, and which caregiver. A
+  household with one baby is not asked to pick it; a reinstalled phone takes its
+  old caregiver back rather than minting a second one. The photograph gate and
+  both codes are gone (D-059).
 - **Settings** — five sections behind the card's `tune` button: the quick
   bottle's volume and source, the supplement prefill, the prep-prompt lead, the
   feeding cycle, and this device's clock format. Each row says whether
@@ -117,6 +128,12 @@ precache sits where it does; the 1024 is excluded, being needed only at install.
 Newest first, and **this is an index, not a record** — `docs/decisions.md`
 carries the reasoning for every one of these, and for everything older.
 
+- **D-060** — the household's other babies get a door and a label. The baby's
+  name goes in the status row and opens a sheet holding the same picker
+  onboarding uses; the event pull is scoped through the timeslot, which with one
+  baby was the same set and with two was not. The switch flushes, moves the id,
+  empties local state and pulls, in that order, and refuses while offline or with
+  writes pending — D-058 is about never blocking a write, and this is not one.
 - **D-056** — the device-name editor goes back to the status row, reversing
   half of D-055. The clock format stays in settings. A settings screen answers
   questions and cannot ask one: the button labels itself *name this phone* until
@@ -171,6 +188,11 @@ are guessable:
   **Recommended: keep the original**, so the copy is a straight insert and a row
   in `app` is the same row as its twin in `public`.
 - **What happens to the test rows** currently in `app`.
+
+One consequence of D-060 to carry into the copy: **`app.event` has no `baby_id`
+and reaches a baby only through its timeslot.** A copy script that filters
+timeslots and not events will move the wrong rows, the same way the pull did
+before it was scoped.
 
 Two things to do first, in this order: **the JSON export of `public`** (item 2
 below — it is the only thing standing between a bad `delete` and 395
@@ -285,9 +307,16 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**Nothing.** The working tree is clean and `product-ready-enhancement` is
-fourteen commits ahead of `main` and pushed. `main` at `302ce22` is what the two
-phones run and has not moved since this branch was cut.
+**D-060, uncommitted.** The second-baby work: `BabyPicker.tsx` (new, lifted out
+of `Welcome`), `verify-baby.mts` (new, wired into `npm run verify`), and edits to
+`sync.ts`, `settings.ts`, `LogScreen.tsx`, `Welcome.tsx`, `log.css`,
+`decisions.md` and `event-model.md`. 719 checks pass. Each of the three fixes was
+confirmed to fail the suite with the fix backed out, which is the only reason to
+trust a check written the same hour as the code it covers.
+
+Otherwise the tree is clean. `product-ready-enhancement` is fifteen commits ahead
+of `main` and pushed. `main` at `302ce22` is what the two phones run and has not
+moved since this branch was cut.
 
 **What is deployed where.** `https://babylianav2.vercel.app` builds this branch
 and is where all of the above was tested; `https://babyliana.vercel.app` builds
@@ -364,7 +393,43 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-15 (latest) — two devices found what no suite could
+### 2026-09-15 (latest) — a second baby gets a door
+
+Asked what tells you which baby you are logging for, and whether a second one can
+be created and switched to. The answer was: nothing, and no. The schema had
+supported it since D-057 — `baby_member` is a real many-to-many join, `create_baby`
+works for any household, `fetchBabies` deliberately does not filter — and the
+picker already existed inside `Welcome.tsx`. What was missing was a door.
+`forgetBaby()` had been sitting there since stage 2 with a docstring naming this
+exact case, uncalled.
+
+Built it: the name in the status row, the picker lifted into `BabyPicker.tsx` and
+shared with onboarding, the event pull scoped through the timeslot, and
+`switchBaby` in `sync.ts`. D-060 has the reasoning.
+
+**The interesting part was that the one-line version is wrong three times over**,
+and all three surfaced from writing the suite rather than from writing the code.
+Local rows outlive the id, so the order has to be flush, move, empty, pull — and
+emptying before the pull rather than trusting it is what keeps a dropped signal
+from rendering one child's feeds under another child's name. A pull already in
+flight can land after the id moves, so `pull()` re-reads it before writing. And
+`baby.settings` is per baby, so a cached value the new row does not carry reads
+to `unsynced()` as a local change and gets **pushed onto the new baby's row** —
+no error, both phones agreeing on the wrong answer. That one was proved: with the
+fix backed out the suite fails with `POST baby`.
+
+Continues a pattern worth watching. The previous entry recorded that checks had
+twice encoded "nothing exists yet" as if it were a rule. This is the same shape
+one layer up: the unscoped `event` pull, and a `Welcome` that could only ever be
+reached once, were both correct right until the data stopped being singular.
+
+Two smaller things went along with it — `someone new` was a one-way door out of
+the picker, and `NamePrompt` had one family's baby name hard-coded in a
+multi-tenant app.
+
+Left uncommitted for review.
+
+### 2026-09-15 — two devices found what no suite could
 
 **Stage 2 is complete and tested for real.** New-user onboarding, a returning
 user on a second device, household scoping across both, realtime between them.
@@ -442,37 +507,3 @@ and *then* asked for the code; the first person to run it pasted the code into
 the first question and was told the template was broken when it was working.
 Ask for the thing you want and name the failure as the escape hatch — then the
 natural answer cannot be the wrong one.
-
-### 2026-09-14 — the offline rule stops being an argument
-
-**D-058. Local-first comes out of the design conversation and stays in the
-code.** The invariants are unchanged and nothing in `src/` moves. What changed
-is that they are no longer a test every proposal has to pass: no agent
-challenges a design with "but what about offline at 4am", and no work is
-justified by an offline scenario this deployment has not actually hit.
-
-**The owner raised it because it had cost three conversations in a row** — the
-login flow, the session cache, and the bootstrap order — and in all three the
-proposal was already correct. The invocation produced a round trip and no design
-change, while the thing that actually gates the project is getting a
-multi-tenant version out. A real report of a parent unable to log reopens it; a
-hypothetical does not.
-
-**The session answer, recorded so it is not re-derived:** a session cached in
-`localStorage` and refreshed in the background satisfies "never require a login
-to log an event". That is the whole of it. One implementation note survives —
-don't `await` a network auth call before first paint — and it is a note, not a
-constraint.
-
-**D-059. The gate code goes when the login lands.** `SECRET_CODE` was standing
-in for authentication that did not exist, and D-030 already called it a doormat.
-The household email plus an expiring OTP is the same idea done properly — not in
-the bundle, not per deployment. `RECOVERY_CODE` goes too; the caregiver picker
-behind it becomes an ordinary onboarding step.
-
-**The stage 2 bootstrap is agreed**, owner's design: session → baby (cached in
-`localStorage`, auto-selected when there is only one) → caregiver (the existing
-`babyliana.device_id`, renamed) → log. It needs **no change to `0007`**:
-`create_baby()` covers first run, and a second parent signing in with the
-household email already has the `baby_member` row. Three of its four pieces
-exist in the code already under older names.

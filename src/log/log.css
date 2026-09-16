@@ -1467,6 +1467,43 @@ body {
   opacity: 0.7;
 }
 
+/* Whose log this is, in the status row's left span after the clock (D-060).
+   Weighted rather than dimmed, which is the opposite of `.namebtn` opposite it
+   and deliberate: the caregiver name is a control you touch twice in the life of
+   an install, and this is the one fact on the screen that says which child every
+   number below belongs to. It still reads as text until you need it — no border,
+   no chrome, just a name that happens to be tappable. */
+.babybtn {
+  border: none;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 0.125rem 0.25rem;
+  margin-left: 0.125rem;
+  cursor: pointer;
+}
+
+.babySheet { padding-top: 1.5rem; }
+.babySheet .sub { margin-bottom: 0.25rem; }
+
+/* The baby already open. It keeps the card shape so the list stays one thing
+   to aim at, and says `open` where the others show a serial — a row that is
+   where you already are should not offer an arrow into itself. */
+.devlist button.on {
+  box-shadow: none;
+  background: var(--chip);
+}
+.devlist .here {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.devlist button:disabled { cursor: default; }
+
 .nameSheet { padding-top: 1.5rem; }
 
 .nameinput {

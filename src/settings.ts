@@ -286,3 +286,25 @@ export function unsynced(settings: BabySettings | null | undefined): SettingKey[
 export function resetSettings(): void {
   cached.clear()
 }
+
+/**
+ * Forget every shared setting this phone holds — the map *and* the store.
+ *
+ * For switching babies (D-060), and nothing else. `baby.settings` hangs off the
+ * baby row (D-052), so everything cached here belongs to the baby being left.
+ * Carry it across and `unsynced()` reads it as "this phone changed something the
+ * row does not carry" and pushes the previous baby's feeding cycle, bottle
+ * default, supplement and prep lead onto the new baby's row. Nothing errors;
+ * both phones agree; it looks exactly like sync working.
+ *
+ * Clearing localStorage too is the whole difference from `resetSettings` above.
+ * `read` falls back to the stored value when the map misses, so dropping only
+ * the map leaves every setting precisely where it was and fixes nothing.
+ *
+ * Safe because the values are not lost: they are on the row this phone is
+ * leaving, and the pull that follows hydrates from the row it is joining.
+ */
+export function forgetSettings(): void {
+  cached.clear()
+  for (const key of SETTING_KEYS) store()?.removeItem(storageKey(key))
+}

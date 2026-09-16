@@ -2,14 +2,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { sendCode, verifyCode, currentUserId } from '../auth'
 import { putCaregiver } from '../db'
 import { adoptCaregiverId } from '../caregiver-id'
-import {
-  createBaby,
-  fetchBabies,
-  fetchCaregiversForHousehold,
-  setBabyId,
-} from '../household'
+import { fetchCaregiversForHousehold, setBabyId } from '../household'
 import { createThisCaregiver } from '../moments'
-import type { Baby, Caregiver } from '../types'
+import type { Caregiver } from '../types'
+import { BabyPicker } from './BabyPicker'
 import { Icon } from './Icon'
 import { Mascot } from './Mascot'
 
@@ -61,11 +57,9 @@ export function Welcome({ onDone }: { onDone: () => void }) {
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
   const [name, setName] = useState('')
-  const [babyName, setBabyName] = useState('')
 
   // `null` is "not fetched yet". An empty array is a real answer and a different
   // one — a household that has signed in and made nothing yet.
-  const [babies, setBabies] = useState<Baby[] | null>(null)
   const [carers, setCarers] = useState<Caregiver[] | null>(null)
 
   // A session that outlived the last install skips straight past the email.
@@ -80,27 +74,13 @@ export function Welcome({ onDone }: { onDone: () => void }) {
   // would skip the step and open a log whose every write fails a foreign key
   // against a row this household cannot see.
   //
-  // It costs nothing. `loadBabies` takes the single baby without asking, so a
-  // household with one is no more asked than before — the fetch happens either
-  // way, and now its answer is believed over the cache.
+  // It costs nothing. `BabyPicker` is given `autoTakeSingle` here, so a household
+  // with one baby is no more asked than before — the fetch happens either way,
+  // and now its answer is believed over the cache.
   useEffect(() => {
     void currentUserId().then((uid) => {
       if (uid) setStage('baby')
     })
-  }, [])
-
-  const loadBabies = useCallback(async () => {
-    setBusy(true)
-    setError(null)
-    const rows = await fetchBabies()
-    if (!rows) setError('cannot reach the server right now')
-    else if (rows.length === 1) {
-      // One baby is not a choice. Take it and move on — a picker with a single
-      // option is a tap that asks nothing.
-      setBabyId(rows[0].id)
-      setStage('caregiver')
-    } else setBabies(rows)
-    setBusy(false)
   }, [])
 
   const loadCarers = useCallback(async () => {
@@ -115,9 +95,8 @@ export function Welcome({ onDone }: { onDone: () => void }) {
   }, [])
 
   useEffect(() => {
-    if (stage === 'baby' && babies === null && !busy && !error) void loadBabies()
     if (stage === 'caregiver' && carers === null && !busy && !error) void loadCarers()
-  }, [stage, babies, carers, busy, error, loadBabies, loadCarers])
+  }, [stage, carers, busy, error, loadCarers])
 
   const submitEmail = async () => {
     if (busy || !email.includes('@')) return
@@ -142,16 +121,6 @@ export function Welcome({ onDone }: { onDone: () => void }) {
   const chooseBaby = (id: string) => {
     setBabyId(id)
     setStage('caregiver')
-  }
-
-  const makeBaby = async () => {
-    if (busy || !babyName.trim()) return
-    setBusy(true)
-    setError(null)
-    const id = await createBaby(babyName)
-    setBusy(false)
-    if (id) chooseBaby(id)
-    else setError('could not create that — try again')
   }
 
   /**
@@ -314,76 +283,30 @@ export function Welcome({ onDone }: { onDone: () => void }) {
   }
 
   // ----------------------------------------------------------------- baby ---
+  //
+  // The list, the create field and the failure handling moved to `BabyPicker`
+  // when the log screen needed the same screen (D-060). What is left here is the
+  // wrapper and the words — and the words are the part that should differ, since
+  // a first run and a mid-session switch are not asking the same question.
   if (stage === 'baby') {
-    const none = babies !== null && babies.length === 0
-
     return (
       <main className="welcome">
         <Mascot state="settled" size={88} welcome />
-
-        <p className="kickerup">{none ? 'first time' : 'whose log is this'}</p>
-        <h1>{none ? 'who are we logging for?' : 'pick a little one'}</h1>
-        <p className="sub">
-          {none
-            ? 'just a name — it goes at the top of the log and you can change it later.'
-            : 'this phone will open straight into the one you choose.'}
-        </p>
-
-        {busy && babies === null && <p className="recovnote">looking&hellip;</p>}
-        {problem}
-        {error && (
-          <button type="button" className="save" onClick={() => void loadBabies()}>
-            <Icon name="refresh" size={22} /> try again
-          </button>
-        )}
-
-        {babies && babies.length > 0 && (
-          <ul className="devlist">
-            {babies.map((b) => (
-              <li key={b.id}>
-                <button type="button" onClick={() => chooseBaby(b.id)} disabled={busy}>
-                  <b>{b.name}</b>
-                  <span>{shortId(b.id)}</span>
-                  <Icon name="arrow_forward" size={20} />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {none && (
-          <>
-            <label className="fieldlabel" htmlFor="babyname">their name</label>
-            <input
-              id="babyname"
-              className="nameinput"
-              value={babyName}
-              autoComplete="off"
-              placeholder="Liana"
-              onChange={(e) => setBabyName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && void makeBaby()}
-            />
-          </>
-        )}
-
-        <div className="spacer" />
-
-        {none && (
-          <button
-            type="button"
-            className="save"
-            disabled={busy || !babyName.trim()}
-            onClick={() => void makeBaby()}
-          >
-            <Icon name="arrow_forward" size={22} /> start the log
-          </button>
-        )}
-
-        {babies && babies.length > 0 && (
-          <button type="button" className="skiplink" onClick={() => setBabies([])}>
-            someone new
-          </button>
-        )}
+        <BabyPicker
+          autoTakeSingle
+          onChosen={chooseBaby}
+          copy={(creating) => (
+            <>
+              <p className="kickerup">{creating ? 'first time' : 'whose log is this'}</p>
+              <h1>{creating ? 'who are we logging for?' : 'pick a little one'}</h1>
+              <p className="sub">
+                {creating
+                  ? 'just a name — it goes at the top of the log and you can change it later.'
+                  : 'this phone will open straight into the one you choose.'}
+              </p>
+            </>
+          )}
+        />
       </main>
     )
   }

@@ -282,6 +282,15 @@ over that finding gets built twice.
       path, and `0007` has no insert policy on `baby_member` for one — deliberate
       while a household shares an inbox, and the next thing to build when it
       does not
+- [x] **CC** **A second baby, reachable.** D-057 promised many babies per
+      account and the schema delivered it; the app had no way to see or reach
+      one. **Done 2026-09-15, D-060** — the status row names the baby being
+      logged for and opens the household's picker, which is *moved* out of
+      onboarding rather than copied. The event pull is scoped through the
+      timeslot, which with one baby is the same set and with two is not. The
+      switch flushes the outbox, moves the id, empties local state and pulls, in
+      that order, and refuses while offline or with writes pending. Renaming a
+      baby and removing one are not in it
 - [ ] **CC** **Migrate Liana's rows into the new shape.** This is live data on two
       phones in daily use, not a fixture. It cannot be recreated from the paper
 - [x] **CC** **Retire the pilot scaffolding.** The hard-coded baby id,

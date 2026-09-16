@@ -2658,3 +2658,75 @@ onward; its mascot half is untouched. `Welcome.tsx` loses the `'gate'` stage,
 `verify-welcome` loses its gate assertions, and `scripts/ui.mts` § `enterApp`
 loses the code-filling branch that every browser suite depends on — that helper
 is the single edit point, which is why it exists.
+
+---
+
+## D-060 — a second baby is reachable, and the two logs are kept apart
+
+**2026-09-15. Owner's call.**
+
+**Decision.** The household's other babies get a door and a label. Three parts:
+
+1. **The log says whose it is.** The baby's name goes in the status row, beside
+   the clock. It was typed once at onboarding and then never shown again.
+2. **The name is the way to the others.** Tapping it opens a sheet holding the
+   same picker onboarding uses — every baby the household has, and `someone new`
+   to create another.
+3. **The event pull is scoped through the timeslot** rather than left open.
+
+The picker is *moved* out of `Welcome.tsx` into `BabyPicker.tsx`, not copied.
+Two lists over one table drift, which is the reason `fetchBabies` already
+refuses to restate the RLS filter as a client-side `.eq()`.
+
+**Why now.** D-026 settled in Phase 2 that a sibling is a second row rather than
+a second concept, and D-057 built the schema for it — `baby_member` is a real
+many-to-many join. Every layer below the UI already supported this. What was
+missing was a door: `App.tsx` gates on a cached baby id, so once onboarding
+finished `Welcome` never mounted again and the only way to another baby was
+`localStorage.removeItem` in dev tools. `forgetBaby()` existed, with a docstring
+naming this exact case, and nothing called it.
+
+**What the switch has to do, and why it is not one line.** `setBabyId` on its
+own is wrong in three separate ways, each found by writing the suite:
+
+- **Local state outlives the id.** IndexedDB still holds the previous baby's
+  timeslots until a pull replaces them. So the order is: flush the outbox, move
+  the id, empty the store, pull. Emptying *before* the pull rather than trusting
+  it means a pull that never lands leaves an empty log under the right name —
+  honest, and it self-heals on the next sync. One child's feeds under another
+  child's name is the worst thing this app could render.
+- **A pull already in flight can land afterwards.** `pull()` now re-reads the id
+  before `replaceAll` and abandons the write if it moved. Cheap, and it closes
+  the race generally rather than only for this caller.
+- **Settings follow you across.** `baby.settings` hangs off the baby row (D-052),
+  and `unsynced()` reads a cached value the new row does not carry as "this phone
+  changed something" — so the previous baby's feeding cycle, bottle default,
+  supplement and prep lead get **pushed onto the new baby's row**. Nothing errors
+  and both phones agree on the wrong answer. `forgetSettings()` clears the store
+  as well as the map, because `read` falls back to the store.
+
+**It refuses rather than queues.** Offline, or with writes still pending, the
+switch declines and says which. That is not a retreat from local-first: D-058 is
+about never blocking a *write*, and this is not a write — it is changing which
+log you are looking at, which nobody does one-handed in the dark. Holding a
+half-finished switch across a restart buys a class of bug to serve a case that
+does not arise.
+
+**The caregiver is untouched.** D-026: a caregiver belongs to the household, not
+to the child. The tempting shortcut — clear the id and let `App.tsx` drop back
+into `Welcome` — would ask who you are every time you looked at a sibling's log.
+
+**Consequence.** `switchBaby` lives in `sync.ts`, not `household.ts`, because
+that module already imports this one and the reverse would be a cycle — and
+because flush-swap-refill is the same push-then-pull discipline the file already
+runs on. `verify-baby.mts` is the suite; every check in it could only fail on a
+household with two babies, which is why none of them were caught by the 699
+that came before.
+
+Two smaller things went with it. `someone new` reached the create field by
+emptying the fetched list, which made it a one-way door out of the picker — it
+is a flag now, and there is a way back. And `NamePrompt` read "Liana's other
+grown-ups" as a literal, which was true of the only household that existed
+before D-057 and is now a stranger's child's name on someone else's screen.
+
+**Not in scope.** Renaming a baby, and removing one from the household.

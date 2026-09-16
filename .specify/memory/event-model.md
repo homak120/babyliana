@@ -167,6 +167,16 @@ nothing to store beyond its own id, where a baby has a name the app can display.
 `device` deliberately does not reference the baby. A phone belongs to a parent,
 not to a child; if a sibling arrives the same two phones log for both.
 
+**That sibling is reachable from the app as of D-060**, which is where the
+independence above stops being theoretical. Two things follow for anything
+reading or writing here. **An event is scoped to a baby only through its
+timeslot** — `event` carries no `baby_id`, so a query that filters timeslots and
+not events silently returns the sibling's rows as well; the pull joins
+`timeslot!inner(baby_id)`. And **`baby.settings` is per baby** (D-052), so a
+client cache of it belongs to one child and must be dropped when the install
+moves to another, or the values it is holding get written onto the new baby's
+row and look like an ordinary sync.
+
 Every table carries **`updated_by`** — free text, null by default, for tagging
 rows touched by a manual script. **The app never writes it.** That is the point:
 a non-null value means exactly "a human ran something", and it only stays a

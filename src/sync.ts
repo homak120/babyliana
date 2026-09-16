@@ -1,5 +1,6 @@
-import { getBabyId } from './household'
+import { getBabyId, setBabyId } from './household'
 import * as db from './db'
+import { forgetSettings } from './settings'
 import { supabase } from './supabase'
 import type { Baby, Caregiver, LogEvent, Timeslot } from './types'
 
@@ -138,7 +139,15 @@ async function pull(): Promise<boolean> {
     supabase.from('baby').select('*').eq('id', babyId),
     supabase.from('caregiver').select('*'),
     supabase.from('timeslot').select('*').eq('baby_id', babyId),
-    supabase.from('event').select('*'),
+    // **Scoped through the timeslot, not left open.** An event reaches a baby
+    // only through its timeslot, so with one baby in the household this is the
+    // same set as `select('*')` and with two it is not: the unscoped version
+    // pulled the sibling's events down on every sync and `replaceAll` wrote them
+    // into IndexedDB, where they sat as orphans no view could reach (D-060).
+    //
+    // `!inner` is load-bearing. Without it PostgREST keeps rows whose embed does
+    // not match and nulls the embed, so the filter quietly stops filtering.
+    supabase.from('event').select('*, timeslot!inner(baby_id)').eq('timeslot.baby_id', babyId),
   ])
   const bad = [
     ['reading baby', baby], ['reading caregiver', caregiver],
@@ -146,11 +155,25 @@ async function pull(): Promise<boolean> {
   ] as const
   for (const [where, r] of bad) if (failed(where, r.error)) return false
 
+  // **The id can change while those four requests are in the air**, and
+  // `switchBaby` below does exactly that. Writing this answer now would
+  // repopulate the log with the baby we just left, under the name of the one we
+  // just joined — the single worst thing this app could put on a screen. The
+  // pull is simply abandoned; the caller treats it as any other failed pull and
+  // the switch's own sync fetches the right rows a moment later.
+  if (getBabyId() !== babyId) return false
+
   await db.replaceAll({
     baby: (baby.data ?? []) as Baby[],
     caregiver: (caregiver.data ?? []) as Caregiver[],
     timeslot: (timeslot.data ?? []) as Timeslot[],
-    event: (event.data ?? []) as LogEvent[],
+    // The embed is a filter, not a field. It has to come off before the row
+    // reaches IndexedDB, because `push()` upserts local rows verbatim — and a
+    // key the table does not have is the precise 403 that stalled the whole
+    // outbox in stage 2 when `caregiver.user_id` went missing the other way.
+    event: ((event.data ?? []) as (LogEvent & { timeslot?: unknown })[]).map(
+      ({ timeslot: _embed, ...row }) => row as LogEvent,
+    ),
   })
   return true
 }
@@ -192,6 +215,60 @@ export async function sync(): Promise<void> {
   })()
 
   return running
+}
+
+/**
+ * Why a switch did not happen, or `ok`.
+ *
+ * Four outcomes rather than a boolean because three of them are the user's to
+ * act on and they need different sentences — one clears itself when the signal
+ * comes back, one clears when the dot goes green, one is a retry.
+ */
+export type SwitchResult = 'ok' | 'pending' | 'offline' | 'failed'
+
+/**
+ * Move this install to another baby in the same household (D-060).
+ *
+ * Lives here rather than in `household.ts` for two reasons. `sync.ts` already
+ * imports that module, so the reverse would be a cycle — and this *is* a sync
+ * operation: flush, swap, refill, in that order, which is the same push-then-pull
+ * discipline the rest of the file runs on.
+ *
+ * **It refuses rather than queues.** Offline, or with writes still pending, it
+ * declines and says so. That is not a retreat from local-first: D-058 is about
+ * never blocking a *write*, and this is not a write — it is changing which log
+ * you are looking at, which is a two-handed act nobody performs mid-feed. The
+ * alternative is holding a half-finished switch across a restart, which buys a
+ * class of bug to serve a case that does not arise.
+ *
+ * The caregiver is deliberately untouched. A caregiver belongs to the household,
+ * not to the child (D-026), so switching babies must not ask who you are again.
+ */
+export async function switchBaby(id: string): Promise<SwitchResult> {
+  if (id === getBabyId()) return 'ok'
+  if (!supabase || !navigator.onLine) return 'offline'
+
+  // Flush first. Anything sitting in the outbox belongs to the baby being left,
+  // and the wipe below would take it with no way to get it back.
+  await sync()
+  if ((await db.outbox()).length > 0) return 'pending'
+
+  forgetSettings()
+
+  // **Order matters through the next three lines.** The id moves first, so any
+  // pull still in flight for the previous baby hits the guard in `pull()` and
+  // abandons its write. Then local state is emptied, so that if the pull below
+  // never lands — the signal drops in between — the screen shows an empty log
+  // under the new baby's name. Empty is honest and self-heals on the next sync;
+  // the previous baby's feeds relabelled is neither.
+  setBabyId(id)
+  await db.replaceAll({ baby: [], caregiver: [], timeslot: [], event: [] })
+  await sync()
+
+  // Check the outcome, not the sequence. `sync()` shares an in-flight run with
+  // whatever else asked for one, so a green state is not proof that *this*
+  // baby's rows arrived. Its row being in the local store is.
+  return (await db.getRow('baby', id)) ? 'ok' : 'failed'
 }
 
 let started = false
