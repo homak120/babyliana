@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-15 (a second baby is reachable — D-060)
+Last updated: 2026-09-23 (0008 written — stage 3 is ready to run)
 
 ---
 
@@ -53,7 +53,9 @@ four steps, `device` is `caregiver` throughout, and the hard-coded baby id is
 gone. `public` still has one anon key and a `using (true)` policy on everything —
 unchanged on purpose, because it is the rollback — and it closes at stage 5.
 **Stage 3, copying the real log into `app`, is next and is the first
-irreversible step.** `docs/tasks.md` § Phase 12 is the list, in dependency order.
+irreversible step. Its script is written and has not been run** — `0008`,
+committed 2026-09-23. `docs/tasks.md` § Phase 12 is the list, in dependency
+order.
 
 **A second baby is reachable from the app as of D-060**, which is the first
 feature to use what D-057's schema made possible rather than only migrating onto
@@ -67,7 +69,8 @@ offline or with writes pending rather than holding a half-finished swap.
 that was meant to authorise it. Owner's call, recorded so a later session does not
 read it as slippage. **The coverage run still outranks it** — see *Next action*.
 
-**`public` is current through `0006`, and `0007` is applied.** It created a
+**`public` is current through `0006`, `0007` is applied, and `0008` is written
+but not run.** It created a
 second schema, `app`, and touched nothing in `public`. **Stage 1 is complete as
 of 2026-09-14** — the migration ran, the six dashboard settings are configured,
 and `npm run auth-check` passes end to end: a real code reaches a real inbox,
@@ -178,28 +181,45 @@ first irreversible one.** 325 timeslots and 395 events in `public`, written by
 two phones over weeks and not recreatable from the paper. Everything up to here
 could be undone by changing nothing. This cannot.
 
-Three things need the owner's answer before the copy script is written, and none
-are guessable:
+**The script exists — `0008_copy_pilot_log.sql`, committed 2026-09-23 and not
+run.** The three questions that were blocking it are answered:
 
-- **Which caregiver each `public.device` becomes.** The copy maps old device ids
-  onto `app.caregiver` rows, and only he knows which is which.
-- **Which baby id survives.** Every `public.timeslot` points at
-  `94c55231-…`; `app.baby` holds a different id from testing.
-  **Recommended: keep the original**, so the copy is a straight insert and a row
-  in `app` is the same row as its twin in `public`.
-- **What happens to the test rows** currently in `app`.
+- **Which caregiver each `public.device` becomes** — resolved *by name*, in the
+  SQL, rather than by two UUIDs transcribed by hand. A mistyped id does not
+  fail; it attributes every entry to the wrong parent. The file refuses to run
+  unless every device matches exactly one caregiver.
+- **Which baby id survives** — `app`'s. The earlier recommendation here was to
+  keep `public`'s, and that was wrong: nothing on a pilot phone survives the
+  update holding either id (the old build wrote `babyliana.device_id`, which
+  nothing copies across; the baby id was a constant in the deleted `config.ts`),
+  and `app` answers nothing without a session anyway. Every phone re-onboards at
+  cutover regardless, so matching the ids buys nothing — while rewriting
+  `app.baby.id` would have to carry `baby_member` with it and risks the one row
+  that makes Liana reachable at all.
+- **The test rows** — deleted by the owner, 2026-09-23. `app` now holds the
+  household only: the account, the baby, the membership and two caregivers.
 
-One consequence of D-060 to carry into the copy: **`app.event` has no `baby_id`
-and reaches a baby only through its timeslot.** A copy script that filters
-timeslots and not events will move the wrong rows, the same way the pull did
-before it was scoped.
+**Two things still to do first, in this order.**
 
-Two things to do first, in this order: **the JSON export of `public`** (item 2
-below — it is the only thing standing between a bad `delete` and 395
-unrecoverable events), and **hardening `verify-s2`/`verify-s8` to provision their
-own baby**. Those two write and delete rows in whatever baby the household has,
-which is harmless against today's test data and is not once the real log is
-there.
+1. **The JSON export of `public`** (item 2 below). The only thing standing
+   between a bad `delete` and 395 unrecoverable events.
+2. **Move `verify-s2`'s settings restore into its `finally`.** The earlier note
+   here said both live suites needed hardening to provision their own baby;
+   reading them, that was overstated — every delete names an exact id the run
+   created, there is a header comment forbidding a widened filter, and the
+   cleanup already sits in a `finally`. The real gap is narrower: s2 writes test
+   cycles onto the *real* baby's `settings` and restores them inside the `try`,
+   so a crash in between leaves Liana's feeding cycle set to the probe values.
+   Harmless today, on the row the phones read after the copy. `BABY_ID =
+   babies[0].id` also resolves to Liana once she is the only baby.
+
+**Running it more than once is expected and fine.** `public` keeps growing while
+a phone is still on `main`, and the way to pick up a delta is to delete the
+copied rows and run the whole file again — wholesale replacement, the same rule
+`db.replaceAll` follows, and correct under D-003 where an edit keeps its id and a
+delete leaves no tombstone. The header has the recipe. Better still is to have no
+delta: both phones synced and quiet → copy → both phones onto the new build →
+one final re-copy to sweep what landed in between.
 
 **1. The coverage run. This is the gate and it is the owner's.** Enter the
 photographed days from `.specify/memory/paper-log/` into the app on the phone,
@@ -307,16 +327,13 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**D-060, uncommitted.** The second-baby work: `BabyPicker.tsx` (new, lifted out
-of `Welcome`), `verify-baby.mts` (new, wired into `npm run verify`), and edits to
-`sync.ts`, `settings.ts`, `LogScreen.tsx`, `Welcome.tsx`, `log.css`,
-`decisions.md` and `event-model.md`. 719 checks pass. Each of the three fixes was
-confirmed to fail the suite with the fix backed out, which is the only reason to
-trust a check written the same hour as the code it covers.
+**Nothing.** The working tree is clean and `product-ready-enhancement` is
+seventeen commits ahead of `main` and pushed. `main` at `302ce22` is what the two
+phones run and has not moved since this branch was cut.
 
-Otherwise the tree is clean. `product-ready-enhancement` is fifteen commits ahead
-of `main` and pushed. `main` at `302ce22` is what the two phones run and has not
-moved since this branch was cut.
+**One thing is committed but not run: `0008`.** It is the stage 3 copy, and
+`supabase/README.md` lists it as not yet applied. Writing it is not doing it —
+nothing has moved into `app` and `public` is untouched.
 
 **What is deployed where.** `https://babylianav2.vercel.app` builds this branch
 and is where all of the above was tested; `https://babyliana.vercel.app` builds
@@ -393,7 +410,44 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-15 (latest) — a second baby gets a door
+### 2026-09-23 (latest) — stage 3 has a script, and it is not run
+
+Wrote `0008_copy_pilot_log.sql`. It reads `public` and never writes it, so the
+rollback is a `delete` and the two phones on `main` are untouched either way.
+
+**The advice this file is built on reversed during the session, and that is the
+thing to carry forward.** The earlier recommendation — recorded in this file —
+was to keep `public`'s baby id so the copy would be a straight insert. Checking
+the client killed it: `caregiver-id.ts` reads only `babyliana.caregiver_id` and
+the old build wrote `babyliana.device_id`, which nothing copies across; the baby
+id was a constant in the deleted `config.ts`; and `0007` grants to
+`authenticated` only. So **nothing on a pilot phone survives the update holding
+either id**, every phone re-onboards at cutover regardless, and matching the ids
+buys nothing while rewriting `app.baby.id` risks the `baby_member` row that makes
+Liana reachable at all. The copy remaps instead.
+
+The caregiver mapping joins on *name* rather than on pasted UUIDs, because a
+mistyped id does not fail — it attributes every entry to the wrong parent, and
+nobody would notice. Three guards run before any insert, and a count mismatch
+rolls the whole block back.
+
+**Two corrections to earlier claims of mine, both found by reading rather than
+assuming.** `verify-s2`/`verify-s8` are more careful than this file said —
+exact-id deletes, cleanup in a `finally` — and the real gap is narrower and
+different: s2 restores the real baby's settings inside its `try`. And my own
+count check reported "copy is short" for a mismatch in *either* direction, when
+the likeliest cause — a row deleted in `public` — makes `app` long. Both fixed.
+
+The owner deleted the `app` test timeslots and events himself, keeping the
+account, baby, membership and both caregivers. That was the third open decision
+and it is closed.
+
+**A process note.** Answering a narrow question with three adjacent concerns at
+once cost a round trip: the owner had already worked out that delete-and-recopy
+works and was asking only whether something better existed. The answer was one
+word. Answer what was asked; hold the rest until it is wanted.
+
+### 2026-09-15 — a second baby gets a door
 
 Asked what tells you which baby you are logging for, and whether a second one can
 be created and switched to. The answer was: nothing, and no. The schema had
@@ -463,47 +517,3 @@ is precisely when a test starts being worth having. Worth watching for a third.
 **Supabase rotates refresh tokens**, so `.auth-session.json` was good for one
 restore and then failed. `restoreSession` and the inspector write the replacement
 back now.
-
-### 2026-09-14 — stage 1 is done, and it was mostly not SQL
-
-**`npm run auth-check` passes end to end.** Real code, real inbox, real session,
-and the last check is the one that matters: **an unauthenticated client reads
-nothing at all from `app`**. D-057's gate is enforced rather than asserted.
-`public` fails the same check by design and closes at stage 5.
-
-**Running `0007` was one of seven things, and the other six were dashboard
-settings.** That distinction cost a round trip — "the migration" and "stage 1"
-were used interchangeably, and the owner reasonably read a finished migration as
-a finished stage. `supabase/README.md` now records all six, because none of them
-live in this repo and a rebuild from empty needs them.
-
-**Custom SMTP turned out to be required, not optional.** Supabase locks email
-template editing on the free tier while its built-in sender is in use — the
-button offers Pro as the alternative. Any outside SMTP unlocks it at no cost.
-An earlier revision of `0007`'s header called SMTP parked and said the built-in
-sender was enough; it is not, because the template cannot be edited and so the
-code is never a code.
-
-**It did not need a domain.** Brevo verifies a single address by emailing it a
-link. The cost is deliverability — a `gmail.com` From cannot be DKIM-aligned, so
-mail can land in spam. A domain becomes worth it before open signup.
-
-**Two templates, not one.** A new address gets *Confirm signup*; an existing one
-gets *Magic Link*. The first sign-in is always a new address, so editing only
-*Magic Link* leaves the first test arriving as a link with everything else
-perfect — and nothing in the dashboard or the API says which was used.
-
-**A magic link is not a fallback for the code**, for a device reason rather than
-a taste one. It creates the session in whichever browser opened the email, so
-mail read on a laptop signs the laptop in. On iOS a link opens Safari, and an
-installed PWA has its own storage container, so it can miss the app on the same
-device.
-
-**`src/auth.ts` landed, deliberately additive.** No existing file changed. The
-schema flip is its own step.
-
-**One process note worth keeping.** `verify-auth` first asked "code or link?"
-and *then* asked for the code; the first person to run it pasted the code into
-the first question and was told the template was broken when it was working.
-Ask for the thing you want and name the failure as the escape hatch — then the
-natural answer cannot be the wrong one.
