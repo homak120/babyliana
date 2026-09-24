@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-24 (the source chart answers for one day — D-062, uncommitted)
+Last updated: 2026-09-24 (the source chart answers for one day — D-062, on a branch)
 
 ---
 
