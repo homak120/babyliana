@@ -350,11 +350,9 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**Uncommitted, on `main`: the page summary is bubbles rather than sentences.**
-`src/day/summary.ts` now returns groups of typed bubbles instead of text lines,
-`DayPage.tsx` renders them as `.tag` chips in the colours the tag row already
-uses, and both suites that cover it moved with it. No migration, nothing new
-stored.
+**Nothing uncommitted.** The page summary's bubble rework is `2e78735` on
+`main`, pushed. No migration, nothing new stored — the third service-worker
+update of the cutover, and like the other two it does not move `DB_VERSION`.
 
 **`0008` has been applied**, and `supabase/README.md` records it. Re-running it
 is the routine way to pick up new rows from `public`; it is forward-only and
