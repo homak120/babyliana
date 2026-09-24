@@ -291,8 +291,14 @@ over that finding gets built twice.
       switch flushes the outbox, moves the id, empties local state and pulls, in
       that order, and refuses while offline or with writes pending. Renaming a
       baby and removing one are not in it
-- [ ] **CC** **Migrate Liana's rows into the new shape.** This is live data on two
-      phones in daily use, not a fixture. It cannot be recreated from the paper
+- [x] **CC** **Migrate Liana's rows into the new shape.** This is live data on two
+      phones in daily use, not a fixture. It cannot be recreated from the paper.
+      **Done 2026-09-24** — `0008` copies `public` into `app`, forward-only and
+      idempotent, remapping `baby_id` and `logged_by` rather than rewriting any
+      id. 510 timeslots and 594 events. It cost 99 events to learn that the
+      re-sync must not involve a delete (D-061), and one event was lost outright.
+      Re-run `0008` after each phone flips to sweep what the old build wrote in
+      between
 - [x] **CC** **Retire the pilot scaffolding.** The hard-coded baby id,
       `SECRET_CODE` and `RECOVERY_CODE` in `Welcome.tsx`, the gate fill in
       `scripts/ui.mts` that eleven browser suites depend on, and `SpikePage` with

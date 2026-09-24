@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-24 (0008 has run; data lost and recovered — D-061)
+Last updated: 2026-09-24 (merged to `main` — the cutover is deploying)
 
 ---
 
@@ -19,38 +19,41 @@ Last updated: 2026-09-24 (0008 has run; data lost and recovered — D-061)
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
 delivered by the second design handoff. **719 checks pass across twenty-three
-suites** — `verify-baby` is the new one — and everything through D-056 is
-committed and pushed to `main`.
+suites** — `verify-baby` is the new one.
 
-**Work has moved onto a branch, and this is the first one the repo has had.**
-`product-ready-enhancement`, cut from `302ce22` on 2026-09-11. Every commit
-before it landed on `main` directly, so nothing here assumes a branch: `main` is
-still what is deployed and what the phones run, and a branch that is not merged
-changes nothing on them.
+**The multi-tenant work is merged to `main` and deploying.** `52b1fb8`, a
+`--no-ff` merge of all nineteen commits of `product-ready-enhancement`, pushed
+2026-09-24 with `npm run verify` green on `main` itself. `main` had not moved
+since `302ce22`, so the merge was clean.
 
-**The branch has an origin of its own now.** `https://babylianav2.vercel.app`
-builds `product-ready-enhancement`; `https://babyliana.vercel.app` builds `main`
-and is what the two phones run. Both are public; only the second was ever
-announced. **It is a staging front end, not a staging environment** — one
-Supabase project sits under both origins, and that is deliberate: a second
-project would turn stage 3's copy into an export and an import across two
-endpoints instead of one statement across two schemas.
+**This is the cutover, and it is not finished when the deploy is.** The phones
+update lazily through the service worker, so each one flips at a moment nobody
+chooses. Until both have flipped, one phone may still be on the old build writing
+to `public` while the other writes to `app`. The remaining steps are in *Next
+action* and none of them are code.
 
-**Since stage 2 the two origins are genuinely separated, by schema rather than by
-project.** v2 reads and writes `app`; `main` still reads and writes `public`. Up
-until the schema flip v2 was a second front door onto the real log — it is not
-any more, and a tap on it now lands in test data.
+**Rolling back is one command:** `git revert -m 1 52b1fb8`. `public` is untouched
+and still current, so the old build picks up exactly where it left off. That is
+the whole reason `public` keeps its anon key and its `using (true)` policies
+until stage 5.
 
-**The branch has a scope now: multi-tenancy (D-057, Q-013 closed).** Many
+**Both origins now build the same thing.** `https://babyliana.vercel.app` is
+`main`; `https://babylianav2.vercel.app` is `product-ready-enhancement`, which is
+merged, so the two agree until the branch moves again. One Supabase project sits
+under both — deliberate, since a second would have turned stage 3's copy into an
+export and an import across two endpoints instead of one statement across two
+schemas.
+
+**The scope that branch carried: multi-tenancy (D-057, Q-013 closed).** Many
 accounts per baby, many babies per account, **open signup**, and **sign in to
 join a baby — never to log an event**. That supersedes D-022's one hard-coded
 baby and rewrites the *Identity* section of `technical-constraints.md`; the
 non-negotiable about logging survives, narrowed to onboarding.
 
-**The gate on it was RLS, and that gate is now shut in `app`.** Stage 2 is done:
-the client runs entirely on the `app` schema, sign-in is email OTP, onboarding is
-four steps, `device` is `caregiver` throughout, and the hard-coded baby id is
-gone. `public` still has one anon key and a `using (true)` policy on everything —
+**The gate on it was RLS, and that gate is now shut in `app`.** Stage 2 is done
+and shipped: the client runs entirely on the `app` schema, sign-in is email OTP,
+onboarding is four steps, `device` is `caregiver` throughout, and the hard-coded
+baby id is gone. `public` still has one anon key and a `using (true)` policy on everything —
 unchanged on purpose, because it is the rollback — and it closes at stage 5.
 **Stage 3 has run.** `app` holds the full log — 510 timeslots and 594 events as
 of 2026-09-24, matching `public` exactly. `0008` is forward-only and idempotent,
@@ -183,25 +186,39 @@ settings screen — and the rest is the owner's judgement. See *Next action*.
 
 ## Next action
 
-**0. Stage 3 has run, and `app` now holds the real log.** 510 timeslots and 594
-events, matching `public` exactly as of 2026-09-24. Everything before this could
-be undone by changing nothing; this could not, and the first attempt at keeping
-it up to date cost 99 events — see D-061 and the session log.
+**0. Finish the cutover. All six are the owner's, none are code**, and they are
+in this order for a reason.
 
-**Keeping it in step is one action: run `0008` again.** It is forward-only,
-idempotent, and has no delete step. Do it whenever `public` has grown. It reports
-drift — rows in `app` that `public` no longer has, almost always a moment deleted
-in the old app — and removes nothing.
+1. **Run `0008` now**, before any phone flips, so nothing logged on the old
+   build is stranded. Forward-only, no preparation, safe to repeat.
+2. **Supabase → Authentication → URL Configuration → Site URL back to
+   `https://babyliana.vercel.app`.** It has pointed at the v2 origin since
+   stage 1 (`0007` § 5). A numeric OTP never redirects so it does not gate
+   sign-in, but leaving it is the stage 5 item that bites later.
+3. **Fully close the app on both phones before reopening.** Swipe it away;
+   backgrounding is not enough. See *A cutover hazard* below — this is the one
+   thing that can actually stop the app dead, and closing first avoids it.
+4. **Each phone onboards once:** email → six-digit code → pick Liana → tap your
+   own name. **The code lands in the household inbox**, so the second parent
+   needs it relayed unless they can read that mailbox. Nothing carries across
+   from the old install, which is why `0008` remaps ids rather than rewriting
+   them.
+5. **Run `0008` again once both phones are confirmed on the new build.** The
+   service worker updates lazily, so there is a real window in which one phone
+   is still writing to `public`. This sweeps it.
+6. **Leave `public` alone.** It is the rollback until the new build has been
+   trusted for a few real nights, and it closes at stage 5.
 
-**One event is missing and will not come back on its own.** The moment at
-`2026-09-24 01:45:00+00`, a 43-minute period logged by Dad, exists in both
-databases with no entry attached. Only two things carry a period (D-020), so it
-was a sleep or a feed. Re-enter it on the phone in the old app, then run `0008`
-once more to carry it across.
+**Still owed from the incident:** the moment at `2026-09-24 01:45:00+00` — a
+43-minute period logged by Dad — exists in both databases with no entry attached.
+Only two things carry a period (D-020), so it was a sleep or a feed. Easiest now
+to re-enter it directly in the new app, since `app` is what the phones write to
+from here.
 
-**The JSON export is now the most overdue item in the project** (item 2 below).
-The recovery worked because a second copy happened to exist in another schema of
-the same Supabase project. That is not a backup, and the free tier keeps none.
+**The JSON export is the most overdue item in the project** (item 2 below). The
+recovery on 2026-09-24 worked because a second copy happened to exist in another
+schema of the same Supabase project. That is not a backup, and the free tier
+keeps none.
 
 **1. The coverage run. This is the gate and it is the owner's.** Enter the
 photographed days from `.specify/memory/paper-log/` into the app on the phone,
@@ -309,17 +326,20 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**Nothing.** The working tree is clean and `product-ready-enhancement` is
-seventeen commits ahead of `main` and pushed. `main` at `302ce22` is what the two
-phones run and has not moved since this branch was cut.
+**Nothing uncommitted**, and **the working tree is on `main`** — not on
+`product-ready-enhancement`, which is where every session since 2026-09-11 has
+been. `main` is at `52b1fb8`, the merge, and is pushed. The branch still exists
+and is now identical to `main`; either is a reasonable place to start the next
+piece of work.
 
 **`0008` has been applied**, and `supabase/README.md` records it. Re-running it
 is the routine way to pick up new rows from `public`; it is forward-only and
 removes nothing.
 
-**What is deployed where.** `https://babylianav2.vercel.app` builds this branch
-and is where all of the above was tested; `https://babyliana.vercel.app` builds
-`main`. Both public, only the second announced.
+**What is deployed where.** Both origins now build the same code, since the
+branch is merged. `https://babyliana.vercel.app` is `main` and is what the phones
+run; `https://babylianav2.vercel.app` is the branch and stays useful as a place
+to put the next thing before it reaches anyone.
 
 **One credential lives outside git.** `.auth-session.json`, gitignored, holding a
 real refresh token for the household account. `npm run auth-check` writes it and
@@ -339,7 +359,9 @@ IndexedDB's answer to that is to wait forever — no error, no rejection. Found 
 first time a real person walked the new first run: the button greyed out and
 stayed that way, with nothing in the console.
 
-**It will recur at stage 4, on the phones, and cannot be prevented from here.**
+**This is live as of 2026-09-24 — the merge is deploying, so the next time
+either phone opens the app is when it happens.** It cannot be prevented from
+here.
 The `blocking` handler releases a held connection, but only from the side running
 the *new* code — and at cutover the thing holding version 2 is the old build,
 which does not have it. An installed PWA sitting backgrounded is enough.
@@ -392,7 +414,27 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-24 (latest) — the copy ran, then the recipe for keeping it current deleted the source
+### 2026-09-24 (latest) — merged to main; the cutover is under way
+
+`product-ready-enhancement` merged into `main` as `52b1fb8`, `--no-ff` so the
+cutover is a single commit to revert. Nineteen commits, no conflicts, `main`
+unmoved since `302ce22`. `npm run verify` run on `main` after the merge rather
+than trusting the branch's own green: 719 checks, exit 0.
+
+**The deploy is not the cutover.** The service worker updates lazily, so each
+phone flips at a moment nobody chooses, and until both have there is a real
+window with one phone writing to `public` and the other to `app`. That is why
+`0008` gets run twice — once before any phone flips and once after both have —
+and why `public` keeps its anon key and its `using (true)` policies until
+stage 5. Rolling back is `git revert -m 1 52b1fb8`; the old build finds `public`
+exactly where it left it.
+
+The six remaining steps are in *Next action* and none of them are code. The one
+that can actually stop the app is closing it fully on both phones first — an
+installed PWA holding IndexedDB version 2 blocks the upgrade to 3, and
+IndexedDB's answer to that is to wait forever.
+
+### 2026-09-24 — the copy ran, then the recipe for keeping it current deleted the source
 
 `0008` ran. `app` holds the real log: 510 timeslots, 594 events.
 
@@ -476,39 +518,3 @@ the JSON export is left before `0008` can run.
 once cost a round trip: the owner had already worked out that delete-and-recopy
 works and was asking only whether something better existed. The answer was one
 word. Answer what was asked; hold the rest until it is wanted.
-
-### 2026-09-15 — a second baby gets a door
-
-Asked what tells you which baby you are logging for, and whether a second one can
-be created and switched to. The answer was: nothing, and no. The schema had
-supported it since D-057 — `baby_member` is a real many-to-many join, `create_baby`
-works for any household, `fetchBabies` deliberately does not filter — and the
-picker already existed inside `Welcome.tsx`. What was missing was a door.
-`forgetBaby()` had been sitting there since stage 2 with a docstring naming this
-exact case, uncalled.
-
-Built it: the name in the status row, the picker lifted into `BabyPicker.tsx` and
-shared with onboarding, the event pull scoped through the timeslot, and
-`switchBaby` in `sync.ts`. D-060 has the reasoning.
-
-**The interesting part was that the one-line version is wrong three times over**,
-and all three surfaced from writing the suite rather than from writing the code.
-Local rows outlive the id, so the order has to be flush, move, empty, pull — and
-emptying before the pull rather than trusting it is what keeps a dropped signal
-from rendering one child's feeds under another child's name. A pull already in
-flight can land after the id moves, so `pull()` re-reads it before writing. And
-`baby.settings` is per baby, so a cached value the new row does not carry reads
-to `unsynced()` as a local change and gets **pushed onto the new baby's row** —
-no error, both phones agreeing on the wrong answer. That one was proved: with the
-fix backed out the suite fails with `POST baby`.
-
-Continues a pattern worth watching. The previous entry recorded that checks had
-twice encoded "nothing exists yet" as if it were a rule. This is the same shape
-one layer up: the unscoped `event` pull, and a `Welcome` that could only ever be
-reached once, were both correct right until the data stopped being singular.
-
-Two smaller things went along with it — `someone new` was a one-way door out of
-the picker, and `NamePrompt` had one family's baby name hard-coded in a
-multi-tenant app.
-
-Left uncommitted for review.
