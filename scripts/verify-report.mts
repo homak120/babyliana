@@ -195,12 +195,21 @@ await p.waitForTimeout(250)
 check('the log comes back', (await p.locator('.table').count()) === 1, 'table again')
 
 // --- the page summary (D-063) -----------------------------------------------
-// The tag row was all a page said. This is the rest of what it holds, and the
-// seed has a feed and a change in it, so two of its lines must be there.
+// The tag row was all a page said. This is the rest of it, in the same bubbles
+// and the same colours — and the contract is as much about what it leaves out:
+// the seed's one feed is 60 mL, which the tag row above already carries.
 const sum = (await p.locator('.daysum').innerText()).replace(/\n/g, ' ')
-check('the page summarises what it holds', (await p.locator('.daysum').count()) === 1, sum)
-check('the milk line names the volume and the count', /mL over \d+ feed/.test(sum), sum)
-check('and the diaper line counts the change', /\d+ wet|\d+ dirty/.test(sum), sum)
+check('the page summarises what the tags do not', (await p.locator('.daysum').count()) === 1, sum)
+check('the source is named in words', /breast|formula|not marked/.test(sum), sum)
+check('and the total is not said twice', !/60 mL/.test(sum), sum)
+check('every fact is a bubble, not a sentence',
+  (await p.locator('.daysum .tag').count()) >= 1,
+  `${await p.locator('.daysum .tag').count()} bubbles`)
+// Colour is the app's existing vocabulary here, not a new one: the formula
+// bubble is amber on this screen because it is amber everywhere else.
+check('and carries the colour its kind already has',
+  (await p.locator('.daysum .tag.amber, .daysum .tag.lilac').count()) === 1,
+  await p.locator('.daysum .tag').first().getAttribute('class') ?? '')
 
 console.log(fail === 0 ? '\n  the insights screen renders' : `\n  ${fail} FAILED`)
 await b.close()

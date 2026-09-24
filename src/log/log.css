@@ -591,6 +591,14 @@ body {
 .tag.chip { background: var(--chip); color: var(--muted); }
 .tag.lilac { background: var(--lilacFill, var(--lavFill)); color: var(--lilacInk, var(--lavInk)); }
 .tag.amber { background: var(--amberFill); color: var(--amberInk); }
+/* Two tones the tag row never needed, added for the page summary (D-063). They
+   live here with the rest of the vocabulary rather than beside the markup that
+   introduced them — `.tag` is defined in this sheet, and a second definition in
+   day.css is the cross-sheet clash verify-s3 forbids. `plain` is deliberately
+   not `--muted` like `.tag.chip`: that tone is for a count nobody reads twice,
+   and these carry figures. */
+.tag.peri { background: var(--periFill); color: var(--periInk); }
+.tag.plain { background: var(--chip); color: var(--dim); }
 
 .tag, .chips span { display: inline-flex; align-items: center; gap: 0.25rem; }
 

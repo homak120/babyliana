@@ -23,10 +23,11 @@ export function DayPage({
   // Totalled over what is actually on this page, so the numbers match the
   // heading rather than the whole log.
   const totals = totalsOf(rows)
-  // The tag row is the glance; this is the rest of what the page holds. A day
-  // with a weight, a temperature and four notes in it looked exactly like a day
-  // without them until the table was scrolled.
-  const lines = summarise(rows)
+  // The tag row is the glance; these are the rest of the facts, in the same
+  // bubble language and the same colours. A day with a weight, a temperature
+  // and four notes in it looked exactly like a day without them until the
+  // table was scrolled.
+  const groups = summarise(rows)
   const nameFor = (id: string) => caregivers.find((d) => d.id === id)?.name ?? null
 
   return (
@@ -43,18 +44,22 @@ export function DayPage({
         )}
       </div>
 
-      {lines.length > 0 && (
-        <dl className="daysum">
-          {lines.map((l, n) => (
-            // A continuation carries no key of its own — it is the line above
-            // still talking, and repeating "milk" beside it would read as a
-            // second figure for the same thing.
-            <div className="sumRow" key={n}>
-              <dt className="sumKey">{l.key ?? ''}</dt>
-              <dd className="sumVal">{l.text}</dd>
+      {groups.length > 0 && (
+        <div className="daysum">
+          {groups.map((g) => (
+            <div className="sumRow" key={g.key}>
+              <span className="sumKey">{g.key}</span>
+              <span className="sumBubbles">
+                {g.bubbles.map((b) => (
+                  <span className={`tag ${b.tone}`} key={`${g.key}-${b.id}`}>
+                    {b.icon && <Icon name={b.icon} size={13} />}
+                    {b.text}
+                  </span>
+                ))}
+              </span>
             </div>
           ))}
-        </dl>
+        </div>
       )}
 
       <div className="table">

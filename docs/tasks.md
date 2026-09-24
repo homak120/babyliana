@@ -157,9 +157,10 @@ when". Read that first; this list is the checklist view of the same thing.
       `3d 7d 15d 30d`, the months that have entries, and `all` behind `more`.
       Past ten days the bars thin and the wet-diaper flag rolls up, which is
       D-032's rule printed differently, not a new one
-- [x] **CC** **D-063** — the read-back's page summarises what it holds: milk
-      with its source split and widest gap, diapers with their colours, sleep,
-      and a line for weight, temperature, supplements, spit-ups and notes.
+- [x] **CC** **D-063** — the read-back's page summarises what the tag row does
+      not: the source split, the widest gap, the poop colours, sleep, and the
+      secondary types with a note count. Bubbles, in the colours their kinds
+      already have, and it never repeats a figure the tags carry.
       `src/day/summary.ts`, with `verify-day-summary` as its own suite
 
 - [ ] **H** Run the coverage checklist: enter all **ten** photographed days —

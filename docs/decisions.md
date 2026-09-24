@@ -2909,6 +2909,27 @@ already invisible until the table was scrolled.
   a gap is named, never called long. The one threshold on the wet count stays on
   the insights screen where D-032 put it.
 
+**2026-09-24, later the same day — the summary is bubbles, not sentences.**
+Owner's call, from looking at it: the block read as a paragraph in a screen made
+of tags. Every fact is now a bubble in **the colour its kind already has** — rose
+a feed, lav a volume, yellow wet, mint dirty, peri a period of time, lilac
+breast, amber formula, neutral for anything that is an absence or a footnote.
+That is deliberately not a new visual language: a reader who has learned the tag
+row has already learned this one.
+
+Two things came out of the rework rather than the redraw:
+
+- **It stopped repeating the tag row.** The total and the feed count are already
+  bubbles four points above, so the milk group no longer says them. A page whose
+  every fact is in the tag row — one unmarked feed — now produces **no block at
+  all** rather than an empty-looking one.
+- **The type word became the icon's job.** `weight 7 lb 4 oz` is the word twice
+  once there is a scale icon on the bubble; it reads `7 lb 4 oz`.
+
+Colour is never the only carrier: every bubble has its figure and its word, and
+the poop colours stay neutral — a green bubble beside the word *yellow* asks the
+reader to ignore what they can see, which is the call D-049's tally already made.
+
 **Reversal condition.** If the summary is scrolled past every time and the tag
 row is what gets read, the block collapses behind a tap. If the month pills go
 unused, they come out and `30d` stands in for them.

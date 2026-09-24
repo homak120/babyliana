@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-24 (D-063 on `main`; `Q-014` and `Q-015` are open and waiting)
+Last updated: 2026-09-24 (the page summary is bubbles; `Q-014` and `Q-015` are open and waiting)
 
 ---
 
@@ -18,7 +18,7 @@ Last updated: 2026-09-24 (D-063 on `main`; `Q-014` and `Q-015` are open and wait
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. **765 checks pass across twenty-four
+delivered by the second design handoff. **769 checks pass across twenty-four
 suites** — `verify-day-summary` is the new one.
 
 **The multi-tenant work is merged to `main` and deploying.** `52b1fb8`, a
@@ -106,9 +106,10 @@ push-then-reconcile sync with Supabase.
   diapers a day, milk by source, poop colours, sleep, and growth when there is
   a weight. The source chart's bars are tappable — a day opens its own
   breakdown, in millilitres and whole percent (D-062). The range is `3d 7d 15d
-  30d`, any month that has entries, or all of it (D-063). Each page of the
-  read-back carries a grouped summary of everything on it, secondary types and
-  note counts included.
+  30d`, any month that has entries, or all of it (D-063). Under each page's tag
+  row sit grouped bubbles for everything the tags do not carry — the source
+  split, the widest gap, the poop colours, sleep, and the secondary types with
+  a note count — each in the colour its kind already has.
 - **The add sheet** — one moment, with milk, diaper, sleep, weight, temperature,
   supplement and other, a free-text note on every one of them, and a time card
   carrying its own date, an optional end with its own date, and offsets both
@@ -349,13 +350,11 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**Nothing uncommitted.** D-063 is `879435a` on `main`, pushed — the insights
-ranges and the read-back's page summary, with `src/day/summary.ts` and
-`scripts/verify-day-summary.mts` as the two new files. Derived at render time:
-**no migration, nothing new stored**, so it needed nothing done to Supabase.
-
-**It is the second service-worker update of the cutover.** `DB_VERSION` does not
-move and no column changes, so the six steps in *Next action* are unchanged.
+**Uncommitted, on `main`: the page summary is bubbles rather than sentences.**
+`src/day/summary.ts` now returns groups of typed bubbles instead of text lines,
+`DayPage.tsx` renders them as `.tag` chips in the colours the tag row already
+uses, and both suites that cover it moved with it. No migration, nothing new
+stored.
 
 **`0008` has been applied**, and `supabase/README.md` records it. Re-running it
 is the routine way to pick up new rows from `public`; it is forward-only and
@@ -442,6 +441,14 @@ fourth. This is orientation, not history. `git log` is the history.
 ### 2026-09-24 (latest) — the report reaches past a week, and a page says what it holds
 
 Two things, one complaint: the app was showing less than it had. D-063.
+
+**Then a third pass, on how it looked.** The summary shipped as a paragraph in a
+screen made of tags, so it became bubbles — every fact in the colour its kind
+already has, which is the tag row's vocabulary and not a second one. Two things
+fell out of that rather than out of the redraw: it stopped repeating the total
+and the feed count, which are tags four points above it, and it dropped the type
+word from each secondary bubble once the icon was carrying it. A page whose every
+fact is already in the tag row now produces no block at all.
 
 **The insights range is a shape now, not a number.** `Span` became a union —
 `{days: n}`, `{month: ym}`, `all` — behind a strip of pills: `3d 7d 15d 30d`,
