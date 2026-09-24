@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-24 (the source chart answers for one day — D-062, on a branch)
+Last updated: 2026-09-24 (the source chart answers for one day — D-062, on `main`)
 
 ---
 
@@ -332,21 +332,22 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**Nothing uncommitted. D-062 sits on `source-breakdown`, pushed and unmerged** —
-`7703041`, eight files: `src/report/insights.ts` (`sourceSplit`, and
+**Nothing uncommitted. D-062 is on `main` and pushed** — `7703041` and two
+status commits behind it, merged from `source-breakdown`, which still exists and
+is identical to `main`. Eight files: `src/report/insights.ts` (`sourceSplit`, and
 `feedsNoVolume` on `DayStat`), `src/report/InsightsView.tsx`,
-`src/report/insights.css`, the two suites that cover it, and these three
-documents. Derived at render time, so **no migration and nothing new stored**.
+`src/report/insights.css`, the two suites that cover it, and three documents.
+Derived at render time, so **no migration and nothing new stored** — it needs
+nothing done to Supabase and it is not part of the cutover.
 
-**It is on a branch rather than on `main` because `main` is what the phones run
-and the cutover is still in flight.** Landing it is `git checkout main && git
-merge source-breakdown`, whenever the six steps in *Next action* are done and
-the owner wants it live. Nothing about it depends on the cutover, and nothing
-about the cutover depends on it.
+**It does mean a second service-worker update reaching the phones during the
+cutover.** Harmless on its own — `DB_VERSION` does not move and no column
+changes — but a phone that has not yet flipped to the `app` build now has two
+updates to pick up rather than one. The *Next action* steps are unchanged and
+still in that order.
 
-**`main` is at `3ac8bf7` and is pushed** — not `product-ready-enhancement`,
-which is where every session between 2026-09-11 and the merge at `52b1fb8` was.
-That branch still exists and is identical to `main`.
+**`main` was at `3ac8bf7`** before this, and `product-ready-enhancement` is where
+every session between 2026-09-11 and the merge at `52b1fb8` was.
 
 **`0008` has been applied**, and `supabase/README.md` records it. Re-running it
 is the routine way to pick up new rows from `public`; it is forward-only and
