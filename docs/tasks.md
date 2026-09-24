@@ -148,6 +148,11 @@ when". Read that first; this list is the checklist view of the same thing.
       which `CLAUDE.md` forbade. Raised as a conflict before building; the owner
       chose the handoff. `CLAUDE.md` and `docs/plan.md` Phase 7 amended so the
       rule and the shipped code agree
+- [x] **CC** **D-062** — the *by source* card's bars became buttons. Tapping a
+      day swaps the range caption for its breakdown: the day's total, how many
+      feeds it took, and each source's millilitres and whole-percent share,
+      rounded so the shares add to exactly 100. Derived in `sourceSplit`;
+      nothing new is stored. Covered in `verify-insights` and `verify-report`
 
 - [ ] **H** Run the coverage checklist: enter all **ten** photographed days —
       8/26 to 9/4, three of them past what the baseline writes up. This is the

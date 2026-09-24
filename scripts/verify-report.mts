@@ -118,6 +118,37 @@ const stacks = await p.evaluate(`(() => {
 check('a stack is exactly its segments plus their gaps',
   stacks.length > 0 && stacks.every(([parts, total]) => total - parts <= 4 && total >= parts),
   stacks.map(([a, c]) => `${a}/${c}`).join(' '))
+// --- a day's own breakdown (D-062) ------------------------------------------
+// The stack is the only place the source split is drawn, and reading a number
+// off it takes a ruler. The tap is what turns it into figures, so the tap is
+// what is worth checking in a browser.
+const srcCard = p.locator('.card', { hasText: /by source/i })
+check('the source chart offers its days as buttons',
+  (await srcCard.locator('button.bar.pick').count()) >= 1,
+  `${await srcCard.locator('button.bar.pick').count()} tappable`)
+check('and says nothing about one day until asked',
+  (await p.locator('.split').count()) === 0, 'range summary leads')
+
+await srcCard.locator('button.bar.pick').last().click()
+await p.waitForTimeout(250)
+check('a tapped day opens its breakdown', (await p.locator('.split').count()) === 1, 'panel open')
+const splitText = (await p.locator('.split').innerText()).replace(/\n/g, ' ')
+check('the breakdown gives the day a clear total', /\d+ mL/.test(splitText), splitText)
+check('and a share for every band it draws',
+  (await p.locator('.splitRow').count()) >= 1 && /\d+%/.test(splitText), splitText)
+// The shares are a decomposition of one day; printing 101% would be the same
+// lie the stack is checked against above.
+const pcts = (await p.locator('.splitPct').allInnerTexts()).map((t) => parseInt(t, 10))
+check('the shares add to exactly 100',
+  pcts.reduce((a, n) => a + n, 0) === 100, pcts.join(' + '))
+check('the tapped day is marked on the chart',
+  (await srcCard.locator('button.bar.pick.on').count()) === 1, 'one day selected')
+
+await srcCard.locator('button.bar.pick.on').click()
+await p.waitForTimeout(250)
+check('and tapping it again goes back to the range',
+  (await p.locator('.split').count()) === 0, 'panel closed')
+
 // The poop tally only exists when something has been logged with a colour; the
 // seeded diaper above has none, so it is absent, which is the point.
 check('the colour tally stays away until a colour is recorded',

@@ -2802,3 +2802,46 @@ damage correctly a day later.
 this incident is the argument for it: the recovery worked because a second copy
 happened to exist in another schema of the same project, which is not a backup
 strategy. A free-tier project keeps no backups at all.
+
+---
+
+## D-062 — the source chart answers for one day when it is asked
+
+**2026-09-24. Owner's request.**
+
+**Decision.** The *by source* card's bars are buttons. Tapping one replaces the
+card's range caption with that day's breakdown: the date, the day's total in
+millilitres, how many feeds it took, and one row per source with its own
+millilitres and its share as a whole percent. Tapping the same bar again puts
+the range caption back. Nothing is selected by default.
+
+The split is computed in `sourceSplit` (`src/report/insights.ts`) next to the
+rest of the arithmetic, so the view stays markup and the rounding is checked
+without a browser.
+
+**Why.** D-049 gave the card a stacked bar, which says the *shape* of a day at a
+glance and no more — getting a number out of it takes a ruler and the legend.
+The number was already derived; it was only never printed.
+
+**Three things the panel had to get right.**
+
+- **The percentages add to 100.** Rounding each band alone turns 37.5 / 28.1 /
+  34.4 into 38 + 29 + 35 = 102. The rounding loss goes to the bands with the
+  largest remainders instead, ties to the larger band and then to chart order,
+  so the same day never rounds two ways on two renders. A breakdown that does
+  not add up reads as a bug to the one person who checks it.
+- **An empty band is dropped, not printed as zero.** The chart does not draw it
+  either, and `formula 0 mL 0%` is noise on a day that was all breast milk.
+- **A feed with no volume is named.** The head says `over 8 feeds, 1 without a
+  volume` when there is one. A day of 8 feeds and 410 mL where one feed was a
+  `?` is not a 410 mL day, and the count is the only place that can say so —
+  paper-log-baseline.md's distinction between an empty cell and a mark, which
+  the bands themselves cannot carry.
+
+**Why a tap and not a row per day.** Seven days of three bands is twenty-one
+figures under a chart that exists to be read at a glance, and six of those days
+are not the one being asked about. The panel is one day, the one the reader
+pointed at.
+
+**Reversal condition.** If the panel is never opened — the chart alone was
+enough — the bars go back to being `div`s and the caption stops offering.

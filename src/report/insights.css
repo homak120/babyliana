@@ -183,6 +183,9 @@
 }
 
 .seg {
+  /* Declared, not assumed: the source chart's segments are <i> elements, since
+     a <button> may only hold phrasing content and the bars became buttons. */
+  display: block;
   width: 100%;
   min-height: 3px;
   /* Square where they meet, rounded at the free end — the data-end rule. Only
@@ -235,6 +238,100 @@
 .key.unmarked {
   background: repeating-linear-gradient(135deg, var(--chip) 0 3px, var(--card) 3px 5px);
   box-shadow: inset 0 0 0 1px var(--hair);
+}
+
+/* ---------- a day's own breakdown (D-062) ---------- */
+
+/* The source chart's bars are buttons. Everything a button brings with it is
+   removed; the column below is the same `.bar` as every other chart's. */
+.bar.pick {
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* A ring rather than an outline: outlines are drawn outside the box and a
+   2px one on the last bar has pushed this screen sideways before. */
+.bar.pick.on .stack { box-shadow: 0 0 0 2px var(--accent); border-radius: 8px; }
+
+/* The day being read says so on its own label. Colour alone would collide with
+   `today`, which is already rose. */
+.bar.pick.on .barLabel {
+  background: var(--accent);
+  color: var(--onAccent);
+  border-radius: 8px;
+  padding: 0 5px;
+}
+
+.split {
+  background: var(--chip);
+  border-radius: 14px;
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.splitHead {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 7px;
+}
+
+.splitDay {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The total the reader came for, at the size of the other figures on this
+   screen — the bar's own number is 11px and sits above a stack. */
+.splitTotal {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.splitRows { display: flex; flex-direction: column; gap: 5px; }
+
+.splitRow {
+  display: grid;
+  grid-template-columns: 10px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.splitName {
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.splitMl {
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The share, which is the column the eye runs down, so it is the bold one and
+   it is right-aligned on a fixed width — 9% and 44% line up. */
+.splitPct {
+  min-width: 2.5rem;
+  text-align: right;
+  font-weight: 900;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
 
 /* The colour tally. One hue for every row: the categories are named in words

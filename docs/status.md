@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-24 (merged to `main` — the cutover is deploying)
+Last updated: 2026-09-24 (the source chart answers for one day — D-062, uncommitted)
 
 ---
 
@@ -18,8 +18,9 @@ Last updated: 2026-09-24 (merged to `main` — the cutover is deploying)
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. **719 checks pass across twenty-three
-suites** — `verify-baby` is the new one.
+delivered by the second design handoff. **736 checks pass across twenty-three
+suites** — the newest of them cover the source breakdown, in `verify-insights`
+and `verify-report`.
 
 **The multi-tenant work is merged to `main` and deploying.** `52b1fb8`, a
 `--no-ff` merge of all nineteen commits of `product-ready-enhancement`, pushed
@@ -104,7 +105,8 @@ push-then-reconcile sync with Supabase.
 - **Report** — the paper-shaped day table with a scrolling date rail and a
   period picker, plus an insights mode: milk intake, daily rhythm, wet and poop,
   diapers a day, milk by source, poop colours, sleep, and growth when there is
-  a weight.
+  a weight. The source chart's bars are tappable — a day opens its own
+  breakdown, in millilitres and whole percent (D-062).
 - **The add sheet** — one moment, with milk, diaper, sleep, weight, temperature,
   supplement and other, a free-text note on every one of them, and a time card
   carrying its own date, an optional end with its own date, and offsets both
@@ -134,6 +136,10 @@ precache sits where it does; the 1024 is excluded, being needed only at install.
 Newest first, and **this is an index, not a record** — `docs/decisions.md`
 carries the reasoning for every one of these, and for everything older.
 
+- **D-062** — the report's *by source* card became tappable. A day's bar opens
+  its own breakdown — total, feed count, and each source's millilitres and whole
+  percent, rounded so the shares add to 100. The first thing built on this
+  repo since the cutover, and it touches nothing the cutover touches.
 - **D-061** — the migration is forward-only. The delete-and-recopy recipe in
   `0008`'s header cost 99 events of real data when the delete landed on `public`
   instead of `app`: the two schemas carry the same five table names. Almost all
@@ -326,9 +332,16 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**Nothing uncommitted**, and **the working tree is on `main`** — not on
-`product-ready-enhancement`, which is where every session since 2026-09-11 has
-been. `main` is at `52b1fb8`, the merge, and is pushed. The branch still exists
+**D-062 is uncommitted, on `main`.** Five files: `src/report/insights.ts`
+(`sourceSplit`, and `feedsNoVolume` on `DayStat`), `src/report/InsightsView.tsx`,
+`src/report/insights.css`, and the two suites that cover it —
+`scripts/verify-insights.mts` and `scripts/verify-report.mts`. Derived at render
+time, so **no migration and nothing new stored**: it is safe to sit here while
+the cutover finishes, and safe to ship whenever the owner reviews it.
+
+**The working tree is on `main`** — not on `product-ready-enhancement`, which is
+where every session since 2026-09-11 has been. `main` is at `52b1fb8`, the merge,
+and is pushed. The branch still exists
 and is now identical to `main`; either is a reasonable place to start the next
 piece of work.
 
@@ -414,7 +427,26 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-24 (latest) — merged to main; the cutover is under way
+### 2026-09-24 (latest) — the source chart answers for one day
+
+The report's *by source* card had a stacked bar and no numbers, which meant a
+ruler and the legend to read a share off it. Its bars are buttons now: tapping a
+day swaps the range caption for that day's breakdown — the date, the total in
+millilitres, how many feeds it took, and a row per source with millilitres and a
+whole-percent share. Tapping again puts the caption back. D-062.
+
+The part worth remembering is the rounding. Rounding each band alone turns
+37.5 / 28.1 / 34.4 into 102%, so the leftover goes to the largest remainders,
+ties to the larger band and then to chart order. `verify-insights` checks the
+sum on a mixed day and on thirds, which is the case that cannot come out even.
+
+A `?` feed — a feed with no volume — is now counted on `DayStat` and named in the
+panel's head, because a day of 8 feeds and 410 mL where one had no volume is not
+a 410 mL day and the bands cannot say so.
+
+Nothing stored, no migration, no schema change. `npm run verify` green.
+
+### 2026-09-24 — merged to main; the cutover is under way
 
 `product-ready-enhancement` merged into `main` as `52b1fb8`, `--no-ff` so the
 cutover is a single commit to revert. Nineteen commits, no conflicts, `main`
@@ -476,45 +508,3 @@ proved by injecting a throw where the old restore sat.
 **The JSON export is now the most overdue item in the project.** The recovery
 worked because a second copy happened to exist in another schema of the same
 project. That is not a backup, and the free tier keeps none.
-
-### 2026-09-23 — stage 3 has a script, and it is not run
-
-Wrote `0008_copy_pilot_log.sql`. It reads `public` and never writes it, so the
-rollback is a `delete` and the two phones on `main` are untouched either way.
-
-**The advice this file is built on reversed during the session, and that is the
-thing to carry forward.** The earlier recommendation — recorded in this file —
-was to keep `public`'s baby id so the copy would be a straight insert. Checking
-the client killed it: `caregiver-id.ts` reads only `babyliana.caregiver_id` and
-the old build wrote `babyliana.device_id`, which nothing copies across; the baby
-id was a constant in the deleted `config.ts`; and `0007` grants to
-`authenticated` only. So **nothing on a pilot phone survives the update holding
-either id**, every phone re-onboards at cutover regardless, and matching the ids
-buys nothing while rewriting `app.baby.id` risks the `baby_member` row that makes
-Liana reachable at all. The copy remaps instead.
-
-The caregiver mapping joins on *name* rather than on pasted UUIDs, because a
-mistyped id does not fail — it attributes every entry to the wrong parent, and
-nobody would notice. Three guards run before any insert, and a count mismatch
-rolls the whole block back.
-
-**Two corrections to earlier claims of mine, both found by reading rather than
-assuming.** `verify-s2`/`verify-s8` are more careful than this file said —
-exact-id deletes, cleanup in a `finally` — and the real gap is narrower and
-different: s2 restores the real baby's settings inside its `try`. And my own
-count check reported "copy is short" for a mismatch in *either* direction, when
-the likeliest cause — a row deleted in `public` — makes `app` long. Both fixed.
-
-The owner deleted the `app` test timeslots and events himself, keeping the
-account, baby, membership and both caregivers. That was the third open decision
-and it is closed.
-
-Fixed `verify-s2`'s settings restore the same day, which was the second of the
-two prerequisites. It moved into the `finally`, and the proof was to inject a
-throw where the old restore sat and watch the real value come back anyway. Only
-the JSON export is left before `0008` can run.
-
-**A process note.** Answering a narrow question with three adjacent concerns at
-once cost a round trip: the owner had already worked out that delete-and-recopy
-works and was asking only whether something better existed. The answer was one
-word. Answer what was asked; hold the rest until it is wanted.

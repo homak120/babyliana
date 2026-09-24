@@ -5,7 +5,7 @@
 // asserts something about the baby rather than merely counting, which D-032
 // allowed deliberately and narrowly — a rule that fires on the wrong day, or
 // silently stops firing, is the failure that matters.
-import { buildInsights, hm, type Span } from '../src/report/insights.ts'
+import { buildInsights, hm, sourceSplit, type Span } from '../src/report/insights.ts'
 import type { LogEvent, Moment } from '../src/types.ts'
 
 let failures = 0
@@ -255,6 +255,51 @@ check('an unmarked source is its own band, not a discard', d0.mlUnmarked === 55)
 // do not sum to its total is a lie about the day.
 check('and the three bands add up to the day', d0.mlBreast + d0.mlFormula + d0.mlUnmarked === d0.ml)
 check('the unmarked total is carried for the caption', mixedDay.mlUnmarked === 55)
+
+// --- a day's own breakdown (D-062) ------------------------------------------
+
+const split = sourceSplit(d0)
+check('the split names every band that has milk in it',
+  split.map((r) => r.key).join(',') === 'breast,formula,unmarked',
+  JSON.stringify(split.map((r) => r.key)))
+check('and carries the millilitres unrounded',
+  split.map((r) => r.ml).join(',') === '60,45,55', JSON.stringify(split.map((r) => r.ml)))
+// 60/160, 45/160, 55/160 is 37.5, 28.125, 34.375 — two of the three round up on
+// their own, which is exactly the case that would print 101%.
+check('the percentages add to exactly 100',
+  split.reduce((a, r) => a + r.pct, 0) === 100, JSON.stringify(split.map((r) => r.pct)))
+check('and the leftover goes to the largest remainder',
+  split.map((r) => r.pct).join(',') === '38,28,34', JSON.stringify(split.map((r) => r.pct)))
+
+// Thirds are the case that cannot come out even: 33 + 33 + 33 is 99.
+const thirds = build([
+  at(9, 8, 0, [sourced(50, 'breast_milk')]),
+  at(9, 11, 0, [sourced(50, 'formula')]),
+  at(9, 14, 0, [feed(50)]),
+])
+const three = sourceSplit(thirds.days[0])
+check('three equal bands still add to 100',
+  three.reduce((a, r) => a + r.pct, 0) === 100, JSON.stringify(three.map((r) => r.pct)))
+
+const oneSource = build([at(9, 8, 0, [sourced(90, 'formula')])])
+const only = sourceSplit(oneSource.days[0])
+check('a band with nothing in it is dropped, not printed as zero',
+  only.length === 1 && only[0].key === 'formula' && only[0].pct === 100,
+  JSON.stringify(only))
+
+// A `?` feed is in the count and not in the volume — the paper log's own
+// distinction between an empty cell and a mark (paper-log-baseline.md).
+const unknownVol = build([
+  at(9, 8, 0, [sourced(60, 'breast_milk')]),
+  at(9, 11, 0, [feed(null)]),
+])
+const uv = unknownVol.days[0]
+check('a feed with no volume is counted', uv.feeds === 2 && uv.feedsNoVolume === 1,
+  `${uv.feeds}/${uv.feedsNoVolume}`)
+check('and adds nothing to the day, or to the split',
+  uv.ml === 60 && sourceSplit(uv).length === 1 && sourceSplit(uv)[0].pct === 100)
+check('a day with no milk at all has no split',
+  sourceSplit(build([at(9, 8, 0, [pee()])]).days[0]).length === 0)
 
 const diaperDays = build([
   at(9, 8, 0, [pee()]), at(9, 9, 0, [pee()]), at(9, 10, 0, [poop()]),

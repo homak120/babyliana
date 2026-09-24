@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { diaperParts } from '../day/cells'
 import { Icon } from '../log/Icon'
-import { buildInsights, hm, type Span } from './insights'
+import { buildInsights, hm, shortDay, sourceSplit, type Span } from './insights'
 import type { Moment } from '../types'
 
 // The second mode of the report screen. Every figure here is derived at render
@@ -37,6 +38,14 @@ export function InsightsView({
   onSpan: (s: Span) => void
 }) {
   const i = buildInsights(moments, span)
+
+  // Which day's milk is broken down under the source chart, by iso, or null for
+  // the range summary. A span change can drop the day being read; looking it up
+  // by iso rather than holding the stat means that lands on the summary instead
+  // of on a day that is no longer on the chart.
+  const [picked, setPicked] = useState<string | null>(null)
+  const pickedDay = i.days.find((d) => d.iso === picked) ?? null
+  const split = pickedDay ? sourceSplit(pickedDay) : []
 
   if (i.days.length === 0) {
     return (
@@ -268,7 +277,9 @@ export function InsightsView({
         )}
       </section>
 
-      {/* 4c. What was in the bottle (D-049). */}
+      {/* 4c. What was in the bottle (D-049), and what a single day of it was
+              made of (D-062) — the stack says the shape, the tap says the
+              numbers. */}
       <section className="card">
         <h2 className="cardTitle">
           <Icon name="local_drink" size={15} /> by source
@@ -279,24 +290,35 @@ export function InsightsView({
             <div className="bars">
               {i.days.map((d) => {
                 const h = (n: number) => Math.round((n / i.maxMl) * 78)
+                const on = d.iso === picked
                 return (
-                  <div className="bar" key={d.iso}>
+                  // The whole column is the target, value and label included:
+                  // the stack alone is a few millimetres wide on a day with
+                  // little in it, and this is read one-handed.
+                  <button
+                    type="button"
+                    className={`bar pick ${on ? 'on' : ''}`}
+                    key={d.iso}
+                    aria-pressed={on}
+                    aria-label={`${shortDay(d.date)}, ${d.ml} mL`}
+                    onClick={() => setPicked(on ? null : d.iso)}
+                  >
                     <span className="barValue">{d.ml || '—'}</span>
-                    <div className="stack">
+                    <span className="stack">
                       {d.mlUnmarked > 0 && (
-                        <div className="seg unmarked" style={{ height: `${h(d.mlUnmarked)}px` }} />
+                        <i className="seg unmarked" style={{ height: `${h(d.mlUnmarked)}px` }} />
                       )}
                       {d.mlFormula > 0 && (
-                        <div className="seg formula" style={{ height: `${h(d.mlFormula)}px` }} />
+                        <i className="seg formula" style={{ height: `${h(d.mlFormula)}px` }} />
                       )}
                       {d.mlBreast > 0 && (
-                        <div className="seg breast" style={{ height: `${h(d.mlBreast)}px` }} />
+                        <i className="seg breast" style={{ height: `${h(d.mlBreast)}px` }} />
                       )}
-                    </div>
-                    <span className={`barLabel ${d.isToday ? 'today' : ''}`}>
-                      {d.date.getMonth() + 1}/{d.date.getDate()}
                     </span>
-                  </div>
+                    <span className={`barLabel ${d.isToday ? 'today' : ''}`}>
+                      {shortDay(d.date)}
+                    </span>
+                  </button>
                 )
               })}
             </div>
@@ -307,14 +329,48 @@ export function InsightsView({
               <span><i className="key unmarked" /> not marked</span>
             </div>
 
-            {/* Said outright rather than left to be inferred from a big grey
-                band: the chart is as much about how often the source goes
-                unwritten as about what was in the bottle. */}
-            <p className="insCaption">
-              {i.mlUnmarked > 0
-                ? `${i.mlUnmarked} mL went down without a source marked.`
-                : 'every feed in this range has a source.'}
-            </p>
+            {pickedDay ? (
+              <div className="split">
+                <p className="splitHead">
+                  <span className="splitDay">{shortDay(pickedDay.date)}</span>
+                  <span className="splitTotal">{pickedDay.ml} mL</span>
+                  <span className="insCaption">
+                    over {pickedDay.feeds} {pickedDay.feeds === 1 ? 'feed' : 'feeds'}
+                    {/* The paper log's `?`. A day of 8 feeds and 410 mL where
+                        one feed had no volume is not a 410 mL day, and the
+                        count is the only place that can say so. */}
+                    {pickedDay.feedsNoVolume > 0
+                      ? `, ${pickedDay.feedsNoVolume} without a volume`
+                      : ''}
+                  </span>
+                </p>
+
+                {split.length > 0 ? (
+                  <div className="splitRows">
+                    {split.map((r) => (
+                      <div className="splitRow" key={r.key}>
+                        <i className={`key ${r.key}`} />
+                        <span className="splitName">{r.label}</span>
+                        <span className="splitMl">{r.ml} mL</span>
+                        <span className="splitPct">{r.pct}%</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="insCaption">no milk logged on this day.</p>
+                )}
+              </div>
+            ) : (
+              /* Said outright rather than left to be inferred from a big grey
+                 band: the chart is as much about how often the source goes
+                 unwritten as about what was in the bottle. */
+              <p className="insCaption">
+                {i.mlUnmarked > 0
+                  ? `${i.mlUnmarked} mL went down without a source marked.`
+                  : 'every feed in this range has a source.'}{' '}
+                tap a day for its breakdown.
+              </p>
+            )}
           </>
         ) : (
           <p className="insCaption">no milk logged in this range.</p>

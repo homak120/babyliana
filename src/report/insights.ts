@@ -34,6 +34,9 @@ export type DayStat = {
   mlFormula: number
   mlUnmarked: number
   feeds: number
+  /** Feeds with nothing in the volume column — the paper log's `?` (D-018).
+   *  They are counted, and they are not in `ml`. */
+  feedsNoVolume: number
   pees: number
   poops: number
   sleeps: number
@@ -80,6 +83,55 @@ export function poopColours(moments: Moment[]): ColourCount[] {
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
 }
 
+/** One band of a day's milk: what it was, how much of it, and what share of
+ *  that day the share is. */
+export type SourceRow = {
+  key: 'breast' | 'formula' | 'unmarked'
+  label: string
+  ml: number
+  /** Whole percent of the day's volume. The rows add up to exactly 100. */
+  pct: number
+}
+
+/**
+ * One day's milk split three ways, in the legend's own order.
+ *
+ * The stacked bar says the shape of a day at a glance and nothing else — it
+ * takes a ruler and the legend to get a number out of it. This is that number,
+ * for the day the reader asked about.
+ *
+ * Percentages are whole and they sum to 100. Rounding each band alone gives
+ * 44 + 37 + 20 = 101, and a breakdown that does not add up reads as a bug to
+ * the one person who checks it, so the rounding loss goes to the bands with the
+ * largest remainders rather than to whichever one is printed last.
+ *
+ * A band with nothing in it is dropped rather than printed as 0 mL: the chart
+ * does not draw it either, and `formula 0 mL 0%` is noise on a day that was all
+ * breast milk.
+ */
+export function sourceSplit(d: DayStat): SourceRow[] {
+  if (d.ml <= 0) return []
+  const all: SourceRow[] = [
+    { key: 'breast', label: 'breast', ml: d.mlBreast, pct: 0 },
+    { key: 'formula', label: 'formula', ml: d.mlFormula, pct: 0 },
+    { key: 'unmarked', label: 'not marked', ml: d.mlUnmarked, pct: 0 },
+  ]
+  const bands = all.filter((b) => b.ml > 0)
+
+  const exact = bands.map((b) => (b.ml / d.ml) * 100)
+  bands.forEach((b, n) => { b.pct = Math.floor(exact[n]) })
+
+  // Largest fractional part takes the leftover first; ties to the larger band,
+  // then to chart order, so the same day never rounds two ways on two renders.
+  const order = bands
+    .map((b, n) => ({ n, frac: exact[n] - Math.floor(exact[n]), ml: b.ml }))
+    .sort((a, b) => b.frac - a.frac || b.ml - a.ml || a.n - b.n)
+  const left = 100 - bands.reduce((a, b) => a + b.pct, 0)
+  for (let k = 0; k < left; k++) bands[order[k].n].pct++
+
+  return bands
+}
+
 const minutesInto = (iso: string) => {
   const d = new Date(iso)
   return d.getHours() * 60 + d.getMinutes()
@@ -98,7 +150,8 @@ function statsFor(iso: string, moments: Moment[], now: Date): DayStat {
   const date = startOfDay(new Date(moments[0].timeslot.occurred_at))
   const s: DayStat = {
     iso, date, isToday: sameDay(date.toISOString(), now),
-    ml: 0, mlBreast: 0, mlFormula: 0, mlUnmarked: 0, feeds: 0, pees: 0, poops: 0,
+    ml: 0, mlBreast: 0, mlFormula: 0, mlUnmarked: 0,
+    feeds: 0, feedsNoVolume: 0, pees: 0, poops: 0,
     sleeps: 0, sleepMins: 0, longestSleepMins: 0,
     maxFeedGap: 0, avgFeedGap: 0, moments,
   }
@@ -116,7 +169,7 @@ function statsFor(iso: string, moments: Moment[], now: Date): DayStat {
           if (e.source === 'breast_milk') s.mlBreast += e.volume_ml
           else if (e.source === 'formula') s.mlFormula += e.volume_ml
           else s.mlUnmarked += e.volume_ml
-        }
+        } else s.feedsNoVolume++
       }
       if (e.type === 'diaper') {
         if (e.pee) s.pees++
