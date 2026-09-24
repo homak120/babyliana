@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-24 (the source chart answers for one day — D-062, on `main`)
+Last updated: 2026-09-24 (the report reaches past a week, and a page says what it holds — D-063)
 
 ---
 
@@ -18,9 +18,8 @@ Last updated: 2026-09-24 (the source chart answers for one day — D-062, on `ma
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. **736 checks pass across twenty-three
-suites** — the newest of them cover the source breakdown, in `verify-insights`
-and `verify-report`.
+delivered by the second design handoff. **765 checks pass across twenty-four
+suites** — `verify-day-summary` is the new one.
 
 **The multi-tenant work is merged to `main` and deploying.** `52b1fb8`, a
 `--no-ff` merge of all nineteen commits of `product-ready-enhancement`, pushed
@@ -106,7 +105,10 @@ push-then-reconcile sync with Supabase.
   period picker, plus an insights mode: milk intake, daily rhythm, wet and poop,
   diapers a day, milk by source, poop colours, sleep, and growth when there is
   a weight. The source chart's bars are tappable — a day opens its own
-  breakdown, in millilitres and whole percent (D-062).
+  breakdown, in millilitres and whole percent (D-062). The range is `3d 7d 15d
+  30d`, any month that has entries, or all of it (D-063). Each page of the
+  read-back carries a grouped summary of everything on it, secondary types and
+  note counts included.
 - **The add sheet** — one moment, with milk, diaper, sleep, weight, temperature,
   supplement and other, a free-text note on every one of them, and a time card
   carrying its own date, an optional end with its own date, and offsets both
@@ -136,6 +138,13 @@ precache sits where it does; the 1024 is excluded, being needed only at install.
 Newest first, and **this is an index, not a record** — `docs/decisions.md`
 carries the reasoning for every one of these, and for everything older.
 
+- **D-063** — the insights range became a shape rather than a number: `3d 7d
+  15d 30d`, the months that have entries, then `all` behind `more`. A month is a
+  calendar month, not `slice(-30)`. Past ten days the bars thin and the
+  wet-diaper flag rolls up — D-032's rule printed differently, not a new one.
+  And the read-back's page now summarises what it holds, which is where the
+  captured-but-invisible data (weight, temperature, supplements, notes) first
+  shows up outside the table.
 - **D-062** — the report's *by source* card became tappable. A day's bar opens
   its own breakdown — total, feed count, and each source's millilitres and whole
   percent, rounded so the shares add to 100. The first thing built on this
@@ -234,7 +243,15 @@ script — the point is thumbs, at speed, in the dark. If something cannot be
 entered, that finding outranks any further polish. It is the single biggest open
 item in the project.
 
-**2. One build item left, `CC`:**
+**2. Two questions are waiting on the owner and nothing should be guessed at
+them** — `Q-014`, what the daily rhythm should show, and `Q-015`, which of the
+captured-but-unused fields earn a place on the insights screen. Both carry
+candidate answers written out in `docs/open-questions.md`; picking from them is
+the owner's. **One item inside `Q-015` is a defect and not a preference:** the
+growth card reads a digit in a weight's free-text note and never reads
+`pounds`, so a weight entered the way D-036 built it does not show up there.
+
+**3. One build item left, `CC`:**
 
 - **JSON export** — `technical-constraints.md` requires it before a second
   person sees the app, so it is a Phase 9 gate rather than a first-use one.
@@ -332,22 +349,13 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**Nothing uncommitted. D-062 is on `main` and pushed** — `7703041` and two
-status commits behind it, merged from `source-breakdown`, which still exists and
-is identical to `main`. Eight files: `src/report/insights.ts` (`sourceSplit`, and
-`feedsNoVolume` on `DayStat`), `src/report/InsightsView.tsx`,
-`src/report/insights.css`, the two suites that cover it, and three documents.
-Derived at render time, so **no migration and nothing new stored** — it needs
-nothing done to Supabase and it is not part of the cutover.
-
-**It does mean a second service-worker update reaching the phones during the
-cutover.** Harmless on its own — `DB_VERSION` does not move and no column
-changes — but a phone that has not yet flipped to the `app` build now has two
-updates to pick up rather than one. The *Next action* steps are unchanged and
-still in that order.
-
-**`main` was at `3ac8bf7`** before this, and `product-ready-enhancement` is where
-every session between 2026-09-11 and the merge at `52b1fb8` was.
+**D-063 is uncommitted, on `main`** — the insights ranges and the read-back's
+page summary. `src/report/insights.ts` (`Span` is a union now, plus
+`monthsWithData` and the flag roll-up), `InsightsView.tsx`, `insights.css`,
+`src/day/DayScreen.tsx`, `DayPage.tsx`, `day.css`, and two new files —
+`src/day/summary.ts` and `scripts/verify-day-summary.mts`, **a new suite**,
+registered in `package.json`. `verify-insights` and `verify-report` grew checks
+for both. Derived at render time: **no migration, nothing new stored.**
 
 **`0008` has been applied**, and `supabase/README.md` records it. Re-running it
 is the routine way to pick up new rows from `public`; it is forward-only and
@@ -431,7 +439,44 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-24 (latest) — the source chart answers for one day
+### 2026-09-24 (latest) — the report reaches past a week, and a page says what it holds
+
+Two things, one complaint: the app was showing less than it had. D-063.
+
+**The insights range is a shape now, not a number.** `Span` became a union —
+`{days: n}`, `{month: ym}`, `all` — behind a strip of pills: `3d 7d 15d 30d`,
+the months that have entries, then `more` for the rest and `all`. A calendar
+month is not `slice(-30)`, which would take August one day short every time.
+Months are offered from the log rather than generated, so a pill never opens an
+empty screen.
+
+At 30 days the bars are six points wide, so the per-bar value comes off and the
+date labels thin to one in six, anchored to the most recent day. The wet-diaper
+flag rolls up past three days — **the same D-032 rule, printed differently, not
+a fifth rule and not a moved threshold.**
+
+**The read-back's page now summarises what it holds:** milk with its source
+split in words and the widest gap inside the day, diapers with their colours,
+sleep, and a line for weight, temperature, supplements, spit-ups and how many
+notes were written. All of it was already stored and invisible until the table
+was scrolled. It is handed one day, every day, or a picked period by the same
+component, so a gap is only claimed within a single day — across a range the
+widest gap is the night, every time.
+
+`src/day/summary.ts` is new, with `verify-day-summary` as its own suite,
+registered in `package.json`.
+
+**Two questions came in the same message and are now `Q-014` and `Q-015`**, both
+waiting on the owner and neither guessed at: what the daily rhythm should show,
+given that it looks right and nobody acts on it, and which captured-but-unused
+data earns a place on the insights screen. The second was measured rather than
+guessed — **the report reads none of `pounds`, `fahrenheit`, `supplement_name`,
+`severity`, `poop_consistency` or `logged_by`** — and it turned up a defect on
+the way: the growth card matches a digit in the free-text *note* and never looks
+at `pounds`, so a weight typed into the weight field does not appear on it at
+all.
+
+### 2026-09-24 — the source chart answers for one day
 
 The report's *by source* card had a stacked bar and no numbers, which meant a
 ruler and the legend to read a share off it. Its bars are buttons now: tapping a
@@ -469,46 +514,3 @@ The six remaining steps are in *Next action* and none of them are code. The one
 that can actually stop the app is closing it fully on both phones first — an
 installed PWA holding IndexedDB version 2 blocks the upgrade to 3, and
 IndexedDB's answer to that is to wait forever.
-
-### 2026-09-24 — the copy ran, then the recipe for keeping it current deleted the source
-
-`0008` ran. `app` holds the real log: 510 timeslots, 594 events.
-
-Then, following the instruction in `0008`'s own header to delete the copied rows
-from `app` and re-run, the delete landed on `public.event` — **99 events removed
-from the live log the two phones read.** The two schemas carry the same five
-table names one prefix apart.
-
-**Almost all of it came back, and the reason matters more than the incident.**
-`0008` had run a few hours earlier, so `app.event` was holding the deleted rows.
-The copy was the backup. 99 events were restored to `public` from `app`, 12 newer
-moments carried forward, and exactly one event was lost — a 43-minute period
-logged after the copy and deleted before the next one.
-
-**The recipe was mine and the reasoning behind it was sound in isolation**, which
-is the part worth remembering. D-003 leaves no tombstone, so absence is a
-delete's only signal and wholesale replacement is what `db.replaceAll` does for
-that exact reason. Correct by construction — for a program. It was to be carried
-out by one tired person by hand, in a web console, on a schedule, against two
-databases whose tables share every name. Its safety depended on never once
-mis-selecting a schema, which is not a property a procedure can have. D-061
-replaces it with forward-only insert, which cannot remove a row wherever it is
-pointed.
-
-**Drift is now reported rather than resolved.** Forward-only cannot tell a
-deleted moment from an uncopied one, and guessing is what lost the data. `0008`
-§ 7 separates the directions: `public` ahead of `app` is broken and rolls back;
-`app` ahead of `public` is listed for a person to look at.
-
-**What earned its keep.** The count check added the previous day — distinguishing
-a short copy from a long one — was written for a case that looked hypothetical.
-It is what named the damage correctly the next day; without it a blind re-run
-would have reported "copy is short" while `app` was in fact long, and sent the
-investigation to the caregiver mapping.
-
-**Also this session:** `verify-s2`'s settings restore moved into its `finally`,
-proved by injecting a throw where the old restore sat.
-
-**The JSON export is now the most overdue item in the project.** The recovery
-worked because a second copy happened to exist in another schema of the same
-project. That is not a backup, and the free tier keeps none.

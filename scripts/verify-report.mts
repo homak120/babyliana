@@ -80,13 +80,37 @@ const bar = await p.locator('.barFill').first().boundingBox()
 check('a bar is laid out', !!bar && bar.height >= 3 && bar.width > 4,
   bar ? `${Math.round(bar.width)}x${Math.round(bar.height)}` : 'no box')
 
-// --- the range toggle -------------------------------------------------------
+// --- the range strip (D-063) ------------------------------------------------
 check('7d is the default range',
   (await p.locator('.spanPill.on').innerText()).trim() === '7d',
   (await p.locator('.spanPill.on').innerText()).trim())
 await p.getByRole('button', { name: '3d' }).click()
 await p.waitForTimeout(250)
 check('3d takes over', (await p.locator('.spanPill.on').innerText()).trim() === '3d', 'switched')
+
+// The four counted spans, plus a pill for the month the seed lands in. Months
+// are offered from the log rather than generated, so this is also the check
+// that a month with data gets a pill at all.
+const railText = (await p.locator('.spanStrip').innerText()).replace(/\n/g, ' ')
+check('the longer spans are offered', /15d/.test(railText) && /30d/.test(railText), railText)
+check('and the month the log is in', /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/.test(railText), railText)
+check('all time is folded away until asked for',
+  !/\ball\b/.test(railText), railText)
+
+await p.getByRole('button', { name: 'more', exact: true }).click()
+await p.waitForTimeout(200)
+check('more unfolds it', /\ball\b/.test((await p.locator('.spanStrip').innerText()).replace(/\n/g, ' ')),
+  (await p.locator('.spanStrip').innerText()).replace(/\n/g, ' '))
+
+await p.getByRole('button', { name: '30d' }).click()
+await p.waitForTimeout(250)
+check('a month-long span still draws its bars',
+  (await p.locator('.barFill').first().boundingBox())!.width > 2, 'laid out')
+check('and the strip does not push the page sideways',
+  (await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 0,
+  'no overflow')
+await p.getByRole('button', { name: '7d' }).click()
+await p.waitForTimeout(250)
 
 // --- nothing overflows the phone -------------------------------------------
 // Wide content on this screen is a chart, and a chart that pushes the body
@@ -169,6 +193,14 @@ await p.screenshot({ path: 'scripts/shots/insights.png', fullPage: true })
 await p.locator('.modepill').first().click()
 await p.waitForTimeout(250)
 check('the log comes back', (await p.locator('.table').count()) === 1, 'table again')
+
+// --- the page summary (D-063) -----------------------------------------------
+// The tag row was all a page said. This is the rest of what it holds, and the
+// seed has a feed and a change in it, so two of its lines must be there.
+const sum = (await p.locator('.daysum').innerText()).replace(/\n/g, ' ')
+check('the page summarises what it holds', (await p.locator('.daysum').count()) === 1, sum)
+check('the milk line names the volume and the count', /mL over \d+ feed/.test(sum), sum)
+check('and the diaper line counts the change', /\d+ wet|\d+ dirty/.test(sum), sum)
 
 console.log(fail === 0 ? '\n  the insights screen renders' : `\n  ${fail} FAILED`)
 await b.close()

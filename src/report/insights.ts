@@ -10,7 +10,59 @@ import type { Moment } from '../types'
 // projection, the gap arithmetic and the watch-list rules are where this can be
 // quietly wrong, and none of them needs a browser to check.
 
-export type Span = 3 | 7
+/**
+ * What the insights screen is looking at.
+ *
+ * Three shapes rather than a number, because a calendar month is not a count of
+ * days and pretending it is would put "August" one day out whenever a month is
+ * 31 days long. `days` keeps the original meaning — the last N days that have
+ * *entries*, not the last N on the calendar — so a gap in the log does not
+ * silently shorten the window.
+ */
+export type Span =
+  | { kind: 'days'; n: number }
+  | { kind: 'month'; ym: string }
+  | { kind: 'all' }
+
+export const lastDays = (n: number): Span => ({ kind: 'days', n })
+export const monthOf = (ym: string): Span => ({ kind: 'month', ym })
+export const ALL_TIME: Span = { kind: 'all' }
+
+/** Whether two spans are the same one, for marking the selected pill. */
+export const sameSpan = (a: Span, b: Span) =>
+  a.kind === 'days' ? b.kind === 'days' && a.n === b.n
+    : a.kind === 'month' ? b.kind === 'month' && a.ym === b.ym
+      : b.kind === 'all'
+
+const MONTH_NAMES = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+]
+
+/** One month pill: `2026-09` and what to print on it. */
+export type MonthOption = { ym: string; label: string }
+
+/**
+ * The months the log actually has something in, newest first.
+ *
+ * Offered rather than generated, so a pill never opens an empty screen. The
+ * year is printed only when it is not the current one — `Sep` all year, and
+ * `Sep '25` once it stops being obvious.
+ */
+export function monthsWithData(moments: Moment[], now = new Date()): MonthOption[] {
+  const seen = new Set<string>()
+  for (const m of moments) {
+    const d = new Date(m.timeslot.occurred_at)
+    seen.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+  }
+  return [...seen]
+    .sort((a, b) => (a < b ? 1 : -1))
+    .map((ym) => {
+      const year = Number(ym.slice(0, 4))
+      const name = MONTH_NAMES[Number(ym.slice(5, 7)) - 1]
+      return { ym, label: year === now.getFullYear() ? name : `${name} '${String(year).slice(2)}` }
+    })
+}
 
 /** `1h 20m`, `45m`, `2h`. Trailing zero minutes are dropped, unlike
  *  `formatElapsed`, which pads because it sits under a ticking clock. */
@@ -263,10 +315,13 @@ export function buildInsights(moments: Moment[], span: Span, now = new Date()) {
     else byDay.set(iso, [m])
   }
 
-  const days = [...byDay.entries()]
-    .sort(([a], [b]) => (a < b ? -1 : 1))
-    .slice(-span)
-    .map(([iso, ms]) => statsFor(iso, ms, now))
+  const inSpan = [...byDay.entries()].sort(([a], [b]) => (a < b ? -1 : 1))
+  const picked = span.kind === 'days'
+    ? inSpan.slice(-span.n)
+    : span.kind === 'month'
+      ? inSpan.filter(([iso]) => iso.startsWith(span.ym))
+      : inSpan
+  const days = picked.map(([iso, ms]) => statsFor(iso, ms, now))
 
   const today = days.find((d) => d.isToday) ?? null
 
@@ -311,14 +366,26 @@ export function buildInsights(moments: Moment[], span: Span, now = new Date()) {
   // owner's explicit call — see D-032, which narrowed the "no normal-range
   // judgements" rule in CLAUDE.md to make room for exactly these four.
   const flags: Flag[] = []
-  for (const d of complete) {
-    if (d.pees < 6) {
+  // One line per day reads as a list of days at 7. At 30 it is a wall, and a
+  // card that has to be scrolled past stops being a card you look at — so past
+  // three days the *same rule* says how many and when it last happened. Still
+  // D-032's wet-diaper rule, counted the same way; only the printing changes.
+  const dry = complete.filter((d) => d.pees < 6)
+  if (dry.length <= 3) {
+    for (const d of dry) {
       flags.push({
         key: `pee-${d.iso}`,
         icon: 'water_drop',
         text: `${shortDay(d.date)}: ${d.pees} wet ${d.pees === 1 ? 'diaper' : 'diapers'}, below the 6-a-day mark`,
       })
     }
+  } else {
+    const last = dry[dry.length - 1]
+    flags.push({
+      key: 'pee-many',
+      icon: 'water_drop',
+      text: `${dry.length} days under the 6-a-day wet mark, most recently ${shortDay(last.date)}`,
+    })
   }
   if (sincePoopMins !== null && sincePoopMins > 1440) {
     flags.push({ key: 'poop', icon: 'cookie', text: `no poop for ${hm(sincePoopMins)}` })

@@ -2845,3 +2845,70 @@ pointed at.
 
 **Reversal condition.** If the panel is never opened — the chart alone was
 enough — the bars go back to being `div`s and the caption stops offering.
+
+---
+
+## D-063 — the report reaches past a week, and a page says what it holds
+
+**2026-09-24. Owner's request.**
+
+Two changes, recorded together because they are the same complaint: the app was
+showing less than it had.
+
+### The insights range is a shape, not a number
+
+**Decision.** `Span` becomes a union — `{days: n}`, `{month: ym}`, or `all` —
+offered as a strip of pills: `3d 7d 15d 30d`, then the two most recent months
+that have entries, then `more`, which unfolds every remaining month and `all`.
+
+**Why a union.** A calendar month is not a count of days. `slice(-30)` on
+August is one day short of August, every time, and a "30 days" pill that
+silently means something else on a 31-day month is worse than no pill. `days`
+keeps its original meaning — the last N days that have *entries*, not the last
+N on the calendar — so a gap in the log does not shorten the window.
+
+**Months are offered, not generated.** They come from the log, so a pill never
+opens an empty screen, and the year is printed only when it is not the current
+one.
+
+**What a month of bars costs, and what it keeps.** Thirty columns in 358 points
+is six points each — narrower than the number printed above them. Past ten days
+the per-bar value comes off and the date labels thin to one in six, anchored to
+the most recent day so that one is always labelled. The bars themselves stay:
+the shape of the month is what a month view is for.
+
+**The wet-diaper flag rolls up past three days.** One line per day reads as a
+list at 7 and as a wall at 30, and a card that has to be scrolled past stops
+being a card anyone looks at. Past three, the same rule says how many days and
+when the last one was. **This is not a fifth rule and not a changed threshold** —
+D-032 permits exactly four, counted exactly this way, and only the printing
+moved.
+
+### The read-back's page says what it holds
+
+**Decision.** Under the tag row, a grouped summary of everything on the page:
+milk (volume, feed count, `?` count, the source split in words, the widest gap
+inside the day), diapers (wet, dirty, the colours recorded), sleep (total,
+count, longest, and any still running), and a line for everything else —
+weight, temperature, supplements, spit-ups, and how many notes were written.
+
+**Why.** The four-figure tag row was all a page said, so a day carrying a
+weight, a temperature, three supplements and four notes read as identical to a
+day carrying none of them. Everything in the new block was already stored and
+already invisible until the table was scrolled.
+
+**Three things it had to get right.**
+
+- **It is handed one day, every day, or a picked period** — the same component
+  draws all three. So a gap is only claimed within a single day: across a range
+  the widest gap between feeds is the night, every time, which is not news. A
+  range says what a day of it averages instead.
+- **Words, not codes.** `180 breast · 150 formula`, never `B 180 · F 150`.
+  D-034 retired the short codes and this is not where they come back.
+- **Nothing here judges.** A temperature is printed, never compared to a number;
+  a gap is named, never called long. The one threshold on the wet count stays on
+  the insights screen where D-032 put it.
+
+**Reversal condition.** If the summary is scrolled past every time and the tag
+row is what gets read, the block collapses behind a tap. If the month pills go
+unused, they come out and `30d` stands in for them.

@@ -153,6 +153,14 @@ when". Read that first; this list is the checklist view of the same thing.
       feeds it took, and each source's millilitres and whole-percent share,
       rounded so the shares add to exactly 100. Derived in `sourceSplit`;
       nothing new is stored. Covered in `verify-insights` and `verify-report`
+- [x] **CC** **D-063** — the insights range became a shape rather than a number:
+      `3d 7d 15d 30d`, the months that have entries, and `all` behind `more`.
+      Past ten days the bars thin and the wet-diaper flag rolls up, which is
+      D-032's rule printed differently, not a new one
+- [x] **CC** **D-063** — the read-back's page summarises what it holds: milk
+      with its source split and widest gap, diapers with their colours, sleep,
+      and a line for weight, temperature, supplements, spit-ups and notes.
+      `src/day/summary.ts`, with `verify-day-summary` as its own suite
 
 - [ ] **H** Run the coverage checklist: enter all **ten** photographed days —
       8/26 to 9/4, three of them past what the baseline writes up. This is the

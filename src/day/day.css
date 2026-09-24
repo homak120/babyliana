@@ -92,6 +92,41 @@
 
 .day .totals { padding: 0 1.125rem; }
 
+/* The page summary (D-063). A two-column list rather than a paragraph: the
+   keys line up down the left so the eye can drop to `sleep` without reading
+   the milk, which is how the tag row above is read and why it works. */
+.daysum {
+  margin: 0.5rem 0 0;
+  padding: 0 1.125rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1875rem;
+}
+
+.sumRow {
+  display: grid;
+  grid-template-columns: 3.25rem 1fr;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.sumKey {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sumVal {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
 .daylabel {
   padding: 0 1.125rem;
   margin: 0 0 0.375rem;

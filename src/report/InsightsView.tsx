@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { diaperParts } from '../day/cells'
 import { Icon } from '../log/Icon'
-import { buildInsights, hm, shortDay, sourceSplit, type Span } from './insights'
+import {
+  ALL_TIME, buildInsights, hm, lastDays, monthOf, monthsWithData, sameSpan,
+  shortDay, sourceSplit, type Span,
+} from './insights'
 import type { Moment } from '../types'
 
 // The second mode of the report screen. Every figure here is derived at render
@@ -21,6 +24,12 @@ function lastPoopLine(m: Moment): string {
 
 const HOUR_TICKS = [0, 6, 12, 18, 23]
 
+/** The counted spans, shortest first. Months come after these, from the log. */
+const DAY_SPANS = [3, 7, 15, 30]
+
+/** How many month pills stand in the strip before `more` is asked. */
+const MONTHS_SHOWN = 2
+
 const LEGEND: { kind: string; label: string }[] = [
   { kind: 'feed', label: 'feed' },
   { kind: 'poop', label: 'poop' },
@@ -38,6 +47,21 @@ export function InsightsView({
   onSpan: (s: Span) => void
 }) {
   const i = buildInsights(moments, span)
+
+  // The older months and `all` stay folded away until asked for.
+  const [open, setOpen] = useState(false)
+  const months = monthsWithData(moments)
+  const shownMonths = open ? months : months.slice(0, MONTHS_SHOWN)
+
+  // A month of bars is 30 columns in 358 points — six points each, which is
+  // narrower than the number printed over them. Past ten days the per-bar value
+  // comes off and the date labels thin out; the bars themselves stay, because
+  // the shape of a month is the thing a month view is for.
+  const dense = i.days.length > 10
+  const step = Math.max(1, Math.ceil(i.days.length / 6))
+  // Anchored to the last day rather than the first, so the most recent day is
+  // always one of the labelled ones.
+  const labelled = (n: number) => !dense || (i.days.length - 1 - n) % step === 0
 
   // Which day's milk is broken down under the source chart, by iso, or null for
   // the range summary. A span change can drop the day being read; looking it up
@@ -62,22 +86,54 @@ export function InsightsView({
           <p className="insRange">{i.rangeLabel}</p>
           <p className="insCaption">{i.daysLogged}</p>
         </div>
-        <div className="spanToggle">
+      </div>
+
+      {/* The range strip. Recent spans first, then the months the log actually
+          has — offered rather than generated, so a pill never opens an empty
+          screen. Older months and `all` sit behind `more`, because a log that
+          runs for a year would otherwise put six rows of pills above the first
+          chart. */}
+      <div className="spanStrip">
+        {DAY_SPANS.map((n) => (
           <button
             type="button"
-            className={`spanPill ${span === 3 ? 'on' : ''}`}
-            onClick={() => onSpan(3)}
+            key={n}
+            className={`spanPill ${sameSpan(span, lastDays(n)) ? 'on' : ''}`}
+            onClick={() => onSpan(lastDays(n))}
           >
-            3d
+            {n}d
           </button>
+        ))}
+
+        {shownMonths.map((m) => (
           <button
             type="button"
-            className={`spanPill ${span === 7 ? 'on' : ''}`}
-            onClick={() => onSpan(7)}
+            key={m.ym}
+            className={`spanPill ${sameSpan(span, monthOf(m.ym)) ? 'on' : ''}`}
+            onClick={() => onSpan(monthOf(m.ym))}
           >
-            7d
+            {m.label}
           </button>
-        </div>
+        ))}
+
+        {open && (
+          <button
+            type="button"
+            className={`spanPill ${span.kind === 'all' ? 'on' : ''}`}
+            onClick={() => onSpan(ALL_TIME)}
+          >
+            all
+          </button>
+        )}
+
+        <button
+          type="button"
+          className="spanPill more"
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+        >
+          {open ? 'less' : 'more'}
+        </button>
       </div>
 
       {/* 1. Worth a look — absent entirely when no rule fires, which is the
@@ -108,8 +164,8 @@ export function InsightsView({
           {i.avgMl || '—'} <small>mL/day average</small>
         </p>
 
-        <div className="bars">
-          {i.days.map((d) => (
+        <div className={`bars ${dense ? 'dense' : ''}`}>
+          {i.days.map((d, n) => (
             <div className="bar" key={d.iso}>
               <span className="barValue">{d.ml || '—'}</span>
               <div
@@ -117,7 +173,7 @@ export function InsightsView({
                 style={{ height: `${Math.round((d.ml / i.maxMl) * 78)}px` }}
               />
               <span className={`barLabel ${d.isToday ? 'today' : ''}`}>
-                {d.date.getMonth() + 1}/{d.date.getDate()}
+                {labelled(n) ? shortDay(d.date) : ''}
               </span>
             </div>
           ))}
@@ -240,8 +296,8 @@ export function InsightsView({
 
         {i.peeTotal + i.poopTotal > 0 ? (
           <>
-            <div className="bars">
-              {i.days.map((d) => {
+            <div className={`bars ${dense ? 'dense' : ''}`}>
+              {i.days.map((d, n) => {
                 const total = d.pees + d.poops
                 const h = (n: number) => Math.round((n / i.maxDiapers) * 78)
                 return (
@@ -258,7 +314,7 @@ export function InsightsView({
                       )}
                     </div>
                     <span className={`barLabel ${d.isToday ? 'today' : ''}`}>
-                      {d.date.getMonth() + 1}/{d.date.getDate()}
+                      {labelled(n) ? shortDay(d.date) : ''}
                     </span>
                   </div>
                 )
@@ -287,8 +343,8 @@ export function InsightsView({
 
         {i.days.some((d) => d.ml > 0) ? (
           <>
-            <div className="bars">
-              {i.days.map((d) => {
+            <div className={`bars ${dense ? 'dense' : ''}`}>
+              {i.days.map((d, index) => {
                 const h = (n: number) => Math.round((n / i.maxMl) * 78)
                 const on = d.iso === picked
                 return (
@@ -316,7 +372,7 @@ export function InsightsView({
                       )}
                     </span>
                     <span className={`barLabel ${d.isToday ? 'today' : ''}`}>
-                      {shortDay(d.date)}
+                      {labelled(index) ? shortDay(d.date) : ''}
                     </span>
                   </button>
                 )
@@ -410,15 +466,15 @@ export function InsightsView({
               {hm(i.avgSleepMins)} <small>/day average</small>
             </p>
 
-            <div className="bars sleepBars">
-              {i.days.map((d) => (
+            <div className={`bars sleepBars ${dense ? 'dense' : ''}`}>
+              {i.days.map((d, n) => (
                 <div className="bar" key={d.iso}>
                   <div
                     className="barFill sleep"
                     style={{ height: `${Math.round((d.sleepMins / i.maxSleepMins) * 40)}px` }}
                   />
                   <span className={`barLabel ${d.isToday ? 'today' : ''}`}>
-                    {d.date.getMonth() + 1}/{d.date.getDate()}
+                    {labelled(n) ? shortDay(d.date) : ''}
                   </span>
                 </div>
               ))}

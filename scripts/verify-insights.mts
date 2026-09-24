@@ -5,7 +5,10 @@
 // asserts something about the baby rather than merely counting, which D-032
 // allowed deliberately and narrowly — a rule that fires on the wrong day, or
 // silently stops firing, is the failure that matters.
-import { buildInsights, hm, sourceSplit, type Span } from '../src/report/insights.ts'
+import {
+  ALL_TIME, buildInsights, hm, lastDays, monthOf, monthsWithData, sameSpan, sourceSplit,
+  type Span,
+} from '../src/report/insights.ts'
 import type { LogEvent, Moment } from '../src/types.ts'
 
 let failures = 0
@@ -46,7 +49,7 @@ const sleep = () => ev({ type: 'sleep' })
 // "Now" is fixed so the projection and the since-poop clock are deterministic.
 const NOW = new Date(2026, 8, 10, 12, 0) // 9/10, midday — exactly half the day
 
-const build = (ms: Moment[], span: Span = 7) => buildInsights(ms, span, NOW)
+const build = (ms: Moment[], span: Span = lastDays(7)) => buildInsights(ms, span, NOW)
 
 // --- hm ---------------------------------------------------------------------
 
@@ -88,7 +91,7 @@ check('a projection in line with the average has a zero delta',
 
 const earlyNow = new Date(2026, 8, 10, 1, 0) // 01:00 — 4.2% of the day
 const early = buildInsights([...week.filter((m) => !m.timeslot.occurred_at.startsWith('2026-09-10')),
-  at(10, 0, 30, [feed(60)])], 7, earlyNow)
+  at(10, 0, 30, [feed(60)])], lastDays(7), earlyNow)
 // Without the floor, 60 mL at 01:00 would project to ~1440 mL.
 check('the small hours cannot produce a runaway projection',
   early.paceMl === 300, String(early.paceMl))
@@ -233,9 +236,53 @@ check('the growth card is absent when nothing is weighed', build(naps).weights.l
 
 // --- span -------------------------------------------------------------------
 
-check('the 3d span keeps three days', build(week, 3).days.length === 3)
+check('the 3d span keeps three days', build(week, lastDays(3)).days.length === 3)
 check('the 3d span keeps the most recent three',
-  build(week, 3).days[2].isToday === true)
+  build(week, lastDays(3)).days[2].isToday === true)
+
+// --- the longer spans and the months (D-063) --------------------------------
+
+check('15d and 30d reach further back than the log goes',
+  build(week, lastDays(15)).days.length === 7 && build(week, lastDays(30)).days.length === 7,
+  `${build(week, lastDays(15)).days.length}/${build(week, lastDays(30)).days.length}`)
+check('all time is every day there is', build(week, ALL_TIME).days.length === 7)
+
+// A month is a calendar month, not a count of days — the whole reason a span is
+// a shape rather than a number.
+const acrossMonths = [
+  at(1, 8, 0, [feed(60)]),   // 9/1
+  at(3, 8, 0, [feed(60)]),
+  ...week,
+]
+const sept = build(acrossMonths, monthOf('2026-09'))
+check('a month keeps only its own days',
+  sept.days.every((d) => d.iso.startsWith('2026-09')) && sept.days.length === 9,
+  String(sept.days.length))
+check('and an empty month is empty rather than wrong',
+  build(acrossMonths, monthOf('2026-08')).days.length === 0)
+
+const months = monthsWithData(acrossMonths, NOW)
+check('the months offered are the ones with entries in them',
+  months.length === 1 && months[0].ym === '2026-09' && months[0].label === 'Sep',
+  JSON.stringify(months))
+// Newest first, and the year shows only once it stops being this one.
+const older: Moment[] = [{
+  timeslot: {
+    id: 'old', baby_id: 'b', logged_by: 'd',
+    occurred_at: new Date(2025, 11, 4, 8, 0).toISOString(), ended_at: null,
+    recorded_at: '', updated_at: '', updated_by: null, note: null,
+  },
+  events: [feed(60)],
+}]
+const mixedMonths = monthsWithData([...older, ...acrossMonths], NOW)
+check('older years say which year they are',
+  mixedMonths.map((m) => m.label).join(',') === "Sep,Dec '25",
+  JSON.stringify(mixedMonths.map((m) => m.label)))
+
+check('a span knows itself', sameSpan(lastDays(7), lastDays(7)) && sameSpan(ALL_TIME, ALL_TIME))
+check('and knows the ones it is not',
+  !sameSpan(lastDays(7), lastDays(3)) && !sameSpan(monthOf('2026-09'), monthOf('2026-08'))
+  && !sameSpan(lastDays(30), ALL_TIME))
 
 // --- the three charts (D-049) -----------------------------------------------
 

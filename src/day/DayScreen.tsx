@@ -11,7 +11,7 @@ import { usePageSwipe } from '../swipe/usePageSwipe'
 import { PeriodPicker } from './PeriodPicker'
 import { isoOf, rangeLabel, stepDay, type Range } from './period'
 import { InsightsView } from '../report/InsightsView'
-import type { Span } from '../report/insights'
+import { lastDays, type Span } from '../report/insights'
 
 // The read-back. Its whole purpose is that you can hold the phone next to the
 // paper page and see the same thing, so the column order and the inherited date
@@ -67,7 +67,7 @@ export function DayScreen() {
   // Insights is the second mode and carries its own range, so it ignores the
   // date strip and the picked period entirely.
   const [mode, setMode] = useState<'log' | 'insights'>('log')
-  const [span, setSpan] = useState<Span>(7)
+  const [span, setSpan] = useState<Span>(lastDays(7))
 
 
   const refresh = useCallback(() => {

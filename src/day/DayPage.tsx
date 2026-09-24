@@ -2,6 +2,7 @@ import { totalsOf } from '../derive'
 import { Icon } from '../log/Icon'
 import type { Caregiver, Moment } from '../types'
 import { DayRow } from './DayRow'
+import { summarise } from './summary'
 
 // One page of the read-back: the heading, the totals and the table.
 //
@@ -22,6 +23,10 @@ export function DayPage({
   // Totalled over what is actually on this page, so the numbers match the
   // heading rather than the whole log.
   const totals = totalsOf(rows)
+  // The tag row is the glance; this is the rest of what the page holds. A day
+  // with a weight, a temperature and four notes in it looked exactly like a day
+  // without them until the table was scrolled.
+  const lines = summarise(rows)
   const nameFor = (id: string) => caregivers.find((d) => d.id === id)?.name ?? null
 
   return (
@@ -37,6 +42,20 @@ export function DayPage({
           <span className="tag chip">? &times; {totals.unknownVolumes}</span>
         )}
       </div>
+
+      {lines.length > 0 && (
+        <dl className="daysum">
+          {lines.map((l, n) => (
+            // A continuation carries no key of its own — it is the line above
+            // still talking, and repeating "milk" beside it would read as a
+            // second figure for the same thing.
+            <div className="sumRow" key={n}>
+              <dt className="sumKey">{l.key ?? ''}</dt>
+              <dd className="sumVal">{l.text}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
 
       <div className="table">
         <div className="thead">
