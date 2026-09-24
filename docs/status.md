@@ -332,18 +332,21 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**D-062 is uncommitted, on `main`.** Five files: `src/report/insights.ts`
-(`sourceSplit`, and `feedsNoVolume` on `DayStat`), `src/report/InsightsView.tsx`,
-`src/report/insights.css`, and the two suites that cover it —
-`scripts/verify-insights.mts` and `scripts/verify-report.mts`. Derived at render
-time, so **no migration and nothing new stored**: it is safe to sit here while
-the cutover finishes, and safe to ship whenever the owner reviews it.
+**Nothing uncommitted. D-062 sits on `source-breakdown`, pushed and unmerged** —
+`7703041`, eight files: `src/report/insights.ts` (`sourceSplit`, and
+`feedsNoVolume` on `DayStat`), `src/report/InsightsView.tsx`,
+`src/report/insights.css`, the two suites that cover it, and these three
+documents. Derived at render time, so **no migration and nothing new stored**.
 
-**The working tree is on `main`** — not on `product-ready-enhancement`, which is
-where every session since 2026-09-11 has been. `main` is at `52b1fb8`, the merge,
-and is pushed. The branch still exists
-and is now identical to `main`; either is a reasonable place to start the next
-piece of work.
+**It is on a branch rather than on `main` because `main` is what the phones run
+and the cutover is still in flight.** Landing it is `git checkout main && git
+merge source-breakdown`, whenever the six steps in *Next action* are done and
+the owner wants it live. Nothing about it depends on the cutover, and nothing
+about the cutover depends on it.
+
+**`main` is at `3ac8bf7` and is pushed** — not `product-ready-enhancement`,
+which is where every session between 2026-09-11 and the merge at `52b1fb8` was.
+That branch still exists and is identical to `main`.
 
 **`0008` has been applied**, and `supabase/README.md` records it. Re-running it
 is the routine way to pick up new rows from `public`; it is forward-only and
