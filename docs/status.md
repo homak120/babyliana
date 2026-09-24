@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-24 (the report reaches past a week, and a page says what it holds — D-063)
+Last updated: 2026-09-24 (D-063 on `main`; `Q-014` and `Q-015` are open and waiting)
 
 ---
 
@@ -349,13 +349,13 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**D-063 is uncommitted, on `main`** — the insights ranges and the read-back's
-page summary. `src/report/insights.ts` (`Span` is a union now, plus
-`monthsWithData` and the flag roll-up), `InsightsView.tsx`, `insights.css`,
-`src/day/DayScreen.tsx`, `DayPage.tsx`, `day.css`, and two new files —
-`src/day/summary.ts` and `scripts/verify-day-summary.mts`, **a new suite**,
-registered in `package.json`. `verify-insights` and `verify-report` grew checks
-for both. Derived at render time: **no migration, nothing new stored.**
+**Nothing uncommitted.** D-063 is `879435a` on `main`, pushed — the insights
+ranges and the read-back's page summary, with `src/day/summary.ts` and
+`scripts/verify-day-summary.mts` as the two new files. Derived at render time:
+**no migration, nothing new stored**, so it needed nothing done to Supabase.
+
+**It is the second service-worker update of the cutover.** `DB_VERSION` does not
+move and no column changes, so the six steps in *Next action* are unchanged.
 
 **`0008` has been applied**, and `supabase/README.md` records it. Re-running it
 is the routine way to pick up new rows from `public`; it is forward-only and
