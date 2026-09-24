@@ -66,6 +66,15 @@ const check = (label: string, ok: boolean, detail = '') => {
 const sb = supabase!
 const made: string[] = [] // timeslot ids to clean up
 
+// The real baby's settings, taken before the probe overwrites them.
+//
+// Hoisted out of the `try` so the restore in `finally` can reach it. This is
+// the only thing this suite writes that is not a row it created itself — it
+// edits the household's actual `baby.settings`, which is where the feeding
+// cycle lives and what every phone reads its rhythm from.
+let realSettings: unknown = null
+let tookSettings = false
+
 try {
   TEST_CAREGIVER = await createThisCaregiver('verify')
   await sync()
@@ -139,6 +148,11 @@ try {
     wasSet.error?.message ?? 'present')
 
   if (!wasSet.error) {
+    // Taken before the first write, and put back in `finally`. Nothing between
+    // here and there may be trusted to run.
+    realSettings = wasSet.data?.settings ?? null
+    tookSettings = true
+
     const probe = [{ id: 'day', from: 360, to: 1320, gap: 195 }]
     const wrote = await sb.from('baby')
       .update({ settings: { cycles: probe } }).eq('id', BABY_ID)
@@ -164,16 +178,32 @@ try {
       both.data?.settings?.cycles?.[0]?.gap === probe[0].gap
       && both.data?.settings?.somethingElse === 'kept',
       JSON.stringify(both.data?.settings))
-
-    // Put back exactly what was there — including `null`, which is what the
-    // column holds until someone opens a settings screen for real.
-    await sb.from('baby').update({ settings: wasSet.data?.settings ?? null }).eq('id', BABY_ID)
-    const restored = await sb.from('baby').select('settings').eq('id', BABY_ID).single()
-    check('and the real value is put back',
-      JSON.stringify(restored.data?.settings) === JSON.stringify(wasSet.data?.settings ?? null),
-      JSON.stringify(restored.data?.settings))
   }
 } finally {
+  // **The settings go back first, and from here rather than from the `try`.**
+  //
+  // Every other write this suite makes is a row it created and can delete. This
+  // one edits the household's real `baby.settings` — the feeding cycle, the
+  // quick bottle, the supplement prefill, the prep lead — and the restore used
+  // to sit at the end of the `try`, where a failed assertion or a dropped
+  // connection in the four statements before it would skip the restore entirely
+  // and leave the household running on probe values. Nothing would say so: the
+  // suite would report a failure about something else, and the wrong rhythm
+  // would show up on a phone.
+  //
+  // Harmless while `app` held test data. Not once stage 3 copies the real log
+  // onto the row these phones read.
+  //
+  // Put back exactly what was there — `null` included, which is what the column
+  // holds until someone opens a settings screen for real.
+  if (tookSettings) {
+    await sb.from('baby').update({ settings: realSettings }).eq('id', BABY_ID)
+    const restored = await sb.from('baby').select('settings').eq('id', BABY_ID).single()
+    check('and the real value is put back',
+      JSON.stringify(restored.data?.settings) === JSON.stringify(realSettings),
+      JSON.stringify(restored.data?.settings))
+  }
+
   // Timeslots first — caregiver is `on delete restrict` and will refuse while any
   // moment still points at it.
   for (const id of made) await sb.from('timeslot').delete().eq('id', id)

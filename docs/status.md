@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-23 (0008 written — stage 3 is ready to run)
+Last updated: 2026-09-24 (0008 has run; data lost and recovered — D-061)
 
 ---
 
@@ -52,9 +52,10 @@ the client runs entirely on the `app` schema, sign-in is email OTP, onboarding i
 four steps, `device` is `caregiver` throughout, and the hard-coded baby id is
 gone. `public` still has one anon key and a `using (true)` policy on everything —
 unchanged on purpose, because it is the rollback — and it closes at stage 5.
-**Stage 3, copying the real log into `app`, is next and is the first
-irreversible step. Its script is written and has not been run** — `0008`,
-committed 2026-09-23. `docs/tasks.md` § Phase 12 is the list, in dependency
+**Stage 3 has run.** `app` holds the full log — 510 timeslots and 594 events as
+of 2026-09-24, matching `public` exactly. `0008` is forward-only and idempotent,
+so re-running it is how a delta is picked up; there is no delete step and D-061
+explains at some cost why. `docs/tasks.md` § Phase 12 is the list, in dependency
 order.
 
 **A second baby is reachable from the app as of D-060**, which is the first
@@ -69,8 +70,7 @@ offline or with writes pending rather than holding a half-finished swap.
 that was meant to authorise it. Owner's call, recorded so a later session does not
 read it as slippage. **The coverage run still outranks it** — see *Next action*.
 
-**`public` is current through `0006`, `0007` is applied, and `0008` is written
-but not run.** It created a
+**`public` is current through `0006`, and `0007` and `0008` are applied.** It created a
 second schema, `app`, and touched nothing in `public`. **Stage 1 is complete as
 of 2026-09-14** — the migration ran, the six dashboard settings are configured,
 and `npm run auth-check` passes end to end: a real code reaches a real inbox,
@@ -131,6 +131,13 @@ precache sits where it does; the 1024 is excluded, being needed only at install.
 Newest first, and **this is an index, not a record** — `docs/decisions.md`
 carries the reasoning for every one of these, and for everything older.
 
+- **D-061** — the migration is forward-only. The delete-and-recopy recipe in
+  `0008`'s header cost 99 events of real data when the delete landed on `public`
+  instead of `app`: the two schemas carry the same five table names. Almost all
+  of it came back because `0008` had run hours earlier and `app` was holding the
+  rows — the copy was the backup. Drift is now reported rather than resolved,
+  because a forward-only copy cannot tell a deleted moment from an uncopied one
+  and guessing is what lost the data.
 - **D-060** — the household's other babies get a door and a label. The baby's
   name goes in the status row and opens a sheet holding the same picker
   onboarding uses; the event pull is scoped through the timeslot, which with one
@@ -176,50 +183,25 @@ settings screen — and the rest is the owner's judgement. See *Next action*.
 
 ## Next action
 
-**0. Stage 3 — the data migration — is the next migration step, and it is the
-first irreversible one.** 325 timeslots and 395 events in `public`, written by
-two phones over weeks and not recreatable from the paper. Everything up to here
-could be undone by changing nothing. This cannot.
+**0. Stage 3 has run, and `app` now holds the real log.** 510 timeslots and 594
+events, matching `public` exactly as of 2026-09-24. Everything before this could
+be undone by changing nothing; this could not, and the first attempt at keeping
+it up to date cost 99 events — see D-061 and the session log.
 
-**The script exists — `0008_copy_pilot_log.sql`, committed 2026-09-23 and not
-run.** The three questions that were blocking it are answered:
+**Keeping it in step is one action: run `0008` again.** It is forward-only,
+idempotent, and has no delete step. Do it whenever `public` has grown. It reports
+drift — rows in `app` that `public` no longer has, almost always a moment deleted
+in the old app — and removes nothing.
 
-- **Which caregiver each `public.device` becomes** — resolved *by name*, in the
-  SQL, rather than by two UUIDs transcribed by hand. A mistyped id does not
-  fail; it attributes every entry to the wrong parent. The file refuses to run
-  unless every device matches exactly one caregiver.
-- **Which baby id survives** — `app`'s. The earlier recommendation here was to
-  keep `public`'s, and that was wrong: nothing on a pilot phone survives the
-  update holding either id (the old build wrote `babyliana.device_id`, which
-  nothing copies across; the baby id was a constant in the deleted `config.ts`),
-  and `app` answers nothing without a session anyway. Every phone re-onboards at
-  cutover regardless, so matching the ids buys nothing — while rewriting
-  `app.baby.id` would have to carry `baby_member` with it and risks the one row
-  that makes Liana reachable at all.
-- **The test rows** — deleted by the owner, 2026-09-23. `app` now holds the
-  household only: the account, the baby, the membership and two caregivers.
+**One event is missing and will not come back on its own.** The moment at
+`2026-09-24 01:45:00+00`, a 43-minute period logged by Dad, exists in both
+databases with no entry attached. Only two things carry a period (D-020), so it
+was a sleep or a feed. Re-enter it on the phone in the old app, then run `0008`
+once more to carry it across.
 
-**Two things still to do first, in this order.**
-
-1. **The JSON export of `public`** (item 2 below). The only thing standing
-   between a bad `delete` and 395 unrecoverable events.
-2. **Move `verify-s2`'s settings restore into its `finally`.** The earlier note
-   here said both live suites needed hardening to provision their own baby;
-   reading them, that was overstated — every delete names an exact id the run
-   created, there is a header comment forbidding a widened filter, and the
-   cleanup already sits in a `finally`. The real gap is narrower: s2 writes test
-   cycles onto the *real* baby's `settings` and restores them inside the `try`,
-   so a crash in between leaves Liana's feeding cycle set to the probe values.
-   Harmless today, on the row the phones read after the copy. `BABY_ID =
-   babies[0].id` also resolves to Liana once she is the only baby.
-
-**Running it more than once is expected and fine.** `public` keeps growing while
-a phone is still on `main`, and the way to pick up a delta is to delete the
-copied rows and run the whole file again — wholesale replacement, the same rule
-`db.replaceAll` follows, and correct under D-003 where an edit keeps its id and a
-delete leaves no tombstone. The header has the recipe. Better still is to have no
-delta: both phones synced and quiet → copy → both phones onto the new build →
-one final re-copy to sweep what landed in between.
+**The JSON export is now the most overdue item in the project** (item 2 below).
+The recovery worked because a second copy happened to exist in another schema of
+the same Supabase project. That is not a backup, and the free tier keeps none.
 
 **1. The coverage run. This is the gate and it is the owner's.** Enter the
 photographed days from `.specify/memory/paper-log/` into the app on the phone,
@@ -331,9 +313,9 @@ server; none were reachable from a stub.
 seventeen commits ahead of `main` and pushed. `main` at `302ce22` is what the two
 phones run and has not moved since this branch was cut.
 
-**One thing is committed but not run: `0008`.** It is the stage 3 copy, and
-`supabase/README.md` lists it as not yet applied. Writing it is not doing it —
-nothing has moved into `app` and `public` is untouched.
+**`0008` has been applied**, and `supabase/README.md` records it. Re-running it
+is the routine way to pick up new rows from `public`; it is forward-only and
+removes nothing.
 
 **What is deployed where.** `https://babylianav2.vercel.app` builds this branch
 and is where all of the above was tested; `https://babyliana.vercel.app` builds
@@ -410,7 +392,50 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-23 (latest) — stage 3 has a script, and it is not run
+### 2026-09-24 (latest) — the copy ran, then the recipe for keeping it current deleted the source
+
+`0008` ran. `app` holds the real log: 510 timeslots, 594 events.
+
+Then, following the instruction in `0008`'s own header to delete the copied rows
+from `app` and re-run, the delete landed on `public.event` — **99 events removed
+from the live log the two phones read.** The two schemas carry the same five
+table names one prefix apart.
+
+**Almost all of it came back, and the reason matters more than the incident.**
+`0008` had run a few hours earlier, so `app.event` was holding the deleted rows.
+The copy was the backup. 99 events were restored to `public` from `app`, 12 newer
+moments carried forward, and exactly one event was lost — a 43-minute period
+logged after the copy and deleted before the next one.
+
+**The recipe was mine and the reasoning behind it was sound in isolation**, which
+is the part worth remembering. D-003 leaves no tombstone, so absence is a
+delete's only signal and wholesale replacement is what `db.replaceAll` does for
+that exact reason. Correct by construction — for a program. It was to be carried
+out by one tired person by hand, in a web console, on a schedule, against two
+databases whose tables share every name. Its safety depended on never once
+mis-selecting a schema, which is not a property a procedure can have. D-061
+replaces it with forward-only insert, which cannot remove a row wherever it is
+pointed.
+
+**Drift is now reported rather than resolved.** Forward-only cannot tell a
+deleted moment from an uncopied one, and guessing is what lost the data. `0008`
+§ 7 separates the directions: `public` ahead of `app` is broken and rolls back;
+`app` ahead of `public` is listed for a person to look at.
+
+**What earned its keep.** The count check added the previous day — distinguishing
+a short copy from a long one — was written for a case that looked hypothetical.
+It is what named the damage correctly the next day; without it a blind re-run
+would have reported "copy is short" while `app` was in fact long, and sent the
+investigation to the caregiver mapping.
+
+**Also this session:** `verify-s2`'s settings restore moved into its `finally`,
+proved by injecting a throw where the old restore sat.
+
+**The JSON export is now the most overdue item in the project.** The recovery
+worked because a second copy happened to exist in another schema of the same
+project. That is not a backup, and the free tier keeps none.
+
+### 2026-09-23 — stage 3 has a script, and it is not run
 
 Wrote `0008_copy_pilot_log.sql`. It reads `public` and never writes it, so the
 rollback is a `delete` and the two phones on `main` are untouched either way.
@@ -441,6 +466,11 @@ the likeliest cause — a row deleted in `public` — makes `app` long. Both fix
 The owner deleted the `app` test timeslots and events himself, keeping the
 account, baby, membership and both caregivers. That was the third open decision
 and it is closed.
+
+Fixed `verify-s2`'s settings restore the same day, which was the second of the
+two prerequisites. It moved into the `finally`, and the proof was to inject a
+throw where the old restore sat and watch the real value come back anyway. Only
+the JSON export is left before `0008` can run.
 
 **A process note.** Answering a narrow question with three adjacent concerns at
 once cost a round trip: the owner had already worked out that delete-and-recopy
@@ -482,38 +512,3 @@ the picker, and `NamePrompt` had one family's baby name hard-coded in a
 multi-tenant app.
 
 Left uncommitted for review.
-
-### 2026-09-15 — two devices found what no suite could
-
-**Stage 2 is complete and tested for real.** New-user onboarding, a returning
-user on a second device, household scoping across both, realtime between them.
-`npm run verify` is green end to end — 699 checks, exit 0, including `verify-s2`
-and `verify-s8`.
-
-**A moment logged through the sheet never left the phone.** `App` mounted
-`AddSheet` with an `onSaved` that refreshed the list and never called `sync`, so
-the write reached IndexedDB, repainted correctly, and sat in the outbox. No push,
-no realtime event, nothing on the other device. The bar's quick buttons went
-through `afterWrite`, which does sync — hence *only the bar works*.
-
-**No automated check could have seen it.** A local write repaints identically
-whether or not it reached the server; the only difference is on the other phone,
-later. It took two devices and someone noticing that one path behaved differently
-from another. `verify-other` covers it now, and the test was confirmed to fail on
-the old code before being kept.
-
-**The harness is the least-scrutinised part of this project and the loudest.**
-Of five bugs in two days, three were in test tooling: `enterApp` typing a gate
-code that no longer exists, the no-session guard scoped so it broke six offline
-suites, and `verify-auth` calling `signOut()` in its `finally` — revoking the
-session it had just saved, so every restore failed with `session_not_found`,
-which reads exactly like an app bug.
-
-**Two checks encoded "nothing exists yet" as though it were a rule** —
-`verify-s2`'s hard-coded baby id, and `verify-auth` asserting the household sees
-exactly one baby. Both were correct until the system had real data in it, which
-is precisely when a test starts being worth having. Worth watching for a third.
-
-**Supabase rotates refresh tokens**, so `.auth-session.json` was good for one
-restore and then failed. `restoreSession` and the inspector write the replacement
-back now.

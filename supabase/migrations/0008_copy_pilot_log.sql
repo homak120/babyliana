@@ -1,19 +1,24 @@
 -- BabyLiana — stage 3: copy the pilot log from `public` into `app`
 --
--- Run this once in the Supabase SQL Editor. **Safe to re-run**: every insert is
--- `on conflict (id) do nothing` and the final count check compares totals rather
--- than rows inserted, so a second run reports the same numbers and changes
--- nothing.
+-- Run it in the Supabase SQL Editor as often as you like. **Forward-only and
+-- idempotent**: every insert is `on conflict (id) do nothing`, there is no
+-- `delete` anywhere in it, and a run that finds nothing new changes nothing.
+-- Re-running it is how a delta is picked up — see RUNNING IT AGAIN and D-061.
 --
 -- ---------------------------------------------------------------------------
 -- THIS IS THE FIRST IRREVERSIBLE STEP, AND IT ONLY READS `public`
 -- ---------------------------------------------------------------------------
 --
--- 325 timeslots and 395 events written by two phones over weeks of real nights.
--- They cannot be recreated from the paper. Nothing below writes to `public` —
--- not a row, not a column — so the rollback for this file is `delete from
--- app.timeslot where updated_by = 'migration-0008'`, and the two phones running
--- `main` carry on untouched either way.
+-- Hundreds of timeslots and events written by two phones over weeks of real
+-- nights. They cannot be recreated from the paper. Nothing below writes to
+-- `public` — not a row, not a column — so the two phones running `main` carry on
+-- untouched whatever happens here.
+--
+-- There is a rollback, and it is **a supervised one-off, never a routine step**:
+-- `delete from app.timeslot where updated_by = 'migration-0008'`. Run it only
+-- when you have decided to discard the copy, with nothing else in flight, and
+-- read the schema name twice. It is not part of re-running this file, and an
+-- earlier revision of this header that said otherwise cost 99 rows. D-061.
 --
 -- **Take the JSON export first.** It is the only thing standing between a
 -- mistyped `delete` and 395 unrecoverable events, and it is a Phase 12 item in
@@ -47,9 +52,11 @@
 -- `NO ACTION`), and getting it wrong breaks the membership row that is the only
 -- thing making Liana reachable by anyone, including the person running this.
 --
--- **Timeslot and event ids are kept**, which is what makes the file re-runnable,
--- makes a row in `app` verifiably the same row as its twin in `public`, and lets
--- the whole copy be undone by the one `delete` above.
+-- **Timeslot and event ids are kept**, which is what makes the file re-runnable
+-- at all — `on conflict (id) do nothing` needs a stable id to recognise a row it
+-- has already copied. It also makes a row in `app` verifiably the same row as
+-- its twin in `public`, which is what let the recovery on 2026-09-24 match the
+-- two sides up.
 --
 -- ---------------------------------------------------------------------------
 -- THE CAREGIVER MAPPING IS BY NAME, NOT BY PASTED UUID
@@ -65,40 +72,55 @@
 -- not loosen the join.
 --
 -- ---------------------------------------------------------------------------
--- RUNNING IT AGAIN, WHEN `public` HAS GROWN
+-- RUNNING IT AGAIN: FORWARD ONLY, AND THERE IS NO DELETE STEP
 -- ---------------------------------------------------------------------------
 --
 -- The phones stay on `main` until they update, so `public` keeps growing after
--- the first copy. **Delete the tagged copy and run the whole file again** —
--- do not rely on a bare re-run:
+-- the first copy. **Just run this file again.** It inserts what is missing and
+-- touches nothing else. Run it as often as you like.
 --
---   begin;
---   delete from app.timeslot where updated_by = 'migration-0008';
---   -- then the do-block below
---   commit;
+-- **There is deliberately no `delete` anywhere in the migration path, and an
+-- earlier revision of this header got that wrong.** It instructed the reader to
+-- `delete from app.timeslot ...` before each re-run, on the argument that
+-- wholesale replacement is what `db.replaceAll` does and therefore correct by
+-- construction. On 2026-09-24 that instruction cost 99 rows of real data: the
+-- delete was aimed at `app` and landed on `public`, whose tables carry the same
+-- five names one schema over.
 --
--- `on conflict (id) do nothing` handles exactly one of the three things that
--- happen in `public` between copies. New moments are inserted. But **an edit
--- keeps its id** (D-003 updates rows in place), so `do nothing` skips it and
--- `app` silently keeps the stale version; and **a delete leaves no tombstone**,
--- so the row it removed stays in `app` for good.
+-- The lesson is not "be careful with the schema prefix". **A procedure whose
+-- safe operation depends on a tired person never mis-selecting a schema, at
+-- 4am, as routine maintenance, is not a safe procedure** — and this one was run
+-- routinely by design. Forward-only insert cannot remove a row no matter where
+-- it is pointed. That property is worth more than the completeness it gives up.
+-- D-061.
 --
--- Under D-003 absence *is* the signal, and there is no diff to compute. That is
--- why `sync.ts` replaces wholesale rather than incrementally — see the comment
--- on `db.replaceAll`. The delete above is the same rule at the SQL level, and it
--- is correct by construction rather than by remembering which case applies.
+-- The 99 rows came back because this file had run a few hours earlier and
+-- `app.event` still held them. **The copy is the backup**, which is the second
+-- reason not to overwrite it on a schedule.
 --
--- **The tag is what makes it safe**, and it protects two different things.
--- Anything logged in the *new* app carries `updated_by = null` and is never
--- touched. So does a copied row that someone has since **edited** in the new app
--- — `saveMoment` keeps the id and writes `updated_by: null` — so the new app's
--- version survives and the re-copy skips it on conflict. Once a row has been
--- touched on the new side, this file stops overwriting it.
+-- ---------------------------------------------------------------------------
+-- WHAT FORWARD-ONLY DOES NOT DO, AND WHY THAT IS NOW A REPORT
+-- ---------------------------------------------------------------------------
 --
--- **Better: arrange not to have a delta.** Both phones synced and quiet → copy →
--- both phones onto the new build and onboarded → one last delete-and-recopy to
--- sweep whatever landed on `main` in between. Then `public` is frozen and
--- stage 5 closes it.
+-- Three things happen in `public` between runs, and inserting handles two:
+--
+--   New moments      inserted.
+--   Edited moments   D-003 updates in place and keeps the id, so `on conflict
+--                    do nothing` skips it and `app` keeps the older version.
+--   Deleted moments  D-003 leaves no tombstone, so the row stays in `app`.
+--
+-- The last two mean `app` can drift from `public`, and section 7 now **reports**
+-- that drift instead of failing on it. A row present in `app` and absent from
+-- `public` is far more likely to be a moment somebody deleted in the app than a
+-- fault, and the right response is a person looking at it — the same rule the
+-- app itself follows for duplicates: surface it, never resolve it silently.
+--
+-- It still fails hard on the one condition that is unambiguously broken: a row
+-- in `public` that did **not** reach `app` after this ran.
+--
+-- Reconcile the drift once, by hand, at cutover — with both lists in front of
+-- you and nothing else writing. That is one supervised decision instead of a
+-- destructive statement typed on a schedule.
 --
 -- ---------------------------------------------------------------------------
 -- BEFORE YOU RUN IT
@@ -280,37 +302,51 @@ begin
   where b.id = app_baby and pb.id = pub_baby and pb.settings is not null;
 
   -- -------------------------------------------------------------------------
-  -- 7. Refuse a partial copy
+  -- 7. Fail on a short copy; report drift rather than failing on it
   --
-  -- Counted against what is *present* rather than what was inserted, so a second
-  -- run passes on the same numbers instead of reporting zero and failing. A
-  -- shortfall here is almost always the name join in step 2 having dropped a
-  -- device it could not match — but that guard runs first, so reaching this with
-  -- a mismatch means something less obvious, and the whole block rolls back.
+  -- **The two directions are not the same kind of event, and treating them alike
+  -- is what made the earlier version of this file dangerous.**
+  --
+  -- A row in `public` that did not reach `app` is unambiguously broken — the
+  -- name join dropped it, or an insert was refused — and nothing should proceed
+  -- on a partial copy, so that raises and rolls the whole block back.
+  --
+  -- A row in `app` that is no longer in `public` is almost certainly a moment
+  -- somebody deleted in the app. D-003 leaves no tombstone, so a forward-only
+  -- copy cannot know the difference between "deleted" and "not yet copied" — and
+  -- guessing is how a hundred rows of real data go missing. It is reported, in
+  -- full, for a person to look at. The app follows the same rule for duplicates:
+  -- surface it, never resolve it silently.
   -- -------------------------------------------------------------------------
 
-  select count(*) into want_ts from public.timeslot;
-  select count(*) into want_ev from public.event;
+  select count(*) into want_ts from public.timeslot t
+    where not exists (select 1 from app.timeslot a where a.id = t.id);
+  select count(*) into want_ev from public.event e
+    where not exists (select 1 from app.event a where a.id = e.id);
+
+  if want_ts > 0 or want_ev > 0 then
+    raise exception
+      'copy is incomplete: % timeslot(s) and % event(s) in public did not reach app — rolled back. '
+      || 'Check the caregiver name mapping in section 2.', want_ts, want_ev;
+  end if;
+
+  select count(*) into got_ts from app.timeslot a
+    where not exists (select 1 from public.timeslot t where t.id = a.id);
+  select count(*) into got_ev from app.event a
+    where not exists (select 1 from public.event e where e.id = a.id);
+
+  if got_ts > 0 or got_ev > 0 then
+    raise notice
+      'DRIFT: app holds % timeslot(s) and % event(s) that public does not. '
+      || 'Most likely moments deleted in the old app since an earlier run. '
+      || 'Nothing has been removed. Review them before cutover:', got_ts, got_ev;
+    raise notice
+      '  select * from app.timeslot a where not exists '
+      || '(select 1 from public.timeslot t where t.id = a.id);';
+  end if;
+
   select count(*) into got_ts from app.timeslot where updated_by = 'migration-0008';
   select count(*) into got_ev from app.event    where updated_by = 'migration-0008';
-
-  if got_ts <> want_ts then
-    raise exception 'timeslot count mismatch: % copied in app, % in public — rolled back. %',
-      got_ts, want_ts,
-      case when got_ts < want_ts
-        then 'Rows did not come across; check the name mapping.'
-        else 'app holds tagged rows public no longer does — something was deleted there '
-             || 'since the last copy. Delete the tagged copy and re-run; see RUNNING IT AGAIN.'
-      end;
-  end if;
-  if got_ev <> want_ev then
-    raise exception 'event count mismatch: % copied in app, % in public — rolled back. %',
-      got_ev, want_ev,
-      case when got_ev < want_ev
-        then 'Rows did not come across; check that their timeslots did.'
-        else 'app holds tagged rows public no longer does — delete the tagged copy and re-run.'
-      end;
-  end if;
 
   raise notice 'copied % timeslot(s) and % event(s) onto baby %', got_ts, got_ev, app_baby;
 end $$;
@@ -333,12 +369,17 @@ end $$;
 -- Both parents should appear, and the newest rows should be the feeds you
 -- remember from the last night logged on `main`.
 --
--- To undo the whole thing, including the events, which cascade:
+-- To pick up rows logged on `main` since the last run: **run this file again.**
+-- That is the whole procedure. No delete, no preparation, any number of times.
+--
+-- To discard the copy entirely — a deliberate decision, not a maintenance step:
 --
 --   delete from app.timeslot where updated_by = 'migration-0008';
 --
 -- That leaves the household — the account, the baby, the membership and both
--- caregivers — exactly as it was before this file ran.
+-- caregivers — exactly as it was before this file ran. **Read the schema name
+-- twice before running it.** `public` has tables of all the same names, and on
+-- 2026-09-24 that statement was aimed at `app` and landed on `public`. D-061.
 --
 -- **`public` closes at stage 5, not here.** It keeps its one anon key and its
 -- `using (true)` policy on every table until the phones are on the new build,

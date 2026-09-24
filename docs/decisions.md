@@ -2730,3 +2730,75 @@ grown-ups" as a literal, which was true of the only household that existed
 before D-057 and is now a stranger's child's name on someone else's screen.
 
 **Not in scope.** Renaming a baby, and removing one from the household.
+
+---
+
+## D-061 — the migration is forward-only, because a routine delete is not survivable
+
+**2026-09-24. Owner's call, after losing data.**
+
+**Decision.** No step of the `public` → `app` migration deletes anything. `0008`
+is forward-only and idempotent: insert what is missing, `on conflict (id) do
+nothing`, run it as often as you like. Picking up a delta is one action — run the
+file again — with no preparation and nothing destructive in front of it.
+
+The delete-and-recopy recipe that `0008`'s header previously documented is
+withdrawn. A rollback still exists (`delete from app.timeslot where updated_by =
+'migration-0008'`) but is a **supervised one-off for discarding the copy**, never
+a maintenance step.
+
+**What happened.** On 2026-09-24 the owner set out to re-sync a few hours of new
+entries, following the header's instructions: delete the copied rows from `app`,
+then re-run. The delete landed on `public.event` instead — the two schemas carry
+the same five table names — and removed 99 events from the live log the two
+phones read.
+
+Everything but one event came back, and the reason is worth stating: **`0008` had
+run a few hours earlier, so `app.event` held the deleted rows.** The copy was the
+backup. 99 events were restored to `public` from `app`, the 12 newer moments were
+carried forward, and one event — a 43-minute period — was lost because it was
+logged after the copy and deleted before the next one.
+
+**Why the recipe was wrong, and it is not "be careful".** The argument for it was
+sound in isolation: D-003 gives mutable rows and hard deletes with no tombstones,
+so absence is the only signal a delete leaves, and wholesale replacement is what
+`db.replaceAll` does for exactly that reason. Correct by construction — for a
+program.
+
+A program does not mis-select a schema. **This procedure was to be carried out by
+one tired person, by hand, in a web console, on a schedule, against two databases
+whose tables share every name.** Its safe operation depended on never once
+getting that wrong, and that is not a property a procedure can have. The failure
+mode was also silent and delayed: nothing refused, nothing warned, and the damage
+surfaced later as missing rows.
+
+**Forward-only gives up completeness and buys a property worth more: it cannot
+remove a row, wherever it is pointed.** A mis-aimed insert writes rows that
+conflict and do nothing.
+
+**Consequence — drift is now reported, not resolved.** Forward-only cannot
+propagate a delete or an edit, so `app` drifts from `public` whenever a moment is
+deleted or corrected in the old app. `0008` § 7 now separates the two directions,
+which the previous version conflated:
+
+- **`public` has rows `app` does not** → unambiguously broken. Raises and rolls
+  back.
+- **`app` has rows `public` does not** → almost certainly a moment somebody
+  deleted. Reported in full with the query to inspect it, and nothing is removed.
+
+That second case is the app's own rule about duplicates applied one layer down:
+surface it, let the person decide. Reconciliation happens once, supervised, at
+cutover — with both lists visible and nothing else writing — instead of as a
+destructive statement typed on a schedule.
+
+**What earned its keep.** The count check added on 2026-09-23 distinguishes a
+short copy from a long one. Without that, the blind re-run after the accident
+would have reported "copy is short" while `app` was in fact long, and pointed the
+investigation at the caregiver mapping instead of at the missing rows. It was
+written for a case that looked hypothetical and was the thing that named the
+damage correctly a day later.
+
+**Still open.** The JSON export (`docs/tasks.md` Phase 12) remains unbuilt, and
+this incident is the argument for it: the recovery worked because a second copy
+happened to exist in another schema of the same project, which is not a backup
+strategy. A free-tier project keeps no backups at all.
