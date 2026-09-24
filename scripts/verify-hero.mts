@@ -367,7 +367,7 @@ const noOver = await p.evaluate(
 check('and the whole lead stays inside the page', noOver === 0, `${noOver}px overflow`)
 
 // The name editor lives in the status row, not in settings (D-056). `enterApp`
-// named this device at first run, so the button reads `edit`; an install that
+// named this caregiver at first run, so the button reads `edit`; an install that
 // skipped the step would read `name this phone`, which is the whole reason it is
 // out here where it can be seen.
 check('the status row carries the name editor',
@@ -399,7 +399,7 @@ check('and every section says whose setting it is',
   && (await p.locator('.scope.local').count()) === 1,
   `${await p.locator('.scope.shared').count()} shared, ${await p.locator('.scope.local').count()} local`)
 // **Neither a count nor a kind of hardware**, and both were shipped once.
-// "both phones" capped a household that `device` does not cap — anything
+// "both phones" capped a household that `caregiver` does not cap — anything
 // entering with the shared baby id mints its own row. "every phone" then named
 // the owner's hardware: this is a PWA, so it installs on a laptop or a tablet
 // just as well. Two separate assumptions, one chip, both guarded here.
@@ -414,7 +414,7 @@ check('and name no hardware and no count',
 // row (D-056), so nothing in here is typed and the no-save-button rule holds
 // for every control on the screen.
 check('the name is not a setting',
-  (await p.locator('.setsheet [aria-label="name this device"]').count()) === 0,
+  (await p.locator('.setsheet [aria-label="name this caregiver"]').count()) === 0,
   'no name field in settings')
 // Both windows, so the check does not depend on which one the clock is in
 // when the suite runs — the fault this repo has spent two days removing.

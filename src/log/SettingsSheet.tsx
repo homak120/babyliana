@@ -21,19 +21,19 @@ import { Icon } from './Icon'
  *
  * **The labels name neither a count nor a kind of hardware**, and both of those
  * were shipped and corrected. It read `both phones` first: nothing caps the
- * household at two, since `device` has no limit and anything entering with the
+ * household at two, since `caregiver` has no limit and anything entering with the
  * shared baby id mints its own row. Then `every phone`: this is a PWA, so it
  * installs on a laptop or a tablet as readily as a phone, and the word was
  * describing the owner's hardware rather than the rule.
  *
- * **`only here`, not `just you`.** The local side is per *device*, not per
+ * **`only here`, not `just you`.** The local side is per *caregiver*, not per
  * person — the clock format is in `localStorage` — so the same person on a
  * laptop and a phone gets two answers. `only here` is true of a place; `just
  * you` would be a claim about a person that the storage does not make.
  *
- * That side held this device's name too until D-056 took it back to the status
+ * That side held this caregiver's name too until D-056 took it back to the status
  * row. What is left here is a preference; a name is an *identity*, and the
- * thing it most has to do is ask an unnamed device for one.
+ * thing it most has to do is ask an unnamed caregiver for one.
  *
  * **No save button.** Every control commits as you touch it: local write, the
  * card repaints, the push follows. That is the rule the whole app runs on, and
@@ -324,8 +324,8 @@ export function SettingsSheet({ onClose, onClockChange }: {
             ))}
           </div>
         </div>
-        {/* This device's name was here too and is back in the status row
-            (D-056). It is not a setting — it is the question a device that has
+        {/* This caregiver's name was here too and is back in the status row
+            (D-056). It is not a setting — it is the question a caregiver that has
             never been named has to be asked, and a settings screen cannot ask
             anything. */}
       </Section>

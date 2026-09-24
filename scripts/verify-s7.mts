@@ -221,7 +221,7 @@ check('sleeping still wins when nothing is feeding',
   mascotState(30, 'night', false, true, false) === 'sleeping')
 check('the date strip lists each day once, newest first',
   daysWithEntries([...day, nextDay]).length === 2)
-check('an unnamed device shows no initial rather than a UUID', initialOf(null) === null)
+check('an unnamed caregiver shows no initial rather than a UUID', initialOf(null) === null)
 check('a named one shows its first letter', initialOf('mona') === 'M')
 
 // --- the whole day, as a page ----------------------------------------------

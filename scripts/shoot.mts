@@ -28,7 +28,7 @@ const browser = await chromium.launch()
 const ctx = await browser.newContext(iphone)
 const page = await ctx.newPage()
 
-// Nothing here reaches Supabase. Completing the welcome creates a device, and
+// Nothing here reaches Supabase. Completing the welcome creates a caregiver, and
 // with sync live that landed a real row in the production database on every
 // run — which is exactly what happened, three times. Screenshots are about
 // pixels; the local write path is enough for them.
@@ -44,7 +44,7 @@ console.log('app:')
 await page.goto(APP, { waitUntil: 'networkidle' })
 await shot('app-01-first')
 
-// Complete setup for real. There is no flag to set any more — the device id
+// Complete setup for real. There is no flag to set any more — the caregiver id
 // only exists once a name is submitted, which is the point.
 await page.getByPlaceholder('Anya').fill('Anya')
 await page.getByRole('button', { name: 'start logging' }).click()

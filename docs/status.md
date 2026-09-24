@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-11
+Last updated: 2026-09-24 (0008 has run; data lost and recovered — D-061)
 
 ---
 
@@ -18,12 +18,68 @@ Last updated: 2026-09-11
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. Everything through D-055 is committed
-and pushed; **D-056 is in the working tree, uncommitted** — see *In flight*.
+delivered by the second design handoff. **719 checks pass across twenty-three
+suites** — `verify-baby` is the new one — and everything through D-056 is
+committed and pushed to `main`.
 
-**The schema is current through `0006`, and every migration is applied.**
-`supabase/README.md` is the record of what exists and when each one ran — trust
-it over this file for migration state. Two rules sit around it. **Additive
+**Work has moved onto a branch, and this is the first one the repo has had.**
+`product-ready-enhancement`, cut from `302ce22` on 2026-09-11. Every commit
+before it landed on `main` directly, so nothing here assumes a branch: `main` is
+still what is deployed and what the phones run, and a branch that is not merged
+changes nothing on them.
+
+**The branch has an origin of its own now.** `https://babylianav2.vercel.app`
+builds `product-ready-enhancement`; `https://babyliana.vercel.app` builds `main`
+and is what the two phones run. Both are public; only the second was ever
+announced. **It is a staging front end, not a staging environment** — one
+Supabase project sits under both origins, and that is deliberate: a second
+project would turn stage 3's copy into an export and an import across two
+endpoints instead of one statement across two schemas.
+
+**Since stage 2 the two origins are genuinely separated, by schema rather than by
+project.** v2 reads and writes `app`; `main` still reads and writes `public`. Up
+until the schema flip v2 was a second front door onto the real log — it is not
+any more, and a tap on it now lands in test data.
+
+**The branch has a scope now: multi-tenancy (D-057, Q-013 closed).** Many
+accounts per baby, many babies per account, **open signup**, and **sign in to
+join a baby — never to log an event**. That supersedes D-022's one hard-coded
+baby and rewrites the *Identity* section of `technical-constraints.md`; the
+non-negotiable about logging survives, narrowed to onboarding.
+
+**The gate on it was RLS, and that gate is now shut in `app`.** Stage 2 is done:
+the client runs entirely on the `app` schema, sign-in is email OTP, onboarding is
+four steps, `device` is `caregiver` throughout, and the hard-coded baby id is
+gone. `public` still has one anon key and a `using (true)` policy on everything —
+unchanged on purpose, because it is the rollback — and it closes at stage 5.
+**Stage 3 has run.** `app` holds the full log — 510 timeslots and 594 events as
+of 2026-09-24, matching `public` exactly. `0008` is forward-only and idempotent,
+so re-running it is how a delta is picked up; there is no delete step and D-061
+explains at some cost why. `docs/tasks.md` § Phase 12 is the list, in dependency
+order.
+
+**A second baby is reachable from the app as of D-060**, which is the first
+feature to use what D-057's schema made possible rather than only migrating onto
+it. The status row names the baby being logged for and is the way to the others;
+the picker is shared with onboarding rather than copied. Three things the switch
+had to get right are in D-060 — local rows outliving the id, a pull landing after
+the id moved, and `baby.settings` following the install across. It refuses while
+offline or with writes pending rather than holding a half-finished swap.
+
+**Phase 12 is running ahead of Phases 8-11**, which are the solo run and the gate
+that was meant to authorise it. Owner's call, recorded so a later session does not
+read it as slippage. **The coverage run still outranks it** — see *Next action*.
+
+**`public` is current through `0006`, and `0007` and `0008` are applied.** It created a
+second schema, `app`, and touched nothing in `public`. **Stage 1 is complete as
+of 2026-09-14** — the migration ran, the six dashboard settings are configured,
+and `npm run auth-check` passes end to end: a real code reaches a real inbox,
+`create_baby` works, RLS scopes rows to one household, and **an unauthenticated
+client reads nothing at all from `app`**. That last one is the fourth
+non-negotiable actually enforced for the first time; `public` still fails it by
+design and closes at stage 5. `supabase/README.md` is the
+record of what exists and when each one ran — trust it over this file for
+migration state. Two rules sit around it. **Additive
 only** (D-039): no column is ever dropped or narrowed again, because "after
 every phone has updated" is not an observable moment when the service worker
 updates lazily, there is no forced update, and one of the phones belongs to the
@@ -40,7 +96,8 @@ push-then-reconcile sync with Supabase.
   (elapsed / next feeds / mascot) chosen from a rail beside it, a prep-timer
   pill, totals, and the recent list with swipe-to-edit-and-delete behind a
   confirm sheet. The status row carries the clock, who is logging, the sync
-  state, and the button that names this device.
+  state, the name of the baby being logged for — which is also the way to the
+  household's other babies (D-060) — and the button that names this device.
 - **Report** — the paper-shaped day table with a scrolling date rail and a
   period picker, plus an insights mode: milk intake, daily rhythm, wet and poop,
   diapers a day, milk by source, poop colours, sleep, and growth when there is
@@ -52,8 +109,10 @@ push-then-reconcile sync with Supabase.
 - **The bar** — a bottle and a bedtime button that write straight to the log, a
   diaper that opens the sheet, and `+` for everything else. Each of the first
   two becomes an *end* pill while its period is running.
-- **First run** — a photograph gate, name entry, and a second gate code that
-  hands a reinstalled phone its old identity back rather than minting a new one.
+- **First run** — email, a six-digit code, which baby, and which caregiver. A
+  household with one baby is not asked to pick it; a reinstalled phone takes its
+  old caregiver back rather than minting a second one. The photograph gate and
+  both codes are gone (D-059).
 - **Settings** — five sections behind the card's `tune` button: the quick
   bottle's volume and source, the supplement prefill, the prep-prompt lead, the
   feeding cycle, and this device's clock format. Each row says whether
@@ -72,6 +131,19 @@ precache sits where it does; the 1024 is excluded, being needed only at install.
 Newest first, and **this is an index, not a record** — `docs/decisions.md`
 carries the reasoning for every one of these, and for everything older.
 
+- **D-061** — the migration is forward-only. The delete-and-recopy recipe in
+  `0008`'s header cost 99 events of real data when the delete landed on `public`
+  instead of `app`: the two schemas carry the same five table names. Almost all
+  of it came back because `0008` had run hours earlier and `app` was holding the
+  rows — the copy was the backup. Drift is now reported rather than resolved,
+  because a forward-only copy cannot tell a deleted moment from an uncopied one
+  and guessing is what lost the data.
+- **D-060** — the household's other babies get a door and a label. The baby's
+  name goes in the status row and opens a sheet holding the same picker
+  onboarding uses; the event pull is scoped through the timeslot, which with one
+  baby was the same set and with two was not. The switch flushes, moves the id,
+  empties local state and pulls, in that order, and refuses while offline or with
+  writes pending — D-058 is about never blocking a write, and this is not one.
 - **D-056** — the device-name editor goes back to the status row, reversing
   half of D-055. The clock format stays in settings. A settings screen answers
   questions and cannot ask one: the button labels itself *name this phone* until
@@ -111,6 +183,26 @@ settings screen — and the rest is the owner's judgement. See *Next action*.
 
 ## Next action
 
+**0. Stage 3 has run, and `app` now holds the real log.** 510 timeslots and 594
+events, matching `public` exactly as of 2026-09-24. Everything before this could
+be undone by changing nothing; this could not, and the first attempt at keeping
+it up to date cost 99 events — see D-061 and the session log.
+
+**Keeping it in step is one action: run `0008` again.** It is forward-only,
+idempotent, and has no delete step. Do it whenever `public` has grown. It reports
+drift — rows in `app` that `public` no longer has, almost always a moment deleted
+in the old app — and removes nothing.
+
+**One event is missing and will not come back on its own.** The moment at
+`2026-09-24 01:45:00+00`, a 43-minute period logged by Dad, exists in both
+databases with no entry attached. Only two things carry a period (D-020), so it
+was a sleep or a feed. Re-enter it on the phone in the old app, then run `0008`
+once more to carry it across.
+
+**The JSON export is now the most overdue item in the project** (item 2 below).
+The recovery worked because a second copy happened to exist in another schema of
+the same Supabase project. That is not a backup, and the free tier keeps none.
+
 **1. The coverage run. This is the gate and it is the owner's.** Enter the
 photographed days from `.specify/memory/paper-log/` into the app on the phone,
 against the checklist in `coverage-requirement.md`. **Ten days, not seven** — the
@@ -127,11 +219,11 @@ item in the project.
 - ~~A settings screen~~ — **done, D-055.** Export now has somewhere to live,
   which was half the reason it was on this list.
 
-**3. Three owner decisions, none blocking:** Q-003 (mascot identity and the
-rights caution), Q-008 (the final name, which gets dearer with every asset
-carrying it), Q-006 (which of the *remaining* secondary types earned promotion —
-sleep already went, by design in D-029 rather than by the solo run; weight,
-temperature, supplements and spit-up are still answered by use, not by thinking).
+**3. Three owner decisions, none blocking.** Q-013 is closed — D-057. Q-003 (mascot identity and the rights caution), Q-008
+(the final name, which gets dearer with every asset carrying it), Q-006 (which
+of the *remaining* secondary types earned promotion — sleep already went, by
+design in D-029 rather than by the solo run; weight, temperature, supplements
+and spit-up are still answered by use, not by thinking).
 
 **4. Q-004 runs itself.** Whether Safari evicts IndexedDB on a backgrounded
 phone. The clock is running; nobody needs to do anything.
@@ -158,23 +250,105 @@ Read `CLAUDE.md` first, then this file. Beyond that:
   The README said the elapsed hero was 64px and the mascot 108px; the prototype
   draws 44px in a 100×96 slot. Following the prose broke the layout twice.
 
+## Stage 2 is done, and verified against the real thing
+
+**Onboarding works end to end on the deployed staging app.** Driven through
+`scripts/inspect-onboarding.mts`, which seeds a real session and reports what the
+network actually did rather than what a stub agreed to:
+
+```
+200  GET  /auth/v1/user                           session valid
+200  GET  /rest/v1/baby                           empty -> "who are we logging for?"
+200  POST /rest/v1/rpc/create_baby                Liana
+200  GET  /rest/v1/caregiver                      empty -> "what should we call you?"
+201  POST /rest/v1/caregiver?columns=...user_id   Dad
+200  GET  timeslot / event / baby                 the log opens, cloud_done
+```
+
+**`verify-s2` and `verify-s8` are green**, which they had not been since the
+schema flip. They are the two that hit the live database, and `verify-s2`'s first
+assertion — *caregiver reached the server* — is exactly the one that would have
+caught the `user_id` bug before a person ever saw it.
+
+**Then it was tested on two real devices, which found things no suite could.**
+New-user onboarding, a returning user on a second device, household scoping
+across both, and realtime between them. All pass.
+
+**The one that matters: a moment logged through the sheet never left the phone.**
+`App` mounted `AddSheet` with an `onSaved` that refreshed the list and bumped a
+counter and did not call `sync`. The write reached IndexedDB, the screen
+repainted correctly, and it sat in the outbox — no push, so no realtime event, so
+the other device learned nothing. The bar's quick buttons were fine because they
+go through `afterWrite`, which is why it presented as *only the bar works*.
+
+**It was invisible to every automated check, and that is the lesson.** A local
+write repaints identically whether or not it reached the server; the only
+observable difference is on the other phone, later. `verify-other` covers it now
+by asserting a request actually went out, and that test was confirmed to fail on
+the old code before being kept. `recordPushes` in `scripts/ui.mts` is a helper
+rather than an inline stub because this is a class of bug, not one instance.
+
+**Three call sites mount that sheet and only one drifted.** The other two, both
+in `LogScreen`, called `sync`. The fix is to share `afterWrite` rather than
+hand-roll two thirds of it, so a fourth cannot drift the same way.
+
+**Five bugs in two days, and three were in test tooling, not the app.**
+`enterApp` typing a gate code that no longer exists; the no-session guard scoped
+so it broke six offline suites; and `verify-auth` calling `signOut()` in its
+`finally`, revoking the session it had just saved so every restore failed with
+`session_not_found` — which reads like an app bug and is not. Add to those two
+checks that encoded *"nothing exists yet"* as if it were a rule: `verify-s2`'s
+hard-coded baby id, and `verify-auth` asserting the household sees exactly one
+baby. Both were correct until the system had real data in it, which is when a
+test is supposed to start being useful. **The harness gets the least scrutiny and
+has produced the most false alarms.**
+
+**The app's own two were `caregiver.user_id` and the blocked IndexedDB upgrade**,
+plus the sheet not syncing. All three needed either a real phone or a real
+server; none were reachable from a stub.
+
 ## In flight
 
-**D-056 — the name editor back in the status row.** Uncommitted, complete, and
-verified. `LogScreen` regains `NamePrompt` and the `.namebtn`; `SettingsSheet`
-loses the name row and the `devices` / `onRenamed` props; `.namebtn` comes back
-to `log.css`; `verify-hero` gains three checks — the button is in the status
-row, its sheet commits on a save button, and settings holds no name field.
-Docs: D-056 added and D-055 amended where it claimed the name, plus
-`settings.md`, `tasks.md`, and this file.
+**Nothing.** The working tree is clean and `product-ready-enhancement` is
+seventeen commits ahead of `main` and pushed. `main` at `302ce22` is what the two
+phones run and has not moved since this branch was cut.
 
-Nothing at the data layer moved. `renameThisDevice` and `verify-s9` are
-unchanged — this was only ever about where the field is.
+**`0008` has been applied**, and `supabase/README.md` records it. Re-running it
+is the routine way to pick up new rows from `public`; it is forward-only and
+removes nothing.
+
+**What is deployed where.** `https://babylianav2.vercel.app` builds this branch
+and is where all of the above was tested; `https://babyliana.vercel.app` builds
+`main`. Both public, only the second announced.
+
+**One credential lives outside git.** `.auth-session.json`, gitignored, holding a
+real refresh token for the household account. `npm run auth-check` writes it and
+`verify-s2`/`verify-s8` restore it, because `app` answers nothing without a
+session and an OTP needs a human with an inbox. Deleting it stops those two
+suites and breaks nothing else.
 
 This section records **what is sitting uncommitted and why**, so a cold session
 can read `git status` and know what it is looking at. It is not a changelog:
 once work is committed its entry comes out, and `docs/decisions.md` carries the
 reasoning from then on.
+
+## A cutover hazard, found by testing
+
+**`DB_VERSION` 2 → 3 blocks on any connection still holding version 2**, and
+IndexedDB's answer to that is to wait forever — no error, no rejection. Found the
+first time a real person walked the new first run: the button greyed out and
+stayed that way, with nothing in the console.
+
+**It will recur at stage 4, on the phones, and cannot be prevented from here.**
+The `blocking` handler releases a held connection, but only from the side running
+the *new* code — and at cutover the thing holding version 2 is the old build,
+which does not have it. An installed PWA sitting backgrounded is enough.
+
+What exists instead is a way through: the open races a five-second timeout, the
+failure is broadcast once, and `App` renders a screen naming the cause with a
+reload button. So the outcome is "close your other tabs" rather than an app that
+stops. **Tell both parents to fully close the app once on cutover day**; it costs
+a sentence and saves the one support call nobody can answer at 4am.
 
 ## Open threads
 
@@ -218,128 +392,123 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-11 (latest) — the name editor goes back to the status row
+### 2026-09-24 (latest) — the copy ran, then the recipe for keeping it current deleted the source
 
-**Half of D-055 is reversed, deliberately and by the owner** (D-056). The `tune`
-sheet keeps the clock format; the device-name row comes out of it and the
-status-row button that used to open a `NamePrompt` comes back, in the same
-place, with the same self-labelling — *name this phone* until there is a name,
-*edit* after.
+`0008` ran. `app` holds the real log: 510 timeslots, 594 events.
 
-**The argument that settled it: a settings screen answers questions, it cannot
-ask one.** Inside settings, an unnamed install looks exactly like a named one
-until someone opens the sheet and scrolls to the last of five sections. The
-button is an advertisement on the home screen, and the comment that shipped with
-it in the first place had already said so — without it a name set at first run
-could never be changed.
+Then, following the instruction in `0008`'s own header to delete the copied rows
+from `app` and re-run, the delete landed on `public.event` — **99 events removed
+from the live log the two phones read.** The two schemas carry the same five
+table names one prefix apart.
 
-**The second reason was found reading the code, not the screen.** In settings
-the field committed on `blur`, and the sheet is `position: fixed; inset: 0` with
-no backdrop, so the only ordinary way out fires blur and saves. Backgrounding
-the app mid-word does not. Every other control in there is a tap that cannot be
-half-done, which is what makes commit-on-touch safe for them and not for a text
-field. `✕` discards and `save` writes, and that is not an exception to the
-no-save-button rule — it is why the rule works where it applies.
+**Almost all of it came back, and the reason matters more than the incident.**
+`0008` had run a few hours earlier, so `app.event` was holding the deleted rows.
+The copy was the backup. 99 events were restored to `public` from `app`, 12 newer
+moments carried forward, and exactly one event was lost — a 43-minute period
+logged after the copy and deleted before the next one.
 
-**694 checks pass across twenty-one suites.** Three of them are new, in
-`verify-hero`: the button is in the status row, the sheet it opens has a save
-button, and settings holds no field labelled *name this device*. The existing section and scope-chip counts still hold, because the
-*only on this device* section survives with the clock toggle in it.
+**The recipe was mine and the reasoning behind it was sound in isolation**, which
+is the part worth remembering. D-003 leaves no tombstone, so absence is a
+delete's only signal and wholesale replacement is what `db.replaceAll` does for
+that exact reason. Correct by construction — for a program. It was to be carried
+out by one tired person by hand, in a web console, on a schedule, against two
+databases whose tables share every name. Its safety depended on never once
+mis-selecting a schema, which is not a property a procedure can have. D-061
+replaces it with forward-only insert, which cannot remove a row wherever it is
+pointed.
 
-**Nothing at the data layer moved.** `renameThisDevice` and `verify-s9` are
-untouched. The only prose consequence worth noting is that *only here* no longer
-has the name as half of its justification — it is the clock format alone, which
-is still per device rather than per person.
+**Drift is now reported rather than resolved.** Forward-only cannot tell a
+deleted moment from an uncopied one, and guessing is what lost the data. `0008`
+§ 7 separates the directions: `public` ahead of `app` is broken and rolls back;
+`app` ahead of `public` is listed for a person to look at.
 
-### 2026-09-11 — the tune sheet becomes a settings screen
+**What earned its keep.** The count check added the previous day — distinguishing
+a short copy from a long one — was written for a case that looked hypothetical.
+It is what named the damage correctly the next day; without it a blind re-run
+would have reported "copy is short" while `app` was in fact long, and sent the
+investigation to the caregiver mapping.
 
-**Three more shared settings, and no migration** (D-055). The quick bottle's
-volume and source, the supplement prefill, and the prep-prompt lead are keys on
-`baby.settings` now. That is D-052 paying off exactly as designed: a key per
-setting is no migration, where a column per setting would have been three — and
-three pushes that could not go out ahead of them.
+**Also this session:** `verify-s2`'s settings restore moved into its `finally`,
+proved by injecting a throw where the old restore sat.
 
-**The bottle default earned its place first, and D-053 is why.** While the
-bottle opened a sheet, 60 mL was a prefill: visible, overwritable, wrong at no
-cost. Since D-053 it writes straight to the log, so a wrong default is a wrong
-*row*, fixed by a swipe-edit afterwards. The setting is what stops the one-tap
-entry from lying.
+**The JSON export is now the most overdue item in the project.** The recovery
+worked because a second copy happened to exist in another schema of the same
+project. That is not a backup, and the free tier keeps none.
 
-**`cycles.ts`'s bespoke trio became a registry.** `hydrateCycles` /
-`isDefaultCycles` / `same` was right for one setting and would have been four
-copies drifting apart at four. Each key now declares its default, its parse and
-its comparison, and one `hydrate` walks them.
+### 2026-09-23 — stage 3 has a script, and it is not run
 
-**The interesting part is what `parse` returns for junk: null, not the
-default.** A row carrying an empty cycle list or a volume of zero means
-*nothing*, and reading it as the default would let one phone's corrupt write
-quietly reset a setting the other had deliberately changed. `hydrate` skips the
-key. The old `hydrateCycles` had that guard inline and it would have been lost
-in the generalisation — `verify-s3` now checks all three junk shapes.
+Wrote `0008_copy_pilot_log.sql`. It reads `public` and never writes it, so the
+rollback is a `delete` and the two phones on `main` are untouched either way.
 
-**And the reconcile lost its early return**, which was invisible while `cycles`
-was the only key: it stopped at the first adopted value, so a row carrying a
-cycle but no bottle default would never have pushed the bottle up.
+**The advice this file is built on reversed during the session, and that is the
+thing to carry forward.** The earlier recommendation — recorded in this file —
+was to keep `public`'s baby id so the copy would be a straight insert. Checking
+the client killed it: `caregiver-id.ts` reads only `babyliana.caregiver_id` and
+the old build wrote `babyliana.device_id`, which nothing copies across; the baby
+id was a constant in the deleted `config.ts`; and `0007` grants to
+`authenticated` only. So **nothing on a pilot phone survives the update holding
+either id**, every phone re-onboards at cutover regardless, and matching the ids
+buys nothing while rewriting `app.baby.id` risks the `baby_member` row that makes
+Liana reachable at all. The copy remaps instead.
 
-**No save button.** Every control commits on the tap — local write, repaint,
-push behind. A save button would also have been a regression on the clock
-toggle, which has always applied instantly. The *push* debounces 600ms so
-holding `+` does not queue twenty row writes; the local write never does.
+The caregiver mapping joins on *name* rather than on pasted UUIDs, because a
+mistyped id does not fail — it attributes every entry to the wrong parent, and
+nobody would notice. Three guards run before any insert, and a count mismatch
+rolls the whole block back.
 
-**Every row says whose it is.** With one shared setting, "the cycle syncs" was
-something you knew. With four, changing the bottle default and having the other
-parent's phone start logging 90 mL is a surprise. The clock format and the
-device's name are in the same screen and marked *only here* — they did not move
-into `baby.settings` and must not.
+**Two corrections to earlier claims of mine, both found by reading rather than
+assuming.** `verify-s2`/`verify-s8` are more careful than this file said —
+exact-id deletes, cleanup in a `finally` — and the real gap is narrower and
+different: s2 restores the real baby's settings inside its `try`. And my own
+count check reported "copy is short" for a mismatch in *either* direction, when
+the likeliest cause — a row deleted in `public` — makes `app` long. Both fixed.
 
-**Six suites changed, and two labels were wrong before.** The cycle sheet said
-"less often" on the button that *shortens* the gap, which feeds her more often;
-the generic stepper says `decrease`/`increase`, which describes the number and
-cannot be inverted. And the clock toggle's label named the format it would
-switch *to* — a segmented control shows both and marks the live one instead.
+The owner deleted the `app` test timeslots and events himself, keeping the
+account, baby, membership and both caregivers. That was the third open decision
+and it is closed.
 
-**A third label was wrong and took two goes to fix, both caught by the owner
-after the push.** The scope chip read *both phones* — but nothing caps the
-household at two, since `device` has no limit and anything entering with the
-shared baby id mints its own row. Corrected to *every phone*, which was the same
-mistake one level down: this is a PWA, so it installs on a laptop or a tablet as
-readily as a phone, and the word named the owner's hardware rather than the
-rule.
+Fixed `verify-s2`'s settings restore the same day, which was the second of the
+two prerequisites. It moved into the `finally`, and the proof was to inject a
+throw where the old restore sat and watch the real value come back anyway. Only
+the JSON export is left before `0008` can run.
 
-It reads **everyone / only here** now, with the rule written down in
-`settings.md`: a scope label says *who*, not how many and not what kind. Two
-checks pin it — the wording, and the absence of any count or hardware noun. Not
-*just you* for the local side: that is per device, not per person, so the same
-person on a laptop and a phone gets two answers.
+**A process note.** Answering a narrow question with three adjacent concerns at
+once cost a round trip: the owner had already worked out that delete-and-recopy
+works and was asking only whether something better existed. The answer was one
+word. Answer what was asked; hold the rest until it is wanted.
 
-### 2026-09-10 — the running feed gets the sleep chip's clock
+### 2026-09-15 — a second baby gets a door
 
-**The home list said nothing about a feed that was happening** (D-054).
-`sleepCell` returns "sleeping…" for an open sleep and the row overrides it with
-a live count; `feedCell` returns *null* for an open feed. That was fine while a
-feed came through the sheet — you had just typed a volume, and the card and the
-bar carried the number. D-053 took the sheet off the bottle, so every quick feed
-is an open one, and the commonest entry in the log was the one the list was
-silent about.
+Asked what tells you which baby you are logging for, and whether a second one can
+be created and switched to. The answer was: nothing, and no. The schema had
+supported it since D-057 — `baby_member` is a real many-to-many join, `create_baby`
+works for any household, `fetchBabies` deliberately does not filter — and the
+picker already existed inside `Welcome.tsx`. What was missing was a door.
+`forgetBaby()` had been sitting there since stage 2 with a docstring naming this
+exact case, uncalled.
 
-**Seconds, rose, and an end button in the chip.** Seconds for the reason the
-sleep chip has them — an open period is the thing on the screen that is
-happening, and a figure sitting still for a minute reads as one the app stopped
-watching. Rose only *while* it runs: `log.css` already said a second rose chip
-beside the volume reads as a second feed, and that stays true of a finished one,
-which is a footnote to the volume and keeps the neutral fill.
+Built it: the name in the status row, the picker lifted into `BabyPicker.tsx` and
+shared with onboarding, the event pull scoped through the timeslot, and
+`switchBaby` in `sync.ts`. D-060 has the reasoning.
 
-**No resume, deliberately.** The sleep chip has one because reopening a sleep is
-the undo for a stir that was not a waking. A feed has no equivalent, and the
-same asymmetry is already on the write side — `closeOpenSleep` stamps an end on
-a sleep and refuses to on a feed.
+**The interesting part was that the one-line version is wrong three times over**,
+and all three surfaced from writing the suite rather than from writing the code.
+Local rows outlive the id, so the order has to be flush, move, empty, pull — and
+emptying before the pull rather than trusting it is what keeps a dropped signal
+from rendering one child's feeds under another child's name. A pull already in
+flight can land after the id moves, so `pull()` re-reads it before writing. And
+`baby.settings` is per baby, so a cached value the new row does not carry reads
+to `unsynced()` as a local change and gets **pushed onto the new baby's row** —
+no error, both phones agreeing on the wrong answer. That one was proved: with the
+fix backed out the suite fails with `POST baby`.
 
-**One tick for both.** A moment can carry a feed and a sleep, and two 1-second
-intervals would repaint that row twice a second to show one number. Keyed on
-whichever period is open, feed first, which is the priority the card and the
-mascot state already use.
+Continues a pattern worth watching. The previous entry recorded that checks had
+twice encoded "nothing exists yet" as if it were a rule. This is the same shape
+one layer up: the unscoped `event` pull, and a `Welcome` that could only ever be
+reached once, were both correct right until the data stopped being singular.
 
-**`sleepClock` became `liveClock`.** Its own comment claimed to be the only
-place in the app that counts in seconds; a second caller made that false, and
-two stopwatches drifting apart in format is how one row ends up writing the same
-second two ways.
+Two smaller things went along with it — `someone new` was a one-way door out of
+the picker, and `NamePrompt` had one family's baby name hard-coded in a
+multi-tenant app.
+
+Left uncommitted for review.

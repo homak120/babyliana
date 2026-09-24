@@ -1,12 +1,22 @@
 # Baby, devices and joining — Phase 4 design note
 
-Status: **deferred to post-MVP** (D-022). Kept because the thinking is done and
-will be wanted; not to be built yet.
+Status: **live again as of D-057** (2026-09-11), and **the shape below is out of
+date in one important way.** It was drafted for one baby and a shared id; the
+answer to Q-013 is many accounts per baby and many babies per account, so joining
+is a join table and an account, not a token that *is* the baby id.
+
+Read the reasoning here — it is still right about `device`, about attribution,
+and about not gating logging on any of it. Do not read the token design as
+current. D-022, which deferred this, is superseded.
 
 For MVP one `baby` row is inserted for Liana and her id is hard-coded — two
 phones, one baby, no join flow (D-022, D-026). The `device` table still exists
 and is in the schema, because attribution ("did I log that, or did you") is
-wanted from day one; only the *pairing* is deferred.
+wanted from day one; only the *pairing* was deferred.
+
+**That is what is deployed today, and it is what D-057 replaces.** A hard-coded
+id and a shared secret cannot separate two families; the join table and RLS are
+the gate on anyone outside this one.
 
 Note that the Phase 2 handoff independently proposed a **typed readable code**
 (`LNA-7QD4-8213`) rather than the QR in D-004. That is worth reconciling when

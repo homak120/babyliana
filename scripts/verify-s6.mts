@@ -3,7 +3,8 @@
 // nightstand, so it is worth checking against real entries from the paper log
 // rather than invented ones.
 import 'fake-indexeddb/auto'
-const store = new Map<string, string>([['babyliana.device_id', '00000000-0000-4000-8000-0000000d0d0d']])
+import { seedOnboarded } from './local-session.mts'
+const store = new Map<string, string>([['babyliana.caregiver_id', '00000000-0000-4000-8000-0000000d0d0d']])
 ;(globalThis as unknown as { localStorage: Storage }).localStorage = {
   getItem: (k: string) => store.get(k) ?? null,
   setItem: (k: string, v: string) => void store.set(k, v),
@@ -11,12 +12,18 @@ const store = new Map<string, string>([['babyliana.device_id', '00000000-0000-40
   clear: () => store.clear(), key: () => null, length: 0,
 } as Storage
 
+// Onboarding's two answers — which baby, and a session — both live in
+// localStorage now (D-057), and the write path refuses to create a caregiver
+// without the second. Neither reaches the network; see scripts/local-session.mts.
+seedOnboarded(store)
+
+
 import type { Block } from '../src/log/drafts.ts'
 const {
   blocksFromMoment, canSave, newDiaper, newOther, newSupplement, newTemperature, newWeight,
   poundsToLbOz, toEntries, OTHER_TYPES,
 } = await import('../src/log/drafts.ts')
-const { createThisDevice, logMoment, getMoments } = await import('../src/moments.ts')
+const { createThisCaregiver, logMoment, getMoments } = await import('../src/moments.ts')
 // The supplement prefill is a setting now (D-055); its shipped default lives in
 // the registry rather than in `drafts.ts`.
 const { DEFAULT_SUPPLEMENT } = await import('../src/settings.ts')
@@ -30,7 +37,7 @@ const check = (label: string, ok: boolean, detail = '') => {
 const other = (kind: string | null): Block =>
   ({ key: 'o', type: 'other', draft: { ...newOther(), kind: kind as never } })
 
-await createThisDevice('Test')
+await createThisCaregiver('Test')
 
 // --- the other block --------------------------------------------------------
 // Sleep left this list when it earned its own block and its own bubble, and

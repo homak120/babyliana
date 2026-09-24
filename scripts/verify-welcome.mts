@@ -1,9 +1,16 @@
 import { spawn } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { chromium, devices } from 'playwright'
 
-// The welcome is two pages: a gate, then the name. And the mascot art was one of
-// two sets, chosen by the clock — the day set is the plush, the night set is
-// the girl.
+// First run is four steps now: email, code, which baby, which caregiver. The
+// gate and both its codes are gone (D-059) — the household email plus an
+// expiring OTP is the same idea done properly.
+//
+// **Everything Supabase is stubbed here.** These suites serve their own build
+// and touch no database, and an emailed code is not something a browser test can
+// read regardless. What is under test is the flow: which screen follows which,
+// what each one refuses, and — the point of the whole thing — that picking an
+// existing caregiver adopts that exact id rather than minting a second one.
 const PORT = 4197
 const server = spawn('npx', ['vite', 'preview', '--port', String(PORT)], { stdio: 'ignore', detached: true })
 const stop = () => { try { process.kill(-server.pid!) } catch { /* already gone */ } }
@@ -15,17 +22,30 @@ for (let i = 0; ; i++) {
   }
 }
 
+const env = Object.fromEntries(
+  readFileSync('.env.local', 'utf8').split('\n')
+    .map((l) => l.match(/^([A-Z_]+)=(.*)$/))
+    .filter((m): m is RegExpMatchArray => !!m).map((m) => [m[1], m[2]]),
+)
+const REF = (env.VITE_SUPABASE_URL ?? '').replace(/^https:\/\//, '').split('.')[0]
+
 const b = await chromium.launch()
 let fail = 0
 const check = (l: string, ok: boolean, d: string) => { if (!ok) fail++; console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${l} — ${d}`) }
+
+const json = (body: unknown) => ({
+  status: 200, contentType: 'application/json', body: JSON.stringify(body),
+})
 
 async function fresh(clockHour: number) {
   const ctx = await b.newContext({
     ...devices['iPhone 13'], viewport: { width: 390, height: 844 }, hasTouch: true,
   })
   const p = await ctx.newPage()
+  // Everything not explicitly stubbed below fails, so a screen that quietly
+  // depends on a call nobody noticed shows up as a failure rather than as a
+  // pass that happened to work against a live server.
   await p.route('**://*.supabase.co/**', (r) => r.abort())
-  // Pin the clock so the theme, and therefore the art set, is deterministic.
   await p.addInitScript((h) => {
     const real = Date
     const fixed = new real(); fixed.setHours(h, 0, 0, 0)
@@ -39,148 +59,131 @@ async function fresh(clockHour: number) {
   return { ctx, p }
 }
 
-// --- the gate ---
+/** Seed the session supabase-js reads, so a run can start at a later step. */
+const signedIn = (p: import('playwright').Page, babyId?: string) =>
+  p.evaluate(([ref, baby]) => {
+    localStorage.setItem(`sb-${ref}-auth-token`, JSON.stringify({
+      access_token: 'test', refresh_token: 'test', token_type: 'bearer',
+      expires_at: Math.floor(Date.now() / 1000) + 31536000,
+      user: { id: '55555555-6666-7777-8888-999999999999', email: 'test@example.com' },
+    }))
+    if (baby) localStorage.setItem('babyliana.baby_id', baby)
+  }, [REF, babyId ?? ''] as const)
+
+// --- the email step ---------------------------------------------------------
 const { ctx, p } = await fresh(10)
-check('the welcome opens on the gate', await p.locator('.gate').isVisible(), 'page one')
-check('and not on the name page yet', (await p.getByPlaceholder('Anya').count()) === 0, 'name not shown')
-check('the button waits for a long-enough code', await p.locator('.save').isDisabled(), 'disabled')
+check('first run opens on the email step', await p.locator('#email').isVisible(), 'step one')
+check('and there is no secret code to guess any more',
+  (await p.locator('#code').count()) === 0, 'D-059: the gate is gone')
+check('the button waits for something that looks like an address',
+  await p.locator('.save').isDisabled(), 'disabled')
 
-// The gate showed the same art as the name page once, which made both pages of
-// the welcome look identical.
-const art = await p.evaluate(() => {
-  const gate = document.querySelector('.gatephoto source') as HTMLSourceElement
-  const box = (document.querySelector('.gatephoto') as HTMLElement).getBoundingClientRect()
-  return { src: gate.srcset, w: Math.round(box.width), h: Math.round(box.height), top: Math.round(box.top) }
-})
-check('the gate has its own art', /gate/.test(art.src), art.src.split('/').pop() ?? '')
-const fit = await p.evaluate(() => {
-  const cs = getComputedStyle(document.querySelector('.gatephoto img')!)
-  return `${cs.objectFit} ${cs.objectPosition}`
-})
-// A photograph fills the block; the earlier stand-in was a transparent asset
-// and had to be contained.
-check('the photo fills the block', fit.startsWith('cover'), fit)
-check('and it is a full-bleed hero', art.w === 390 && art.h === 330 && art.top <= 0,
-  `${art.w}x${art.h} at y ${art.top}`)
+// D-030 put a real photograph of the baby on the first screen, when only this
+// family had the URL. Open signup makes that the first thing a stranger sees.
+check('no photograph of a real child is shipped to first run',
+  (await p.locator('.gatephoto').count()) === 0, 'mascot only')
 
-await p.locator('#code').fill('1234')
+await p.locator('#email').fill('someone@example.com')
+check('and enables once it does', !(await p.locator('.save').isDisabled()), 'enabled')
+
+// --- the code step ----------------------------------------------------------
+await p.route('**://*.supabase.co/auth/v1/otp*', (r) => r.fulfill(json({})))
 await p.locator('.save').click()
-await p.waitForTimeout(300)
-check('a wrong code is refused', await p.locator('.gateerr').isVisible(), await p.locator('.gateerr').innerText())
-check('and it stays on the gate', await p.locator('.gate').isVisible(), 'still page one')
+await p.waitForTimeout(500)
+check('sending the code moves to the code step', await p.locator('#code').isVisible(), 'step two')
+check('and the address is shown, so a typo is visible',
+  (await p.locator('.sub').innerText()).includes('someone@example.com'),
+  await p.locator('.sub').innerText())
+check('the button waits for all six digits', await p.locator('.save').isDisabled(), 'disabled')
 
-await p.locator('#code').fill('08242026')
+await p.locator('#code').fill('000000')
+await p.route('**://*.supabase.co/auth/v1/verify*', (r) =>
+  r.fulfill({ status: 403, contentType: 'application/json',
+    body: JSON.stringify({ error: 'invalid_grant', error_description: 'Token has expired or is invalid' }) }))
 await p.locator('.save').click()
-await p.waitForTimeout(400)
-check('the right code opens the name page', await p.getByPlaceholder('Anya').isVisible(), 'page two')
-check('the gate is gone', (await p.locator('.gate').count()) === 0, 'dismissed')
-
-// --- the art sets ---
-const srcOf = () => p.evaluate(() => (document.querySelector('.mascot source') as HTMLSourceElement).srcset)
-await p.getByPlaceholder('Anya').fill('Anya')
-await p.getByRole('button', { name: 'start logging' }).click()
 await p.waitForTimeout(600)
-const daySrc = await srcOf()
+check('a wrong code is refused, in words a person can act on',
+  (await p.locator('.gateerr').innerText()).includes('expired'),
+  await p.locator('.gateerr').innerText())
+check('and it stays on the code step', await p.locator('#code').isVisible(), 'still step two')
+check('with a way back to fix the address',
+  (await p.getByRole('button', { name: /different email/ }).count()) === 1, 'escape hatch')
+await ctx.close()
+
+// --- one baby is not a choice ----------------------------------------------
+const ONE = '11111111-aaaa-bbbb-cccc-222222222222'
+const solo = await fresh(10)
+await solo.p.route('**://*.supabase.co/rest/v1/baby*', (r) =>
+  r.fulfill(json([{ id: ONE, name: 'Liana', settings: null }])))
+await solo.p.route('**://*.supabase.co/rest/v1/caregiver*', (r) => r.fulfill(json([])))
+await signedIn(solo.p)
+await solo.p.reload({ waitUntil: 'load' })
+await solo.p.waitForTimeout(900)
+check('a household with one baby is not asked to pick it',
+  (await solo.p.locator('.devlist').count()) === 0, 'skipped the picker')
+check('and it is remembered, so the next launch does not ask either',
+  (await solo.p.evaluate(() => localStorage.getItem('babyliana.baby_id'))) === ONE, ONE)
+check('landing instead on the name, because this household has no caregivers yet',
+  await solo.p.getByPlaceholder('Anya').isVisible(), 'step four')
+await solo.ctx.close()
+
+// --- the art sets -----------------------------------------------------------
 // Both themes draw the night set while `DAY_ART_IN_USE` is false — the owner is
 // trying one character across the whole day. This asserts the switch is off
 // rather than that the day art is gone: nothing was deleted, and the day set
-// comes back by flipping that one flag, at which point these three checks
-// invert back to what they said before.
+// comes back by flipping that one flag.
+const srcOf = (p: import('playwright').Page) =>
+  p.evaluate(() => (document.querySelector('.mascot source') as HTMLSourceElement).srcset)
+const day = await fresh(10)
+const daySrc = await srcOf(day.p)
 check('the day theme draws the night art too', !/-day/.test(daySrc), daySrc.split('/').pop() ?? '')
-await ctx.close()
+await day.ctx.close()
 
 const night = await fresh(23)
-await night.p.locator('#code').fill('08242026')
-await night.p.locator('.save').click()
-await night.p.waitForTimeout(300)
-await night.p.getByPlaceholder('Anya').fill('Anya')
-await night.p.getByRole('button', { name: 'start logging' }).click()
-await night.p.waitForTimeout(600)
-const nightSrc = await night.p.evaluate(() => (document.querySelector('.mascot source') as HTMLSourceElement).srcset)
+const nightSrc = await srcOf(night.p)
 check('the night theme uses the night art', !/-day/.test(nightSrc), nightSrc.split('/').pop() ?? '')
 check('and both themes land on the same file', daySrc === nightSrc, `${daySrc} vs ${nightSrc}`)
 await night.ctx.close()
 
-// --- the recovery code (D-042) ----------------------------------------------
-//
-// The same gate, a different door: `01202012` skips the name page and lists the
-// devices already on the server, so a reinstalled phone takes its own identity
-// back instead of minting a second one under the same name.
-
-// The failure path first, on the context every other suite runs in — supabase
-// aborted, which is exactly "cannot reach the list".
-const off = await fresh(10)
-await off.p.locator('#code').fill('01202012')
-await off.p.locator('.gate .save').click()
-await off.p.waitForTimeout(400)
-check('the recovery code opens the device page, not the name page',
-  (await off.p.locator('.recover').count()) === 1
-  && (await off.p.getByPlaceholder('Anya').count()) === 0,
-  `${await off.p.locator('.recover').count()} recovery page(s)`)
-check('and it greets you before it asks anything',
-  (await off.p.locator('.recover h1').innerText()).includes('so good to see you'),
-  await off.p.locator('.recover h1').innerText())
-// Waited for rather than slept on: the client does not give up the moment the
-// request is aborted, so a fixed pause caught the page still saying "looking
-// for your phones". That wait is the honest shape of being offline here.
-const t0 = Date.now()
-await off.p.locator('.gateerr').waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
-const waited = Date.now() - t0
-const errs = await off.p.locator('.gateerr').count()
-const lists = await off.p.locator('.devlist').count()
-check('an unreachable list says so rather than showing an empty one',
-  errs === 1 && lists === 0,
-  `${errs} error(s), ${lists} list(s), after ${waited}ms`)
-check('with a way to try again', (await off.p.getByRole('button', { name: /try again/ }).count()) === 1,
-  `${await off.p.getByRole('button', { name: /try again/ }).count()} retry button(s)`)
-
-// The way out. Without it a failed fetch is a dead end on a page with no tabs.
-await off.p.getByRole('button', { name: /back/ }).click()
-await off.p.waitForTimeout(300)
-check('and a way back to the gate', (await off.p.locator('.gate').count()) === 1,
-  `${await off.p.locator('.gate').count()} gate(s)`)
-await off.ctx.close()
-
-// Now the list itself, with the device table stubbed. The suites serve their
-// own build and touch no database (`status.md`), so the rows are fulfilled here
-// rather than fetched — what is under test is the page, not PostgREST.
+// --- picking who you are ----------------------------------------------------
+// What `RECOVERY_CODE` existed for, now an ordinary step. A reinstalled phone
+// must take its own identity back rather than minting a second "Dad" and
+// attributing every entry after it to a stranger with the same name.
 const ID = '11111111-2222-3333-4444-555555555555'
 const rec = await fresh(10)
-await rec.p.route('**://*.supabase.co/rest/v1/device*', (r) => r.fulfill({
-  status: 200,
-  contentType: 'application/json',
-  body: JSON.stringify([
-    { id: ID, name: 'Ho', created_at: null, updated_at: null, updated_by: null },
-    { id: '99999999-8888-7777-6666-555555555555', name: 'Anya', created_at: null, updated_at: null, updated_by: null },
-  ]),
-}))
-await rec.p.locator('#code').fill('01202012')
-await rec.p.locator('.gate .save').click()
+await rec.p.route('**://*.supabase.co/rest/v1/baby*', (r) =>
+  r.fulfill(json([{ id: ONE, name: 'Liana', settings: null }])))
+await rec.p.route('**://*.supabase.co/rest/v1/caregiver*', (r) => r.fulfill(json([
+  { id: ID, name: 'Ho', created_at: null, updated_at: null, updated_by: null, user_id: null },
+  { id: '99999999-8888-7777-6666-555555555555', name: 'Anya', created_at: null, updated_at: null, updated_by: null, user_id: null },
+])))
+await signedIn(rec.p, ONE)
+await rec.p.reload({ waitUntil: 'load' })
 await rec.p.waitForTimeout(900)
+
 const names = await rec.p.locator('.devlist b').allInnerTexts()
-check('every device on the server is offered, by name',
+check('every caregiver in the household is offered, by name',
   names.length === 2 && names.includes('Ho') && names.includes('Anya'), names.join(', '))
 check('and each carries enough of its id to tell two apart',
   (await rec.p.locator('.devlist span').first().innerText()).includes('…'),
   await rec.p.locator('.devlist span').first().innerText())
+check('with a way to be someone the list does not have',
+  (await rec.p.getByRole('button', { name: /someone new/ }).count()) === 1, 'escape hatch')
 
-// The point of the whole flow: the chosen id is taken, not a fresh one minted.
 await rec.p.getByRole('button', { name: /Ho/ }).click()
 await rec.p.waitForTimeout(900)
-const stored = await rec.p.evaluate(() => localStorage.getItem('babyliana.device_id'))
+const stored = await rec.p.evaluate(() => localStorage.getItem('babyliana.caregiver_id'))
 check('picking one adopts that exact id rather than minting a new one',
   stored === ID, `${stored} vs ${ID}`)
 check('and it lands in the app, with no name page in between',
   (await rec.p.locator('.log').count()) === 1 && (await rec.p.getByPlaceholder('Anya').count()) === 0,
   `${await rec.p.locator('.log').count()} log screen(s)`)
-// The name comes from the adopted row, which is why it is written locally
-// before the app opens rather than waited on from the next sync.
+const status = await rec.p.locator('.statusrow').innerText().catch(() => '')
 check('and the app already knows whose phone this is',
-  (await rec.p.locator('.whos').innerText()).includes('H'),
-  (await rec.p.locator('.whos').innerText()).replace(/\n/g, ' '))
+  status.includes('edit'), status.replace(/\n/g, ' ') || '(no status row)')
 await rec.ctx.close()
 
 await b.close()
 stop()
-console.log(fail === 0 ? '\n  welcome and the art sets are right' : `\n  ${fail} FAILED`)
-process.exit(fail ? 1 : 0)
+console.log(fail === 0 ? '\n  welcome and the art sets are right\n' : `\n  ${fail} FAILED\n`)
+process.exit(fail === 0 ? 0 : 1)

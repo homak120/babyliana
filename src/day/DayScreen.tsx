@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { sameDay } from '../derive'
 import { getMoments } from '../moments'
-import { getDevices } from '../db'
+import { getCaregivers } from '../db'
 import { subscribe } from '../sync'
-import type { Device, Moment } from '../types'
+import type { Caregiver, Moment } from '../types'
 import { Icon } from '../log/Icon'
 import { chronological, daysWithEntries } from './cells'
 import { DayPage } from './DayPage'
@@ -53,7 +53,7 @@ function ModePills({
 
 export function DayScreen() {
   const [moments, setMoments] = useState<Moment[]>([])
-  const [devices, setDevices] = useState<Device[]>([])
+  const [caregivers, setCaregivers] = useState<Caregiver[]>([])
   // null means "the most recent day with anything in it"; ALL means every day.
   const [day, setDay] = useState<Date | null | typeof ALL>(null)
 
@@ -72,7 +72,7 @@ export function DayScreen() {
 
   const refresh = useCallback(() => {
     getMoments().then(setMoments)
-    getDevices().then(setDevices)
+    getCaregivers().then(setCaregivers)
   }, [])
   useEffect(refresh, [refresh])
 
@@ -260,7 +260,7 @@ export function DayScreen() {
           <DayPage
             label={dayPill(neighbour)}
             rows={dayOf(neighbour)}
-            devices={devices}
+            caregivers={caregivers}
             empty="nothing logged in this period."
           />
         )}
@@ -268,7 +268,7 @@ export function DayScreen() {
         <DayPage
           label={range ? rangeLabel(range) : showingAll ? 'all days' : dayPill(selected)}
           rows={forDay}
-          devices={devices}
+          caregivers={caregivers}
           empty="nothing logged in this period."
         />
 
@@ -276,7 +276,7 @@ export function DayScreen() {
           <DayPage
             label={dayPill(neighbour)}
             rows={dayOf(neighbour)}
-            devices={devices}
+            caregivers={caregivers}
             empty="nothing logged in this period."
           />
         )}

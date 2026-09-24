@@ -28,10 +28,10 @@ to log — not outside it.
 Going native is a separate future project, not a continuation of this one. See
 `docs/decisions.md` D-001.
 
-## Local-first is a hard requirement
+## Local-first — built, settled, not re-argued
 
-The app is used in a nursery, at night, possibly with poor signal, on a phone
-that may have been backgrounded for hours.
+**These are invariants to preserve, not tests to run against every proposal
+(D-058).** They describe code that already exists and works:
 
 - Writes go to IndexedDB and the UI updates immediately. The network is never in
   the write path.
@@ -40,6 +40,18 @@ that may have been backgrounded for hours.
 
 Supabase is the source of truth for sharing. IndexedDB is a full local replica,
 not a cache of recent items.
+
+**What D-058 changed is how this section gets used.** It is not a challenge to
+raise against a new feature, and "but what about offline at 4am" is not an
+argument. If a design would break one of the three lines above, name the line
+and say what to write instead. If it would not, this section has nothing to say
+about it. No work is justified by an offline scenario this deployment has not
+actually hit — a real report of a parent unable to log reopens it, a
+hypothetical does not.
+
+One implementation note, recorded so it need not be re-derived: don't `await` a
+network auth call before first paint. Read the cached session synchronously and
+render.
 
 ## Supabase free tier
 
@@ -67,18 +79,43 @@ Data API. Tutorials written before mid-2026 will not match.
 
 ## Identity
 
-Shared baby ID, no accounts, no passwords, no email.
+**Rewritten by D-057 (2026-09-11).** Accounts exist, because the app is becoming
+multi-tenant: many accounts per baby, many babies per account, open signup.
 
-Generated once on the first device. A second device joins by scanning a QR code.
-Nothing to reset, no session to expire, no login to fail at 3am.
+What survives from the original rule is the part that was load-bearing: **sign in
+to join a baby, never to log an event.** Onboarding happens once per install;
+after it the app opens straight into the log, offline, indefinitely. An expired
+token never blocks a write, and a sync that cannot authenticate queues rather
+than refuses.
 
-Rationale in `docs/decisions.md` D-004.
+What is gone is *"shared baby ID, no accounts, no passwords, no email"* and the
+QR join of D-004 — see D-057, and
+`.specify/memory/baby-and-devices.md` for the join design, whose shape is now
+many-to-many rather than one shared id.
+
+**Until the join table and RLS exist, nothing separates one family's rows from
+another's.** One anon key, one hard-coded baby id, and a gate code that ships in
+a public bundle (D-030: "a doormat, not a lock"). That was an accepted risk while
+the only data was this family's; it is not one after the first stranger signs up.
+
+Original rationale, now superseded: `docs/decisions.md` D-004, D-022.
 
 ## Non-negotiables
+
+**Invariants, not a checklist to re-run (D-058).** Preserve them in code; do not
+re-argue them in design.
 
 - Never block a write on the network.
 - Corrections are updates and deletes are deletes (D-003). Last write wins.
 - Never resolve a duplicate silently.
-- Never require a login to log an event.
+- Never require a login to log an event. Signing in to *join* a baby is allowed
+  and expected (D-057); a session standing between a parent and a feed is not.
+  **A session cached in `localStorage` and refreshed in the background satisfies
+  this.** That is the whole answer — D-058 settled it, and it is not an open
+  question against the login work.
 - Export must work before the app is shown to a second person — the reveal, not
-  the first usable version. See D-024.
+  the first usable version. See D-024. **With open signup that second person is a
+  stranger, so this is a prerequisite rather than a Phase 9 item.**
+- Never let one family read another's rows. RLS per baby, not a shared key and a
+  gate code (D-057). This one is new and it is the reason the others now need
+  re-reading.

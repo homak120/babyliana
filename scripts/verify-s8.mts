@@ -7,12 +7,13 @@
 // go, confirming it left the server too.
 import 'fake-indexeddb/auto'
 import { readFileSync } from 'node:fs'
+import { NO_SESSION, restoreSession } from './session.mts'
 for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
   const m = line.match(/^([A-Z_]+)=(.*)$/); if (m) process.env[m[1]] = m[2]
 }
-// Not pre-seeded any more: createThisDevice mints the id, because opening the
+// Not pre-seeded any more: createThisCaregiver mints the id, because opening the
 // app must not. The id it returns is what gets used and cleaned up.
-let TEST_DEVICE = ''
+let TEST_CAREGIVER = ''
 const store = new Map<string, string>()
 ;(globalThis as unknown as { localStorage: Storage }).localStorage = {
   getItem: (k: string) => store.get(k) ?? null,
@@ -24,11 +25,22 @@ Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurabl
 
 import type { Block } from '../src/log/drafts.ts'
 const { blocksFromMoment, newDiaper, newMilk, toEntries } = await import('../src/log/drafts.ts')
-const { createThisDevice, logMoment, updateMoment, getMoments, removeMoment } = await import(
+const { createThisCaregiver, logMoment, updateMoment, getMoments, removeMoment } = await import(
   '../src/moments.ts'
 )
 const { sync } = await import('../src/sync.ts')
 const { supabase } = await import('../src/supabase.ts')
+const { setBabyId, fetchBabies } = await import('../src/household.ts')
+
+// Same as verify-s2: `app` answers nothing without a session, and the baby id
+// arrives from a join rather than a constant now (D-057).
+if (!(await restoreSession(supabase!))) { console.log(NO_SESSION); process.exit(1) }
+const babiesS8 = await fetchBabies()
+if (!babiesS8?.length) {
+  console.log('\n  signed in, but this household has no baby. Create one in the app first.\n')
+  process.exit(1)
+}
+setBabyId(babiesS8[0].id)
 
 const one = (b: Block) => toEntries(b)[0]
 let failures = 0
@@ -40,7 +52,7 @@ const sb = supabase!
 const made: string[] = []
 
 try {
-  TEST_DEVICE = await createThisDevice('verify')
+  TEST_CAREGIVER = await createThisCaregiver('verify')
 
   // --- correcting a value, without disturbing the rest ----------------------
   const m = await logMoment({
@@ -119,14 +131,14 @@ try {
   check('its entries went with it — no orphans left behind', orphans.data?.length === 0)
 } finally {
   for (const id of made) await sb.from('timeslot').delete().eq('id', id)
-  await sb.from('device').delete().eq('id', TEST_DEVICE)
+  await sb.from('caregiver').delete().eq('id', TEST_CAREGIVER)
   const [ts, dev] = await Promise.all([
     sb.from('timeslot').select('id').in('id', made),
-    sb.from('device').select('id').eq('id', TEST_DEVICE),
+    sb.from('caregiver').select('id').eq('id', TEST_CAREGIVER),
   ])
   console.log(
     `\n  cleanup: ${ts.data?.length ?? '?'} of this run's timeslots, ` +
-      `${dev.data?.length ?? '?'} test devices left`,
+      `${dev.data?.length ?? '?'} test caregivers left`,
   )
 }
 

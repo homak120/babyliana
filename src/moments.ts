@@ -1,6 +1,8 @@
-import { BABY_ID } from './config'
+import { currentUserId } from './auth'
+import { isConfigured } from './supabase'
+import { requireBabyId } from './household'
 import * as db from './db'
-import { createDeviceId, requireDeviceId } from './device-id'
+import { createCaregiverId, requireCaregiverId } from './caregiver-id'
 import { hydrate, read, unsynced, type SettingKey } from './settings'
 import type { Baby, BabySettings, DraftEntry, LogEvent, Moment, Timeslot } from './types'
 
@@ -28,15 +30,15 @@ export async function saveSetting<K extends keyof BabySettings>(
   key: K,
   value: BabySettings[K],
 ): Promise<boolean> {
-  const baby = (await db.getRow('baby', BABY_ID)) as Baby | undefined
+  const baby = (await db.getRow('baby', requireBabyId())) as Baby | undefined
   if (!baby) return false
   // **Merged into what is already there, never replacing it.** One key at a
   // time is the whole point of an object: writing the object wholesale would
   // make saving the feeding cycle quietly drop every other setting the row
   // carries, including ones this build has never heard of.
   const settings: BabySettings = { ...(baby.settings ?? {}), [key]: value }
-  await db.putBaby({ ...baby, settings, updated_at: now(), updated_by: requireDeviceId() })
-  await db.enqueue([{ table: 'baby', rowId: BABY_ID, op: 'put' }])
+  await db.putBaby({ ...baby, settings, updated_at: now(), updated_by: requireCaregiverId() })
+  await db.enqueue([{ table: 'baby', rowId: requireBabyId(), op: 'put' }])
   return true
 }
 
@@ -58,7 +60,7 @@ export async function saveSetting<K extends keyof BabySettings>(
  * something the other phone did.
  */
 export async function reconcileSettings(): Promise<boolean> {
-  const baby = (await db.getRow('baby', BABY_ID)) as Baby | undefined
+  const baby = (await db.getRow('baby', requireBabyId())) as Baby | undefined
   if (!baby) return false
   const moved = hydrate(baby.settings)
   // Generic so `K` stays bound to one key inside: called with the union
@@ -69,33 +71,58 @@ export async function reconcileSettings(): Promise<boolean> {
 }
 
 /**
- * Create this device, once, when its name is submitted.
+ * Create this caregiver, once, when its name is submitted.
  *
  * Deliberately not an upsert on startup: opening the app must not create an
  * identity. Nothing exists until someone commits to a name, which is also why
  * the id's presence is what says setup is done.
  */
-export async function createThisDevice(name: string): Promise<string> {
-  const id = createDeviceId()
+export async function createThisCaregiver(name: string): Promise<string> {
+  const id = createCaregiverId()
   const t = now()
-  await db.putDevice({
+  // Read here rather than passed in, so no caller can forget it. The policy on
+  // `app.caregiver` is `with check (user_id = auth.uid())`: a row without this
+  // is refused by the server, stalls the outbox, and stops the whole log
+  // syncing — while the app carries on looking correct, because the local write
+  // succeeded. Null only when there is no session, which onboarding has already
+  // ruled out by the time anyone reaches this.
+  const user_id = await currentUserId()
+  // Refuse rather than write a row that can never sync.
+  //
+  // Without a session `user_id` is null, the policy's `with check` refuses the
+  // insert, and the outbox jams on a row nothing will ever accept — taking the
+  // rest of the log with it, because push stops at the first failure. Throwing
+  // here surfaces it on the button that caused it, while the person is still
+  // looking at the screen, instead of as a red sync dot an hour later that says
+  // the same thing as being offline.
+  //
+  // Gated on `isConfigured`, not on the id alone. With no Supabase project there
+  // is nothing to sync to and nothing to refuse — that is the spike's case and
+  // the data-layer suites', both of which exercise the local write path with no
+  // server behind it and are right to. The guard is about a row that *would*
+  // have gone somewhere and cannot.
+  if (isConfigured && !user_id) {
+    throw new Error('not signed in — the log needs an account before it can save who you are')
+  }
+  await db.putCaregiver({
     id,
     name: name.trim() || null,
+    user_id,
     created_at: t,
     updated_at: t,
     updated_by: null, // only ever set by a manual script
   })
-  await db.enqueue([{ table: 'device', rowId: id, op: 'put' }])
+  await db.enqueue([{ table: 'caregiver', rowId: id, op: 'put' }])
   return id
 }
 
-/** Sets this device's name. Explicit — the startup upsert never touches it. */
-export async function renameThisDevice(name: string) {
-  const id = requireDeviceId()
-  const existing = (await db.getDevices()).find((d) => d.id === id)
+/** Sets this caregiver's name. Explicit — the startup upsert never touches it. */
+export async function renameThisCaregiver(name: string) {
+  const id = requireCaregiverId()
+  const existing = (await db.getCaregivers()).find((d) => d.id === id)
   if (!existing) return
-  await db.putDevice({ ...existing, name: name.trim() || null, updated_at: now() })
-  await db.enqueue([{ table: 'device', rowId: id, op: 'put' }])
+  await db.putCaregiver({ ...existing, name: name.trim() || null, updated_at: now() })
+  await db.enqueue([{ table: 'caregiver', rowId: id, op: 'put' }])
 }
 
 export type NewMoment = {
@@ -120,8 +147,8 @@ export async function logMoment(input: NewMoment): Promise<Moment> {
   const t = now()
   const timeslot: Timeslot = {
     id: crypto.randomUUID(),
-    baby_id: BABY_ID,
-    logged_by: requireDeviceId(),
+    baby_id: requireBabyId(),
+    logged_by: requireCaregiverId(),
     occurred_at: (input.occurredAt ?? new Date()).toISOString(),
     ended_at: input.endedAt ? input.endedAt.toISOString() : null,
     recorded_at: t,

@@ -179,13 +179,15 @@ when". Read that first; this list is the checklist view of the same thing.
 Not "later" as in forgotten. Deferred because the fastest path to a usable
 first version does not go through them, and each has a named trigger.
 
-- [ ] **Pairing and the join flow.** D-022. Trigger: a third device, or anyone
-      outside this family. Design note already written at
-      `.specify/memory/baby-and-devices.md`
+- [ ] **Pairing and the join flow.** D-022. **Trigger fired 2026-09-11** —
+      D-057 chose multi-tenancy, so this is Phase 12 below. The design note at
+      `.specify/memory/baby-and-devices.md` is live again, with its token shape
+      corrected to a join table
 - [ ] **Duplicate detection.** Cut from MVP — see D-023. Trigger: it actually
-      happens during the solo run and is annoying
+      happens during the solo run and is annoying. Still deferred
 - [ ] **Data isolation.** One public anon key, and RLS cannot separate one
-      family's rows from another's. Trigger: Phase 12, or a second family
+      family's rows from another's. **Trigger fired** — D-057 makes it the gate
+      on anyone outside this family signing up. Phase 12 below
 
 ## Phase 7 — Visual identity & polish
 
@@ -237,7 +239,73 @@ the owner's judgement, not production work.
 - [ ] **CH** Interpret what happened
 - [ ] **H** Decide: continue, shelve, go native, or explore product
 
-## Phase 12 — Product exploration (conditional)
+## Phase 12 — Product exploration
 
-- [ ] **CH** Strategy
+**No longer conditional, and started early.** D-057 answers Q-013: product ready
+means multi-tenant — many accounts per baby, many babies per account, open
+signup, sign in to join and never to log. Work happens on
+`product-ready-enhancement`.
+
+**Sequence warning, not a task.** This runs ahead of Phases 8-11, which are the
+solo run and the gate that was meant to authorise it. The **coverage run**
+(`docs/status.md` § *Next action*) still outranks everything here: it is the last
+thing that can show the app cannot record the real paper log, and anything built
+over that finding gets built twice.
+
+- [x] **CH** Strategy — what "product ready" means. D-057
+- [x] **CC** **Ownership schema.** `baby_member` as a join table — many accounts
+      per baby, many babies per account. Additive only (D-039), so this has to be
+      right the first time, and it must reach Supabase **before** any client code
+      naming it is pushed, or the outbox stalls silently. **Done 2026-09-14** —
+      `0007` creates it in the `app` schema, applied and verified. Nothing in
+      `public` was touched, so the ordering rule cost nothing here
+- [x] **CC** **Accounts.** Supabase Auth, open signup. The rule it must not
+      break: onboarding once per install, then the log opens offline and
+      indefinitely — an expired token never blocks a write. **Done 2026-09-14**
+      — email OTP end to end (`src/auth.ts`, custom SMTP through Brevo, both
+      templates on `{{ .Token }}`), and the client bootstrap on top of it:
+      email → code → baby → caregiver, gated on localStorage rather than on the
+      session so a phone with no network still opens its log
+- [x] **CC** **RLS per baby**, through the join table, plus the explicit Data API
+      grants the spike learned the hard way (`.specify/memory/spike-spec.md`).
+      This is the gate: until it exists, nobody outside this family can sign up.
+      **Done 2026-09-14, and proved rather than assumed** — `npm run auth-check`
+      signs in for real and its last check is that an *unauthenticated* client
+      reads nothing at all from `app`. The gate is enforced in `app` only;
+      `public` still fails that same check by design, and closes at stage 5
+- [ ] **CC** **Onboarding: create a baby, or join one by code.** Replaces the
+      hard-coded baby id and the gate. A readable typed code, not a QR — no
+      camera, and it can be sent to someone who is not in the room.
+      **Create is done 2026-09-14; join by code is not.** First run is email →
+      code → baby → caregiver, and a household with one baby is never asked to
+      pick it. Joining an *existing* baby from a second household still has no
+      path, and `0007` has no insert policy on `baby_member` for one — deliberate
+      while a household shares an inbox, and the next thing to build when it
+      does not
+- [x] **CC** **A second baby, reachable.** D-057 promised many babies per
+      account and the schema delivered it; the app had no way to see or reach
+      one. **Done 2026-09-15, D-060** — the status row names the baby being
+      logged for and opens the household's picker, which is *moved* out of
+      onboarding rather than copied. The event pull is scoped through the
+      timeslot, which with one baby is the same set and with two is not. The
+      switch flushes the outbox, moves the id, empties local state and pulls, in
+      that order, and refuses while offline or with writes pending. Renaming a
+      baby and removing one are not in it
+- [ ] **CC** **Migrate Liana's rows into the new shape.** This is live data on two
+      phones in daily use, not a fixture. It cannot be recreated from the paper
+- [x] **CC** **Retire the pilot scaffolding.** The hard-coded baby id,
+      `SECRET_CODE` and `RECOVERY_CODE` in `Welcome.tsx`, the gate fill in
+      `scripts/ui.mts` that eleven browser suites depend on, and `SpikePage` with
+      its printed device UUID. **Done 2026-09-14** — `config.ts` deleted,
+      D-059 took both codes, `enterApp` seeds a session instead of typing a code,
+      and the baby photograph came off first run because open signup would show
+      it to strangers. `SpikePage` survives, rewired to the cached baby id; it is
+      a diagnostic at `/spike`, not a screen anyone navigates to
+- [ ] **CC** **JSON export.** Already the pre-reveal requirement (D-024); with
+      open signup the second person is a stranger, so it is a prerequisite
+- [ ] **CC** **Delete my data.** A family that signs up can take their baby's
+      data out and remove it. On this list only because signup is open
+- [ ] **CH** **Re-size the free tier and write the privacy posture.**
+      `technical-constraints.md` sizes Supabase against one family; open signup
+      has no ceiling by design
 - [ ] **H** Everything involving other people's children

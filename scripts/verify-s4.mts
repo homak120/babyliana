@@ -2,7 +2,8 @@
 // for. The sheet's rules live in drafts.ts precisely so they can be checked
 // without a browser.
 import 'fake-indexeddb/auto'
-const store = new Map<string, string>([['babyliana.device_id', '00000000-0000-4000-8000-0000000d0d0d']])
+import { seedOnboarded } from './local-session.mts'
+const store = new Map<string, string>([['babyliana.caregiver_id', '00000000-0000-4000-8000-0000000d0d0d']])
 ;(globalThis as unknown as { localStorage: Storage }).localStorage = {
   getItem: (k: string) => store.get(k) ?? null,
   setItem: (k: string, v: string) => void store.set(k, v),
@@ -10,11 +11,17 @@ const store = new Map<string, string>([['babyliana.device_id', '00000000-0000-40
   clear: () => store.clear(), key: () => null, length: 0,
 } as Storage
 
+// Onboarding's two answers — which baby, and a session — both live in
+// localStorage now (D-057), and the write path refuses to create a caregiver
+// without the second. Neither reaches the network; see scripts/local-session.mts.
+seedOnboarded(store)
+
+
 import type { Block } from '../src/log/drafts.ts'
 const { canSave, newDiaper, newMilk, quickMilk, toEntries, blockIsEmpty } = await import(
   '../src/log/drafts.ts'
 )
-const { createThisDevice, logMoment, getMoments } = await import('../src/moments.ts')
+const { createThisCaregiver, logMoment, getMoments } = await import('../src/moments.ts')
 
 const one = (b: Block) => toEntries(b)[0]
 let failures = 0
@@ -100,7 +107,7 @@ check('skipping colour and consistency is valid, not an error',
   bare.poop === true && bare.poop_colour === null && bare.poop_consistency === null)
 
 // --- a moment is a moment ---------------------------------------------------
-await createThisDevice('Test')
+await createThisCaregiver('Test')
 const m = await logMoment({
   entries: [one(milk(60)), one(diaper({ poop: true }))],
 })

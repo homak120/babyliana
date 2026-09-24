@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, isConfigured } from '../supabase'
-import { getDeviceId } from '../device-id'
-import { BABY_ID } from '../config'
+import { getCaregiverId } from '../caregiver-id'
+import { getBabyId } from '../household'
 import './spike.css'
 
 // Smoke test on /spike — the one exception D-012 allows, already in tasks.md.
@@ -35,11 +35,11 @@ export default function SpikePage() {
     supabase
       .from('baby')
       .select('name')
-      .eq('id', BABY_ID)
+      .eq('id', getBabyId() ?? '')
       .maybeSingle()
       .then(({ data, error }) => {
         if (error) setError(error.message)
-        else if (!data) setError(`no baby row for ${BABY_ID}`)
+        else if (!data) setError(`no baby row for ${getBabyId() ?? '(none chosen)'}`)
         else setBaby(data)
       })
 
@@ -92,24 +92,24 @@ export default function SpikePage() {
 
       {error && <p className="error">{error}</p>}
 
-      <p className="device">
+      <p className="caregiver">
         built {__BUILD_TIME__}
         <br />
-        device {getDeviceId()?.slice(0, 8) ?? 'none yet'}
+        caregiver {getCaregiverId()?.slice(0, 8) ?? 'none yet'}
       </p>
 
       <button
         type="button"
         onClick={() => {
-          // Only the welcome flag. Clearing the device id would mint a new one
-          // and orphan this device's row, taking its name with it.
-          // Removes this device's identity entirely, so the welcome runs
+          // Only the welcome flag. Clearing the caregiver id would mint a new one
+          // and orphan this caregiver's row, taking its name with it.
+          // Removes this caregiver's identity entirely, so the welcome runs
           // again. The row it already created stays, with whatever it logged.
-          localStorage.removeItem('babyliana.device_id')
+          localStorage.removeItem('babyliana.caregiver_id')
           window.location.href = '/'
         }}
       >
-        forget this device and start over
+        forget this caregiver and start over
       </button>
     </main>
   )

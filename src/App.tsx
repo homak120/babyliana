@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { forgetDevice, getDeviceId } from './device-id'
+import { forgetCaregiver, getCaregiverId } from './caregiver-id'
+import { forgetBaby, getBabyId } from './household'
 import { DayScreen } from './day/DayScreen'
 import { BottleIcon } from './log/BottleIcon'
 import { EndSleepIcon } from './log/EndSleepIcon'
@@ -9,7 +10,7 @@ import { Welcome } from './log/Welcome'
 import SpikePage from './spike/SpikePage'
 import { useOverlayOpen } from './overlay'
 import TouchProbe from './probe/TouchProbe'
-import { getDevices } from './db'
+import { dbFatal, getCaregivers, getRow, onDbFatal } from './db'
 import { startSync, subscribe, sync, syncState } from './sync'
 import { registerUpdates } from './updates'
 import './tokens.css'
@@ -33,7 +34,21 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('log')
   // Read at initialisation, not in an effect: nothing async happens here, and
   // opening the app must not create an identity.
-  const [hasDevice, setHasDevice] = useState(() => getDeviceId() !== null)
+  // **Onboarding is done when both ids are cached, and that is the whole test.**
+  //
+  // Read at initialisation from localStorage — synchronous, local, no await, and
+  // in particular no session check. A cached session is what sync uses; it is
+  // never what decides whether the log opens (D-058). A phone that cannot reach
+  // the network still gets its log, because both answers are already here.
+  //
+  // Both, not either: a caregiver with no baby has nothing for `logged_by` to
+  // hang off, and a baby with no caregiver cannot attribute a row.
+  const [fatalDb, setFatalDb] = useState<Error | null>(() => dbFatal())
+  useEffect(() => onDbFatal(setFatalDb), [])
+
+  const [onboarded, setOnboarded] = useState(
+    () => getCaregiverId() !== null && getBabyId() !== null,
+  )
   // What the sheet opens with, or null when it is closed. A quick icon opens the
   // same sheet with one block already added — not a screen of its own.
   const [adding, setAdding] = useState<Block['type'] | 'none' | null>(null)
@@ -46,10 +61,10 @@ export default function App() {
   const [saved, setSaved] = useState(0)
 
   useEffect(() => {
-    if (!hasDevice) return
+    if (!onboarded) return
     startSync()
     registerUpdates()
-  }, [hasDevice])
+  }, [onboarded])
 
   // Defaulted to the render-time clock, not the ticking `now`. That state only
   // moves every 30s, and a sleep logged *just now* would fail its own
@@ -108,6 +123,35 @@ export default function App() {
     return () => clearInterval(t)
   }, [])
 
+  // The **baby** id can fall out of step the same way, and more easily: a baby
+  // reachable when this phone cached it can stop being reachable without anything
+  // happening on this phone at all — the household's membership removed, the row
+  // deleted from the other parent's phone, an account deleted out from under it.
+  //
+  // The symptom is nasty if it goes unchecked. The cached id makes onboarding
+  // skip the baby step, so the app opens on a log whose every write fails its
+  // foreign key against a row this household cannot see. Forgetting the id sends
+  // the next launch back to "pick a little one", which is the honest answer.
+  //
+  // Same guard as below: only after a *successful* sync, so being offline — when
+  // the pull returned nothing because there was no network, not because the baby
+  // is gone — never throws away a good id.
+  useEffect(
+    () =>
+      subscribe(() => {
+        if (syncState().state !== 'idle') return
+        const id = getBabyId()
+        if (!id) return
+        void getRow('baby', id).then((row) => {
+          if (!row) {
+            forgetBaby()
+            setOnboarded(false)
+          }
+        })
+      }),
+    [],
+  )
+
   // The id in localStorage and the row on the server can fall out of step — a
   // row deleted elsewhere leaves this phone holding an id that references
   // nothing, and every write then fails its foreign key silently. Checked only
@@ -116,26 +160,40 @@ export default function App() {
     () =>
       subscribe(() => {
         if (syncState().state !== 'idle') return
-        const id = getDeviceId()
+        const id = getCaregiverId()
         if (!id) return
-        void getDevices().then((all) => {
+        void getCaregivers().then((all) => {
           if (all.length > 0 && !all.some((d) => d.id === id)) {
-            forgetDevice()
-            setHasDevice(false)
+            forgetCaregiver()
+            setOnboarded(false)
           }
         })
       }),
     [],
   )
 
+  // Fatal, and worth its own screen. Everything the UI reads comes from
+  // IndexedDB, so there is nothing to render *around* this failure — and the
+  // commonest cause has a fix the person can actually carry out, which is the
+  // only reason a screen beats a silent stop.
+  if (fatalDb) {
+    return (
+      <main className="welcome">
+        <p className="kickerup">something is in the way</p>
+        <h1>can&rsquo;t open the log</h1>
+        <p className="sub">{fatalDb.message}</p>
+        <div className="spacer" />
+        <button type="button" className="save" onClick={() => window.location.reload()}>
+          <Icon name="refresh" size={22} /> try again
+        </button>
+      </main>
+    )
+  }
+
   if (window.location.pathname.startsWith('/spike')) return <SpikePage />
   if (window.location.pathname.startsWith('/touch')) return <TouchProbe />
-  if (!hasDevice) {
-    return (
-      <Welcome
-        onDone={() => setHasDevice(true)}
-      />
-    )
+  if (!onboarded) {
+    return <Welcome onDone={() => setOnboarded(true)} />
   }
 
   return (
@@ -253,10 +311,19 @@ export default function App() {
           onClose={() => setAdding(null)}
           onSaved={() => {
             setAdding(null)
-            // A local write does not go through `subscribe`, and the bar's
-            // first and third buttons depend on what is now open.
-            refreshMoments()
-            setSaved((n) => n + 1)
+            // `afterWrite`, not a hand-rolled copy of two thirds of it.
+            //
+            // This used to refresh the list and bump `saved` and stop there, so
+            // a moment logged through the sheet reached IndexedDB and sat in the
+            // outbox — no push, and therefore no realtime event, so the other
+            // phone learned nothing until something else happened to sync. The
+            // quick buttons were fine because they go through `afterWrite`,
+            // which is why the bug looked like "only the bar works".
+            //
+            // Three call sites mount this sheet — here and twice in LogScreen —
+            // and the other two already called sync. Sharing the one helper is
+            // what stops a fourth drifting the same way.
+            afterWrite()
           }}
         />
       )}

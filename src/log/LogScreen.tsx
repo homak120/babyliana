@@ -20,18 +20,20 @@ import {
   totalsFor,
   type MascotState,
 } from '../derive'
-import { getDevices } from '../db'
+import { getCaregivers, getRow } from '../db'
 import {
   avatarClass, describeMoment, feedCell, hhmm, milkCell, milkTotal, otherLabel, sleepCell,
   timeCell,
 } from '../day/cells'
-import { getDeviceId } from '../device-id'
+import { getCaregiverId } from '../caregiver-id'
+import { getBabyId } from '../household'
 import { gapText, isNightCycle, upcomingFeeds } from '../cycles'
 import { timeFormat } from '../timeformat'
-import { getMoments, reconcileSettings, removeMoment, renameThisDevice } from '../moments'
-import { subscribe, sync, syncState } from '../sync'
-import type { Device, Moment } from '../types'
+import { getMoments, reconcileSettings, removeMoment, renameThisCaregiver } from '../moments'
+import { subscribe, switchBaby, sync, syncState, type SwitchResult } from '../sync'
+import type { Baby, Caregiver, Moment } from '../types'
 import { AddSheet } from './AddSheet'
+import { BabyPicker } from './BabyPicker'
 import { SettingsSheet } from './SettingsSheet'
 import { PrepPill, usePrepTimer } from './PrepLine'
 import { BottleIcon } from './BottleIcon'
@@ -101,10 +103,10 @@ function dayLabel(iso: string) {
 }
 
 /**
- * Editing this device's name, from the status row (D-056).
+ * Editing this caregiver's name, from the status row (D-056).
  *
  * It went into the settings sheet with D-055 and came back out. Two reasons,
- * and neither is about tidiness. **An unnamed device has to say so** — the
+ * and neither is about tidiness. **An unnamed caregiver has to say so** — the
  * button labels itself `name this phone` until there is a name, which is an
  * advertisement on the home screen that a row four gestures deep cannot be.
  * And **a name is typed, so it commits on a button, not on blur**: every other
@@ -117,9 +119,14 @@ function dayLabel(iso: string) {
  */
 function NamePrompt({
   current,
+  babyName,
   onDone,
 }: {
   current: string
+  /** Whose log, by name. It read "Liana's other grown-ups" as a literal, which
+   *  was true of the only household that existed before D-057 and is now a
+   *  stranger's child's name on someone else's screen. */
+  babyName: string | null
   onDone: (name: string | null) => void
 }) {
   const [value, setValue] = useState(current)
@@ -132,7 +139,8 @@ function NamePrompt({
         </button>
       </header>
       <p className="sub">
-        your name marks every entry you log, so Liana&rsquo;s other grown-ups know who did what.
+        your name marks every entry you log, so{' '}
+        {babyName ? `${babyName}’s` : 'the'} other grown-ups know who did what.
       </p>
       <input
         className="nameinput"
@@ -144,6 +152,86 @@ function NamePrompt({
       <button type="button" className="save" onClick={() => onDone(value)}>
         <Icon name="check_circle" size={24} /> save
       </button>
+    </div>
+  )
+}
+
+/**
+ * Why a switch did not happen, in words (D-060).
+ *
+ * Three refusals and each clears differently, so they do not share a sentence.
+ * Every one names the thing to wait for, because "try again" with no condition
+ * attached is an instruction to keep tapping.
+ */
+const WHY: Record<Exclude<SwitchResult, 'ok'>, string> = {
+  pending: 'there are entries still waiting to go up — try again once the dot turns green',
+  offline: 'switching needs the network, to fetch the other log',
+  failed: 'that did not come through — check the signal and try again',
+}
+
+/**
+ * Switching which baby this install logs for, from the status row (D-060).
+ *
+ * A sheet rather than a trip back through onboarding, and the difference is not
+ * cosmetic: the onboarding route ends on the caregiver step, which would ask who
+ * you are every time you looked at a sibling's log. A caregiver belongs to the
+ * household and not to the child (D-026), so that question has no business being
+ * asked here.
+ *
+ * It sits behind the baby's name in the status row for the reason the name
+ * editor sits beside it (D-056) — this is an identity, not a preference, and the
+ * settings sheet is for controls that commit on a tap.
+ */
+function BabySwitch({ currentId, onClose, onSwitched }: {
+  currentId: string | null
+  onClose: () => void
+  onSwitched: () => void
+}) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const choose = (id: string) => {
+    if (id === currentId) {
+      onClose()
+      return
+    }
+    setBusy(true)
+    setError(null)
+    void switchBaby(id).then((r) => {
+      if (r === 'ok') {
+        onSwitched()
+        return
+      }
+      // Back to a usable sheet, always. A greyed row and no sentence is the
+      // failure mode the onboarding screens were fixed for twice.
+      setBusy(false)
+      setError(WHY[r])
+    })
+  }
+
+  return (
+    <div className="sheet babySheet">
+      <header className="sheet-head">
+        <h2>whose log is this?</h2>
+        <button type="button" className="x" onClick={onClose} aria-label="close">
+          <Icon name="close" size={20} />
+        </button>
+      </header>
+      <BabyPicker
+        currentId={currentId}
+        onChosen={choose}
+        busy={busy}
+        error={error}
+        copy={(creating) => (
+          <p className="sub">
+            {creating
+              ? 'a new name starts an empty log. the one you are in now stays exactly as it is.'
+              : busy
+                ? 'fetching that log…'
+                : 'every phone in the household picks its own — switching here changes nothing for anyone else.'}
+          </p>
+        )}
+      />
     </div>
   )
 }
@@ -171,11 +259,16 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
   // this screen is remounted on every save, and `hhmm` reads the stored value,
   // so what state buys is the re-render that repaints every clock time at once.
   const [clock, setClock] = useState(timeFormat)
-  const [devices, setDevices] = useState<Device[]>([])
+  const [caregivers, setCaregivers] = useState<Caregiver[]>([])
   const [sheet, setSheet] = useState(false)
   const [sync_, setSync] = useState(syncState())
   const [justLogged, setJustLogged] = useState(false)
   const [naming, setNaming] = useState(false)
+  // Which baby this install is on, so the status row can say so. Read out of
+  // IndexedDB rather than fetched: `pull()` already stores the row for its
+  // settings, so the name is local and the header does not wait on a network.
+  const [baby, setBaby] = useState<Baby | null>(null)
+  const [switching, setSwitching] = useState(false)
   const [now, setNow] = useState(new Date())
 
   // Edit and delete from the home list too, not only the day view.
@@ -197,7 +290,9 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
       setMoments(m)
       setLoaded(true)
     })
-    getDevices().then(setDevices)
+    getCaregivers().then(setCaregivers)
+    const babyId = getBabyId()
+    if (babyId) void getRow('baby', babyId).then((b) => setBaby((b as Baby) ?? null))
     // The shared settings are on the row every phone shares (D-052, D-055), so a
     // pull can bring one the other phone set — a feeding cycle, a bottle volume.
     // `read()` is a synchronous cache, so the repaint has to be asked for rather
@@ -295,7 +390,7 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
   // figure slot holds — so these two leads print one number.
   const lastVol = (lastFeed && milkTotal(lastFeed.events)) || '—'
   const lastBy = lastFeed
-    ? devices.find((d) => d.id === lastFeed.timeslot.logged_by)?.name ?? null
+    ? caregivers.find((d) => d.id === lastFeed.timeslot.logged_by)?.name ?? null
     : null
 
   return (
@@ -306,22 +401,36 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
               now (D-055): it restyles every time in the app, so it belongs with
               the settings rather than beside one clock. The name button opposite
               it went there too and came back (D-056) — it is not a setting, it
-              is the one thing a device that has never been named must be asked. */}
+              is the one thing a caregiver that has never been named must be asked. */}
           <Icon name={theme === 'night' ? 'bedtime' : 'wb_sunny'} size={15} />
           {hhmm(now.toISOString(), clock)}
+          {/* **Whose log this is, said on the log.** The name was typed once at
+              onboarding and then never shown again, so with two babies in a
+              household nothing on screen distinguished one from the other — and
+              the entry that fixes that is also the way to reach the other log
+              (D-060). It reads from the local row, so it is there before any
+              network is. */}
+          <button
+            type="button"
+            className="babybtn"
+            onClick={() => setSwitching(true)}
+            aria-label="whose log is this"
+          >
+            {baby?.name ?? '—'}
+          </button>
         </span>
         <span className="whos">
-          {devices.filter((d) => d.name).map((d) => (
-            <i key={d.id} className={avatarClass(d.id, devices.map((x) => x.id))}>
+          {caregivers.filter((d) => d.name).map((d) => (
+            <i key={d.id} className={avatarClass(d.id, caregivers.map((x) => x.id))}>
               {d.name!.charAt(0).toUpperCase()}
             </i>
           ))}
           {/* It labels itself: `name this phone` until there is one, `edit`
-              after. Without it a device named at first run could never be
+              after. Without it a caregiver named at first run could never be
               renamed, and one that skipped the step would look identical to
               one that did not (D-056). */}
           <button type="button" className="namebtn" onClick={() => setNaming(true)}>
-            {devices.find((d) => d.id === getDeviceId())?.name ? 'edit' : 'name this phone'}
+            {caregivers.find((d) => d.id === getCaregiverId())?.name ? 'edit' : 'name this phone'}
           </button>
           <span className={`sync ${sync_.state}`}>
             <Icon name="cloud_done" size={15} />
@@ -647,9 +756,9 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
                     ))}
                 </span>
                 {(() => {
-                  const who = devices.find((d) => d.id === m.timeslot.logged_by)?.name
+                  const who = caregivers.find((d) => d.id === m.timeslot.logged_by)?.name
                   return who ? (
-                    <i className={avatarClass(m.timeslot.logged_by, devices.map((d) => d.id))}>
+                    <i className={avatarClass(m.timeslot.logged_by, caregivers.map((d) => d.id))}>
                       {who.charAt(0).toUpperCase()}
                     </i>
                   ) : null
@@ -667,10 +776,11 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
 
       {naming && (
         <NamePrompt
-          current={devices.find((d) => d.id === getDeviceId())?.name ?? ''}
+          current={caregivers.find((d) => d.id === getCaregiverId())?.name ?? ''}
+          babyName={baby?.name ?? null}
           onDone={(name) => {
             setNaming(false)
-            if (name !== null) void renameThisDevice(name).then(refresh)
+            if (name !== null) void renameThisCaregiver(name).then(refresh)
           }}
         />
       )}
@@ -691,6 +801,19 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
             setEditing(null)
             refresh()
             void sync()
+          }}
+        />
+      )}
+
+      {switching && (
+        <BabySwitch
+          currentId={getBabyId()}
+          onClose={() => setSwitching(false)}
+          onSwitched={() => {
+            setSwitching(false)
+            // The pull inside `switchBaby` has already replaced local state, so
+            // this is repainting from a store that is right, not asking for one.
+            refresh()
           }}
         />
       )}

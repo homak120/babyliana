@@ -2498,3 +2498,307 @@ every setting, and a name is an identity rather than a preference.
 before it reaches the log — the button has nothing left to advertise, and the
 editor can go back into settings as a plain row. It would still need a save
 button.
+
+---
+
+## D-057 — Product ready means multi-tenant: many-to-many, open signup, sign in to join
+
+**This closes Q-013 and supersedes D-022.** "Product ready" means the app can be
+used by families who are not this one. Three answers from the owner, 2026-09-11:
+
+1. **Many accounts per baby, many babies per account.** A join table, not a
+   column. Both parents, a grandparent, a nanny; twins, a second child.
+2. **Open signup.** Anyone can create an account. Invite-only was offered and
+   declined.
+3. **Sign in to join a baby. Never to sign in to log an event.**
+
+D-022's revisit trigger was *"a third device, or anyone outside this family"*. It
+has fired, so the pairing work in `.specify/memory/baby-and-devices.md` is live
+again — with one change to what it says: it was drafted around one baby and a
+shared id, and the shape is now many-to-many.
+
+### What this does to the non-negotiable
+
+`technical-constraints.md` § Non-negotiables said *"never require a login to log
+an event"*, and `CLAUDE.md` summarised it as *"shared baby ID, no accounts"*.
+**The rule survives; the summary does not.** Accounts exist now. What must never
+happen is a session standing between a parent and a feed at 4am:
+
+> Onboarding happens **once per install**. After it, the app opens straight into
+> the log, offline, indefinitely. An expired token never blocks a write, and a
+> sync that cannot authenticate queues rather than refuses.
+
+This is D-030's argument extended rather than a new one — the gate was defended
+on exactly those grounds, that it runs once before any identity exists and no
+event was ever logged behind it.
+
+### What open signup makes mandatory rather than prudent
+
+- **RLS separating one family's rows from another's.** Today there is one anon
+  key, a hard-coded baby id, and nothing separating anybody. D-030 is explicit
+  that the gate is "a doormat, not a lock" and that nothing should be built on it
+  as if it were — with only Liana's data behind it that was a risk the owner
+  accepted under D-008, and with someone else's baby behind it it is a breach.
+  The gate code cannot be what separates two families, because the repo is public
+  and the bundle carries it in plain text.
+- **Export, D-024.** It was already the pre-reveal gate. "A second person" is now
+  a stranger, so it stops being a Phase 9 item and becomes a prerequisite.
+- **A deletion path.** Someone who signs up must be able to take their baby's
+  data out and remove it. This is the first thing on the list that exists only
+  because of open signup.
+- **The free tier.** `technical-constraints.md` sizes Supabase against one
+  family. Open signup has no ceiling by design, so the constraint document is
+  now describing a workload the app no longer has.
+
+### What is not reversible, and what is
+
+**The join table is not.** D-039 is additive-only: no column is ever dropped or
+narrowed, so the ownership shape has to be right the first time. That is why it
+was asked before anything was built.
+
+**Open signup is.** Narrowing to invite-only later costs nothing that would have
+been built anyway — the join code is the same mechanism either way. So if the
+abuse surface, the privacy exposure, or the free-tier ceiling turns out to bite,
+that is a switch, not a rewrite.
+
+### Sequence, stated plainly
+
+This is Phase 12 work — *Product exploration (conditional)* — and it is starting
+ahead of Phases 8 through 11, which are the solo run and the decision gate that
+was meant to authorise it. The owner's call, recorded because a later session
+will otherwise read the plan and think it slipped. **The coverage run still
+outranks it** (`docs/status.md` § *Next action*): it is the one remaining thing
+that can prove the app cannot record the real paper log, and anything built on
+top of that finding would be built twice.
+
+**Reversal condition.** If the coverage run or the solo run shows the app losing
+to the pen for this family, multi-tenancy is premature by definition — an app
+nobody here uses is not one to give away. That is Phase 11's gate doing its job
+late rather than a new decision.
+
+## D-058 — local-first is settled, and stops being a design argument
+
+**2026-09-14. Owner's call, after the rule blocked a third design conversation.**
+
+**Decision.** The local-first invariants stay in the code and come *out* of the
+design conversation. They are built, they work, and they are no longer a
+question to be re-argued every time a feature is proposed.
+
+Concretely, from here on:
+
+- **No agent challenges a design with "but what about offline at 4am".** The
+  scenario is not a test a proposal has to pass. If a design breaks an invariant
+  below, say which line of code breaks and what to write instead — one sentence,
+  in the implementation notes, not a section heading.
+- **No work is added whose only justification is a scenario this deployment has
+  not hit.** Offline has been close to hypothetical for this family. Hardening
+  against it further is not MVP work.
+- **The rule is not a veto on the login feature.** A session cached in
+  `localStorage` and refreshed in the background satisfies it. That is the whole
+  answer, and it does not need re-deriving.
+
+**What does not change: the code.** Writes still go to IndexedDB and the UI
+still updates before the network is touched. Sync still queues and retries. The
+outbox still survives a reload. Nothing in `src/` moves because of this
+decision, and a change that broke any of it would still be wrong.
+
+**Why.** The rule is load-bearing as architecture and was becoming a rhetorical
+device. It was invoked against the design of the login flow, the session cache,
+and the bootstrap order, and in all three cases the proposal was already correct
+— the invocation produced a round trip and no design change. Meanwhile the thing
+that actually gates this project is getting a multi-tenant version out. Spending
+the conversation on a scenario measured at roughly never, while the gate goes
+untouched, is the cost this decision removes.
+
+It is also the same mistake D-032 corrected in a different area: a broad,
+always-applicable caution reads as licence to raise an objection anywhere, and
+the fix is to make it specific and finite rather than to delete it.
+
+**The narrower thing that is still true, stated once so it need not be argued
+again.** Do not `await` a network auth call before first paint — read the cached
+session synchronously and render. That is an implementation note about startup
+latency, costs nothing, and is not a design constraint anyone needs to defend.
+
+**Reversal condition.** A real report of a parent unable to log — not a
+hypothetical, an actual occurrence — puts offline back on the table
+immediately, with whatever hardening that report justifies. Until one exists,
+the invariants above are the whole of the requirement.
+
+**Consequence for `technical-constraints.md`.** § *Local-first is a hard
+requirement* and the *Non-negotiables* list are reframed as invariants to
+preserve rather than tests to apply. `CLAUDE.md` reflects it.
+
+## D-059 — the gate code is replaced by the login, not kept alongside it
+
+**2026-09-14. Owner's call.**
+
+**Decision.** `SECRET_CODE` and the gate page it guards come out when the login
+lands. First run becomes: email → OTP → pick or create a caregiver. There is no
+second code, and no "friendly front door" kept for its own sake.
+
+`RECOVERY_CODE` goes with it. The screen behind it — pick the caregiver you
+already are, rather than minting a second one — survives and becomes an ordinary
+step of onboarding. That screen was always the useful part; the code in front of
+it was the workaround.
+
+**Why.** The gate was standing in for authentication that did not exist. D-030
+said so at the time and called it "a doormat, not a lock": the repo is public,
+the bundle carries the code in plain text, and it stopped nobody who looked.
+It was the right call for a pilot with a hard-coded baby and no accounts,
+because it made a lightweight entry possible without building a login.
+
+Once a real login exists the substitute has no job. **The household email plus a
+time-limited OTP is the secret code**, and a better one — it is not in the
+bundle, it expires, and it is per household rather than per deployment. Keeping
+both would mean two challenges in front of a parent at first run, one of which
+protects nothing.
+
+**Consequence.** D-030's first-run description is superseded from the login
+onward; its mascot half is untouched. `Welcome.tsx` loses the `'gate'` stage,
+`verify-welcome` loses its gate assertions, and `scripts/ui.mts` § `enterApp`
+loses the code-filling branch that every browser suite depends on — that helper
+is the single edit point, which is why it exists.
+
+---
+
+## D-060 — a second baby is reachable, and the two logs are kept apart
+
+**2026-09-15. Owner's call.**
+
+**Decision.** The household's other babies get a door and a label. Three parts:
+
+1. **The log says whose it is.** The baby's name goes in the status row, beside
+   the clock. It was typed once at onboarding and then never shown again.
+2. **The name is the way to the others.** Tapping it opens a sheet holding the
+   same picker onboarding uses — every baby the household has, and `someone new`
+   to create another.
+3. **The event pull is scoped through the timeslot** rather than left open.
+
+The picker is *moved* out of `Welcome.tsx` into `BabyPicker.tsx`, not copied.
+Two lists over one table drift, which is the reason `fetchBabies` already
+refuses to restate the RLS filter as a client-side `.eq()`.
+
+**Why now.** D-026 settled in Phase 2 that a sibling is a second row rather than
+a second concept, and D-057 built the schema for it — `baby_member` is a real
+many-to-many join. Every layer below the UI already supported this. What was
+missing was a door: `App.tsx` gates on a cached baby id, so once onboarding
+finished `Welcome` never mounted again and the only way to another baby was
+`localStorage.removeItem` in dev tools. `forgetBaby()` existed, with a docstring
+naming this exact case, and nothing called it.
+
+**What the switch has to do, and why it is not one line.** `setBabyId` on its
+own is wrong in three separate ways, each found by writing the suite:
+
+- **Local state outlives the id.** IndexedDB still holds the previous baby's
+  timeslots until a pull replaces them. So the order is: flush the outbox, move
+  the id, empty the store, pull. Emptying *before* the pull rather than trusting
+  it means a pull that never lands leaves an empty log under the right name —
+  honest, and it self-heals on the next sync. One child's feeds under another
+  child's name is the worst thing this app could render.
+- **A pull already in flight can land afterwards.** `pull()` now re-reads the id
+  before `replaceAll` and abandons the write if it moved. Cheap, and it closes
+  the race generally rather than only for this caller.
+- **Settings follow you across.** `baby.settings` hangs off the baby row (D-052),
+  and `unsynced()` reads a cached value the new row does not carry as "this phone
+  changed something" — so the previous baby's feeding cycle, bottle default,
+  supplement and prep lead get **pushed onto the new baby's row**. Nothing errors
+  and both phones agree on the wrong answer. `forgetSettings()` clears the store
+  as well as the map, because `read` falls back to the store.
+
+**It refuses rather than queues.** Offline, or with writes still pending, the
+switch declines and says which. That is not a retreat from local-first: D-058 is
+about never blocking a *write*, and this is not a write — it is changing which
+log you are looking at, which nobody does one-handed in the dark. Holding a
+half-finished switch across a restart buys a class of bug to serve a case that
+does not arise.
+
+**The caregiver is untouched.** D-026: a caregiver belongs to the household, not
+to the child. The tempting shortcut — clear the id and let `App.tsx` drop back
+into `Welcome` — would ask who you are every time you looked at a sibling's log.
+
+**Consequence.** `switchBaby` lives in `sync.ts`, not `household.ts`, because
+that module already imports this one and the reverse would be a cycle — and
+because flush-swap-refill is the same push-then-pull discipline the file already
+runs on. `verify-baby.mts` is the suite; every check in it could only fail on a
+household with two babies, which is why none of them were caught by the 699
+that came before.
+
+Two smaller things went with it. `someone new` reached the create field by
+emptying the fetched list, which made it a one-way door out of the picker — it
+is a flag now, and there is a way back. And `NamePrompt` read "Liana's other
+grown-ups" as a literal, which was true of the only household that existed
+before D-057 and is now a stranger's child's name on someone else's screen.
+
+**Not in scope.** Renaming a baby, and removing one from the household.
+
+---
+
+## D-061 — the migration is forward-only, because a routine delete is not survivable
+
+**2026-09-24. Owner's call, after losing data.**
+
+**Decision.** No step of the `public` → `app` migration deletes anything. `0008`
+is forward-only and idempotent: insert what is missing, `on conflict (id) do
+nothing`, run it as often as you like. Picking up a delta is one action — run the
+file again — with no preparation and nothing destructive in front of it.
+
+The delete-and-recopy recipe that `0008`'s header previously documented is
+withdrawn. A rollback still exists (`delete from app.timeslot where updated_by =
+'migration-0008'`) but is a **supervised one-off for discarding the copy**, never
+a maintenance step.
+
+**What happened.** On 2026-09-24 the owner set out to re-sync a few hours of new
+entries, following the header's instructions: delete the copied rows from `app`,
+then re-run. The delete landed on `public.event` instead — the two schemas carry
+the same five table names — and removed 99 events from the live log the two
+phones read.
+
+Everything but one event came back, and the reason is worth stating: **`0008` had
+run a few hours earlier, so `app.event` held the deleted rows.** The copy was the
+backup. 99 events were restored to `public` from `app`, the 12 newer moments were
+carried forward, and one event — a 43-minute period — was lost because it was
+logged after the copy and deleted before the next one.
+
+**Why the recipe was wrong, and it is not "be careful".** The argument for it was
+sound in isolation: D-003 gives mutable rows and hard deletes with no tombstones,
+so absence is the only signal a delete leaves, and wholesale replacement is what
+`db.replaceAll` does for exactly that reason. Correct by construction — for a
+program.
+
+A program does not mis-select a schema. **This procedure was to be carried out by
+one tired person, by hand, in a web console, on a schedule, against two databases
+whose tables share every name.** Its safe operation depended on never once
+getting that wrong, and that is not a property a procedure can have. The failure
+mode was also silent and delayed: nothing refused, nothing warned, and the damage
+surfaced later as missing rows.
+
+**Forward-only gives up completeness and buys a property worth more: it cannot
+remove a row, wherever it is pointed.** A mis-aimed insert writes rows that
+conflict and do nothing.
+
+**Consequence — drift is now reported, not resolved.** Forward-only cannot
+propagate a delete or an edit, so `app` drifts from `public` whenever a moment is
+deleted or corrected in the old app. `0008` § 7 now separates the two directions,
+which the previous version conflated:
+
+- **`public` has rows `app` does not** → unambiguously broken. Raises and rolls
+  back.
+- **`app` has rows `public` does not** → almost certainly a moment somebody
+  deleted. Reported in full with the query to inspect it, and nothing is removed.
+
+That second case is the app's own rule about duplicates applied one layer down:
+surface it, let the person decide. Reconciliation happens once, supervised, at
+cutover — with both lists visible and nothing else writing — instead of as a
+destructive statement typed on a schedule.
+
+**What earned its keep.** The count check added on 2026-09-23 distinguishes a
+short copy from a long one. Without that, the blind re-run after the accident
+would have reported "copy is short" while `app` was in fact long, and pointed the
+investigation at the caregiver mapping instead of at the missing rows. It was
+written for a case that looked hypothetical and was the thing that named the
+damage correctly a day later.
+
+**Still open.** The JSON export (`docs/tasks.md` Phase 12) remains unbuilt, and
+this incident is the argument for it: the recovery worked because a second copy
+happened to exist in another schema of the same project, which is not a backup
+strategy. A free-tier project keeps no backups at all.

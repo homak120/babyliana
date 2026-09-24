@@ -2,8 +2,9 @@
 // with an unknown volume, reopen the database, confirm all three came back
 // correct. fake-indexeddb gives us the same IndexedDB the browser has.
 import 'fake-indexeddb/auto'
+import { seedOnboarded } from './local-session.mts'
 
-// deviceId() reaches for localStorage; the write path only needs a stable id.
+// caregiverId() reaches for localStorage; the write path only needs a stable id.
 const store = new Map<string, string>()
 ;(globalThis as unknown as { localStorage: Storage }).localStorage = {
   getItem: (k: string) => store.get(k) ?? null,
@@ -14,8 +15,13 @@ const store = new Map<string, string>()
   length: 0,
 } as Storage
 
-const { createThisDevice, logMoment, getMoments, removeMoment } = await import('../src/moments.ts')
-const { getDevices } = await import('../src/db.ts')
+// Onboarding's two answers — which baby, and a session — both live in
+// localStorage now (D-057), and the write path refuses to create a caregiver
+// without the second. Neither reaches the network; see scripts/local-session.mts.
+seedOnboarded(store)
+
+const { createThisCaregiver, logMoment, getMoments, removeMoment } = await import('../src/moments.ts')
+const { getCaregivers } = await import('../src/db.ts')
 
 let failures = 0
 const check = (label: string, ok: boolean, detail = '') => {
@@ -23,9 +29,9 @@ const check = (label: string, ok: boolean, detail = '') => {
   if (!ok) failures++
 }
 
-check('nothing exists before a name is submitted', (await getDevices()).length === 0)
-await createThisDevice('Test')
-check('submitting creates exactly one device', (await getDevices()).length === 1)
+check('nothing exists before a name is submitted', (await getCaregivers()).length === 0)
+await createThisCaregiver('Test')
+check('submitting creates exactly one caregiver', (await getCaregivers()).length === 1)
 
 await logMoment({ entries: [{ type: 'feed', volume_ml: 60, source: 'formula' }] })
 await logMoment({
@@ -47,7 +53,7 @@ check('both halves keep their own source',
   split.events.map((e) => e.source).sort().join() === 'breast_milk,formula')
 check('entries share their moment id', split.events.every((e) => e.timeslot_id === split.timeslot.id))
 check('ids are distinct per entry', split.events[0].id !== split.events[1].id)
-check('baby and device stamped on the moment',
+check('baby and caregiver stamped on the moment',
   !!split.timeslot.baby_id && !!split.timeslot.logged_by)
 
 // the real test: reopen as a cold start would

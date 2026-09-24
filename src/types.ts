@@ -49,9 +49,24 @@ export type Baby = {
   updated_by: string | null
 }
 
-export type Device = {
+export type Caregiver = {
   id: string
   name: string | null
+  /**
+   * Which household account this person belongs to — `auth.users.id`.
+   *
+   * **Not optional, and not server-side-only.** Sync upserts whole local rows,
+   * so a field the client does not carry is a field the client sends as absent;
+   * and the policy on `app.caregiver` is `with check (user_id = auth.uid())`,
+   * which rejects the insert outright. The row then never leaves the phone,
+   * `push` returns false, and reconcile is skipped — so the whole log stops
+   * syncing because of one missing column, while the app looks fine.
+   *
+   * Nullable because the column is: `on delete set null` keeps a caregiver alive
+   * when its account goes, so `timeslot.logged_by` still resolves and the log
+   * stays readable.
+   */
+  user_id: string | null
   created_at: string
   updated_at: string
   updated_by: string | null

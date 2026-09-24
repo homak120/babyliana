@@ -2,13 +2,20 @@
 // check is that the arithmetic underneath is right — and the midnight cases are
 // exactly the ones a tired person hits and would not notice going wrong.
 import 'fake-indexeddb/auto'
-const store = new Map<string, string>([['babyliana.device_id', '00000000-0000-4000-8000-0000000d0d0d']])
+import { seedOnboarded } from './local-session.mts'
+const store = new Map<string, string>([['babyliana.caregiver_id', '00000000-0000-4000-8000-0000000d0d0d']])
 ;(globalThis as unknown as { localStorage: Storage }).localStorage = {
   getItem: (k: string) => store.get(k) ?? null,
   setItem: (k: string, v: string) => void store.set(k, v),
   removeItem: (k: string) => void store.delete(k),
   clear: () => store.clear(), key: () => null, length: 0,
 } as Storage
+
+// Onboarding's two answers — which baby, and a session — both live in
+// localStorage now (D-057), and the write path refuses to create a caregiver
+// without the second. Neither reaches the network; see scripts/local-session.mts.
+seedOnboarded(store)
+
 
 import {
   endAgo, endNow, formatDuration, minutesAfter, minutesAgo, resolveEnd, stepFor,
@@ -216,8 +223,8 @@ check('hours wrap rather than stick', wrapHour(-1) === 23 && wrapHour(24) === 0)
 check('minutes wrap too', wrapMinute(-1) === 59 && wrapMinute(60) === 0)
 
 // --- does a period actually survive being stored? --------------------------
-const { createThisDevice, logMoment, getMoments } = await import('../src/moments.ts')
-await createThisDevice('Test')
+const { createThisCaregiver, logMoment, getMoments } = await import('../src/moments.ts')
+await createThisCaregiver('Test')
 
 const sleep = await logMoment({
   occurredAt: t(19, 0),

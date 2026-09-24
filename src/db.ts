@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
-import type { Baby, Device, LogEvent, Moment, Timeslot } from './types'
+import type { Baby, Caregiver, LogEvent, Moment, Timeslot } from './types'
 
 // The local replica. Holds the whole log, not a cache of recent items —
 // event-model.md § Where each fact lives. Everything the UI reads comes from
@@ -10,7 +10,7 @@ import type { Baby, Device, LogEvent, Moment, Timeslot } from './types'
 // the transaction plumbing is unreadable by hand.
 
 const DB_NAME = 'babyliana'
-const DB_VERSION = 2
+const DB_VERSION = 3
 
 /**
  * What has been written locally but not yet accepted by the server.
@@ -21,7 +21,7 @@ const DB_VERSION = 2
  */
 export type OutboxItem = {
   key: string
-  table: 'baby' | 'device' | 'timeslot' | 'event'
+  table: 'baby' | 'caregiver' | 'timeslot' | 'event'
   rowId: string
   op: 'put' | 'delete'
 }
@@ -29,21 +29,90 @@ export type OutboxItem = {
 interface Schema extends DBSchema {
   baby: { key: string; value: Baby }
   outbox: { key: string; value: OutboxItem }
-  device: { key: string; value: Device }
+  caregiver: { key: string; value: Caregiver }
   timeslot: { key: string; value: Timeslot; indexes: { occurred_at: string } }
   event: { key: string; value: LogEvent; indexes: { timeslot_id: string } }
 }
 
 let dbp: Promise<IDBPDatabase<Schema>> | null = null
 
+/**
+ * How long to wait for the database before deciding something is holding it.
+ *
+ * An IndexedDB version change cannot proceed while another connection has the
+ * old version open, and the API's answer to that is to **wait forever**. No
+ * error, no rejection — `openDB` simply never settles, and every caller awaiting
+ * it hangs with nothing on screen to say why. That is how a version bump turns
+ * into a dead button.
+ *
+ * Five seconds is far longer than an unblocked open ever takes and short enough
+ * that a person has not yet decided the app is broken.
+ */
+const OPEN_TIMEOUT_MS = 5000
+
+/**
+ * The local database failing is fatal, and has to be said out loud.
+ *
+ * Everything the UI reads comes from here, so there is no degraded mode to fall
+ * back to — this is not the network being away. Turning the original hang into a
+ * rejection made the failure *visible in the console*, which is not the same as
+ * visible to the person holding the phone: every other caller here is a render
+ * path that does not catch, so the app simply stops with a blank or half-drawn
+ * screen and an uncaught promise nobody sees.
+ *
+ * So the failure is broadcast once, and `App` renders it as a screen with a way
+ * out. One flag rather than error handling threaded through every call site,
+ * because there is exactly one useful response to any of them and it is the same
+ * response: say what happened, offer a reload.
+ */
+let fatalError: Error | null = null
+const fatalWatchers = new Set<(e: Error) => void>()
+
+function fatal(e: Error) {
+  if (fatalError) return
+  fatalError = e
+  for (const w of fatalWatchers) w(e)
+}
+
+export function dbFatal(): Error | null {
+  return fatalError
+}
+
+export function onDbFatal(fn: (e: Error) => void) {
+  fatalWatchers.add(fn)
+  if (fatalError) fn(fatalError)
+  return () => void fatalWatchers.delete(fn)
+}
+
 function db() {
-  dbp ??= openDB<Schema>(DB_NAME, DB_VERSION, {
+  dbp ??= withTimeout(openDB<Schema>(DB_NAME, DB_VERSION, {
+    /**
+     * Another tab wants to upgrade and this connection is what stops it.
+     *
+     * Closing is right: whatever this tab was doing, the version it holds is
+     * about to be superseded, and refusing to let go only strands the tab that
+     * is trying to move forward. `dbp` is cleared so the next call reopens at
+     * the new version rather than reusing a closed handle.
+     */
+    blocking() {
+      void dbp?.then((d) => d.close()).catch(() => {})
+      dbp = null
+    },
+
+    /** The mirror: something else is holding the old version and will not let go. */
+    blocked() {
+      console.error(
+        '[babyliana] the local database is held open at an older version by ' +
+          'another tab or the installed app. Close the others and reload.',
+      )
+    },
+
     upgrade(d, oldVersion) {
       // Guarded per version so an existing browser upgrades rather than
       // needing its data cleared.
       if (oldVersion < 1) {
         d.createObjectStore('baby', { keyPath: 'id' })
-        d.createObjectStore('device', { keyPath: 'id' })
+        d.createObjectStore('caregiver', { keyPath: 'id' })
         d.createObjectStore('timeslot', { keyPath: 'id' }).createIndex(
           'occurred_at',
           'occurred_at',
@@ -56,9 +125,54 @@ function db() {
       if (oldVersion < 2) {
         d.createObjectStore('outbox', { keyPath: 'key' })
       }
+      // `device` became `caregiver`. A store cannot be renamed in place, so the
+      // old one is dropped and the new one created — which a fresh browser never
+      // sees, because `oldVersion < 1` above already made `caregiver`.
+      //
+      // **The rows are not carried across, deliberately.** They are a replica:
+      // reconcile refills them from the server on the next sync. The one thing
+      // that could be lost is a caregiver rename queued in the outbox and never
+      // pushed, and that is acceptable here because this upgrade only ever runs
+      // on a phone crossing from `public` to `app` — a cutover that re-onboards
+      // the install and rebuilds the replica anyway. It is not a silent loss in
+      // the middle of ordinary use.
+      if (oldVersion < 3) {
+        if (d.objectStoreNames.contains('device' as never)) {
+          d.deleteObjectStore('device' as never)
+        }
+        if (!d.objectStoreNames.contains('caregiver')) {
+          d.createObjectStore('caregiver', { keyPath: 'id' })
+        }
+      }
     },
-  })
+  }))
   return dbp
+}
+
+/**
+ * Turn "never settles" into a real rejection.
+ *
+ * `dbp` is cleared on failure, deliberately: a cached rejected promise would
+ * make every later call fail with the same stale error, so closing the offending
+ * tab would fix nothing until the app was restarted. Clearing it means a retry
+ * is a retry.
+ */
+function withTimeout(p: Promise<IDBPDatabase<Schema>>): Promise<IDBPDatabase<Schema>> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      dbp = null
+      const e = new Error(
+        'the local database is open at an older version somewhere else — ' +
+          'close any other tabs or the installed app, then try again',
+      )
+      fatal(e)
+      reject(e)
+    }, OPEN_TIMEOUT_MS)
+    p.then(
+      (d) => { clearTimeout(timer); resolve(d) },
+      (e) => { clearTimeout(timer); dbp = null; reject(e) },
+    )
+  })
 }
 
 /**
@@ -108,7 +222,7 @@ export async function deleteMoment(timeslotId: string) {
 }
 
 /**
- * Create if absent, leave alone if present. One row per device, forever.
+ * Create if absent, leave alone if present. One row per caregiver, forever.
  *
  * Deliberately not "if there is no localStorage key, this is a first run" —
  * the Phase 3 spike already wrote `babyliana.device_id` on both phones and it
@@ -117,11 +231,11 @@ export async function deleteMoment(timeslotId: string) {
  * would then fail its foreign key. It is also wrong after a storage eviction,
  * which is what Q-004 is measuring.
  */
-export async function ensureDevice(device: Device): Promise<boolean> {
+export async function ensureCaregiver(caregiver: Caregiver): Promise<boolean> {
   const d = await db()
-  const existing = await d.get('device', device.id)
+  const existing = await d.get('caregiver', caregiver.id)
   if (existing) return false
-  await d.put('device', device)
+  await d.put('caregiver', caregiver)
   return true
 }
 
@@ -130,12 +244,12 @@ export async function eventIdsFor(timeslotId: string): Promise<string[]> {
   return d.getAllKeysFromIndex('event', 'timeslot_id', timeslotId)
 }
 
-export async function putDevice(device: Device) {
-  await (await db()).put('device', device)
+export async function putCaregiver(caregiver: Caregiver) {
+  await (await db()).put('caregiver', caregiver)
 }
 
-export async function getDevices(): Promise<Device[]> {
-  return (await db()).getAll('device')
+export async function getCaregivers(): Promise<Caregiver[]> {
+  return (await db()).getAll('caregiver')
 }
 
 export async function putBaby(baby: Baby) {
@@ -179,21 +293,21 @@ export async function dequeue(keys: string[]) {
  */
 export async function replaceAll(rows: {
   baby: Baby[]
-  device: Device[]
+  caregiver: Caregiver[]
   timeslot: Timeslot[]
   event: LogEvent[]
 }) {
   const d = await db()
-  const tx = d.transaction(['baby', 'device', 'timeslot', 'event'], 'readwrite')
+  const tx = d.transaction(['baby', 'caregiver', 'timeslot', 'event'], 'readwrite')
   await Promise.all([
     tx.objectStore('baby').clear(),
-    tx.objectStore('device').clear(),
+    tx.objectStore('caregiver').clear(),
     tx.objectStore('timeslot').clear(),
     tx.objectStore('event').clear(),
   ])
   await Promise.all([
     ...rows.baby.map((r) => tx.objectStore('baby').put(r)),
-    ...rows.device.map((r) => tx.objectStore('device').put(r)),
+    ...rows.caregiver.map((r) => tx.objectStore('caregiver').put(r)),
     ...rows.timeslot.map((r) => tx.objectStore('timeslot').put(r)),
     ...rows.event.map((r) => tx.objectStore('event').put(r)),
     tx.done,
@@ -204,6 +318,6 @@ export async function deleteEvent(id: string) {
   await (await db()).delete('event', id)
 }
 
-export async function getRow(table: 'baby' | 'device' | 'timeslot' | 'event', id: string) {
+export async function getRow(table: 'baby' | 'caregiver' | 'timeslot' | 'event', id: string) {
   return (await db()).get(table, id)
 }
