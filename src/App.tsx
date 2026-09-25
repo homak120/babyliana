@@ -1,22 +1,24 @@
-import { useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { forgetCaregiver, getCaregiverId } from './caregiver-id'
+import { Welcome } from './log/Welcome'
 import { forgetBaby, getBabyId } from './household'
-import { DayScreen } from './day/DayScreen'
 import { BottleIcon } from './log/BottleIcon'
 import { EndSleepIcon } from './log/EndSleepIcon'
 import { Icon } from './log/Icon'
 import { LogScreen } from './log/LogScreen'
-import { Welcome } from './log/Welcome'
-import SpikePage from './spike/SpikePage'
 import { useOverlayOpen } from './overlay'
-import TouchProbe from './probe/TouchProbe'
 import { dbFatal, getCaregivers, getRow, onDbFatal } from './db'
 import { startSync, subscribe, sync, syncState } from './sync'
 import { registerUpdates } from './updates'
 import './tokens.css'
 import './log/log.css'
+// **day.css stays here, and that is not an oversight.** It is named for the day
+// screen and it also styles `.tabs` — the bottom bar this component renders on
+// every screen, the FAB, and the end-feed and end-sleep pills. Moving it into
+// the lazily-loaded chunk left the whole bar as unstyled buttons until someone
+// opened the report (D-065). Only insights.css travelled, with the view that is
+// the only thing using it.
 import './day/day.css'
-import './report/insights.css'
 
 // Still no router. The design navigates with a two-tab bar rather than URLs, so
 // a router would buy nothing but a dependency — /spike stays a path check
@@ -27,6 +29,26 @@ import { getMoments, endOpenPeriod, logQuick, resumeLastSleep } from './moments'
 import { feedDuration, ongoingFeed, ongoingSleep, sleepDuration } from './derive'
 import type { Moment } from './types'
 import { quickFeedEntries, quickSleepEntries, type Block } from './log/drafts'
+
+// Split out of the first load (D-065). The app opens on the log, every time:
+// `screen` starts at 'log' and the two diagnostics are reachable only by typing
+// a path. Loading the report, its four charts and the period picker before the
+// first paint of the home screen was 110KB nobody had asked for yet.
+//
+// Each of these is precached by the service worker, so the fetch behind the
+// fallback is a cache read — the fallback is what the frame holds, not a
+// spinner anyone waits at.
+const DayScreen = lazy(() => import('./day/DayScreen').then((m) => ({ default: m.DayScreen })))
+const SpikePage = lazy(() => import('./spike/SpikePage'))
+const TouchProbe = lazy(() => import('./probe/TouchProbe'))
+
+// **Welcome is deliberately NOT lazy.** It was, for one build: it is 6KB and
+// runs once per install, which looks like the easiest split on the list. But the
+// boot it is needed on is the first one — no caches, no service worker yet — and
+// a lazy first-run screen paints a blank frame before it appears. That is the
+// exact fault this whole decision is about, at the one moment it is most
+// visible. It also broke every browser suite, because the frame is real enough
+// for a test to miss the screen entirely.
 
 type Screen = 'log' | 'day'
 
@@ -190,8 +212,12 @@ export default function App() {
     )
   }
 
-  if (window.location.pathname.startsWith('/spike')) return <SpikePage />
-  if (window.location.pathname.startsWith('/touch')) return <TouchProbe />
+  if (window.location.pathname.startsWith('/spike')) {
+    return <Suspense fallback={null}><SpikePage /></Suspense>
+  }
+  if (window.location.pathname.startsWith('/touch')) {
+    return <Suspense fallback={null}><TouchProbe /></Suspense>
+  }
   if (!onboarded) {
     return <Welcome onDone={() => setOnboarded(true)} />
   }
@@ -201,7 +227,11 @@ export default function App() {
       {screen === 'log' ? (
         <LogScreen key={saved} onEndOpen={endOpen} onResumeSleep={resumeSleep} />
       ) : (
-        <DayScreen key={saved} />
+        // The fallback is the screen's own ground rather than null: an empty
+        // fragment collapses the layout for a frame and the tab bar jumps.
+        <Suspense fallback={<main className="day" />}>
+          <DayScreen key={saved} />
+        </Suspense>
       )}
 
       {/* Contextual, per the handoff. Home carries the quick-add row; the day

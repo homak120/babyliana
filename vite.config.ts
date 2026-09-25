@@ -55,7 +55,10 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,webp}'],
+        // woff2 is here because the body font is self-hosted now (D-065) and a
+        // font that is not precached is a font fetched over the network on the
+        // one boot that has no time to spare.
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webp,woff2}'],
         // The mascot ships as WebP with a PNG fallback. Every browser this app
         // runs on takes the WebP, so precaching the fallbacks would add ~650KB
         // to the offline bundle that nobody ever downloads. They stay deployed
@@ -71,6 +74,11 @@ export default defineConfig({
           'assets/{settled,awake,hungry,sleeping}-day-*.png',
           'assets/gate-*.jpg',
           'pwa-1024x1024.png',
+          // The iOS launch screens (D-065). Same argument as the 1024 icon: the
+          // OS reads them when the app is added to the home screen, and that
+          // happens online. Twelve of them at 172KB would otherwise be offline
+          // payload nobody ever fetches twice.
+          'splash/*.png',
         ],
         // The app must open with no signal, and the font carries the product's
         // tone — falling back to system sans offline would make it look broken

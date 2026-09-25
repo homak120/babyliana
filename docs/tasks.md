@@ -162,6 +162,12 @@ when". Read that first; this list is the checklist view of the same thing.
       the longest stretch named with the time it started. Closes `Q-014`. The
       hour grid it replaces put sleep last in a priority order, so the one thing
       that occupies hours was the one most often painted over
+- [x] **CC** **D-065** — the launch stops being white. Measured first: the log
+      reads out of IndexedDB in 6 ms and first paint is 60 ms, so the seconds
+      were iOS with no `apple-touch-startup-image` to draw. Twelve launch
+      screens from `scripts/splash.mts`, a ground painted before any stylesheet
+      resolves, the body font self-hosted and precached, and the report,
+      onboarding and diagnostics split out of the first load
 - [x] **CC** **D-063** — the read-back's page summarises what the tag row does
       not: the source split, the widest gap, the poop colours, sleep, and the
       secondary types with a note count. Bubbles, in the colours their kinds

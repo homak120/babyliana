@@ -1,3 +1,4 @@
+import './insights.css'
 import { useState } from 'react'
 import { diaperParts, hhmm } from '../day/cells'
 import { Icon } from '../log/Icon'

@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-24 (the daily rhythm is rebuilt — D-064, `Q-014` closed)
+Last updated: 2026-09-25 (the launch stops being white — D-065)
 
 ---
 
@@ -141,6 +141,13 @@ precache sits where it does; the 1024 is excluded, being needed only at install.
 Newest first, and **this is an index, not a record** — `docs/decisions.md`
 carries the reasoning for every one of these, and for everything older.
 
+- **D-065** — the launch is the app's colour rather than white. Measured first:
+  the whole log comes out of IndexedDB in **6 ms** and first paint lands at
+  60 ms on a phone-class CPU, so none of the reported seconds were the app
+  booting. They were iOS bringing the web view up with **no
+  `apple-touch-startup-image` to draw**. Twelve launch screens, a ground painted
+  before any stylesheet resolves, the body font self-hosted and precached, and
+  the report, onboarding and the diagnostics split out of the first load.
 - **D-064** — the daily rhythm shows time rather than hours. Two lanes a day,
   marks at the minute, a night band, an average-day row, and the longest stretch
   named with the time it started. It replaces an hour grid whose priority order
@@ -357,8 +364,12 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**Nothing uncommitted.** The rhythm rebuild is `ae6ab6f` on `main`, pushed. No
-migration, nothing new stored.
+**Uncommitted, on `main`: D-065, the launch screen work.** `index.html` (the
+paint-first ground, the inline faces, the twelve startup images, the Google
+links made non-blocking), `public/fonts/` and `public/splash/` as new
+directories, `scripts/splash.mts` as a new generator, `vite.config.ts`
+(`woff2` precached, `splash/*.png` not), and `src/App.tsx` plus the two
+stylesheet moves for the code split. No migration, nothing new stored.
 
 **`0008` has been applied**, and `supabase/README.md` records it. Re-running it
 is the routine way to pick up new rows from `public`; it is forward-only and
