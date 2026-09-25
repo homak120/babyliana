@@ -357,10 +357,8 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**Uncommitted, on `main`: the daily rhythm card, rebuilt (D-064).**
-`src/report/insights.ts` (`TrackRow` and `usualHours` in place of the heat
-grid, plus `longestStretch`), `InsightsView.tsx`, `insights.css`, and both
-suites. No migration, nothing new stored.
+**Nothing uncommitted.** The rhythm rebuild is `ae6ab6f` on `main`, pushed. No
+migration, nothing new stored.
 
 **`0008` has been applied**, and `supabase/README.md` records it. Re-running it
 is the routine way to pick up new rows from `public`; it is forward-only and
