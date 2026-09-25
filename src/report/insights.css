@@ -437,11 +437,17 @@
 
 /* ---------- daily rhythm ---------- */
 
-.heat { display: flex; flex-direction: column; gap: 3px; }
+/* ---------- the rhythm track (D-064) ---------- */
+/*
+   Two lanes a day, positioned by the minute. The grid this replaced painted one
+   kind per hour with sleep last in the order, so the only thing that occupies
+   hours rather than instants was the thing most often painted over.
+*/
+.track { display: flex; flex-direction: column; gap: 4px; }
 
-.heatRow, .heatScale { display: flex; align-items: center; gap: 6px; }
+.trackRow, .trackScale { display: flex; align-items: center; gap: 6px; }
 
-.heatLabel {
+.trackLabel {
   flex: none;
   width: 30px;
   font-size: 11px;
@@ -450,20 +456,78 @@
   font-variant-numeric: tabular-nums;
 }
 
-.heatCells { flex: 1; display: flex; gap: 2px; }
+.lanes { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 
-.heatCell {
-  flex: 1;
-  min-width: 0;
-  height: 15px;
-  border-radius: 3px;
+.lane {
+  position: relative;
+  width: 100%;
+  border-radius: 4px;
   background: var(--chip);
+  overflow: hidden;
 }
 
-.heatCell.feed  { background: var(--roseFill); }
-.heatCell.poop  { background: var(--mintFill); }
-.heatCell.pee   { background: var(--yellowFill); }
-.heatCell.sleep { background: var(--periFill); }
+.sleepLane { height: 15px; }
+/* Shorter on purpose: a change is an instant and a lane of them is a margin
+   note to the lane above, not a second chart. */
+.diaperLane { height: 7px; }
+
+/* Scenery, not a claim: it says which hours are night so the rows can be read
+   against them. Kept under everything, and barely there.
+
+   Mixed from `--periInk` rather than `--periFill`: the fill tones are close to
+   `--chip` in the night theme, where this band was invisible — and a band you
+   cannot see in the dark is the wrong one to lose. */
+.night {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in oklab, var(--periInk) 14%, var(--chip));
+}
+
+.sleepBand {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--periInk) 45%, var(--card));
+}
+
+/* An instant, drawn as an instant. The ring is what keeps a feed legible on
+   top of a sleep band rather than dissolving into it. */
+.mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--card);
+}
+
+.mark.feed { background: var(--roseInk); }
+.mark.poop { background: var(--mintInk); }
+.mark.pee  { background: var(--yellowInk); }
+
+/* The average day. One series measuring magnitude, so intensity carries it and
+   no second hue is introduced — the opacity is set per cell in the view, with
+   a floor so an hour nobody feeds in is still visibly a slot rather than a
+   hole in the row. */
+.usualRow { margin-top: 2px; }
+.usualCells { flex: 1; display: flex; gap: 2px; }
+
+.usualCell {
+  flex: 1;
+  min-width: 0;
+  height: 13px;
+  border-radius: 3px;
+  background: var(--roseInk);
+}
+
+/* A month of rows is 30 of them, and this card is not the only thing on the
+   screen. The lanes thin; the labels are thinned in the view. */
+.track.dense .sleepLane { height: 11px; }
+.track.dense .diaperLane { height: 5px; }
+.track.dense { gap: 3px; }
 
 .heatTicks {
   flex: 1;
@@ -482,8 +546,21 @@
   color: var(--dim);
 }
 
+/* Identity is never colour alone — the words carry it — but the swatch has to
+   be the same paint as the thing it names. */
+.swatch { flex: none; width: 11px; height: 11px; border-radius: 3px; }
+.swatch.sleep { background: color-mix(in oklab, var(--periInk) 45%, var(--card)); }
+.swatch.feed  { background: var(--roseInk); }
+.swatch.poop  { background: var(--mintInk); }
+.swatch.pee   { background: var(--yellowInk); }
+/* Scenery is quiet by design, and at 11 points a quiet fill is no fill at all —
+   so this one swatch carries a hairline to have an edge to read. */
+.swatch.night {
+  background: color-mix(in oklab, var(--periInk) 14%, var(--chip));
+  box-shadow: inset 0 0 0 1px var(--hair);
+}
+
 .legend li { display: flex; align-items: center; gap: 4px; }
-.legend .heatCell { flex: none; width: 11px; height: 11px; }
 
 /* ---------- growth ---------- */
 

@@ -2933,3 +2933,73 @@ reader to ignore what they can see, which is the call D-049's tally already made
 **Reversal condition.** If the summary is scrolled past every time and the tag
 row is what gets read, the block collapses behind a tap. If the month pills go
 unused, they come out and `30d` stands in for them.
+
+---
+
+## D-064 — the daily rhythm shows time, not hours
+
+**2026-09-24. Owner's call, from use: it looked right and nobody acted on it.
+This closes Q-014.**
+
+**Decision.** The card is a track per day — two lanes, positioned by the minute
+— with a night band behind it, an average-day row under it, and the longest
+stretch without a feed named with the time it started.
+
+### What was wrong, and it was three things
+
+The grid it replaces painted one kind per hour, priority `feed > poop > pee >
+sleep`.
+
+1. **Sleep was last in that order**, and sleep is the only one of the four that
+   occupies hours rather than instants. Three hours of sleep with one feed in
+   them rendered as "feed": the longest block of the day was the one most often
+   painted over. The chart was at its least true exactly where it mattered most.
+2. **Hour buckets, not times.** 23:05 and 23:50 were the same cell; two feeds
+   forty minutes apart were indistinguishable from one.
+3. **No magnitude.** One feed in an hour and three looked identical.
+
+Any one would have made it decorative. Together they meant it could not answer a
+question anybody would act on.
+
+### What replaced it
+
+- **Two lanes.** A sleep lane carrying the night band, the sleep bands and the
+  feed ticks; a diaper lane under it, shorter, because a change is a margin note
+  to the lane above and not a second chart. Nothing is painted over anything.
+- **Minute positions.** Every mark sits at `minutes / 1440` across the row, so
+  two close feeds are two marks and a 23:50 feed is at 23:50.
+- **A night band**, fixed at 19:00–07:00. **Scenery, not a setting and not a
+  claim** — it says which hours are night so the rows can be read against them.
+  It is mixed from `--periInk` rather than `--periFill` because the fill tones
+  sit on top of `--chip` in the night theme, where the first version of this
+  band was invisible. A band you cannot see in the dark is the wrong one to lose.
+- **An average-day row.** Per hour, how often a feed falls there across the
+  span. **This is the row the per-day rows cannot be**: they show what happened,
+  and the question people bring to a rhythm chart is what usually happens.
+- **The longest stretch, with its start.** `4h 10m · longest stretch · from
+  23:40 on 9/22`.
+
+### Three things it had to get right
+
+- **The priority rule survives in exactly one place.** A change with both a wet
+  and a dirty is one tick named for the poop — because there the two really are
+  the same event. It no longer runs between sleep and everything else, which is
+  where it was doing the damage. A split feed is likewise one tick, not two at
+  the same position: one moment, one thing that happened (D-019).
+- **A sleep crossing midnight draws on both days**, clamped to each, and squares
+  the end it shares with midnight so it reads as one sleep across two rows
+  rather than two sleeps.
+- **The stretch is not `maxFeedGap`.** That one is the widest gap *inside* a
+  calendar day, and it is what D-032's watch rule counts — unchanged, still
+  four rules, still the same thresholds. The stretch runs across midnight, where
+  the long gap anybody cares about actually happens. The card printed both for
+  one draft, which on every day the longest gap did not span midnight was the
+  same number twice; only the stretch is printed now.
+
+**Not built, and deliberately:** tapping a row to open that day. It was on the
+list in Q-014 as *F*, it is navigation rather than legibility, and nothing else
+here depends on it.
+
+**Reversal condition.** If the average-day row is the only part anyone reads,
+the per-day rows shrink to make room for it rather than the other way round. If
+nobody reads any of it, the card goes — the figures under it stand on their own.

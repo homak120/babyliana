@@ -68,53 +68,6 @@ question says.
 
 ---
 
-### Q-014 — What should the daily rhythm actually show?
-
-**Raised 2026-09-24 by the owner, from use:** the heatmap looks right and is not
-useful. Nobody has said what they would do differently after reading it.
-
-**Why it is not useful, measured rather than guessed.** Three things in how it
-is built work against it:
-
-1. **One cell, one kind.** Each hour shows a single thing, priority
-   feed > poop > pee > sleep. Sleep is last, and sleep is the only one of the
-   four that occupies hours rather than instants — so the longest block of the
-   day is the one most often painted over. An hour with a feed in it and three
-   hours of sleep through it reads as "feed".
-2. **Hour buckets, not times.** A feed at 23:05 and one at 23:50 are the same
-   cell. Two feeds 40 minutes apart look identical to one feed.
-3. **No magnitude.** One feed in an hour and three feeds in an hour are the
-   same colour.
-
-**Candidates, cheapest first. Not decisions — the owner picks.**
-
-- **A. Split the row into two lanes.** A sleep lane drawn as a continuous bar
-  from real start to real end, and an event lane of tick marks for feeds and
-  changes. This removes the priority rule that hides sleep, and it is the
-  single change that fixes the biggest untruth in the chart.
-- **B. Position by minute, not by hour.** Each mark at `minutes / 1440` across
-  the row. Kills buckets 2 and 3 together: two close feeds become two marks.
-- **C. Shade the night.** One band behind 19:00–07:00. The question being asked
-  of this chart at 4am is a question about nights, and nothing on it currently
-  says which hours those are.
-- **D. An average-day row.** One extra row under the days: per hour, how often a
-  feed falls in that hour across the span. This is the row that answers "what is
-  his rhythm" — the per-day rows show what happened, not what usually happens.
-- **E. A sentence under the grid.** "longest stretch without a feed: 4h 10m,
-  from 23:40 on 9/22." A chart that illustrates a sentence is read; a chart that
-  has to be decoded is admired.
-- **F. Tap a row for that day**, the way the source chart works since D-062 —
-  either its own breakdown, or straight to that day in the log.
-
-A + B + C + D is a redraw of the card and is the recommendation. E is nearly
-free and could go first on its own.
-
-**Closed by:** the owner picking from the above, or saying the card should go.
-**Constraint that survives whatever is picked:** descriptive, never evaluative
-(CLAUDE.md), and no fifth watch-list rule (D-032).
-
----
-
 ### Q-015 — Which captured-but-unused data earns a place on the insights screen?
 
 **Raised 2026-09-24 by the owner.** The app captures more than it reports.

@@ -103,8 +103,35 @@ export type DayStat = {
 
 export type Flag = { key: string; icon: string; text: string }
 
-export type HeatCell = { hour: number; kind: 'feed' | 'poop' | 'pee' | 'sleep' | null }
-export type HeatRow = { iso: string; label: string; cells: HeatCell[] }
+/** Where the night band sits. Fixed, and not a setting: it is scenery for
+ *  reading the rows against, not a claim about when this baby sleeps. */
+export const NIGHT = { from: 19, to: 7 }
+
+/** A stretch of sleep on one day's track, as percentages across that day. */
+export type TrackBand = { from: number; to: number }
+
+/** One thing that happened, positioned by the minute it happened at. */
+export type TrackMark = { id: string; at: number; kind: 'feed' | 'poop' | 'pee' }
+
+/**
+ * One day of the rhythm chart.
+ *
+ * **Two lanes, not one cell per hour (D-064).** The hour grid it replaces had
+ * three faults and this fixes all three: sleep was last in a priority order, so
+ * the only thing that occupies hours rather than instants was the thing most
+ * often painted over; 23:05 and 23:50 were the same cell; and one feed in an
+ * hour looked like three.
+ */
+export type TrackRow = {
+  iso: string
+  label: string
+  /** Clamped to this day, so a sleep crossing midnight draws on both. */
+  sleeps: TrackBand[]
+  marks: TrackMark[]
+}
+
+/** The longest anyone went without a feed, and when it started. */
+export type Stretch = { mins: number; fromIso: string }
 
 export type WeightEntry = { key: string; day: string; text: string }
 
@@ -254,54 +281,94 @@ function statsFor(iso: string, moments: Moment[], now: Date): DayStat {
   return s
 }
 
-/** Which hours of `day` a sleep covers, clamped to that day so one crossing
- *  midnight colours the right hours on both rows rather than none on either. */
-function sleepHours(m: Moment, day: Date, now: Date): number[] {
-  const dayStart = day.getTime()
+/** How far into a day a moment in time falls, as a percentage of it. */
+const pctOfDay = (ms: number) => (ms / 86_400_000) * 100
+
+function trackRow(s: DayStat, all: Moment[], now: Date): TrackRow {
+  const dayStart = s.date.getTime()
   const dayEnd = dayStart + 86_400_000
-  const [from, to] = sleepSpan(m, now)
-  const a = Math.max(from, dayStart)
-  const b = Math.min(to, dayEnd - 1)
-  if (b < a) return []
-  const first = new Date(a).getHours()
-  const last = new Date(b).getHours()
-  const out: number[] = []
-  for (let h = first; h <= last; h++) out.push(h)
-  return out
-}
 
-function heatRow(s: DayStat, all: Moment[], now: Date): HeatRow {
-  const feed = new Set<number>()
-  const poop = new Set<number>()
-  const pee = new Set<number>()
-  const sleep = new Set<number>()
+  // Read from every moment, not just this day's: a sleep that began yesterday
+  // evening still covers this morning, and clamping is what draws it on both
+  // rows rather than on neither.
+  const sleeps: TrackBand[] = []
+  for (const m of all) {
+    if (!isSleep(m)) continue
+    const [from, to] = sleepSpan(m, now)
+    const a = Math.max(from, dayStart)
+    const b = Math.min(to, dayEnd)
+    if (b <= a) continue
+    sleeps.push({ from: pctOfDay(a - dayStart), to: pctOfDay(b - dayStart) })
+  }
 
+  const marks: TrackMark[] = []
   for (const m of s.moments) {
-    const h = new Date(m.timeslot.occurred_at).getHours()
-    for (const e of m.events) {
-      if (e.type === 'feed') feed.add(h)
-      if (e.type === 'diaper' && e.poop) poop.add(h)
-      if (e.type === 'diaper' && e.pee) pee.add(h)
+    const at = pctOfDay(new Date(m.timeslot.occurred_at).getTime() - dayStart)
+    if (m.events.some((e) => e.type === 'feed')) {
+      // One tick per *moment*, not per event: a feed split across two sources
+      // is one thing that happened at one time (D-019), and two ticks at the
+      // same position would say it twice.
+      marks.push({ id: `${m.timeslot.id}-f`, at, kind: 'feed' })
+    }
+    const changes = m.events.filter((e) => e.type === 'diaper')
+    if (changes.length) {
+      // A change is one tick, and it takes the name of the rarer half. This is
+      // the old priority rule, surviving only where the two are genuinely the
+      // same event — never again between sleep and everything else, which is
+      // where it was doing damage.
+      marks.push({
+        id: `${m.timeslot.id}-d`,
+        at,
+        kind: changes.some((e) => e.poop) ? 'poop' : 'pee',
+      })
     }
   }
-  // Sleeps are read from every moment, not just this day's, because one that
-  // began yesterday evening still covers this morning's hours.
-  for (const m of all) {
-    if (isSleep(m)) for (const h of sleepHours(m, s.date, now)) sleep.add(h)
-  }
+  marks.sort((a, b) => a.at - b.at)
 
-  const cells: HeatCell[] = []
-  for (let hour = 0; hour < 24; hour++) {
-    // Priority is feed > poop > pee > sleep, per the handoff: one cell, and
-    // the rarer thing is the one worth seeing.
-    const kind = feed.has(hour) ? 'feed'
-      : poop.has(hour) ? 'poop'
-      : pee.has(hour) ? 'pee'
-      : sleep.has(hour) ? 'sleep'
-      : null
-    cells.push({ hour, kind })
+  return { iso: s.iso, label: shortDay(s.date), sleeps, marks }
+}
+
+/**
+ * How often a feed falls in each hour, across the whole span.
+ *
+ * The per-day rows say what happened; this says what usually happens, which is
+ * the question anyone actually brings to a rhythm chart. A count, by hour, and
+ * nothing said about it.
+ */
+export function usualHours(days: DayStat[]): number[] {
+  const counts = new Array(24).fill(0) as number[]
+  for (const d of days) {
+    for (const m of d.moments) {
+      if (m.events.some((e) => e.type === 'feed')) {
+        counts[new Date(m.timeslot.occurred_at).getHours()]++
+      }
+    }
   }
-  return { iso: s.iso, label: shortDay(s.date), cells }
+  return counts
+}
+
+/**
+ * The longest anyone went between feeds across the span, and when it began.
+ *
+ * **Not the same figure as `maxFeedGap`, deliberately.** That one is the widest
+ * gap *inside* a calendar day and it is what D-032's watch rule counts. This one
+ * runs across midnight, which is where the long stretch anybody cares about
+ * actually happens. Both are printed, and each says which it is.
+ */
+function longestStretch(days: DayStat[]): Stretch | null {
+  const feeds = days
+    .flatMap((d) => d.moments)
+    .filter((m) => m.events.some((e) => e.type === 'feed'))
+    .map((m) => m.timeslot.occurred_at)
+    .sort()
+  let best: Stretch | null = null
+  for (let i = 1; i < feeds.length; i++) {
+    const mins = Math.round(
+      (new Date(feeds[i]).getTime() - new Date(feeds[i - 1]).getTime()) / 60000,
+    )
+    if (!best || mins > best.mins) best = { mins, fromIso: feeds[i - 1] }
+  }
+  return best
 }
 
 export type Insights = ReturnType<typeof buildInsights>
@@ -405,6 +472,8 @@ export function buildInsights(moments: Moment[], span: Span, now = new Date()) {
     })
   }
 
+  const usual = usualHours(days)
+
   const weights: WeightEntry[] = moments
     .filter((m) => m.events.some((e) => e.type === 'weight'))
     .sort((a, b) => (a.timeslot.occurred_at < b.timeslot.occurred_at ? -1 : 1))
@@ -437,7 +506,10 @@ export function buildInsights(moments: Moment[], span: Span, now = new Date()) {
     paceMl, paceDelta,
 
     flags,
-    heat: days.map((d) => heatRow(d, moments, now)),
+    track: days.map((d) => trackRow(d, moments, now)),
+    usual,
+    usualMax: Math.max(1, ...usual),
+    longestStretch: longestStretch(days),
 
     avgFeedGap,
     worstGapMins: worstGap ? worstGap.maxFeedGap : 0,

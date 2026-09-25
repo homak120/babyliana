@@ -188,41 +188,94 @@ check('an open sleep is not counted as a finished one', openSleep.sleepCount ===
 check('a range with only an open sleep still reports none logged',
   openSleep.hasSleep === false)
 
-// --- the heatmap ------------------------------------------------------------
+// --- the rhythm track (D-064) ------------------------------------------------
 
-const heatDay = build([
+const trackDay = build([
   at(9, 3, 0, [feed()]),
   at(9, 7, 0, [pee()]),
-  at(9, 11, 0, [poop()]),
+  at(9, 11, 30, [poop()]),
 ])
-const row = heatDay.heat.find((r) => r.label === '9/9')!
-check('a feed colours its hour', row.cells[3].kind === 'feed', String(row.cells[3].kind))
-check('a pee colours its hour', row.cells[7].kind === 'pee', String(row.cells[7].kind))
-check('a poop colours its hour', row.cells[11].kind === 'poop', String(row.cells[11].kind))
-check('an empty hour stays empty', row.cells[0].kind === null)
-check('a row is 24 hours wide', row.cells.length === 24, String(row.cells.length))
+const row = trackDay.track.find((r) => r.label === '9/9')!
+const markAt = (pct: number) => row.marks.find((m) => Math.abs(m.at - pct) < 0.01)
 
-// Priority is feed > poop > pee > sleep, so an hour holding all of them is a
-// feed and nothing else.
-const busy = build([at(9, 5, 0, [feed(), poop(), pee(), sleep()])])
-check('feed outranks everything else in one hour',
-  busy.heat[0].cells[5].kind === 'feed', String(busy.heat[0].cells[5].kind))
-const poopOverPee = build([at(9, 5, 0, [poop(), pee()])])
-check('poop outranks pee', poopOverPee.heat[0].cells[5].kind === 'poop')
+// Position by the minute, not by the hour. 03:00 is 12.5% of the way through
+// the day; 11:30 is 47.9166…% — which an hour grid could not tell from 11:05.
+check('a feed is placed at the minute it happened',
+  markAt(12.5)?.kind === 'feed', JSON.stringify(row.marks))
+check('a change takes its own position too',
+  markAt((7 / 24) * 100)?.kind === 'pee', JSON.stringify(row.marks))
+check('and half past eleven is not eleven',
+  markAt((11.5 / 24) * 100)?.kind === 'poop', JSON.stringify(row.marks))
+check('two feeds 45 minutes apart are two marks, not one cell',
+  build([at(9, 23, 5, [feed()]), at(9, 23, 50, [feed()])]).track[0].marks.length === 2)
 
-// A sleep crossing midnight has to colour both days, or a night's sleep
+// The fault this chart was rebuilt to fix: sleep was last in a priority order,
+// so an hour with a feed in it painted over three hours of sleep.
+const busy = build([
+  at(9, 5, 0, [feed(), poop(), pee()]),
+  at(9, 4, 0, [sleep()], new Date(2026, 8, 9, 7, 0)),
+])
+check('a feed no longer hides the sleep it happened during',
+  busy.track[0].sleeps.length === 1 && busy.track[0].marks.some((m) => m.kind === 'feed'),
+  JSON.stringify(busy.track[0]))
+// A change is one tick and takes the name of the rarer half. The old priority
+// rule survives only here, where the two really are the same event.
+check('a change with both is one mark, named for the poop',
+  busy.track[0].marks.filter((m) => m.kind !== 'feed').length === 1
+  && busy.track[0].marks.some((m) => m.kind === 'poop'),
+  JSON.stringify(busy.track[0].marks))
+// A split feed is one thing that happened at one time (D-019).
+check('a split feed is one mark, not two at the same spot',
+  build([at(9, 5, 0, [feed(30), feed(30)])]).track[0].marks.length === 1)
+
+// A sleep crossing midnight has to draw on both days, or a night's sleep
 // disappears from the one chart meant to show it.
 const overnight = build([
   at(8, 22, 0, [sleep()], new Date(2026, 8, 9, 2, 0)),
   at(9, 12, 0, [feed()]),
 ])
-const night8 = overnight.heat.find((r) => r.label === '9/8')!
-const night9 = overnight.heat.find((r) => r.label === '9/9')!
-check('a sleep crossing midnight fills the evening it started',
-  night8.cells[22].kind === 'sleep' && night8.cells[23].kind === 'sleep')
-check('and the morning it ended',
-  night9.cells[0].kind === 'sleep' && night9.cells[2].kind === 'sleep')
-check('but not the hours after it ended', night9.cells[3].kind === null)
+const night8 = overnight.track.find((r) => r.label === '9/8')!
+const night9 = overnight.track.find((r) => r.label === '9/9')!
+check('a sleep crossing midnight runs to the end of the evening it started',
+  night8.sleeps[0].from === (22 / 24) * 100 && night8.sleeps[0].to === 100,
+  JSON.stringify(night8.sleeps))
+check('and from midnight on the morning it ended',
+  night9.sleeps[0].from === 0 && night9.sleeps[0].to === (2 / 24) * 100,
+  JSON.stringify(night9.sleeps))
+check('and nowhere else', night8.sleeps.length === 1 && night9.sleeps.length === 1)
+
+// --- the average day --------------------------------------------------------
+
+const usualDays = build([
+  at(7, 2, 0, [feed()]), at(7, 2, 40, [feed()]), at(7, 9, 0, [feed()]),
+  at(8, 2, 10, [feed()]), at(8, 14, 0, [feed()]),
+  at(9, 2, 30, [feed()]),
+])
+check('the usual row counts feeds by hour across the span',
+  usualDays.usual[2] === 4, String(usualDays.usual[2]))
+check('an hour nobody feeds in stays at zero', usualDays.usual[5] === 0)
+check('and the row scales against its own busiest hour',
+  usualDays.usualMax === 4, String(usualDays.usualMax))
+check('an empty log still scales against one, never zero', build([]).usualMax === 1)
+
+// --- the longest stretch ----------------------------------------------------
+
+// Runs across midnight, which is where the stretch anybody cares about
+// happens — and is why it is not the same figure as maxFeedGap, which D-032's
+// watch rule counts inside one day.
+const stretch = build([
+  at(8, 20, 0, [feed()]),
+  at(9, 4, 30, [feed()]),
+  at(9, 7, 0, [feed()]),
+])
+check('the longest stretch crosses midnight',
+  stretch.longestStretch?.mins === 510, String(stretch.longestStretch?.mins))
+check('and says when it started',
+  new Date(stretch.longestStretch!.fromIso).getHours() === 20,
+  String(stretch.longestStretch?.fromIso))
+check('while the in-a-day figure the flag counts stays what it was',
+  stretch.worstGapMins === 150, String(stretch.worstGapMins))
+check('one feed is not a stretch', build([at(9, 8, 0, [feed()])]).longestStretch === null)
 
 // --- growth -----------------------------------------------------------------
 

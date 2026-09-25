@@ -157,6 +157,11 @@ when". Read that first; this list is the checklist view of the same thing.
       `3d 7d 15d 30d`, the months that have entries, and `all` behind `more`.
       Past ten days the bars thin and the wet-diaper flag rolls up, which is
       D-032's rule printed differently, not a new one
+- [x] **CC** **D-064** — the daily rhythm shows time rather than hours: two
+      lanes a day, marks at the minute, a night band, an average-day row, and
+      the longest stretch named with the time it started. Closes `Q-014`. The
+      hour grid it replaces put sleep last in a priority order, so the one thing
+      that occupies hours was the one most often painted over
 - [x] **CC** **D-063** — the read-back's page summarises what the tag row does
       not: the source split, the widest gap, the poop colours, sleep, and the
       secondary types with a note count. Bubbles, in the colours their kinds

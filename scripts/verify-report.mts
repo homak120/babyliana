@@ -63,13 +63,37 @@ check('wet and poop cards', has('wet') && has('poop'), titles.join(' / '))
 check('sleep card', has('sleep'), titles.join(' / '))
 check('growth is absent with nothing weighed', !has('growth'), titles.join(' / '))
 
-// --- the heatmap actually has width ----------------------------------------
-// A row of 24 flex children inside a card that is itself flex has collapsed to
-// zero before. Measured, not counted.
-const cells = await p.locator('.heatRow').first().locator('.heatCell').count()
-check('a heat row is 24 hours wide', cells === 24, String(cells))
-const cell = await p.locator('.heatCell').first().boundingBox()
-check('and its cells have real width', !!cell && cell.width > 4, cell ? `${Math.round(cell.width)}px` : 'no box')
+// --- the rhythm track actually has width (D-064) ----------------------------
+// Absolutely-positioned children inside a lane that collapsed to zero would
+// leave an empty card and no error. Measured, not counted.
+const lane = await p.locator('.sleepLane').first().boundingBox()
+check('a day lane is laid out', !!lane && lane.width > 100 && lane.height > 6,
+  lane ? `${Math.round(lane.width)}x${Math.round(lane.height)}` : 'no box')
+check('each day has a sleep lane and a diaper lane',
+  (await p.locator('.trackRow').first().locator('.lane').count()) === 2,
+  `${await p.locator('.trackRow').first().locator('.lane').count()} lanes`)
+// Both ends of the night, on every row. Scenery for reading the rows against.
+check('the night is banded at both ends of the day',
+  (await p.locator('.trackRow').first().locator('.night').count()) === 2,
+  `${await p.locator('.trackRow').first().locator('.night').count()} bands`)
+// The seed logs a feed, so there is exactly one tick to find, and it has to sit
+// inside the lane rather than at its left edge or off it.
+const tick = await p.locator('.mark.feed').first().boundingBox()
+check('a feed is a tick at its own time',
+  !!tick && !!lane && tick.x > lane.x && tick.x < lane.x + lane.width && tick.width > 1,
+  tick && lane ? `${Math.round(tick.x - lane.x)}px into ${Math.round(lane.width)}px` : 'no tick')
+check('the average day is 24 hours wide',
+  (await p.locator('.usualCell').count()) === 24,
+  String(await p.locator('.usualCell').count()))
+// The stretch takes the stat slot rather than a line of its own, so the card
+// never prints the same number twice — one feed means there is no stretch yet
+// and the slot says so.
+check('the longest stretch has a slot whether or not there is one',
+  (await p.locator('.card', { hasText: /daily rhythm/i }).locator('.statRow .statValue').count()) === 2,
+  await p.locator('.card', { hasText: /daily rhythm/i }).locator('.statRow').innerText())
+check('the legend names every mark the chart makes',
+  (await p.locator('.legend').first().innerText()).replace(/\n/g, ' ').includes('night'),
+  (await p.locator('.legend').first().innerText()).replace(/\n/g, ' '))
 
 // --- the bars are drawn, not just present ----------------------------------
 // Only that the bar is laid out with real width and at least its floor height.

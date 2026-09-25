@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-24 (the page summary is bubbles; `Q-014` and `Q-015` are open and waiting)
+Last updated: 2026-09-24 (the daily rhythm is rebuilt — D-064, `Q-014` closed)
 
 ---
 
@@ -18,7 +18,7 @@ Last updated: 2026-09-24 (the page summary is bubbles; `Q-014` and `Q-015` are o
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. **769 checks pass across twenty-four
+delivered by the second design handoff. **782 checks pass across twenty-four
 suites** — `verify-day-summary` is the new one.
 
 **The multi-tenant work is merged to `main` and deploying.** `52b1fb8`, a
@@ -105,8 +105,10 @@ push-then-reconcile sync with Supabase.
   period picker, plus an insights mode: milk intake, daily rhythm, wet and poop,
   diapers a day, milk by source, poop colours, sleep, and growth when there is
   a weight. The source chart's bars are tappable — a day opens its own
-  breakdown, in millilitres and whole percent (D-062). The range is `3d 7d 15d
-  30d`, any month that has entries, or all of it (D-063). Under each page's tag
+  breakdown, in millilitres and whole percent (D-062). The daily rhythm is a
+  two-lane track a day at minute resolution, with a night band and an
+  average-day row (D-064). The range is `3d 7d 15d 30d`, any month that has
+  entries, or all of it (D-063). Under each page's tag
   row sit grouped bubbles for everything the tags do not carry — the source
   split, the widest gap, the poop colours, sleep, and the secondary types with
   a note count — each in the colour its kind already has.
@@ -139,6 +141,11 @@ precache sits where it does; the 1024 is excluded, being needed only at install.
 Newest first, and **this is an index, not a record** — `docs/decisions.md`
 carries the reasoning for every one of these, and for everything older.
 
+- **D-064** — the daily rhythm shows time rather than hours. Two lanes a day,
+  marks at the minute, a night band, an average-day row, and the longest stretch
+  named with the time it started. It replaces an hour grid whose priority order
+  put sleep last, so the only thing that occupies hours rather than instants was
+  the thing most often painted over. Closes `Q-014`.
 - **D-063** — the insights range became a shape rather than a number: `3d 7d
   15d 30d`, the months that have entries, then `all` behind `more`. A month is a
   calendar month, not `slice(-30)`. Past ten days the bars thin and the
@@ -350,9 +357,10 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**Nothing uncommitted.** The page summary's bubble rework is `2e78735` on
-`main`, pushed. No migration, nothing new stored — the third service-worker
-update of the cutover, and like the other two it does not move `DB_VERSION`.
+**Uncommitted, on `main`: the daily rhythm card, rebuilt (D-064).**
+`src/report/insights.ts` (`TrackRow` and `usualHours` in place of the heat
+grid, plus `longestStretch`), `InsightsView.tsx`, `insights.css`, and both
+suites. No migration, nothing new stored.
 
 **`0008` has been applied**, and `supabase/README.md` records it. Re-running it
 is the routine way to pick up new rows from `public`; it is forward-only and
@@ -436,7 +444,35 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-24 (latest) — the report reaches past a week, and a page says what it holds
+### 2026-09-24 (latest) — the daily rhythm shows time, not hours
+
+The card looked right and nobody acted on it, so it was measured rather than
+argued about. Three faults, all in how it was built: one kind per hour with
+**sleep last in the priority order**, so the only thing that occupies hours
+rather than instants was the thing most often painted over; hour buckets, so
+23:05 and 23:50 were one cell; and no magnitude at all.
+
+It is a track per day now — a sleep lane carrying the night band, the sleep
+bands and the feed ticks, and a shorter diaper lane under it — with every mark
+at the minute it happened. Under the days sits **the row the per-day rows cannot
+be**: how often a feed falls in each hour across the span, which is the question
+anybody actually brings to a rhythm chart. D-064, and it closes `Q-014`.
+
+Two things worth carrying forward. The old priority rule survives in exactly one
+place — a change with both halves is one tick named for the poop, because there
+the two really are the same event. And the longest stretch printed under the
+chart is **not** the figure D-032's watch rule counts: that one is the widest gap
+inside a calendar day, this one crosses midnight. Printing both was printing the
+same number twice on most days, so only the stretch is printed.
+
+Looking at it in the night theme caught what reasoning had not: the night band
+was mixed from `--periFill`, which sits on top of `--chip` in the dark, and the
+band was invisible. It is mixed from `--periInk` now.
+
+`Q-015` is still open and still unguessed — which captured-but-unused fields
+earn a place on the insights screen.
+
+### 2026-09-24 — the report reaches past a week, and a page says what it holds
 
 Two things, one complaint: the app was showing less than it had. D-063.
 
@@ -499,23 +535,3 @@ panel's head, because a day of 8 feeds and 410 mL where one had no volume is not
 a 410 mL day and the bands cannot say so.
 
 Nothing stored, no migration, no schema change. `npm run verify` green.
-
-### 2026-09-24 — merged to main; the cutover is under way
-
-`product-ready-enhancement` merged into `main` as `52b1fb8`, `--no-ff` so the
-cutover is a single commit to revert. Nineteen commits, no conflicts, `main`
-unmoved since `302ce22`. `npm run verify` run on `main` after the merge rather
-than trusting the branch's own green: 719 checks, exit 0.
-
-**The deploy is not the cutover.** The service worker updates lazily, so each
-phone flips at a moment nobody chooses, and until both have there is a real
-window with one phone writing to `public` and the other to `app`. That is why
-`0008` gets run twice — once before any phone flips and once after both have —
-and why `public` keeps its anon key and its `using (true)` policies until
-stage 5. Rolling back is `git revert -m 1 52b1fb8`; the old build finds `public`
-exactly where it left it.
-
-The six remaining steps are in *Next action* and none of them are code. The one
-that can actually stop the app is closing it fully on both phones first — an
-installed PWA holding IndexedDB version 2 blocks the upgrade to 3, and
-IndexedDB's answer to that is to wait forever.

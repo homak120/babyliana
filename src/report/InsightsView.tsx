@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { diaperParts } from '../day/cells'
+import { diaperParts, hhmm } from '../day/cells'
 import { Icon } from '../log/Icon'
 import {
-  ALL_TIME, buildInsights, hm, lastDays, monthOf, monthsWithData, sameSpan,
+  ALL_TIME, buildInsights, hm, lastDays, monthOf, monthsWithData, NIGHT, sameSpan,
   shortDay, sourceSplit, type Span,
 } from './insights'
 import type { Moment } from '../types'
@@ -30,11 +30,14 @@ const DAY_SPANS = [3, 7, 15, 30]
 /** How many month pills stand in the strip before `more` is asked. */
 const MONTHS_SHOWN = 2
 
+// Sleep first: it is the band the other three sit on, and it is the one the
+// old chart kept hiding.
 const LEGEND: { kind: string; label: string }[] = [
+  { kind: 'sleep', label: 'sleep' },
   { kind: 'feed', label: 'feed' },
   { kind: 'poop', label: 'poop' },
   { kind: 'pee', label: 'pee' },
-  { kind: 'sleep', label: 'sleep' },
+  { kind: 'night', label: 'night' },
 ]
 
 export function InsightsView({
@@ -208,25 +211,78 @@ export function InsightsView({
         )}
       </section>
 
-      {/* 3. Daily rhythm */}
+      {/* 3. Daily rhythm (D-064). Two lanes and real times, not one cell an
+          hour — see insights.ts § TrackRow for what that replaced and why. */}
       <section className="card">
         <h2 className="cardTitle">
           <Icon name="grid_view" size={15} /> daily rhythm
         </h2>
 
-        <div className="heat">
-          {i.heat.map((row) => (
-            <div className="heatRow" key={row.iso}>
-              <span className="heatLabel">{row.label}</span>
-              <div className="heatCells">
-                {row.cells.map((c) => (
-                  <span key={c.hour} className={`heatCell ${c.kind ?? ''}`} />
-                ))}
+        <div className={`track ${dense ? 'dense' : ''}`}>
+          {i.track.map((row, n) => (
+            <div className="trackRow" key={row.iso}>
+              <span className="trackLabel">{labelled(n) ? row.label : ''}</span>
+              <div className="lanes">
+                <div className="lane sleepLane">
+                  {/* The night, behind everything. Scenery to read the rows
+                      against — the question asked of this chart at 4am is a
+                      question about nights, and nothing on it used to say
+                      which hours those were. */}
+                  <i className="night" style={{ left: 0, width: `${(NIGHT.to / 24) * 100}%` }} />
+                  <i
+                    className="night"
+                    style={{
+                      left: `${(NIGHT.from / 24) * 100}%`,
+                      width: `${((24 - NIGHT.from) / 24) * 100}%`,
+                    }}
+                  />
+                  {row.sleeps.map((b, k) => (
+                    <i
+                      className="sleepBand"
+                      key={`s${k}`}
+                      style={{
+                        left: `${b.from}%`,
+                        width: `${Math.max(0.4, b.to - b.from)}%`,
+                        // Square where it meets midnight, rounded at the free
+                        // end — the data-end rule the stacked bars follow. A
+                        // sleep running from 23:40 to 04:50 is one sleep, and
+                        // two rounded ends at the boundary draw it as two.
+                        borderTopLeftRadius: b.from === 0 ? 0 : undefined,
+                        borderBottomLeftRadius: b.from === 0 ? 0 : undefined,
+                        borderTopRightRadius: b.to === 100 ? 0 : undefined,
+                        borderBottomRightRadius: b.to === 100 ? 0 : undefined,
+                      }}
+                    />
+                  ))}
+                  {row.marks.filter((m) => m.kind === 'feed').map((m) => (
+                    <i className="mark feed" key={m.id} style={{ left: `${m.at}%` }} />
+                  ))}
+                </div>
+                <div className="lane diaperLane">
+                  {row.marks.filter((m) => m.kind !== 'feed').map((m) => (
+                    <i className={`mark ${m.kind}`} key={m.id} style={{ left: `${m.at}%` }} />
+                  ))}
+                </div>
               </div>
             </div>
           ))}
-          <div className="heatScale">
-            <span className="heatLabel" />
+
+          {/* The row the per-day rows cannot be: what *usually* happens. */}
+          <div className="trackRow usualRow">
+            <span className="trackLabel">usual</span>
+            <div className="usualCells">
+              {i.usual.map((count, hour) => (
+                <i
+                  key={hour}
+                  className="usualCell"
+                  style={{ opacity: count ? 0.2 + 0.8 * (count / i.usualMax) : 0.08 }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="trackScale">
+            <span className="trackLabel" />
             <div className="heatTicks">
               {HOUR_TICKS.map((h) => (
                 <span key={h}>{h}</span>
@@ -235,24 +291,39 @@ export function InsightsView({
           </div>
         </div>
 
+        <p className="insCaption">
+          the bottom row is how often a feed falls in each hour, over {i.daysLogged}.
+        </p>
+
         <ul className="legend">
           {LEGEND.map((l) => (
             <li key={l.kind}>
-              <span className={`heatCell ${l.kind}`} />
+              <span className={`swatch ${l.kind}`} />
               {l.label}
             </li>
           ))}
         </ul>
 
+        {/* A chart that illustrates a sentence gets read; one that has to be
+            decoded gets admired. The stretch is the figure people came for, so
+            it takes the stat slot and its caption says when it started.
+
+            **It is deliberately not `worstGapMins`.** That one is the widest
+            gap inside a calendar day, which is what D-032's watch rule counts;
+            this one runs across midnight, where the long stretch anybody cares
+            about actually happens. Printing both was printing the same number
+            twice on every day the longest gap did not span midnight. */}
         <div className="statRow">
           <div>
             <p className="statValue">{hm(i.avgFeedGap)}</p>
             <p className="insCaption">typical gap between feeds</p>
           </div>
           <div>
-            <p className="statValue">{hm(i.worstGapMins)}</p>
+            <p className="statValue">{i.longestStretch ? hm(i.longestStretch.mins) : '—'}</p>
             <p className="insCaption">
-              longest{i.worstGapDay ? ` · ${i.worstGapDay}` : ''}
+              {i.longestStretch
+                ? `longest stretch · from ${hhmm(i.longestStretch.fromIso)} on ${shortDay(new Date(i.longestStretch.fromIso))}`
+                : 'longest stretch'}
             </p>
           </div>
         </div>
