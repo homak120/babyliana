@@ -364,12 +364,10 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**Uncommitted, on `main`: D-065, the launch screen work.** `index.html` (the
-paint-first ground, the inline faces, the twelve startup images, the Google
-links made non-blocking), `public/fonts/` and `public/splash/` as new
-directories, `scripts/splash.mts` as a new generator, `vite.config.ts`
-(`woff2` precached, `splash/*.png` not), and `src/App.tsx` plus the two
-stylesheet moves for the code split. No migration, nothing new stored.
+**Nothing uncommitted.** D-065 is `9a83e00` on `main`, pushed. No migration,
+nothing new stored — but it is the first change that touches what the phones
+*download*: the precache is 36 entries / 1306 KiB, and `public/splash/` is
+deliberately outside it.
 
 **`0008` has been applied**, and `supabase/README.md` records it. Re-running it
 is the routine way to pick up new rows from `public`; it is forward-only and
