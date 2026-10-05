@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-09-25 (the launch stops being white — D-065)
+Last updated: 2026-10-05 (a keep-alive heartbeat for the free tier)
 
 ---
 
@@ -364,7 +364,13 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**Nothing uncommitted.** D-065 is `9a83e00` on `main`, pushed. No migration,
+**Uncommitted: the keep-alive heartbeat.** `supabase/migrations/0009_keep_alive.sql`
+(table `public.keep_alive` plus `keep_alive_ping()`), `.github/workflows/supabase-keep-alive.yml`
+(calls it Mon/Thu 00:00 UTC), and a row in `supabase/README.md`. `0009` is applied
+and verified 2026-10-05. Still to do: add repo secrets `SUPABASE_URL` and
+`SUPABASE_ANON_KEY`. Then trigger it once by hand from the Actions tab.
+
+D-065 is `9a83e00` on `main`, pushed. No migration,
 nothing new stored — but it is the first change that touches what the phones
 *download*: the precache is 36 entries / 1306 KiB, and `public/splash/` is
 deliberately outside it.
@@ -451,7 +457,16 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-09-24 (latest) — the daily rhythm shows time, not hours
+### 2026-10-05 (latest) — a keep-alive heartbeat for the free tier
+
+A GitHub Action now writes one row twice a week, so a week nobody opens the app
+cannot pause the project. It goes through `keep_alive_ping()`, not a direct
+insert: the anon key is public, so the table takes no client writes and the
+function is the only door. It lives in `public` because `app` grants anon
+nothing. `0009` is applied and verified; the workflow has not run yet — see
+*In flight*.
+
+### 2026-09-24 — the daily rhythm shows time, not hours
 
 The card looked right and nobody acted on it, so it was measured rather than
 argued about. Three faults, all in how it was built: one kind per hour with
@@ -523,22 +538,3 @@ guessed — **the report reads none of `pounds`, `fahrenheit`, `supplement_name`
 the way: the growth card matches a digit in the free-text *note* and never looks
 at `pounds`, so a weight typed into the weight field does not appear on it at
 all.
-
-### 2026-09-24 — the source chart answers for one day
-
-The report's *by source* card had a stacked bar and no numbers, which meant a
-ruler and the legend to read a share off it. Its bars are buttons now: tapping a
-day swaps the range caption for that day's breakdown — the date, the total in
-millilitres, how many feeds it took, and a row per source with millilitres and a
-whole-percent share. Tapping again puts the caption back. D-062.
-
-The part worth remembering is the rounding. Rounding each band alone turns
-37.5 / 28.1 / 34.4 into 102%, so the leftover goes to the largest remainders,
-ties to the larger band and then to chart order. `verify-insights` checks the
-sum on a mixed day and on thirds, which is the case that cannot come out even.
-
-A `?` feed — a feed with no volume — is now counted on `DayStat` and named in the
-panel's head, because a day of 8 feeds and 410 mL where one had no volume is not
-a 410 mL day and the bands cannot say so.
-
-Nothing stored, no migration, no schema change. `npm run verify` green.

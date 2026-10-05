@@ -1,0 +1,26 @@
+name: Supabase keep-alive
+
+# Supabase pauses a free project after seven idle days. Twice a week leaves a
+# missed run room to be missed. Writes one row through keep_alive_ping() —
+# supabase/migrations/0009_keep_alive.sql.
+
+on:
+  schedule:
+    - cron: '0 0 * * 1,4' # 00:00 UTC, Monday and Thursday
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Insert a keep-alive row
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            -X POST "$SUPABASE_URL/rest/v1/rpc/keep_alive_ping" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{}'
