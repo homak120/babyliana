@@ -364,11 +364,10 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**Uncommitted: the keep-alive heartbeat.** `supabase/migrations/0009_keep_alive.sql`
-(table `public.keep_alive` plus `keep_alive_ping()`), `.github/workflows/supabase-keep-alive.yml`
-(calls it Mon/Thu 00:00 UTC), and a row in `supabase/README.md`. `0009` is applied
-and verified 2026-10-05. Still to do: add repo secrets `SUPABASE_URL` and
-`SUPABASE_ANON_KEY`. Then trigger it once by hand from the Actions tab.
+**Nothing uncommitted.** The keep-alive heartbeat is `a102dff` on `main`, pushed.
+`0009` is applied and verified, the repo secrets are set, and a manual run
+went green on 2026-10-05. Scheduled runs start Thursday 2026-10-08.
+`docs/status.md` itself has uncommitted edits recording this.
 
 D-065 is `9a83e00` on `main`, pushed. No migration,
 nothing new stored — but it is the first change that touches what the phones
