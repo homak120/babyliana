@@ -3132,3 +3132,73 @@ It is eager again: the boot it is needed on is the first one, with no caches and
 no service worker, and a lazy first-run screen paints a blank frame before it
 appears. That is this decision's own fault, reintroduced at the one moment it is
 most visible.
+
+## D-066 — the heartbeat is a GitHub Action, and the 60-day rule is handled by hand
+
+**2026-10-05.** Supabase pauses a free project after seven idle days, and a
+paused project is eventually deleted with no backup. `0009` adds
+`public.keep_alive` and `keep_alive_ping()`;
+`.github/workflows/supabase-keep-alive.yml` calls it at 00:00 UTC every Monday
+and Thursday — 8pm Sunday and Wednesday in New York during daylight time, 7pm
+otherwise. The gaps are three and four days, so one missed run still lands
+inside seven.
+
+**Why a function and not a table insert.** The anon key is in a public bundle.
+A table anon can insert into is a table anyone can fill with any timestamp. The
+function takes no arguments, stamps the time itself and prunes rows older than
+90 days, so a stranger calling it does exactly what the workflow does. The table
+is the evidence: a missing row is the alarm, whichever scheduler writes it.
+
+### The 60-day rule
+
+GitHub's docs: *"In a public repository, scheduled workflows are automatically
+disabled when no repository activity has occurred in 60 days."* This repository
+is public on purpose (D-008), so the rule applies. It is a proxy for "abandoned",
+and a finished, stable app trips it — but it switches off the **schedule**, not
+the app.
+
+**Handled by hand, on purpose.** GitHub emails a warning before it disables the
+workflow. When that email arrives: Actions → **Supabase keep-alive** → **Enable
+workflow**. One click, and the 60 days restart. A commit to `main` restarts them
+too, which in practice means the rule never arrives while the app is being
+worked on.
+
+**Not automated, and why.** Two workarounds were considered and rejected:
+
+- **Bot commits** — a log file committed by the workflow. It manufactures
+  activity, and every push to `main` is a Vercel production deploy and a service
+  worker update on both phones.
+- **The workflow re-enabling itself** through the REST API. The best-known tool
+  for this, `gautamkrishnar/keepalive-workflow`, was found disabled by GitHub
+  Staff for a terms-of-service violation. The page does not say which term, but
+  the tool's only purpose was evading this rule. A heartbeat is not worth the
+  repository.
+
+**Why the risk is small.** The pause needs three things at once: 60 days without
+a commit, the warning email ignored, and then a week in which nobody opens the
+app. Two phones syncing daily are activity on their own.
+
+### The alternative to look at next
+
+**Vercel Cron Jobs** — a `crons` entry in `vercel.json` calling a small function
+that calls `keep_alive_ping()`. Vercel already hosts the app, there is no new
+account, and as far as is known it has no inactivity rule. Hobby is limited to
+once a day with the run landing anywhere inside the hour. The cost is the app's
+first server-side function. **Not yet evaluated** — the limits above are from
+memory and need checking against Vercel's current terms.
+
+Others, recorded so the survey is not repeated:
+
+| Option | Note |
+| --- | --- |
+| Supabase `pg_cron` | **Does not work.** It runs inside the database, so a paused project runs nothing |
+| Cloudflare Workers cron triggers | Free, reliable; one more account and deploy |
+| Google Apps Script time trigger | Free, weekly, `UrlFetchApp` can send the headers |
+| GitHub Actions in a private repo | The docs state the 60-day rule for public repos only |
+| cron-job.org | Free, custom method/headers/body — calls the RPC with no code |
+| Uptime monitors | Check every few minutes, far more than needed; custom headers often paid |
+| Claude routines | Spends plan usage to make one HTTP call |
+
+**Reversal condition.** Missing rows in `keep_alive` with no warning email
+having arrived — the manual step failed to happen — or the move to Vercel Cron,
+which supersedes this entry.

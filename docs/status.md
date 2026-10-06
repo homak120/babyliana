@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-10-05 (a keep-alive heartbeat for the free tier)
+Last updated: 2026-10-05 (keep-alive heartbeat; the 60-day rule — D-066)
 
 ---
 
@@ -367,7 +367,8 @@ server; none were reachable from a stub.
 **Nothing uncommitted.** The keep-alive heartbeat is `a102dff` on `main`, pushed.
 `0009` is applied and verified, the repo secrets are set, and a manual run
 went green on 2026-10-05. Scheduled runs start Thursday 2026-10-08.
-`docs/status.md` itself has uncommitted edits recording this.
+D-066 records the 60-day rule, handled by hand, and the scheduler survey;
+committed and pushed.
 
 D-065 is `9a83e00` on `main`, pushed. No migration,
 nothing new stored — but it is the first change that touches what the phones
@@ -418,6 +419,11 @@ a sentence and saves the one support call nobody can answer at 4am.
 
 Noticed, not blocking, no owner yet.
 
+- **The keep-alive schedule switches off after 60 days without a commit.**
+  GitHub's rule for public repos (D-066). GitHub emails a warning first; the fix
+  is Actions → **Supabase keep-alive** → **Enable workflow**. If the last commit
+  is approaching 60 days old, check the Actions tab for a disabled banner. Vercel
+  Cron Jobs is the replacement to evaluate, not yet started.
 - **Unresolved marks on the paper log.** Several `1`s in the Pee/Poop column
   appear underlined, and one 9/1 milk cell may be a ditto mark rather than a
   number. Both may just be handwriting crossing the ruled line. Deliberately not
