@@ -6,6 +6,7 @@ import { sync } from '../sync'
 import { setTimeFormat, timeFormat, type TimeFormat } from '../timeformat'
 import type { BabySettings, Source } from '../types'
 import { Icon } from './Icon'
+import { versionLine } from '../version'
 
 /**
  * Settings, behind the card's `tune` button (D-055).
@@ -329,6 +330,9 @@ export function SettingsSheet({ onClose, onClockChange }: {
             never been named has to be asked, and a settings screen cannot ask
             anything. */}
       </Section>
+
+      {/* The usual place to look for it. Also on the sync sheet (D-068). */}
+      <p className="setnote faint versionline">{versionLine()}</p>
 
       <div className="spacer" />
     </div>

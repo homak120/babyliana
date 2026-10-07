@@ -58,10 +58,21 @@ await sheet.getByText('details for the developer').click()
 const debug = await sheet.locator('.syncdebug pre').innerText()
 check('and opens to a report with the state and the trail',
   debug.includes('state: error') && debug.includes('stopped —'), debug.split('\n').slice(0, 3).join(' | '))
+const versionRow = await sheet.locator('.setrow', { hasText: 'version' }).innerText()
+check('the sheet says which version this is, and when it was built',
+  /version\s+([0-9a-f]{7}|local) · built \S/.test(versionRow), versionRow.replace(/\s+/g, ' '))
 check('the sheet offers try again and reload',
   (await sheet.getByRole('button', { name: /try again/ }).isVisible())
     && (await sheet.getByRole('button', { name: /reload app/ }).isVisible()), 'both')
 await sheet.getByLabel('close').click()
+await p.waitForTimeout(200)
+
+// --- the version is in settings too (D-068) -----------------------------------
+await p.getByLabel('settings').click()
+await p.waitForTimeout(250)
+const vline = await p.locator('.versionline').innerText().catch(() => 'missing')
+check('settings carries the same version line', /^version ([0-9a-f]{7}|local) · built \S/.test(vline), vline)
+await p.getByRole('dialog', { name: 'settings' }).getByLabel('close').click()
 await p.waitForTimeout(200)
 
 // --- the add sheet warns and still saves -------------------------------------

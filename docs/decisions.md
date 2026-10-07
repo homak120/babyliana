@@ -3252,3 +3252,25 @@ wake already runs.
 **Reversal condition.** If the reload button proves to be tapped by accident
 mid-entry — it is outside the add sheet, so it cannot discard a draft, but it
 can interrupt — move it into the sync sheet only.
+
+## D-068 — the app says which version it is
+
+**2026-10-07. Owner's ask:** a version and a build time on screen, to confirm
+which build a phone is running after a deploy.
+
+**The version is the commit's short hash** — the seven characters that
+`git log --oneline` and GitHub's commit list print. That makes "is this phone on
+the latest?" a match against the top of the commit list, and there is no
+version number to remember to bump. Vercel supplies the commit as
+`VERCEL_GIT_COMMIT_SHA`; a local build asks git; a build git cannot read says
+`local`.
+
+**The build time is shown in the phone's own time zone**, from the existing
+`__BUILD_TIME__` (UTC, to the minute).
+
+**Where.** At the foot of the settings sheet — the usual place to look — and as a
+row in the sync sheet (D-067), whose developer report carries it too.
+
+**Reversal condition.** If the app ever needs a version a person reads aloud —
+release notes, a support conversation outside this household — a semantic
+version goes beside the hash, not instead of it.

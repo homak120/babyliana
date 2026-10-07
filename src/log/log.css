@@ -1738,3 +1738,6 @@ body {
   pointer-events: none;
 }
 .synctoast .icon { color: var(--accent); flex: none; margin-top: 0.0625rem; }
+
+/* D-068. Quiet, centred, at the foot of settings. */
+.versionline { text-align: center; font-variant-numeric: tabular-nums; margin-top: 1.5rem; }

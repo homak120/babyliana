@@ -1,12 +1,27 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { execSync } from 'node:child_process'
+
+// Which commit this build is, so a phone can say which version it is running
+// (D-068). Vercel hands the commit in; a local build asks git. A build from a
+// directory git cannot read says `local` rather than failing.
+function buildSha(): string {
+  const fromVercel = process.env.VERCEL_GIT_COMMIT_SHA
+  if (fromVercel) return fromVercel.slice(0, 7)
+  try {
+    return execSync('git rev-parse --short=7 HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+  } catch {
+    return 'local'
+  }
+}
 
 export default defineConfig({
   // Lets /spike answer "did my deploy actually land", which came up repeatedly
   // during Phase 3 and will again once S9 adds the update strategy.
   define: {
     __BUILD_TIME__: JSON.stringify(new Date().toISOString().slice(0, 16) + 'Z'),
+    __BUILD_SHA__: JSON.stringify(buildSha()),
   },
   plugins: [
     react(),

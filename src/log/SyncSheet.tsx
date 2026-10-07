@@ -14,6 +14,7 @@ import {
   type SyncState,
 } from '../sync'
 import { reloadApp } from '../updates'
+import { builtAt, VERSION } from '../version'
 import { Icon } from './Icon'
 import { SYNC_ICON } from './syncIcon'
 
@@ -63,6 +64,7 @@ function report(pending: number | null): string {
   const standalone = window.matchMedia?.('(display-mode: standalone)').matches
   const lines = [
     `babyliana sync report — ${new Date().toISOString()}`,
+    `version: ${VERSION}`,
     `build: ${__BUILD_TIME__}`,
     `state: ${state}`,
     `online: ${navigator.onLine}`,
@@ -131,6 +133,10 @@ export function SyncSheet({ onClose }: { onClose: () => void }) {
         <div className="setrow">
           <span className="setlabel">last synced</span>
           <span className="syncval">{ago(s.lastSyncedAt, now)}</span>
+        </div>
+        <div className="setrow">
+          <span className="setlabel">version</span>
+          <span className="syncval">{VERSION} · built {builtAt()}</span>
         </div>
         <div className="setrow">
           <span className="setlabel">connection</span>

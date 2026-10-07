@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-10-07 (the cloud says what it means — D-067)
+Last updated: 2026-10-07 (the app says which version it is — D-068)
 
 ---
 
@@ -18,7 +18,7 @@ Last updated: 2026-10-07 (the cloud says what it means — D-067)
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. **803 checks pass across twenty-five
+delivered by the second design handoff. **805 checks pass across twenty-five
 suites** — `verify-sync-status` is the new one.
 
 **The multi-tenant work is merged to `main` and deploying.** `52b1fb8`, a
@@ -364,9 +364,10 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**Nothing uncommitted.** D-067, the sync sheet, is committed on `main`
-(`npm run verify` green, 803 checks). No migration, nothing new stored on the
-server. D-066 is `6741799`, pushed.
+**Nothing uncommitted.** D-068, the version line, is committed on `main`
+(`npm run verify` green, 805 checks).
+
+D-067, the sync sheet, is `9b043d4` on `main`, pushed. D-066 is `6741799`, pushed.
 
 The keep-alive heartbeat is `a102dff`; `0009` is applied and verified, the repo
 secrets are set, and a manual run went green on 2026-10-05.
@@ -463,7 +464,13 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-10-07 (latest) — the cloud says what it means
+### 2026-10-07 (latest) — the app says which version it is
+
+The settings sheet ends with `version <hash> · built <local time>`, and the sync
+sheet has the same as a row. The version is the commit's short hash, so a phone
+is checked against the top of the commit list with nothing to bump. D-068.
+
+### 2026-10-07 — the cloud says what it means
 
 The owner saw a red cloud with no way to ask why. Tapping it now opens a sheet
 that names the state, says what it means for what you log, and offers *try
@@ -481,31 +488,3 @@ insert: the anon key is public, so the table takes no client writes and the
 function is the only door. It lives in `public` because `app` grants anon
 nothing. `0009` is applied and verified; the workflow has not run yet — see
 *In flight*.
-
-### 2026-09-24 — the daily rhythm shows time, not hours
-
-The card looked right and nobody acted on it, so it was measured rather than
-argued about. Three faults, all in how it was built: one kind per hour with
-**sleep last in the priority order**, so the only thing that occupies hours
-rather than instants was the thing most often painted over; hour buckets, so
-23:05 and 23:50 were one cell; and no magnitude at all.
-
-It is a track per day now — a sleep lane carrying the night band, the sleep
-bands and the feed ticks, and a shorter diaper lane under it — with every mark
-at the minute it happened. Under the days sits **the row the per-day rows cannot
-be**: how often a feed falls in each hour across the span, which is the question
-anybody actually brings to a rhythm chart. D-064, and it closes `Q-014`.
-
-Two things worth carrying forward. The old priority rule survives in exactly one
-place — a change with both halves is one tick named for the poop, because there
-the two really are the same event. And the longest stretch printed under the
-chart is **not** the figure D-032's watch rule counts: that one is the widest gap
-inside a calendar day, this one crosses midnight. Printing both was printing the
-same number twice on most days, so only the stretch is printed.
-
-Looking at it in the night theme caught what reasoning had not: the night band
-was mixed from `--periFill`, which sits on top of `--chip` in the dark, and the
-band was invisible. It is mixed from `--periInk` now.
-
-`Q-015` is still open and still unguessed — which captured-but-unused fields
-earn a place on the insights screen.

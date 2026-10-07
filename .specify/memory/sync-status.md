@@ -15,7 +15,7 @@ What the user sees about sync, and what is kept for the developer. D-067.
 
 - **Status row cloud** — a button; opens the sync sheet.
 - **Sync sheet** — state in words, one sentence, waiting-to-send count, last
-  synced, connection, what stopped it (when not idle). *Try again*, *reload
+  synced, version and build time (D-068), connection, what stopped it (when not idle). *Try again*, *reload
   app*. Folded *details for the developer*: plain-text report and *copy*.
 - **Add sheet** — a line under the header while `offline` or `error`. Never
   disables save.
