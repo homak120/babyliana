@@ -8,7 +8,7 @@ import { Icon } from './log/Icon'
 import { LogScreen } from './log/LogScreen'
 import { useOverlayOpen } from './overlay'
 import { dbFatal, getCaregivers, getRow, onDbFatal } from './db'
-import { startSync, subscribe, sync, syncState } from './sync'
+import { startSync, subscribe, sync, syncState, type SyncState } from './sync'
 import { registerUpdates } from './updates'
 import './tokens.css'
 import './log/log.css'
@@ -81,6 +81,13 @@ export default function App() {
   const [now, setNow] = useState(new Date())
   const overlay = useOverlayOpen()
   const [saved, setSaved] = useState(0)
+  // Set after a write that could not be sent, for a few seconds (D-067).
+  const [unsent, setUnsent] = useState<SyncState | null>(null)
+  useEffect(() => {
+    if (!unsent) return
+    const t = setTimeout(() => setUnsent(null), 4000)
+    return () => clearTimeout(t)
+  }, [unsent])
 
   useEffect(() => {
     if (!onboarded) return
@@ -105,7 +112,13 @@ export default function App() {
   const afterWrite = useCallback(() => {
     void getMoments().then(setMoments)
     setSaved((n) => n + 1)
-    void sync()
+    // The bottle and bedtime buttons write with no sheet, so there is nowhere
+    // to warn *before* the write. Said after it instead, once the push has had
+    // its chance: a line that the entry is safe here and not yet shared (D-067).
+    void sync().then(() => {
+      const st = syncState().state
+      setUnsent(st === 'offline' || st === 'error' ? st : null)
+    })
   }, [])
 
   // One handler for both pills: ending a feed and ending a sleep are the same
@@ -333,6 +346,15 @@ export default function App() {
             </button>
           )}
         </nav>
+      )}
+
+      {unsent && !overlay && (
+        <p className="synctoast" role="status">
+          <Icon name={unsent === 'offline' ? 'cloud_off' : 'sync_problem'} size={16} />
+          {unsent === 'offline'
+            ? 'saved on this phone — sent when the connection is back'
+            : 'saved on this phone — not synced yet. tap the cloud for details'}
+        </p>
       )}
 
       {adding !== null && (

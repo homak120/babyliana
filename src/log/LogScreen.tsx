@@ -35,6 +35,9 @@ import type { Baby, Caregiver, Moment } from '../types'
 import { AddSheet } from './AddSheet'
 import { BabyPicker } from './BabyPicker'
 import { SettingsSheet } from './SettingsSheet'
+import { SyncSheet } from './SyncSheet'
+import { SYNC_ICON } from './syncIcon'
+import { reloadApp } from '../updates'
 import { PrepPill, usePrepTimer } from './PrepLine'
 import { BottleIcon } from './BottleIcon'
 import { EndSleepIcon } from './EndSleepIcon'
@@ -281,6 +284,7 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
   // Nothing is removed until the sheet is confirmed (Q-012).
   const [pendingDelete, setPendingDelete] = useState<Moment | null>(null)
   const [tuning, setTuning] = useState(false)
+  const [syncInfo, setSyncInfo] = useState(false)
   // Bumped when a pull brings a setting from the other phone. Nothing reads it —
   // it exists to re-render a card whose numbers come from a module cache.
   const [, setSettingTick] = useState(0)
@@ -432,9 +436,26 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
           <button type="button" className="namebtn" onClick={() => setNaming(true)}>
             {caregivers.find((d) => d.id === getCaregiverId())?.name ? 'edit' : 'name this phone'}
           </button>
-          <span className={`sync ${sync_.state}`}>
-            <Icon name="cloud_done" size={15} />
-          </span>
+          {/* The cloud says what it means when tapped (D-067). It was a colour
+              and nothing else, and red covered both a signal that comes back on
+              its own and a fault that never does. */}
+          <button
+            type="button"
+            className={`sync syncbtn ${sync_.state}`}
+            aria-label={`sync: ${sync_.state}`}
+            onClick={() => setSyncInfo(true)}
+          >
+            <Icon name={SYNC_ICON[sync_.state]} size={15} />
+          </button>
+          {/* Closing and reopening the app is what clears most faults, and on
+              iOS that is a swipe through the app switcher. Offered only while
+              sync is failing — a reload does nothing for a missing signal, and
+              a button that is always there is a button tapped by accident. */}
+          {sync_.state === 'error' && (
+            <button type="button" className="syncbtn reloadbtn" aria-label="reload app" onClick={reloadApp}>
+              <Icon name="refresh" size={15} />
+            </button>
+          )}
         </span>
       </div>
 
@@ -817,6 +838,8 @@ export function LogScreen({ onEndOpen, onResumeSleep }: {
           }}
         />
       )}
+
+      {syncInfo && <SyncSheet onClose={() => setSyncInfo(false)} />}
 
       {tuning && (
         <SettingsSheet

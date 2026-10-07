@@ -39,6 +39,49 @@ function setState(next: SyncState) {
   notify()
 }
 
+/**
+ * The last few things sync did, newest last, kept across a reload (D-067).
+ *
+ * The red cloud used to be the whole story, and the usual cure — close the app
+ * and open it again — wiped whatever had gone wrong along with the fault. So the
+ * trail lives in `localStorage`: a reload is exactly the moment someone wants to
+ * know what happened before it. Eighty lines is a day or two of a phone opening
+ * and closing, and a few KB.
+ *
+ * Every access is wrapped. Storage can be blocked or full, and a diagnostic that
+ * throws would turn a sync fault into a crash.
+ */
+export type SyncNote = { at: number; msg: string; n?: number }
+const TRAIL_KEY = 'babyliana.sync_trail'
+const TRAIL_MAX = 80
+let trail: SyncNote[] = (() => {
+  try {
+    const v: unknown = JSON.parse(localStorage.getItem(TRAIL_KEY) ?? '[]')
+    return Array.isArray(v) ? (v as SyncNote[]).slice(-TRAIL_MAX) : []
+  } catch {
+    return []
+  }
+})()
+
+export const syncTrail = () => trail
+
+export function note(msg: string) {
+  // A fault that repeats on every wake is one line with a count, not eighty
+  // copies that push out whatever came before it.
+  const last = trail.at(-1)
+  trail = last?.msg === msg
+    ? [...trail.slice(0, -1), { at: Date.now(), msg, n: (last.n ?? 1) + 1 }]
+    : [...trail, { at: Date.now(), msg }].slice(-TRAIL_MAX)
+  try {
+    localStorage.setItem(TRAIL_KEY, JSON.stringify(trail))
+  } catch {
+    /* storage refused; the in-memory trail still serves this session */
+  }
+}
+
+/** Writes on this phone the server has not acknowledged yet. */
+export const pendingCount = async () => (await db.outbox()).length
+
 /** Caregivers before timeslots: `logged_by` is a foreign key and will reject. */
 // `baby` first: it is the root every timeslot references, so it has to exist
 // on the server before anything points at it. It is only ever *updated* here —
@@ -59,13 +102,22 @@ const PUSH_ORDER = ['baby', 'caregiver', 'timeslot', 'event'] as const
  * went wrong is not.
  */
 let lastError: string | null = null
+let lastErrorAt: number | null = null
 export const lastSyncError = () => lastError
+export const lastSyncErrorAt = () => lastErrorAt
+
+/** Record why sync stopped, for the sync sheet and the trail alike. */
+function fault(message: string) {
+  lastError = message
+  lastErrorAt = Date.now()
+  note(`stopped — ${message}`)
+  console.error(`[babyliana] sync stopped — ${message}`)
+}
 
 /** Uniform handling, so no call site can drop an error by forgetting to look. */
 function failed(where: string, error: { message: string; code?: string } | null): boolean {
   if (!error) return false
-  lastError = `${where}: ${error.message}${error.code ? ` (${error.code})` : ''}`
-  console.error(`[babyliana] sync stopped — ${lastError}`)
+  fault(`${where}: ${error.message}${error.code ? ` (${error.code})` : ''}`)
   return true
 }
 
@@ -103,6 +155,7 @@ async function push(): Promise<boolean> {
       await db.dequeue(puts.map((p) => p.key))
     }
   }
+  note(`sent ${items.length} change(s)`)
   return true
 }
 
@@ -133,7 +186,10 @@ async function pull(): Promise<boolean> {
   // a pull cannot happen — offline, unauthenticated, a server error — all of
   // which sync() already treats as "try again later" rather than as a fault.
   const babyId = getBabyId()
-  if (!babyId) return false
+  if (!babyId) {
+    fault('no baby chosen on this phone yet')
+    return false
+  }
 
   const [baby, caregiver, timeslot, event] = await Promise.all([
     supabase.from('baby').select('*').eq('id', babyId),
@@ -186,11 +242,13 @@ async function pull(): Promise<boolean> {
 export async function sync(): Promise<void> {
   if (running) return running
   if (!supabase || !navigator.onLine) {
+    if (state !== 'offline') note(supabase ? 'offline — the phone reports no connection' : 'no server configured')
     setState('offline')
     return
   }
 
   running = (async () => {
+    const before = state
     setState('syncing')
     try {
       const pushed = await push()
@@ -200,13 +258,24 @@ export async function sync(): Promise<void> {
       }
       // Never reconcile with writes still pending — the wholesale replace
       // would erase them.
-      if ((await db.outbox()).length > 0) {
+      const left = (await db.outbox()).length
+      if (left > 0) {
+        fault(`${left} change(s) still waiting after sending`)
         setState('error')
         return
       }
-      setState((await pull()) ? 'idle' : 'error')
-      if (state === 'idle') lastSyncedAt = Date.now()
-    } catch {
+      const pulled = await pull()
+      if (pulled) {
+        lastSyncedAt = Date.now()
+        lastError = null
+        // One line per recovery rather than per sync: a phone syncs on every
+        // wake and every realtime message, and a trail of identical "synced"
+        // lines would push out the failure it exists to keep.
+        if (before !== 'idle' || trail.length === 0) note('synced')
+      }
+      setState(pulled ? 'idle' : 'error')
+    } catch (e) {
+      fault(`unexpected: ${e instanceof Error ? e.message : String(e)}`)
       setState('error')
     } finally {
       running = null
@@ -285,8 +354,14 @@ export function startSync() {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') void sync()
   })
-  window.addEventListener('online', () => void sync())
-  window.addEventListener('offline', () => setState('offline'))
+  window.addEventListener('online', () => {
+    note('back online')
+    void sync()
+  })
+  window.addEventListener('offline', () => {
+    note('offline — the phone reports no connection')
+    setState('offline')
+  })
 
   if (supabase) {
     supabase
@@ -301,6 +376,11 @@ export function startSync() {
       .on('postgres_changes', { event: '*', schema: 'app', table: 'event' }, () =>
         void sync(),
       )
-      .subscribe()
+      // Live updates failing is not a sync fault — the reconcile on wake still
+      // brings everything — but it is the difference between the other phone's
+      // feed appearing now and appearing next time this one is opened.
+      .subscribe((status, err) => {
+        if (status !== 'SUBSCRIBED') note(`live updates: ${status}${err ? ` — ${err.message}` : ''}`)
+      })
   }
 }

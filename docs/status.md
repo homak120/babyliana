@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-10-05 (keep-alive heartbeat; the 60-day rule — D-066)
+Last updated: 2026-10-07 (the cloud says what it means — D-067)
 
 ---
 
@@ -18,8 +18,8 @@ Last updated: 2026-10-05 (keep-alive heartbeat; the 60-day rule — D-066)
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. **782 checks pass across twenty-four
-suites** — `verify-day-summary` is the new one.
+delivered by the second design handoff. **803 checks pass across twenty-five
+suites** — `verify-sync-status` is the new one.
 
 **The multi-tenant work is merged to `main` and deploying.** `52b1fb8`, a
 `--no-ff` merge of all nineteen commits of `product-ready-enhancement`, pushed
@@ -364,11 +364,12 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**Nothing uncommitted.** The keep-alive heartbeat is `a102dff` on `main`, pushed.
-`0009` is applied and verified, the repo secrets are set, and a manual run
-went green on 2026-10-05. Scheduled runs start Thursday 2026-10-08.
-D-066 records the 60-day rule, handled by hand, and the scheduler survey;
-committed and pushed.
+**Nothing uncommitted.** D-067, the sync sheet, is committed on `main`
+(`npm run verify` green, 803 checks). No migration, nothing new stored on the
+server. D-066 is `6741799`, pushed.
+
+The keep-alive heartbeat is `a102dff`; `0009` is applied and verified, the repo
+secrets are set, and a manual run went green on 2026-10-05.
 
 D-065 is `9a83e00` on `main`, pushed. No migration,
 nothing new stored — but it is the first change that touches what the phones
@@ -462,7 +463,17 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-10-05 (latest) — a keep-alive heartbeat for the free tier
+### 2026-10-07 (latest) — the cloud says what it means
+
+The owner saw a red cloud with no way to ask why. Tapping it now opens a sheet
+that names the state, says what it means for what you log, and offers *try
+again* and *reload app*; a folded developer section holds a copyable report and
+a trail of the last eighty sync events, kept in `localStorage` so the reload
+that cures a fault does not erase the record of it. The add sheet says when sync
+is down, and the one-tap buttons say so after the write — neither blocks it.
+Offline and failing now have different icons. D-067.
+
+### 2026-10-05 — a keep-alive heartbeat for the free tier
 
 A GitHub Action now writes one row twice a week, so a week nobody opens the app
 cannot pause the project. It goes through `keep_alive_ping()`, not a direct
@@ -498,48 +509,3 @@ band was invisible. It is mixed from `--periInk` now.
 
 `Q-015` is still open and still unguessed — which captured-but-unused fields
 earn a place on the insights screen.
-
-### 2026-09-24 — the report reaches past a week, and a page says what it holds
-
-Two things, one complaint: the app was showing less than it had. D-063.
-
-**Then a third pass, on how it looked.** The summary shipped as a paragraph in a
-screen made of tags, so it became bubbles — every fact in the colour its kind
-already has, which is the tag row's vocabulary and not a second one. Two things
-fell out of that rather than out of the redraw: it stopped repeating the total
-and the feed count, which are tags four points above it, and it dropped the type
-word from each secondary bubble once the icon was carrying it. A page whose every
-fact is already in the tag row now produces no block at all.
-
-**The insights range is a shape now, not a number.** `Span` became a union —
-`{days: n}`, `{month: ym}`, `all` — behind a strip of pills: `3d 7d 15d 30d`,
-the months that have entries, then `more` for the rest and `all`. A calendar
-month is not `slice(-30)`, which would take August one day short every time.
-Months are offered from the log rather than generated, so a pill never opens an
-empty screen.
-
-At 30 days the bars are six points wide, so the per-bar value comes off and the
-date labels thin to one in six, anchored to the most recent day. The wet-diaper
-flag rolls up past three days — **the same D-032 rule, printed differently, not
-a fifth rule and not a moved threshold.**
-
-**The read-back's page now summarises what it holds:** milk with its source
-split in words and the widest gap inside the day, diapers with their colours,
-sleep, and a line for weight, temperature, supplements, spit-ups and how many
-notes were written. All of it was already stored and invisible until the table
-was scrolled. It is handed one day, every day, or a picked period by the same
-component, so a gap is only claimed within a single day — across a range the
-widest gap is the night, every time.
-
-`src/day/summary.ts` is new, with `verify-day-summary` as its own suite,
-registered in `package.json`.
-
-**Two questions came in the same message and are now `Q-014` and `Q-015`**, both
-waiting on the owner and neither guessed at: what the daily rhythm should show,
-given that it looks right and nobody acts on it, and which captured-but-unused
-data earns a place on the insights screen. The second was measured rather than
-guessed — **the report reads none of `pounds`, `fahrenheit`, `supplement_name`,
-`severity`, `poop_consistency` or `logged_by`** — and it turned up a defect on
-the way: the growth card matches a digit in the free-text *note* and never looks
-at `pounds`, so a weight typed into the weight field does not appear on it at
-all.

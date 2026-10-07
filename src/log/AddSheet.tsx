@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { closeOpenSleep, logMoment, updateMoment } from '../moments'
 import type { Moment } from '../types'
 import { setEntryInProgress } from '../updates'
+import { subscribe, syncState } from '../sync'
 import { markOverlay } from '../overlay'
 import {
   blocksFromMoment,
@@ -118,6 +119,8 @@ export function AddSheet({
     editing?.timeslot.ended_at ? new Date(editing.timeslot.ended_at) : null,
   )
   const [note, setNote] = useState(editing?.timeslot.note ?? '')
+  const [syncing, setSyncing] = useState(syncState().state)
+  useEffect(() => subscribe(() => setSyncing(syncState().state)), [])
 
   // While this sheet is open a service-worker update must not reload the page
   // and discard what is being typed.
@@ -194,6 +197,19 @@ export function AddSheet({
           <Icon name="close" size={20} />
         </button>
       </header>
+
+      {/* Said here, where the entry is being made, and never in the way of it
+          (D-067). The save works either way — the write is local and the outbox
+          keeps it, which is the non-negotiable — so this tells you where the
+          entry will be, not whether you may make it. */}
+      {(syncing === 'offline' || syncing === 'error') && (
+        <p className="syncwarn" role="status">
+          <Icon name={syncing === 'offline' ? 'cloud_off' : 'sync_problem'} size={16} />
+          {syncing === 'offline'
+            ? 'offline — this saves on this phone and is sent when the connection is back.'
+            : 'not syncing — this saves on this phone and is sent once sync works again. tap the cloud on the home screen for details.'}
+        </p>
+      )}
 
       <TimeCard
         start={start}

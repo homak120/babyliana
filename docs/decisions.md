@@ -3202,3 +3202,53 @@ Others, recorded so the survey is not repeated:
 **Reversal condition.** Missing rows in `keep_alive` with no warning email
 having arrived — the manual step failed to happen — or the move to Vercel Cron,
 which supersedes this entry.
+
+## D-067 — the cloud says what it means, and a reload is one tap
+
+**2026-10-07. Owner's report:** the cloud in the status row is sometimes red,
+there is no way to see why, nothing warns at the moment of logging, and the fix
+that usually works — close the app, open it again — is a swipe through the iOS
+app switcher that nobody should need to know.
+
+**Three changes.**
+
+1. **Tap the cloud for a sync sheet.** It names the state in words — synced,
+   syncing, offline, not syncing — with one sentence saying what that means for
+   what you log, how many changes are waiting to send, when this phone last
+   synced, and what stopped it. Two buttons, **try again** and **reload app**.
+   Under a folded heading, *details for the developer*: a plain-text report —
+   build, state, last error and when, ids, install mode, user agent, and the
+   **trail**, the last eighty things sync did — with a **copy** button so it can
+   be pasted into a message.
+2. **Warn where the entry is made, never in its way.** The add sheet carries a
+   line under its header while sync is offline or failing. The one-tap bottle
+   and bedtime buttons have no sheet, so they get a line *after* the write
+   instead, for four seconds, once the push has had its chance. Neither blocks
+   anything: the write is local and the outbox keeps it, so the line says
+   where the entry is, not whether you may make it.
+3. **A reload button beside the cloud, only while sync is failing.** It takes a
+   waiting build if one is there, and otherwise reloads. Not shown while
+   offline — a reload brings no signal — and not shown when sync is fine, where
+   it would only be tapped by accident. It is always in the sync sheet.
+
+**The trail is in `localStorage`, and that is the point of it.** The cure is a
+reload, and a reload wiped the only evidence of what went wrong. So the trail
+survives one. A fault that repeats on every wake is collapsed to one line with a
+count, so it cannot push out what came before it, and a run of successful syncs
+writes nothing — only the recovery is noted.
+
+**Offline and failing are different reds now.** `cloud_off` for no signal,
+`sync_problem` for a refusal or an error. The first clears itself; the second
+usually needs the reload.
+
+**Tone.** Every sentence leads with the entry being safe on this phone, because
+it always is. Nothing says *error* to a parent; the developer detail is folded
+away and is the only place the raw message appears in full.
+
+**What it does not do.** It does not retry on a timer, does not diagnose, and
+does not decide anything for the user. *Try again* is the same `sync()` every
+wake already runs.
+
+**Reversal condition.** If the reload button proves to be tapped by accident
+mid-entry — it is outside the add sheet, so it cannot discard a draft, but it
+can interrupt — move it into the sync sheet only.

@@ -46,3 +46,21 @@ export function registerUpdates() {
     },
   })
 }
+
+/**
+ * The refresh button (D-067): what closing and reopening the app does, in one tap.
+ *
+ * A waiting build is taken rather than reloaded past — if a new version is
+ * sitting there, the person asking for a fresh start should get it. Otherwise a
+ * plain reload, which drops every in-memory state the fault could be living in
+ * and runs startup again. Local data is in IndexedDB and the outbox survives, so
+ * there is nothing a reload can lose.
+ */
+export function reloadApp() {
+  if (waiting && applyUpdate) {
+    waiting = false
+    void applyUpdate(true)
+    return
+  }
+  location.reload()
+}
