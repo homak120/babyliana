@@ -389,14 +389,15 @@ await p.waitForTimeout(250)
 const before = await p.locator('.nextfeed b').innerText()
 await p.getByLabel('settings').click()
 await p.waitForTimeout(350)
-// The cycle is one section of five now (D-055), and the button that opens them
-// says `settings` rather than `feeding cycle settings`.
+// The cycle is one section of six now (D-055, and the feed alert's switch in
+// D-069), and the button that opens them says `settings` rather than `feeding
+// cycle settings`.
 check('the tune button opens settings, with the cycle among them',
-  (await p.locator('.setsheet').count()) === 1 && (await p.locator('.setblock').count()) === 5,
+  (await p.locator('.setsheet').count()) === 1 && (await p.locator('.setblock').count()) === 6,
   `${await p.locator('.setblock').count()} section(s)`)
 check('and every section says whose setting it is',
   (await p.locator('.scope.shared').count()) === 4
-  && (await p.locator('.scope.local').count()) === 1,
+  && (await p.locator('.scope.local').count()) === 2,
   `${await p.locator('.scope.shared').count()} shared, ${await p.locator('.scope.local').count()} local`)
 // **Neither a count nor a kind of hardware**, and both were shipped once.
 // "both phones" capped a household that `caregiver` does not cap — anything

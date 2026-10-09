@@ -1,4 +1,4 @@
-import { cycleFor } from './cycles'
+import { cycleFor, type Cycle } from './cycles'
 import { read } from './settings'
 import type { Moment } from './types'
 
@@ -108,9 +108,12 @@ export function formatElapsed(minutes: number | null): string {
  * they moved out of here into `cycles.ts`: a ceiling and an estimate that
  * disagree about the gap would be two answers to one question on one card.
  */
-export function targetWake(lastFeedStart: Date | null): Date | null {
+export function targetWake(lastFeedStart: Date | null, list?: Cycle[]): Date | null {
   if (!lastFeedStart) return null
-  return new Date(lastFeedStart.getTime() + cycleFor(lastFeedStart).gap * 60_000)
+  // `list` is for the feed alert, which has to read the cycle off the synced row
+  // rather than the cache (D-069). Undefined falls through to `cycleFor`'s own
+  // default — the cache — which is what the card wants.
+  return new Date(lastFeedStart.getTime() + cycleFor(lastFeedStart, list).gap * 60_000)
 }
 
 /**

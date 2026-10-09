@@ -24,6 +24,7 @@ Editor, paste each file in order, run it.
 | `migrations/0007_app_schema.sql` | Creates the `app` schema — `baby`, `caregiver`, `baby_member`, `timeslot`, `event` — with RLS, policies, `is_member_of`, `create_baby`, grants and realtime. **Touches nothing in `public`** | **Applied 2026-09-14.** Object count verified at 5 tables / 2 functions / 5 policies, and `npm run auth-check` passes end to end against it. Safe to re-run. D-057 |
 | `migrations/0008_copy_pilot_log.sql` | Stage 3 — copies the log from `public` into `app`, remapping `baby_id` onto the existing `app.baby` and `logged_by` onto the caregiver of the same name. Carries `baby.settings` across. **Reads `public`, never writes it** | **Applied 2026-09-23, and re-run since.** Forward-only and idempotent — **run it again to pick up new rows; there is no delete step** (D-061, which cost 99 events to learn). Refuses an ambiguous baby, a caregiver name that does not map one-to-one, a surviving `grams`/`celsius` value, or a short copy. Reports drift rather than resolving it |
 | `migrations/0009_keep_alive.sql` | Creates `public.keep_alive` (id, `pinged_at`) with RLS on and no grants, and `keep_alive_ping()` — a definer function anon may call that inserts one row and prunes rows older than 90 days. Called twice a week by `.github/workflows/supabase-keep-alive.yml` so the free tier never sees seven idle days. GitHub disables that schedule after 60 days without a commit — D-066 | **Applied 2026-10-05.** Verified with the anon key: the function returns a timestamp, and a direct select or insert on the table is refused. Safe to re-run |
+| `migrations/0010_feed_alert.sql` | Creates `app.feed_alert` and `app.push_subscription` with RLS, `app.claim_feed_alerts()` (service role only), enables `pg_cron` and `pg_net`, and schedules the `feed-alert` job every minute. D-069 | **Applied 2026-10-09**, with both Vault values, and the function answers through it. Additive; neither table is on the outbox, so the order cannot stall sync — but run it first anyway. Safe to re-run. **Needs the steps in § The feed alert** before it sends anything |
 
 **There is no `0002`, and the number is burned.** `0002_seed_household.sql`
 existed on 2026-09-03 and was **run against the database** before `0b14b40`
@@ -179,6 +180,50 @@ insists it should have worked.
 report `SUBSCRIBED` and deliver nothing for tens of seconds. Wait and retry
 before changing any configuration — the spike lost two attempts to exactly this.
 See `.specify/memory/spike-spec.md`.
+
+## The feed alert
+
+`0010` is the storage and the schedule. Like stage 1, the rest is not SQL, and
+**none of it is in this directory** except the function's source. Do these once,
+in this order. D-069; `.specify/memory/feed-alert.md` is the spec.
+
+1. **A VAPID key pair.** `npx web-push generate-vapid-keys`. The public half goes
+   in `src/alerts.ts`; the private half goes only into step 3.
+2. **Deploy the function**, with JWT verification off — the caller is the
+   database and has no session; the shared secret in step 4 stands in for one:
+
+   ```
+   npx supabase functions deploy feed-alert --no-verify-jwt --project-ref <ref>
+   ```
+
+   (Or the dashboard's Edge Functions editor: paste
+   `functions/feed-alert/index.ts`, name it `feed-alert`, and turn *Enforce JWT
+   verification* off.)
+3. **Edge Functions → Secrets:** `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
+   `VAPID_SUBJECT` (the app's https URL, or a `mailto:`) and `CRON_SECRET` (any
+   long random string — `openssl rand -hex 32`). `SUPABASE_URL` and
+   `SUPABASE_SERVICE_ROLE_KEY` are provided by the platform.
+4. **Run `0010`, then tell the cron where to call**, in the SQL Editor, with the
+   same secret as step 3:
+
+   ```sql
+   select vault.create_secret('https://<ref>.supabase.co/functions/v1/feed-alert', 'feed_alert_url');
+   select vault.create_secret('<the CRON_SECRET from step 3>', 'feed_alert_secret');
+   ```
+
+5. **Nothing in Vercel.** The public key is a constant in `src/alerts.ts` — it
+   is public by design, and Vercel refuses a `VITE_` variable marked private.
+   If the pair is ever regenerated, that line changes too.
+
+**Checking it.** `select * from cron.job_run_details order by start_time desc
+limit 5;` shows the minute job; `select * from net._http_response order by
+created desc limit 5;` shows what the function answered — `{"due":0,...}` on a
+quiet minute, `403` if the two secrets disagree. `select * from app.feed_alert;`
+shows the next `fire_at` the phones published.
+
+**Rotating the VAPID pair unsubscribes nobody, and alerts stop arriving
+anyway** — every existing subscription was made against the old public key.
+Switch alerts off and on again on each phone after a rotation.
 
 ## What is not here
 

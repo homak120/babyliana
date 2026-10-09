@@ -340,3 +340,16 @@ over that finding gets built twice.
       `technical-constraints.md` sizes Supabase against one family; open signup
       has no ceiling by design
 - [ ] **H** Everything involving other people's children
+
+## Feed alert — D-069
+
+The card's *make milk* prompt as a push notification. Spec:
+`.specify/memory/feed-alert.md`.
+
+- [x] **CC** Spec, `0010`, the `feed-alert` edge function, the service-worker
+      push handler, the *only here* switch in settings, `verify-alerts`
+- [x] **H** Server setup — `supabase/README.md` § The feed alert: VAPID pair,
+      the function and its secrets, `0010` and the two Vault values. Checked
+      2026-10-09
+- [ ] **H** Turn it on on a phone installed to the home screen and see one
+      arrive — the only end-to-end test there is

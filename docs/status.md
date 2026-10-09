@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-10-07 (the app says which version it is — D-068)
+Last updated: 2026-10-08 (the feed alert, built and not yet deployed — D-069)
 
 ---
 
@@ -18,8 +18,8 @@ Last updated: 2026-10-07 (the app says which version it is — D-068)
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. **805 checks pass across twenty-five
-suites** — `verify-sync-status` is the new one.
+delivered by the second design handoff. **824 checks pass across twenty-six
+suites** — `verify-alerts` is the new one.
 
 **The multi-tenant work is merged to `main` and deploying.** `52b1fb8`, a
 `--no-ff` merge of all nineteen commits of `product-ready-enhancement`, pushed
@@ -141,6 +141,11 @@ precache sits where it does; the 1024 is excluded, being needed only at install.
 Newest first, and **this is an index, not a record** — `docs/decisions.md`
 carries the reasoning for every one of these, and for everything older.
 
+- **D-069** — the bottle prompt reaches the lock screen. A push notification
+  at the instant the card's *make milk* pill appears, once per target, opt-in
+  per device. The phones publish when it is due after each sync; a minute
+  `pg_cron` job calls the `feed-alert` edge function, which sends. The project's
+  first server-side code. **Built, not deployed** — see *In flight*.
 - **D-065** — the launch is the app's colour rather than white. Measured first:
   the whole log comes out of IndexedDB in **6 ms** and first paint lands at
   60 ms on a phone-class CPU, so none of the reported seconds were the app
@@ -215,6 +220,11 @@ carries the reasoning for every one of these, and for everything older.
 settings screen — and the rest is the owner's judgement. See *Next action*.
 
 ## Next action
+
+**Feed alert (D-069): the phone test.** Fully close and reopen the app, then
+Settings → *feed alert* → on. `update app.feed_alert set fire_at = now() -
+interval '1 minute';` in the SQL Editor forces one within a minute. If nothing
+arrives, `net._http_response` shows what the function said.
 
 **0. Finish the cutover. All six are the owner's, none are code**, and they are
 in this order for a reason.
@@ -364,8 +374,16 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**Nothing uncommitted.** D-068, the version line, is committed on `main`
-(`npm run verify` green, 805 checks).
+**Nothing uncommitted.** The feed alert, D-069, is committed and pushed to
+`main` (`npm run verify` green, 824 checks). **The server side is live and
+checked (2026-10-09)**: the four function secrets, `feed-alert` deployed with JWT
+verification off, `0010` and both Vault values run. The function answers
+`forbidden` without the password and `{"due":0}` with it. The public key is a
+constant in `src/alerts.ts`. Vercel takes a `VITE_` variable only as *Config*,
+and the owner chose the constant; any Vercel copy is unused. **No real phone has
+received an alert yet.** That is the one open check, and it is in *Next action*.
+
+D-068, the version line, is committed on `main`.
 
 D-067, the sync sheet, is `9b043d4` on `main`, pushed. D-066 is `6741799`, pushed.
 
@@ -464,7 +482,16 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-10-07 (latest) — the app says which version it is
+### 2026-10-08 (latest) — the bottle prompt reaches the lock screen
+
+The owner asked for a feed alert. Built as the card's *make milk* prompt pushed
+to a phone: same instant, same words, once per target, opt-in per device in
+settings. Phones publish the next `fire_at` per baby after each sync; a minute
+`pg_cron` job calls a new `feed-alert` edge function that claims and sends.
+Uncommitted, and needs the server steps before it does anything. The playful
+message from the baby is discussed and deferred. D-069.
+
+### 2026-10-07 — the app says which version it is
 
 The settings sheet ends with `version <hash> · built <local time>`, and the sync
 sheet has the same as a row. The version is the commit's short hash, so a phone
@@ -479,12 +506,3 @@ a trail of the last eighty sync events, kept in `localStorage` so the reload
 that cures a fault does not erase the record of it. The add sheet says when sync
 is down, and the one-tap buttons say so after the write — neither blocks it.
 Offline and failing now have different icons. D-067.
-
-### 2026-10-05 — a keep-alive heartbeat for the free tier
-
-A GitHub Action now writes one row twice a week, so a week nobody opens the app
-cannot pause the project. It goes through `keep_alive_ping()`, not a direct
-insert: the anon key is public, so the table takes no client writes and the
-function is the only door. It lives in `public` because `app` grants anon
-nothing. `0009` is applied and verified; the workflow has not run yet — see
-*In flight*.

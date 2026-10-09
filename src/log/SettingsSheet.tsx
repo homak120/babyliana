@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { alertSupport, alertsOn, turnAlertsOff, turnAlertsOn } from '../alerts'
 import { cycles, gapText, isNightCycle, setCycles, type Cycle } from '../cycles'
 import { saveSetting } from '../moments'
 import { read, write, type SettingKey } from '../settings'
@@ -171,6 +172,75 @@ function Stepper({ label, name, value, onStep, min, max, step, unit, icon }: {
   )
 }
 
+/**
+ * The feed alert's switch (D-069). Per device, so *only here*: whoever is on
+ * duty turns theirs on and whoever is asleep leaves theirs off.
+ *
+ * Off by default and never asked for on first run — the permission prompt has
+ * to come from a tap on iOS, and an app that asks for notifications before it
+ * has been useful is asking at the wrong time.
+ */
+const SUPPORT_TEXT: Record<Exclude<ReturnType<typeof alertSupport>, 'ok'>, string> = {
+  install: 'add BabyLiana to the home screen to turn this on — the phone only sends alerts to an installed app.',
+  unsupported: 'this browser cannot show alerts.',
+  blocked: 'notifications are blocked for this app. allow them in the phone’s settings, then come back.',
+  unconfigured: 'alerts are not set up on the server yet.',
+}
+
+function FeedAlertSection() {
+  const support = alertSupport()
+  const [on, setOn] = useState(alertsOn)
+  const [busy, setBusy] = useState(false)
+  const [problem, setProblem] = useState<string | null>(null)
+
+  const choose = async (next: boolean) => {
+    if (busy || next === on) return
+    setBusy(true)
+    setProblem(null)
+    if (next) {
+      const err = await turnAlertsOn()
+      if (err) setProblem(err)
+      setOn(err === null)
+    } else {
+      await turnAlertsOff()
+      setOn(false)
+    }
+    setBusy(false)
+  }
+
+  return (
+    <Section title="feed alert" shared={false}>
+      <p className="setnote">
+        a notification on this device when the card says <b>make milk</b> — once
+        per feed, at the lead time above.
+      </p>
+      {support === 'ok' ? (
+        <div className="setrow">
+          <span className="setlabel">alerts</span>
+          <div className="segmented">
+            {[false, true].map((v) => (
+              <button
+                key={String(v)}
+                type="button"
+                className={on === v ? 'seg on' : 'seg'}
+                aria-pressed={on === v}
+                aria-label={v ? 'turn feed alerts on' : 'turn feed alerts off'}
+                disabled={busy}
+                onClick={() => void choose(v)}
+              >
+                {v ? 'on' : 'off'}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p className="setnote faint">{SUPPORT_TEXT[support]}</p>
+      )}
+      {problem && <p className="setnote faint">{problem}</p>}
+    </Section>
+  )
+}
+
 export function SettingsSheet({ onClose, onClockChange }: {
   onClose: () => void
   /** `hhmm` is the only formatter (D-041), so changing this restyles every time
@@ -302,6 +372,8 @@ export function SettingsSheet({ onClose, onClockChange }: {
           the hours are fixed; the interval inside them is not.
         </p>
       </Section>
+
+      <FeedAlertSection />
 
       <Section title="only on this device" shared={false}>
         <p className="setnote">

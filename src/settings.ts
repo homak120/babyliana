@@ -282,6 +282,26 @@ export function unsynced(settings: BabySettings | null | undefined): SettingKey[
   return SETTING_KEYS.filter((k) => !settings?.[k] && !isDefault(k))
 }
 
+/**
+ * What a setting *will* be once `hydrate` has run on this row — without running
+ * it.
+ *
+ * The same rule as `hydrate`: a usable value on the row wins, and an absent or
+ * junk one leaves the local answer standing. For the feed alert (D-069), which
+ * runs straight after a pull and must not publish a time computed from a value
+ * the row has already replaced. It does not write the cache, because the card's
+ * repaint is driven by `hydrate` reporting a change, and stealing that change
+ * here would leave the card showing the old value.
+ */
+export function effective<K extends SettingKey>(
+  key: K,
+  settings: BabySettings | null | undefined,
+): NonNullable<BabySettings[K]> {
+  const theirs = settings?.[key]
+  if (theirs === undefined || theirs === null) return read(key)
+  return (SPECS[key] as Spec<K>).parse(theirs) ?? read(key)
+}
+
 /** Forgets the cache, for suites that write a preference behind the module. */
 export function resetSettings(): void {
   cached.clear()

@@ -58,13 +58,14 @@ from lying.
 
 ## What is local
 
-Neither of these moves into `baby.settings`, and only one of them is on the
-settings screen.
+None of these moves into `baby.settings`. The name is the one that is not on
+the settings screen.
 
 | Setting | Home | Where it is edited | Why local |
 | --- | --- | --- | --- |
 | Clock format | `localStorage`, `timeformat.ts` | settings, *only here* | a preference of the thing in your hand; devices may disagree and that is correct |
 | This device's name | the `device` row, via `renameThisDevice` | the status row (D-056) | the name *is* the device; it syncs as a device, not as a setting |
+| Feed alert on / off | `localStorage` plus its `push_subscription` row (`alerts.ts`) | settings, *only here* | whoever is on duty wants the buzz and whoever is asleep does not — D-069 |
 
 **The name is not a setting, and that is why it is not on this screen.** It was,
 briefly, and D-056 took it back to the status row for two reasons. A settings

@@ -10,6 +10,7 @@ import { useOverlayOpen } from './overlay'
 import { dbFatal, getCaregivers, getRow, onDbFatal } from './db'
 import { startSync, subscribe, sync, syncState, type SyncState } from './sync'
 import { registerUpdates } from './updates'
+import { afterSync } from './alerts'
 import './tokens.css'
 import './log/log.css'
 // **day.css stays here, and that is not an oversight.** It is named for the day
@@ -151,6 +152,20 @@ export default function App() {
   const refreshMoments = useCallback(() => { void getMoments().then(setMoments) }, [])
   useEffect(refreshMoments, [refreshMoments])
   useEffect(() => subscribe(refreshMoments), [refreshMoments])
+
+  // The feed alert (D-069): once the log is known to match the server, say when
+  // the next *make milk* is due and keep this install's subscription current.
+  // Keyed on the sync's own timestamp, so the several notifications one sync
+  // emits do the work once. Never on the write path — a failure is a trail line.
+  useEffect(() => {
+    let seen: number | null = null
+    return subscribe(() => {
+      const { state, lastSyncedAt } = syncState()
+      if (state !== 'idle' || lastSyncedAt === null || lastSyncedAt === seen) return
+      seen = lastSyncedAt
+      void afterSync()
+    })
+  }, [])
 
   // The end pills show a running duration, so they have to move on their own.
   useEffect(() => {

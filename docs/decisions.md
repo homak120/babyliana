@@ -3274,3 +3274,50 @@ row in the sync sheet (D-067), whose developer report carries it too.
 **Reversal condition.** If the app ever needs a version a person reads aloud —
 release notes, a support conversation outside this household — a semantic
 version goes beside the hash, not instead of it.
+
+## D-069 — the bottle prompt reaches the lock screen
+
+**2026-10-08. Owner's ask:** an alert on the phone when it is time to feed.
+
+**The alert is the card's *make milk* prompt, delivered — not a new rule.** It
+fires at the target wake time minus the prep lead (D-036, D-055), which is the
+instant the pill appears, and says the same words. One per target; no repeat at
+the target, no escalation. Silent whenever the wake line is: no feed yet, or one
+running. That keeps it inside the tone rule for the reason D-036 gave the line
+itself — it names a task at a time and has no opinion about whether anyone did
+it. The prep moment rather than the target, because a notification at the
+target arrives when the bottle should already be warm.
+
+**The phone computes the time; the server only sends.** A PWA that is not open
+cannot schedule its own notification, so delivery has to come from a server.
+After every successful sync each phone upserts `app.feed_alert` — one row per
+baby, `fire_at` and `target_at` — from the same functions the card draws with.
+`pg_cron` calls the `feed-alert` edge function once a minute; it claims due rows
+atomically and pushes to that baby's subscriptions. Re-deriving the target in
+SQL was rejected: the cycle windows are clock-of-day in the phone's timezone, and
+a second copy of D-036 is a second copy to drift.
+
+**Opt-in, per device, *only here*.** A switch in settings, off by default and
+never asked for at first run — iOS only allows the permission prompt from a tap,
+and the person asleep should not get the 3am buzz meant for the person on duty.
+Every subscribed device for the baby gets the alert; the switch is the "whose
+turn" logic, held by a person.
+
+**Stale alerts are dropped.** Nothing is sent for a moment more than 30 minutes
+past — a backdated feed, a cron that was down. The push TTL matches.
+
+**Accepted gap:** a feed logged with no signal has not reached the server, so an
+alert for the target it replaced can still go out. A prompt for a bottle already
+made; it closes on that phone's next sync. Not a reason to touch sync (D-058).
+
+**First server-side code in the project.** One edge function holding the VAPID
+private key and the service role, both in Supabase's secrets, never in the
+bundle. `web-push` was checked under Deno 2 before it was chosen — a VAPID-signed
+`aes128gcm` push reached a local endpoint intact.
+
+**Not this decision:** the playful message from the baby, addressed to the
+caregiver by name (*mom*, *dad*). Discussed, deferred by the owner.
+
+**Reversal condition.** If the alert is ignored or switched off on both phones
+after real nights, it goes — a notification nobody acts on teaches people to
+ignore notifications.

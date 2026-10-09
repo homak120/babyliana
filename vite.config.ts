@@ -70,6 +70,10 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // The feed alert's push and notification-click handlers (D-069). The
+        // worker is generated, so the handlers ride in as an imported script
+        // rather than a hand-written worker — `public/push-sw.js`.
+        importScripts: ['push-sw.js'],
         // woff2 is here because the body font is self-hosted now (D-065) and a
         // font that is not precached is a font fetched over the network on the
         // one boot that has no time to spare.
