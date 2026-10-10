@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { alertSupport, alertsOn, turnAlertsOff, turnAlertsOn } from '../alerts'
+import { alertSupport, alertsOn, loveOn, setLove, turnAlertsOff, turnAlertsOn } from '../alerts'
 import { cycles, gapText, isNightCycle, setCycles, type Cycle } from '../cycles'
 import { saveSetting } from '../moments'
 import { read, write, type SettingKey } from '../settings'
@@ -192,6 +192,7 @@ function FeedAlertSection() {
   const [on, setOn] = useState(alertsOn)
   const [busy, setBusy] = useState(false)
   const [problem, setProblem] = useState<string | null>(null)
+  const [love, setLoveState] = useState(loveOn)
 
   const choose = async (next: boolean) => {
     if (busy || next === on) return
@@ -235,6 +236,33 @@ function FeedAlertSection() {
         </div>
       ) : (
         <p className="setnote faint">{SUPPORT_TEXT[support]}</p>
+      )}
+      {/* Love notes (D-070) ride on the same subscription, so they only make
+          sense once alerts are on. */}
+      {support === 'ok' && on && (
+        <>
+          <p className="setnote">
+            and now and then, a little love note in your little one's voice,
+            while she is awake — twice a day at most.
+          </p>
+          <div className="setrow">
+            <span className="setlabel">love notes</span>
+            <div className="segmented">
+              {[false, true].map((v) => (
+                <button
+                  key={String(v)}
+                  type="button"
+                  className={love === v ? 'seg on' : 'seg'}
+                  aria-pressed={love === v}
+                  aria-label={v ? 'turn love notes on' : 'turn love notes off'}
+                  onClick={() => { setLoveState(v); void setLove(v) }}
+                >
+                  {v ? 'on' : 'off'}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
       )}
       {problem && <p className="setnote faint">{problem}</p>}
     </Section>

@@ -13,7 +13,7 @@ const store = new Map<string, string>()
 } as Storage
 
 const { feedAlertFor } = await import('../src/alerts.ts')
-const { bottleDue, targetWake, lastFeedAt } = await import('../src/derive.ts')
+const { awakeWindow, bottleDue, mascotState, targetWake, lastFeedAt } = await import('../src/derive.ts')
 const { write, resetSettings } = await import('../src/settings.ts')
 import type { Moment } from '../src/types.ts'
 
@@ -24,7 +24,10 @@ const check = (label: string, ok: boolean, detail = '') => {
 }
 
 let n = 0
-const moment = (at: Date, type: 'feed' | 'diaper', endedAt: Date | null = at): Moment => {
+const moment = (
+  at: Date, type: 'feed' | 'diaper' | 'sleep', endedAt: Date | null = at,
+  source: 'formula' | 'breast_milk' = 'formula',
+): Moment => {
   const id = `t${++n}`
   return {
     timeslot: {
@@ -33,7 +36,7 @@ const moment = (at: Date, type: 'feed' | 'diaper', endedAt: Date | null = at): M
       recorded_at: at.toISOString(), updated_at: at.toISOString(), updated_by: null, note: null,
     },
     events: [{ id: `e${n}`, timeslot_id: id, type, volume_ml: type === 'feed' ? 60 : null,
-      source: type === 'feed' ? 'formula' : null } as never],
+      source: type === 'feed' ? source : null } as never],
   } as Moment
 }
 
@@ -100,6 +103,49 @@ resetSettings()
 const later = [...day, moment(at(16, 40), 'feed')]
 check('a newer feed replaces the pending alert',
   mins(feedAlertFor(later, at(17)).fire_at, at(16, 40)) === 165)
+
+// --- the love note's window is the mascot's *awake* (D-070) -----------------
+const hhmm = (d: Date | undefined) => d ? `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}` : 'none'
+const w1 = awakeWindow([moment(at(10), 'feed')], at(10, 5))
+check('after formula, awake runs 2h to 2h30 after the feed',
+  hhmm(w1?.from) === '12:00' && hhmm(w1?.until) === '12:30', `${hhmm(w1?.from)}–${hhmm(w1?.until)}`)
+const w2 = awakeWindow([moment(at(10), 'feed', at(10), 'breast_milk')], at(10, 5))
+check('after breast milk, 1h30 to 1h45',
+  hhmm(w2?.from) === '11:30' && hhmm(w2?.until) === '11:45', `${hhmm(w2?.from)}–${hhmm(w2?.until)}`)
+// The mascot itself agrees at both edges — the note cannot land on other art.
+check('the mascot is not yet awake a minute before the window',
+  mascotState(119, 'day') === 'settled')
+check('and is awake at its start', mascotState(120, 'day') === 'awake')
+check('a window that would start at night is no window',
+  awakeWindow([moment(at(18, 30), 'feed')], at(18, 40)) === null)
+const w3 = awakeWindow([moment(at(17, 45), 'feed')], at(18))
+check('one that runs into the evening is cut at 20:00',
+  hhmm(w3?.from) === '19:45' && hhmm(w3?.until) === '20:00', `${hhmm(w3?.from)}–${hhmm(w3?.until)}`)
+check('no window while a feed is running',
+  awakeWindow([moment(at(8), 'feed'), moment(at(11, 50), 'feed', null)], at(12)) === null)
+check('nor while a logged sleep is running',
+  awakeWindow([moment(at(10), 'feed'), moment(at(10, 40), 'sleep', null)], at(11)) === null)
+check('nor before any feed', awakeWindow([], at(12)) === null)
+
+// --- the love lines ---------------------------------------------------------
+{
+  const src = readFileSync('public/push-sw.js', 'utf8')
+  const sw = new Function('self', `${src};return { LOVE_LINES, loveNote }`)({ addEventListener() {} }) as
+    { LOVE_LINES: string[]; loveNote: (d: { name: string; baby: string }) => string }
+  check('forty love lines', sw.LOVE_LINES.length === 40, String(sw.LOVE_LINES.length))
+  check('every line says the caregiver’s name', sw.LOVE_LINES.every((l) => l.includes('{name}')))
+  const notes = Array.from({ length: 60 }, () => sw.loveNote({ name: 'mom', baby: 'Liana' }))
+  check('the name is capitalised and nothing is left unfilled',
+    notes.every((n) => n.includes('Mom') && !n.includes('{')))
+  // The tone rule, for words: no line asks for anything or has a view of anyone.
+  const banned = /\b(hungry|sad|miss|alone|cry|where are you|late|should|good job|great job|worried)\b/i
+  // *Awake* is a clock, not an observation — no line may say she is awake or woke.
+  const state = /\b(awake|woke)\b/i
+  check('no line says she is awake or just woke',
+    !sw.LOVE_LINES.some((l) => state.test(l)), sw.LOVE_LINES.filter((l) => state.test(l)).join(' | '))
+  check('no line is needy, sad or evaluative',
+    !sw.LOVE_LINES.some((l) => banned.test(l)), sw.LOVE_LINES.filter((l) => banned.test(l)).join(' | '))
+}
 
 // --- the built worker carries the handlers -----------------------------------
 let sw = ''

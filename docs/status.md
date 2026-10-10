@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-10-08 (the feed alert, built and not yet deployed — D-069)
+Last updated: 2026-10-09 (love notes from Liana, built and not deployed — D-070)
 
 ---
 
@@ -18,7 +18,7 @@ Last updated: 2026-10-08 (the feed alert, built and not yet deployed — D-069)
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. **824 checks pass across twenty-six
+delivered by the second design handoff. **838 checks pass across twenty-six
 suites** — `verify-alerts` is the new one.
 
 **The multi-tenant work is merged to `main` and deploying.** `52b1fb8`, a
@@ -141,6 +141,10 @@ precache sits where it does; the 1024 is excluded, being needed only at install.
 Newest first, and **this is an index, not a record** — `docs/decisions.md`
 carries the reasoning for every one of these, and for everything older.
 
+- **D-070** — the mascot is Liana (Q-003 closed), and she sends love notes: a
+  push in her voice by caregiver name, twice a day per device in random
+  *awake* windows, daytime only. Forty lines in the service worker. Rides on
+  D-069's pipe. **Built, not deployed** — see *In flight*.
 - **D-069** — the bottle prompt reaches the lock screen. A push notification
   at the instant the card's *make milk* pill appears, once per target, opt-in
   per device. The phones publish when it is due after each sync; a minute
@@ -221,10 +225,9 @@ settings screen — and the rest is the owner's judgement. See *Next action*.
 
 ## Next action
 
-**Feed alert (D-069): the phone test.** Fully close and reopen the app, then
-Settings → *feed alert* → on. `update app.feed_alert set fire_at = now() -
-interval '1 minute';` in the SQL Editor forces one within a minute. If nothing
-arrives, `net._http_response` shows what the function said.
+**Love notes (D-070): watch for the first one.** Both server steps are done and
+the app is pushed. Reopen the app on each phone; *love notes* sits under *feed
+alert*, on. The first note can only come in a daytime *awake* window.
 
 **0. Finish the cutover. All six are the owner's, none are code**, and they are
 in this order for a reason.
@@ -284,7 +287,7 @@ growth card reads a digit in a weight's free-text note and never reads
 - ~~A settings screen~~ — **done, D-055.** Export now has somewhere to live,
   which was half the reason it was on this list.
 
-**3. Three owner decisions, none blocking.** Q-013 is closed — D-057. Q-003 (mascot identity and the rights caution), Q-008
+**3. Three owner decisions, none blocking.** Q-013 is closed — D-057, and Q-003 — D-070, the mascot is Liana. Q-008
 (the final name, which gets dearer with every asset carrying it), Q-006 (which
 of the *remaining* secondary types earned promotion — sleep already went, by
 design in D-029 rather than by the solo run; weight, temperature, supplements
@@ -374,14 +377,14 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**Nothing uncommitted.** The feed alert, D-069, is committed and pushed to
-`main` (`npm run verify` green, 824 checks). **The server side is live and
-checked (2026-10-09)**: the four function secrets, `feed-alert` deployed with JWT
-verification off, `0010` and both Vault values run. The function answers
-`forbidden` without the password and `{"due":0}` with it. The public key is a
-constant in `src/alerts.ts`. Vercel takes a `VITE_` variable only as *Config*,
-and the owner chose the constant; any Vercel copy is unused. **No real phone has
-received an alert yet.** That is the one open check, and it is in *Next action*.
+**Nothing uncommitted.** Love notes, D-070, are committed and pushed to `main`
+(`npm run verify` green, 838 checks). `0011` is applied and `feed-alert` is
+redeployed (2026-10-09). It answers `forbidden` without the password and
+`{"love":0,...}` with it. **No phone has received a love note yet.** That waits
+for a daytime *awake* window on the new build.
+
+The feed alert, D-069, is `75c0427` on `main`, live, and a real phone has
+received one (2026-10-09).
 
 D-068, the version line, is committed on `main`.
 
@@ -482,7 +485,16 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-10-08 (latest) — the bottle prompt reaches the lock screen
+### 2026-10-09 (latest) — the mascot is Liana, and she writes
+
+Server setup for the feed alert finished with the owner in the dashboard; it was
+committed as `75c0427`, and a test alert reached a phone. Then love notes: the
+owner closed Q-003 (she is Liana) and asked for a playful push in her voice,
+twice a day while she is awake. Built on the same pipe: `0011`, a second claim
+in the function, forty lines in the service worker. `0011` applied, function
+redeployed, committed and pushed. D-070.
+
+### 2026-10-08 — the bottle prompt reaches the lock screen
 
 The owner asked for a feed alert. Built as the card's *make milk* prompt pushed
 to a phone: same instant, same words, once per target, opt-in per device in
@@ -496,13 +508,3 @@ message from the baby is discussed and deferred. D-069.
 The settings sheet ends with `version <hash> · built <local time>`, and the sync
 sheet has the same as a row. The version is the commit's short hash, so a phone
 is checked against the top of the commit list with nothing to bump. D-068.
-
-### 2026-10-07 — the cloud says what it means
-
-The owner saw a red cloud with no way to ask why. Tapping it now opens a sheet
-that names the state, says what it means for what you log, and offers *try
-again* and *reload app*; a folded developer section holds a copyable report and
-a trail of the last eighty sync events, kept in `localStorage` so the reload
-that cures a fault does not erase the record of it. The add sheet says when sync
-is down, and the one-tap buttons say so after the write — neither blocks it.
-Offline and failing now have different icons. D-067.

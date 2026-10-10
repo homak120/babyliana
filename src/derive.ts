@@ -380,3 +380,39 @@ export function mascotState(
   if (gap >= holds.awake) return 'awake'
   return 'settled'
 }
+
+/**
+ * When the mascot will read *awake* after the last feed — the window a love
+ * note from Liana may land in (D-070).
+ *
+ * The same thresholds `mascotState` runs on (`HOLDS`, D-035), counted from the
+ * same instant (the feed's start, D-040), so a note arrives as the card's art
+ * turns to *awake* and never while it shows anything else.
+ *
+ * **Daytime only, because the mascot is.** Overnight a gap past an hour reads as
+ * *sleeping*, so a window starting at night is no window, and one that runs into
+ * the evening is cut at the moment the theme turns. That is also what keeps the
+ * note off a sleeping parent's lock screen.
+ *
+ * Null while a feed or a logged sleep is running — both outrank *awake* on the
+ * card — and with no feed logged at all.
+ */
+export function awakeWindow(
+  moments: Moment[],
+  now = new Date(),
+): { from: Date; until: Date } | null {
+  if (ongoingFeed(moments, now) || ongoingSleep(moments, now)) return null
+  const start = lastFeedAt(moments)
+  if (!start) return null
+  const holds = HOLDS[feedKind(lastFeedMoment(moments))]
+  const from = new Date(start.getTime() + holds.awake * 60_000)
+  let until = new Date(start.getTime() + holds.hungry * 60_000)
+  if (themeFor(from) === 'night') return null
+  if (themeFor(until) === 'night') {
+    // Cut at 20:00 on the day the window began — `themeFor`'s own boundary.
+    const dusk = new Date(from)
+    dusk.setHours(20, 0, 0, 0)
+    until = dusk
+  }
+  return { from, until }
+}

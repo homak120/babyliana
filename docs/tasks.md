@@ -219,10 +219,9 @@ first version does not go through them, and each has a named trigger.
 **Mostly delivered by the second design handoff (2026-09-04).** What is left is
 the owner's judgement, not production work.
 
-- [ ] **H** Mascot decision: the baby as a character, or a separate creature.
-      Q-003. The art now exists and the app ships it, so this is no longer
-      blocking anything — but the rights caution in Q-003 stands and is the
-      owner's call, not an agent's
+- [x] **H** Mascot decision: the baby as a character, or a separate creature.
+      **She is Liana** — Q-003 closed by D-070, 2026-10-09. The rights caution
+      it carried moved into D-070 and is still the owner's call, not an agent's
 - [x] **CD** Character state exploration — four states delivered as artwork
       (settled, awake, hungry, sleeping), with the *logged* flash reusing awake.
       Descriptive throughout; nothing evaluative
@@ -353,3 +352,14 @@ The card's *make milk* prompt as a push notification. Spec:
       2026-10-09
 - [ ] **H** Turn it on on a phone installed to the home screen and see one
       arrive — the only end-to-end test there is
+
+## Love note — D-070
+
+Liana, in her own voice, twice a day while she is awake. Spec:
+`.specify/memory/love-note.md`.
+
+- [x] **CC** Spec, `0011`, the second claim in `feed-alert`, forty lines in the
+      service worker, the switch, checks in `verify-alerts`
+- [x] **H** Run `0011` in the SQL Editor — **before** the push
+- [x] **H** Redeploy the `feed-alert` function with the new code (JWT stays off)
+- [ ] **H** Read the forty lines and cut or rewrite any that do not sound like her

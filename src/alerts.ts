@@ -1,5 +1,6 @@
 import * as db from './db'
-import { lastFeedAt, ongoingFeed, targetWake } from './derive'
+import { awakeWindow, lastFeedAt, ongoingFeed, targetWake } from './derive'
+import { getCaregiverId } from './caregiver-id'
 import { getBabyId } from './household'
 import { effective } from './settings'
 import { supabase } from './supabase'
@@ -37,6 +38,8 @@ const ON_KEY = 'babyliana.alerts'
 const PUBLISHED_KEY = 'babyliana.alert_published'
 /** What this install last sent to `push_subscription`, for the same reason. */
 const REGISTERED_KEY = 'babyliana.alert_registered'
+/** `'0'` when this install has switched love notes off (D-070). Absent is on. */
+const LOVE_KEY = 'babyliana.love_notes'
 
 const store = (): Storage | null =>
   typeof localStorage === 'undefined' ? null : localStorage
@@ -79,8 +82,17 @@ export async function publishFeedAlert(): Promise<void> {
   const babyId = getBabyId()
   if (!supabase || !babyId) return
   const baby = (await db.getRow('baby', babyId)) as Baby | undefined
-  const next = feedAlertFor(await db.getMoments(), new Date(), baby?.settings)
-  const fingerprint = `${babyId}|${next.fire_at}|${next.target_at}`
+  const moments = await db.getMoments()
+  const now = new Date()
+  // The love note's window rides on the same row (D-070). The mascot's
+  // thresholds are constants, not settings, so there is no row to read here.
+  const awake = awakeWindow(moments, now)
+  const next = {
+    ...feedAlertFor(moments, now, baby?.settings),
+    awake_from: awake?.from.toISOString() ?? null,
+    awake_until: awake?.until.toISOString() ?? null,
+  }
+  const fingerprint = `${babyId}|${next.fire_at}|${next.target_at}|${next.awake_from}|${next.awake_until}`
   if (store()?.getItem(PUBLISHED_KEY) === fingerprint) return
 
   const { error } = await supabase
@@ -215,9 +227,14 @@ export async function refreshSubscription(): Promise<void> {
     p256dh: keys.p256dh,
     auth: keys.auth,
     clock: timeFormat(),
+    // Who a love note is addressed to, and whose day it counts in (D-070).
+    caregiver_id: getCaregiverId(),
+    tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    love: loveOn(),
     updated_at: new Date().toISOString(),
   }
-  const fingerprint = `${row.endpoint}|${row.baby_id}|${row.clock}`
+  const fingerprint =
+    `${row.endpoint}|${row.baby_id}|${row.clock}|${row.caregiver_id}|${row.tz}|${row.love}`
   if (store()?.getItem(REGISTERED_KEY) === fingerprint) return
 
   const { error } = await supabase.from('push_subscription').upsert(row)
@@ -226,6 +243,21 @@ export async function refreshSubscription(): Promise<void> {
     return
   }
   store()?.setItem(REGISTERED_KEY, fingerprint)
+}
+
+/**
+ * Love notes from Liana (D-070) — this install's switch.
+ *
+ * On unless switched off: they only ever reach a device that has already turned
+ * alerts on and allowed notifications, so the opt-in has happened. The switch is
+ * the way out, and it goes to the server on the next sync like everything else
+ * on the subscription row.
+ */
+export const loveOn = (): boolean => store()?.getItem(LOVE_KEY) !== '0'
+
+export async function setLove(on: boolean): Promise<void> {
+  store()?.setItem(LOVE_KEY, on ? '1' : '0')
+  await refreshSubscription()
 }
 
 /** Both jobs, in the order that matters least. Called after a successful sync. */

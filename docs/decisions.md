@@ -3321,3 +3321,48 @@ caregiver by name (*mom*, *dad*). Discussed, deferred by the owner.
 **Reversal condition.** If the alert is ignored or switched off on both phones
 after real nights, it goes — a notification nobody acts on teaches people to
 ignore notifications.
+
+## D-070 — the mascot is Liana, and she sends love notes
+
+**2026-10-09. Owner's decisions:** the mascot is Liana — **Q-003 closed** — and
+she sends a playful message in her own voice to whoever holds the phone.
+
+**Q-003: she is the baby.** The app is a personal keepsake with a tracking
+function, not a product with a personal skin. The rights caution that sat on
+Q-003 still applies to the supplied art if the product path is ever reopened:
+anything recognisably derived from existing IP becomes a problem the moment
+money is involved.
+
+**The note.** A push in Liana's voice — `Mom, I love you!` — addressed by
+caregiver name. Forty lines, chosen at random; the owner asked for thirty drafted,
+then ten more in baby language, and reviews them in `public/push-sw.js`.
+
+**When: the mascot's *awake*, twice a day per device, in random windows.** The
+owner's own framing — "acting the baby", on the state the app already draws.
+Using the mascot's thresholds (D-035) means a note arrives as the art turns to
+*awake* and never contradicts the card. *Awake* is daytime only, so no note can
+wake anyone; the owner floated one day and one night note "if it is easier", and
+it is not — night has no *awake* to land in. Each window rolls once per device
+with odds of notes left over windows left, which spreads two across the day and
+cannot reach three.
+
+**No line says she is awake or just woke (owner, same day).** *Awake* is the
+clock's guess, not an observation, so those lines could be false. The four that
+did were replaced; `verify-alerts` keeps them out. The owner also asked for ten
+more lines in baby language — forty in all.
+
+**Tone.** CLAUDE.md's rule is about the mascot judging; a note in her voice is
+the same character speaking, so it holds the same line. Every note is warm and
+nothing else: no request, no hunger, no loneliness, no assessment of anyone.
+`verify-alerts` keeps the obvious words out.
+
+**On by default** for devices that have the feed alert on — they have already
+allowed notifications — with its own switch beside it.
+
+**Built on D-069's pipe.** Two columns on `feed_alert`, six on
+`push_subscription` (`0011`), a second claim in the same edge function on the
+same minute cron. The lines live in the service worker, so rewording one is an
+app deploy rather than a dashboard visit.
+
+**Reversal condition.** If the notes stop landing as a surprise — if they read
+as routine or as noise — the cap comes down before anything else changes.

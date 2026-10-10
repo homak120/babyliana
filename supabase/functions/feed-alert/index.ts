@@ -1,5 +1,9 @@
-// The feed alert's sender (D-069). Called once a minute by `pg_cron`
-// (supabase/migrations/0010_feed_alert.sql § 4); nothing else calls it.
+// The feed alert's sender (D-069), and since D-070 the love note's too. Called
+// once a minute by `pg_cron` (supabase/migrations/0010_feed_alert.sql § 4);
+// nothing else calls it.
+//
+// Two claims per minute, each atomic in the database: feed alerts that are due
+// (0010) and love notes whose roll came up (0011). Everything here is sending.
 //
 // It derives nothing. The phones publish when the next alert is due, from the
 // same functions the card uses; this claims whatever has arrived and pushes it
@@ -88,5 +92,40 @@ Deno.serve(async (req) => {
     }
   }
 
-  return json({ due: due.length, sent, gone, failed })
+  // Love notes (D-070). The database already decided who gets one and marked
+  // it, so this only sends. The words are the service worker's: it picks the
+  // line, so changing them is a deploy of the app, not of this function.
+  const { data: loveData, error: loveErr } = await db.rpc('claim_love_notes')
+  if (loveErr) failed.push(`love: ${loveErr.message}`)
+  const love = (loveData ?? []) as { endpoint: string; caregiver_name: string; baby_name: string }[]
+  let loved = 0
+
+  for (const note of love) {
+    const { data: sub } = await db
+      .from('push_subscription')
+      .select('endpoint, p256dh, auth')
+      .eq('endpoint', note.endpoint)
+      .maybeSingle()
+    if (!sub) continue
+    try {
+      // A short TTL: a note that cannot arrive while she is awake should not
+      // arrive at all.
+      await webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        JSON.stringify({ kind: 'love', name: note.caregiver_name, baby: note.baby_name }),
+        { TTL: 15 * 60, urgency: 'normal' },
+      )
+      loved++
+    } catch (e) {
+      const code = (e as { statusCode?: number }).statusCode
+      if (code === 404 || code === 410) {
+        await db.from('push_subscription').delete().eq('endpoint', sub.endpoint)
+        gone++
+      } else {
+        failed.push(`love ${code ?? '?'}: ${e instanceof Error ? e.message : String(e)}`)
+      }
+    }
+  }
+
+  return json({ due: due.length, sent, love: love.length, loved, gone, failed })
 })
