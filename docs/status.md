@@ -225,10 +225,6 @@ settings screen — and the rest is the owner's judgement. See *Next action*.
 
 ## Next action
 
-**Love notes (D-070): watch for the first one.** Both server steps are done and
-the app is pushed. Reopen the app on each phone; *love notes* sits under *feed
-alert*, on. The first note can only come in a daytime *awake* window.
-
 **0. Finish the cutover. All six are the owner's, none are code**, and they are
 in this order for a reason.
 
@@ -380,8 +376,8 @@ server; none were reachable from a stub.
 **Nothing uncommitted.** Love notes, D-070, are committed and pushed to `main`
 (`npm run verify` green, 838 checks). `0011` is applied and `feed-alert` is
 redeployed (2026-10-09). It answers `forbidden` without the password and
-`{"love":0,...}` with it. **No phone has received a love note yet.** That waits
-for a daytime *awake* window on the new build.
+`{"love":0,...}` with it. **A real phone has received a love note** (2026-10-09):
+a forced test in the SQL Editor, with each phone's time zone put back afterwards.
 
 The feed alert, D-069, is `75c0427` on `main`, live, and a real phone has
 received one (2026-10-09).
