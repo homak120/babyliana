@@ -29,7 +29,8 @@ function clockText(iso, clock) {
 // clock, not observed, so such a line can be false. The owner had those taken
 // out (D-070).
 //
-// The last ten are in baby language, at the owner's ask.
+// Thirty in English, then ten in English baby language, then thirty in
+// Cantonese baby talk — each at the owner's ask.
 //
 // Here rather than in the edge function so changing a line is an app deploy,
 // not a trip to the Supabase dashboard.
@@ -74,6 +75,36 @@ const LOVE_LINES = [
   'Gaa! {name}, huggy huggy pwease! 🥺🤗',
   'Bluh bluh bwah… translation: I wuv you, {name}. 🍼❤️',
   'Coo-coo-ga! Kissy kissy for {name}! 😘😘',
+  '{name}～ BB愛愛你呀！❤️🥰',
+  '咿呀咿呀～ {name}，我好鍾意你㗎！💕😊',
+  '{name}，BB有秘密話你知… 愛你呀！🤭❤️',
+  '{name}係BB最最最鍾意嘅人！唔講俾人聽㗎。🤫💖',
+  '愛{name}，愛到月亮咁遠咁遠！🌙✨',
+  '{name}把聲好好聽呀，BB鍾意聽。🎶💗',
+  '噓～ {name}，BB好愛好愛你。🤫💕',
+  'BB細細粒，愛{name}大大份！👶💞',
+  '{name}，攬攬！BB要攬攬！🧸🤗',
+  '有{name}陪住，BB日日都開開心心。☀️💛',
+  '{name}睇吓！BB識整「愛你」樣喇！😊💕',
+  'Hello hello！{baby}嚟喇！愛你呀{name}！👋👶❤️',
+  '{name}係BB嘅全世界呀。🌍💖',
+  '郁郁手，郁郁腳，即係「愛你呀{name}」！🐛💕',
+  'BB最靚個笑笑，留俾{name}㗎！😁💝',
+  '手手細細，攬攬大大！愛{name}！🤲🤗',
+  '撲通撲通～ {name}嘅心跳，BB最鍾意聽。💓🎵',
+  '{name}抱抱BB，BB好舒服好安全。🫶🥰',
+  'BB愛{name}多過飲奶！嘻… 差唔多啦！🍼😜',
+  '有{name}，BB好開心好開心！😊💞',
+  '噗噗噗～ 吹個泡泡錫錫俾{name}！🫧😘',
+  'BB最鍾意望住{name}塊面面。👀💖',
+  '{name}笑，BB又笑！嘻嘻嘻！😊😊',
+  '細細手，大大攬，送俾{name}！🤗💝',
+  '錫錫錫錫！錫晒{name}！😘💕',
+  '{name}係BB心心入面第一！🥇❤️',
+  '咿咿呀呀… 意思係：愛你呀{name}！👶❤️',
+  '{name}咁錫BB，BB都好錫你！🙏💖',
+  '叮咚！{baby}速遞：錫錫一個俾{name}！📦😘',
+  '{name}係BB嘅寶寶，BB係{name}嘅寶寶！💎💞',
 ]
 
 const capitalise = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)

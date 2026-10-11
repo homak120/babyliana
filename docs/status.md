@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-10-09 (love notes from Liana, built and not deployed — D-070)
+Last updated: 2026-10-11 (thirty Cantonese love-note lines — D-070)
 
 ---
 
@@ -143,7 +143,8 @@ carries the reasoning for every one of these, and for everything older.
 
 - **D-070** — the mascot is Liana (Q-003 closed), and she sends love notes: a
   push in her voice by caregiver name, twice a day per device in random
-  *awake* windows, daytime only. Forty lines in the service worker. Rides on
+  *awake* windows, daytime only. Seventy lines in the service worker (thirty
+  Cantonese since 2026-10-11). Rides on
   D-069's pipe. **Built, not deployed** — see *In flight*.
 - **D-069** — the bottle prompt reaches the lock screen. A push notification
   at the instant the card's *make milk* pill appears, once per target, opt-in
@@ -373,7 +374,10 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**Nothing uncommitted.** Love notes, D-070, are committed and pushed to `main`
+**Nothing uncommitted.** The thirty Cantonese lines are committed and pushed
+(2026-10-11).
+
+Love notes, D-070, are committed and pushed to `main`
 (`npm run verify` green, 838 checks). `0011` is applied and `feed-alert` is
 redeployed (2026-10-09). It answers `forbidden` without the password and
 `{"love":0,...}` with it. **A real phone has received a love note** (2026-10-09):
@@ -481,7 +485,13 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-10-09 (latest) — the mascot is Liana, and she writes
+### 2026-10-11 (latest) — Liana writes in Cantonese
+
+The owner asked for thirty Cantonese love-note lines to review, then for them
+in baby talk, then for them added with 奶奶 (reads as *grandma*) taken out.
+Seventy lines now. Committed and pushed. D-070.
+
+### 2026-10-09 — the mascot is Liana, and she writes
 
 Server setup for the feed alert finished with the owner in the dashboard; it was
 committed as `75c0427`, and a test alert reached a phone. Then love notes: the
@@ -498,9 +508,3 @@ settings. Phones publish the next `fire_at` per baby after each sync; a minute
 `pg_cron` job calls a new `feed-alert` edge function that claims and sends.
 Uncommitted, and needs the server steps before it does anything. The playful
 message from the baby is discussed and deferred. D-069.
-
-### 2026-10-07 — the app says which version it is
-
-The settings sheet ends with `version <hash> · built <local time>`, and the sync
-sheet has the same as a row. The version is the commit's short hash, so a phone
-is checked against the top of the commit list with nothing to bump. D-068.

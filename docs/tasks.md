@@ -362,4 +362,5 @@ Liana, in her own voice, twice a day while she is awake. Spec:
       service worker, the switch, checks in `verify-alerts`
 - [x] **H** Run `0011` in the SQL Editor — **before** the push
 - [x] **H** Redeploy the `feed-alert` function with the new code (JWT stays off)
+- [x] **CC** Thirty Cantonese lines in baby talk, owner-reviewed, added — seventy in all
 - [ ] **H** Read the forty lines and cut or rewrite any that do not sound like her

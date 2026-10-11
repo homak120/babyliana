@@ -3356,6 +3356,11 @@ the same character speaking, so it holds the same line. Every note is warm and
 nothing else: no request, no hunger, no loneliness, no assessment of anyone.
 `verify-alerts` keeps the obvious words out.
 
+**Thirty in Cantonese (owner, 2026-10-11).** Baby talk, as if she were texting;
+the owner reviewed them and asked for them added to the same pool — seventy in
+all. `{name}` still fills in English (*Mom*, *Dad*). 奶奶 was kept out: it reads
+as *grandma*.
+
 **On by default** for devices that have the feed alert on — they have already
 allowed notifications — with its own switch beside it.
 

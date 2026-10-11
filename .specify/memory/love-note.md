@@ -13,8 +13,8 @@ Liana
 Mom, I love you!
 ```
 
-Forty lines, picked at random, in `public/push-sw.js` — the last ten in baby
-language. Every line carries the
+Seventy lines, picked at random, in `public/push-sw.js` — thirty in English,
+ten in English baby language, thirty in Cantonese baby talk. Every line carries the
 caregiver's name (`mom` → *Mom*). The mascot is Liana (Q-003, closed by D-070),
 so she speaks as herself.
 

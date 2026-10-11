@@ -132,7 +132,7 @@ check('nor before any feed', awakeWindow([], at(12)) === null)
   const src = readFileSync('public/push-sw.js', 'utf8')
   const sw = new Function('self', `${src};return { LOVE_LINES, loveNote }`)({ addEventListener() {} }) as
     { LOVE_LINES: string[]; loveNote: (d: { name: string; baby: string }) => string }
-  check('forty love lines', sw.LOVE_LINES.length === 40, String(sw.LOVE_LINES.length))
+  check('seventy love lines', sw.LOVE_LINES.length === 70, String(sw.LOVE_LINES.length))
   check('every line says the caregiver’s name', sw.LOVE_LINES.every((l) => l.includes('{name}')))
   const notes = Array.from({ length: 60 }, () => sw.loveNote({ name: 'mom', baby: 'Liana' }))
   check('the name is capitalised and nothing is left unfilled',
