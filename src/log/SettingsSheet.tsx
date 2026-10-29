@@ -13,7 +13,7 @@ import { versionLine } from '../version'
  * Settings, behind the card's `tune` button (D-055).
  *
  * It was the feeding cycle and nothing else (D-050), which is why the button is
- * where it is. The cycle is now one section of five.
+ * where it is. The cycle is now one section of six.
  *
  * **Every row says whose it is.** With one shared setting, "the cycle syncs" was
  * something you simply knew. With four, changing the bottle default and having
@@ -278,6 +278,7 @@ export function SettingsSheet({ onClose, onClockChange }: {
   const [bottle, setBottle] = useShared('bottle')
   const [supplement, setSupplement] = useShared('supplement')
   const [lead, setLead] = useShared('prepLeadMinutes')
+  const [feedTimer, setFeedTimer] = useShared('feedTimer')
 
   // The cycle keeps its own state rather than going through `useShared`: it is
   // a list, and the steppers edit one window of it at a time.
@@ -333,6 +334,33 @@ export function SettingsSheet({ onClose, onClockChange }: {
                 onClick={() => setBottle({ ...bottle, source: s.id })}
               >
                 {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      {/* Shared, not per device (D-072): both phones publish the feed alert
+          from the same log, and two answers to "is a feed still running" would
+          have them overwriting each other's alert time. */}
+      <Section title="feed timer" shared>
+        <p className="setnote">
+          on, a feed runs until someone taps <b>end</b>. off, a feed is logged as
+          a time and a volume, and an end time is only there if you add one.
+        </p>
+        <div className="setrow">
+          <span className="setlabel">timer</span>
+          <div className="segmented">
+            {[false, true].map((v) => (
+              <button
+                key={String(v)}
+                type="button"
+                className={feedTimer === v ? 'seg on' : 'seg'}
+                aria-pressed={feedTimer === v}
+                aria-label={v ? 'turn the feed timer on' : 'turn the feed timer off'}
+                onClick={() => setFeedTimer(v)}
+              >
+                {v ? 'on' : 'off'}
               </button>
             ))}
           </div>

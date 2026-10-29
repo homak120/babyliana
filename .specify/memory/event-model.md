@@ -119,6 +119,11 @@ feed and not the waking. It never does so for a feed — the next diaper is no
 evidence of when the bottle finished, and an invented duration cannot be undone
 in a model with hard deletes (D-003).
 
+**A feed only runs while the feed timer is on** (D-072, off by default). Off,
+a feed with no `ended_at` is an instant — a time and a volume, as the paper
+wrote it — and `ongoingFeed` never reports one. The rows are the same either
+way: the setting changes how `ended_at = null` is read, never what is written.
+
 **Ending a period is one field on one row, and so is taking it back.** Stamping
 `ended_at` closes a sleep or a feed; clearing it back to null reopens the sleep
 that was just closed, counting from the start it always had (D-053). Both are
@@ -393,6 +398,9 @@ Day boundary is midnight local (D-015).
   local state. At roughly thirty events a day the whole log is small enough that
   this is cheap, and it is what makes hard deletes work — a removed row is
   noticed by its absence.
+- **The refresh reads every row, a page at a time** (D-071). Supabase caps one
+  response at *Max rows* — 1000 by default — silently, and a refresh that takes
+  a short answer as the whole log wipes whatever fell outside it.
 - **Realtime is a latency optimisation, not the sync mechanism.** It has no
   replay, so anything written while a phone was backgrounded is missed
   permanently. The spike demonstrated this: a phone sat at 20 while the database

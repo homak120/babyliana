@@ -364,3 +364,15 @@ Liana, in her own voice, twice a day while she is awake. Spec:
 - [x] **H** Redeploy the `feed-alert` function with the new code (JWT stays off)
 - [x] **CC** Thirty Cantonese lines in baby talk, owner-reviewed, added — seventy in all
 - [ ] **H** Read the forty lines and cut or rewrite any that do not sound like her
+
+## Feed timer — D-072
+
+A shared setting, off by default: a feed is an instant unless the timer is on.
+Spec: `.specify/memory/settings.md`.
+
+- [x] **CC** `feedTimer` on `baby.settings`, `ongoingFeed` honours it, the
+      switch in settings, the bar repaints on a setting change, `unsynced()`
+      reads a stored `false`; checks in `verify-s3`, `verify-s7`,
+      `verify-alerts`, `verify-feed`, `verify-hero`
+- [ ] **H** Push it, then check on a phone: the bottle stays on the bar after a
+      tap, and the next bottle alert arrives without anyone tapping *end*

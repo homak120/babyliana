@@ -179,6 +179,48 @@ export async function fetchCaregivers(): Promise<Caregiver[] | null> {
   return (data ?? []) as Caregiver[]
 }
 
+/**
+ * One page of a read, or the error that stopped it.
+ *
+ * Structural rather than the client's own types, which carry the whole schema as
+ * generic parameters and would make `readAll` restate them for every table.
+ */
+type Page = { data: unknown[] | null; error: { message: string; code?: string } | null }
+type Paged = {
+  gt(column: 'id', value: string): Paged
+  order(column: 'id'): { limit(n: number): PromiseLike<Page> }
+}
+
+/**
+ * Every row a query matches, a page at a time.
+ *
+ * **Supabase answers any one request with at most "Max rows" rows — 1000 by
+ * default — and says nothing about the rest.** `pull()` used to ask once, and
+ * on the day the log reached 1001 events the answer came back one short. Then
+ * `replaceAll` treated that answer as the truth: a feed saved a moment earlier
+ * landed on the server, fell outside the thousand, and vanished from both
+ * phones, leaving its timeslot empty (D-071).
+ *
+ * Keyset on `id`, not offset. A row inserted mid-read cannot shift a later page
+ * and skip one that was already there. Stops on an empty page rather than a
+ * short one, so a server cap lower than `PAGE` costs a request, not rows.
+ */
+const PAGE = 1000
+
+async function readAll(query: () => Paged): Promise<Page> {
+  const rows: unknown[] = []
+  let after: string | null = null
+  for (;;) {
+    const q: Paged = after === null ? query() : query().gt('id', after)
+    const page = await q.order('id').limit(PAGE)
+    if (page.error) return page
+    const got = (page.data ?? []) as { id: string }[]
+    if (got.length === 0) return { data: rows, error: null }
+    rows.push(...got)
+    after = got[got.length - 1].id
+  }
+}
+
 async function pull(): Promise<boolean> {
   if (!supabase) return false
   // Onboarding has not finished, so there is nothing to pull *for*. Returning
@@ -191,10 +233,13 @@ async function pull(): Promise<boolean> {
     return false
   }
 
+  const sb = supabase
+  // Everything but `baby` goes through `readAll` — see there for why a single
+  // request is not enough. `baby` is one row by id.
   const [baby, caregiver, timeslot, event] = await Promise.all([
-    supabase.from('baby').select('*').eq('id', babyId),
-    supabase.from('caregiver').select('*'),
-    supabase.from('timeslot').select('*').eq('baby_id', babyId),
+    sb.from('baby').select('*').eq('id', babyId),
+    readAll(() => sb.from('caregiver').select('*') as unknown as Paged),
+    readAll(() => sb.from('timeslot').select('*').eq('baby_id', babyId) as unknown as Paged),
     // **Scoped through the timeslot, not left open.** An event reaches a baby
     // only through its timeslot, so with one baby in the household this is the
     // same set as `select('*')` and with two it is not: the unscoped version
@@ -203,7 +248,7 @@ async function pull(): Promise<boolean> {
     //
     // `!inner` is load-bearing. Without it PostgREST keeps rows whose embed does
     // not match and nulls the embed, so the filter quietly stops filtering.
-    supabase.from('event').select('*, timeslot!inner(baby_id)').eq('timeslot.baby_id', babyId),
+    readAll(() => sb.from('event').select('*, timeslot!inner(baby_id)').eq('timeslot.baby_id', babyId) as unknown as Paged),
   ])
   const bad = [
     ['reading baby', baby], ['reading caregiver', caregiver],

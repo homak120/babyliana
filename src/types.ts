@@ -19,6 +19,8 @@ export type BabySettings = {
   supplement?: { name: string; amount: string }
   /** How long before the target *make a bottle* goes up. */
   prepLeadMinutes?: number
+  /** Whether a feed with no end time reads as still running (D-072). */
+  feedTimer?: boolean
 }
 
 export type EventType =

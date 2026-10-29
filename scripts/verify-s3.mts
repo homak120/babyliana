@@ -345,12 +345,13 @@ check('day at 09:00', themeFor(new Date(2026, 8, 3, 9)) === 'day')
   } = await import('../src/settings.ts')
 
   resetSettings()
-  check('every key on BabySettings is registered', SETTING_KEYS.length === 4,
+  check('every key on BabySettings is registered', SETTING_KEYS.length === 5,
     SETTING_KEYS.join(', '))
   check('an untouched phone reads the shipped defaults',
     read('bottle').volume === DEFAULT_BOTTLE.volume
     && read('supplement').name === DEFAULT_SUPPLEMENT.name
-    && read('prepLeadMinutes') === DEFAULT_PREP_LEAD)
+    && read('prepLeadMinutes') === DEFAULT_PREP_LEAD
+    && read('feedTimer') === false)
   check('and is recognised as untouched',
     SETTING_KEYS.every((k) => isDefault(k)))
 
@@ -399,6 +400,17 @@ check('day at 09:00', themeFor(new Date(2026, 8, 3, 9)) === 'day')
     pending.includes('supplement') && pending.includes('bottle') && !pending.includes('cycles'),
     pending.join(', '))
 
+  // The feed timer (D-072) is the first boolean, and `false` is a value the row
+  // can carry. A falsy test would read a row saying *off* as a row saying
+  // nothing, and push this phone's *on* over the other phone's choice.
+  check('a timer that is not a boolean is skipped',
+    !hydrate({ feedTimer: 'yes' as unknown as boolean }) && read('feedTimer') === false)
+  write('feedTimer', true)
+  check('a row that says the timer is off carries the key',
+    !unsynced({ feedTimer: false }).includes('feedTimer'))
+  check('and a pulled off is adopted over a local on',
+    hydrate({ feedTimer: false }) && read('feedTimer') === false)
+
   // Leave the module as the rest of the suites expect to find it — written, not
   // just uncached: these values are in localStorage, so dropping the cache
   // alone would have the next read fetch them straight back off disk.
@@ -406,6 +418,7 @@ check('day at 09:00', themeFor(new Date(2026, 8, 3, 9)) === 'day')
   write('supplement', DEFAULT_SUPPLEMENT)
   write('prepLeadMinutes', DEFAULT_PREP_LEAD)
   write('cycles', DEFAULT_CYCLES)
+  write('feedTimer', false)
   resetSettings()
   check('and the suite leaves every setting back at its default',
     SETTING_KEYS.every((k) => isDefault(k)))

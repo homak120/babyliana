@@ -153,7 +153,9 @@ const ID = '11111111-2222-3333-4444-555555555555'
 const rec = await fresh(10)
 await rec.p.route('**://*.supabase.co/rest/v1/baby*', (r) =>
   r.fulfill(json([{ id: ONE, name: 'Liana', settings: null }])))
-await rec.p.route('**://*.supabase.co/rest/v1/caregiver*', (r) => r.fulfill(json([
+// The pull pages and stops on an empty page (D-071); the page after this one is.
+await rec.p.route('**://*.supabase.co/rest/v1/caregiver*', (r) => r.fulfill(json(
+  new URL(r.request().url()).searchParams.get('id')?.startsWith('gt.') ? [] : [
   { id: ID, name: 'Ho', created_at: null, updated_at: null, updated_by: null, user_id: null },
   { id: '99999999-8888-7777-6666-555555555555', name: 'Anya', created_at: null, updated_at: null, updated_by: null, user_id: null },
 ])))

@@ -254,8 +254,18 @@ export function resumableSleep(moments: Moment[], now = new Date()): Moment | nu
  * a duration lives, and a second field saying the same thing in different words
  * is how a duration ends up right in one view and wrong in another. The state is
  * derived at render time like every other thing on the home screen.
+ *
+ * **Only while the feed timer is on (D-072).** Off — the default — a feed with
+ * no end is an instant, never a running one, so nothing downstream waits on an
+ * *end* tap: not the bar, the card, the row, the mascot, or the feed alert.
+ * `timed` is a parameter so the alert can pass the synced row's answer.
  */
-export function ongoingFeed(moments: Moment[], now = new Date()): Moment | null {
+export function ongoingFeed(
+  moments: Moment[],
+  now = new Date(),
+  timed = read('feedTimer'),
+): Moment | null {
+  if (!timed) return null
   const latest = latestPast(moments, now)
   if (!latest) return null
   const open = latest.timeslot.ended_at === null && latest.events.some((e) => e.type === 'feed')
@@ -400,8 +410,9 @@ export function mascotState(
 export function awakeWindow(
   moments: Moment[],
   now = new Date(),
+  timed = read('feedTimer'),
 ): { from: Date; until: Date } | null {
-  if (ongoingFeed(moments, now) || ongoingSleep(moments, now)) return null
+  if (ongoingFeed(moments, now, timed) || ongoingSleep(moments, now)) return null
   const start = lastFeedAt(moments)
   if (!start) return null
   const holds = HOLDS[feedKind(lastFeedMoment(moments))]

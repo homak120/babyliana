@@ -167,6 +167,19 @@ const PREP_LEAD: Spec<'prepLeadMinutes'> = {
 }
 
 /**
+ * **Off.** A feed is an instant — a time and a volume, as the paper wrote it —
+ * and nothing waits for an *end* tap (D-072). On restores D-053/D-054's running
+ * feed: the bar's *end feed* pill, the row's live count, the mascot's *feeding*.
+ */
+export const DEFAULT_FEED_TIMER = false
+
+const FEED_TIMER: Spec<'feedTimer'> = {
+  fallback: DEFAULT_FEED_TIMER,
+  parse: (v) => (typeof v === 'boolean' ? v : null),
+  same: (a, b) => a === b,
+}
+
+/**
  * A mapped type rather than an object literal, so indexing with a generic `K`
  * yields `Spec<K>` and not the union of all four — which is what lets `read`,
  * `write` and `hydrate` be written once, generically, instead of switching on
@@ -180,6 +193,7 @@ const SPECS: Specs = {
   bottle: BOTTLE,
   supplement: SUPPLEMENT,
   prepLeadMinutes: PREP_LEAD,
+  feedTimer: FEED_TIMER,
 }
 
 export type SettingKey = keyof Specs
@@ -224,6 +238,20 @@ export function read<K extends SettingKey>(key: K): NonNullable<BabySettings[K]>
   return value
 }
 
+/**
+ * Told after every write — a tap here or a value pulled from elsewhere.
+ *
+ * For whatever *renders* a setting rather than reading it at a tap. The bar is
+ * the first (D-072): it draws the bottle or *end feed* off the feed timer, it is
+ * not behind the settings sheet, and nothing else repaints it when the timer
+ * moves. Every setting before this one was read at the moment of a tap.
+ */
+const changed = new Set<() => void>()
+export function onSettingChange(fn: () => void): () => void {
+  changed.add(fn)
+  return () => void changed.delete(fn)
+}
+
 /** Writes the local cache only. The row and the push are `saveSetting`'s, in
  *  `moments.ts` — local first, so the screen repaints with or without network. */
 export function write<K extends SettingKey>(key: K, value: NonNullable<BabySettings[K]>): void {
@@ -231,6 +259,7 @@ export function write<K extends SettingKey>(key: K, value: NonNullable<BabySetti
   const parsed = spec.parse(value) ?? spec.fallback
   cached.set(key, parsed)
   store()?.setItem(storageKey(key), JSON.stringify(parsed))
+  changed.forEach((fn) => fn())
 }
 
 /** Whether this phone holds something other than the shipped default — which is
@@ -279,7 +308,8 @@ export function hydrate(settings: BabySettings | null | undefined): boolean {
  * setting changed before the first sync would sit local forever.
  */
 export function unsynced(settings: BabySettings | null | undefined): SettingKey[] {
-  return SETTING_KEYS.filter((k) => !settings?.[k] && !isDefault(k))
+  // `== null`, not falsy: a row holding `false` or `0` carries the key.
+  return SETTING_KEYS.filter((k) => settings?.[k] == null && !isDefault(k))
 }
 
 /**

@@ -50,7 +50,11 @@ check('a diaper alone is not a feed', feedAlertFor([moment(at(11), 'diaper')], a
 
 const running = moment(at(11, 50), 'feed', null)
 check('a feed still running — nothing is due, as the wake line hides',
-  feedAlertFor([moment(at(8), 'feed'), running], at(12)).fire_at === null)
+  feedAlertFor([moment(at(8), 'feed'), running], at(12), { feedTimer: true }).fire_at === null)
+// The reason the timer is off by default (D-072): a bottle nobody ended used to
+// silence the alert for as long as it stayed the latest entry.
+check('with the timer off, a feed with no end still sets the alert',
+  mins(feedAlertFor([moment(at(8), 'feed'), running], at(12), { feedTimer: false }).target_at, at(11, 50)) === 180)
 
 // --- the card's instant ------------------------------------------------------
 const day = [moment(at(14), 'feed')]
@@ -122,7 +126,9 @@ const w3 = awakeWindow([moment(at(17, 45), 'feed')], at(18))
 check('one that runs into the evening is cut at 20:00',
   hhmm(w3?.from) === '19:45' && hhmm(w3?.until) === '20:00', `${hhmm(w3?.from)}–${hhmm(w3?.until)}`)
 check('no window while a feed is running',
-  awakeWindow([moment(at(8), 'feed'), moment(at(11, 50), 'feed', null)], at(12)) === null)
+  awakeWindow([moment(at(8), 'feed'), moment(at(11, 50), 'feed', null)], at(12), true) === null)
+check('but with the timer off, a feed with no end opens one',
+  awakeWindow([moment(at(8), 'feed'), moment(at(11, 50), 'feed', null)], at(12), false) !== null)
 check('nor while a logged sleep is running',
   awakeWindow([moment(at(10), 'feed'), moment(at(10, 40), 'sleep', null)], at(11)) === null)
 check('nor before any feed', awakeWindow([], at(12)) === null)

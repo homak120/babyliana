@@ -118,6 +118,20 @@ try {
   check('reconcile pulls what was logged elsewhere',
     (await getMoments()).some((x) => x.timeslot.id === otherTs))
 
+  // 2b. the pull reads every row, not the first thousand (D-071). Supabase caps
+  //     one response at "Max rows" and is silent about the rest — the day the log
+  //     passed 1000 events, a feed saved, synced, and came back as an empty
+  //     timeslot. The real log is past that size, so this runs the paging for real.
+  const pulled = await getMoments()
+  const localEvents = pulled.reduce((n, x) => n + x.events.length, 0)
+  const serverEvents = (await sb.from('event')
+    .select('id, timeslot!inner(baby_id)', { count: 'exact', head: true })
+    .eq('timeslot.baby_id', BABY_ID)).count
+  check('the pull holds every event the server has', localEvents === serverEvents,
+    `${localEvents} local, ${serverEvents} on the server`)
+  check('a synced feed keeps its entries after the pull',
+    pulled.find((x) => x.timeslot.id === m.timeslot.id)?.events.length === 2)
+
   // 3. THE HAZARD: a local write must survive a reconcile that would replace
   //    local state wholesale
   const pending = await logMoment({ entries: [{ type: 'feed', volume_ml: 31, source: 'unknown' }] })

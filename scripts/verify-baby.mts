@@ -98,6 +98,11 @@ async function household(p: import('playwright').Page, carer: string, failWrites
     }
     asked.push(`${table}${url.search}`)
 
+    // The pull reads a page at a time and stops on an empty one (D-071). Every
+    // fixture here fits in the first page, so the page after it is empty — a
+    // fake that answered it with the same rows again would never let it stop.
+    if (url.searchParams.get('id')?.startsWith('gt.')) return json([])
+
     // `id=eq.<uuid>` is the pull asking for one row; no filter is `fetchBabies`
     // asking what this household has. Two different questions on one path.
     if (table === 'baby') {

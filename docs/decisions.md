@@ -3371,3 +3371,74 @@ app deploy rather than a dashboard visit.
 
 **Reversal condition.** If the notes stop landing as a surprise — if they read
 as routine or as noise — the cap comes down before anything else changes.
+
+## D-071 — the pull reads every row, a page at a time
+
+**2026-10-13. Production fault, fixed the same evening.** The log passed 1000
+events and every new entry vanished: saved, shown, synced to the server — then
+gone from both phones, leaving an empty timeslot behind. Supabase answers one
+request with at most *Max rows* rows (1000 by default) and says nothing about
+the rest. `pull()` asked once, and `replaceAll` took the short answer as the
+whole log, so the newest events — the ones past the thousand — were wiped
+locally. The data was on the server throughout; the empty timeslots the owner
+deleted took their events with them.
+
+**Two fixes.** The owner raised *Max rows* in the dashboard, which ended it
+without a deploy. The code fix is that `pull()` pages: keyset on `id`, 1000 at a
+time, stopping on an empty page, so a cap lower than the page size costs a
+request rather than rows. `verify-s2` checks the pulled event count against the
+server's exact count — the real log is past 1000, so it exercises paging — and
+the pull was also run with a page of 100 to prove the multi-page path.
+
+**Not a 30-day window.** The owner suggested fetching only recent data. It was
+declined because the local replica is the whole log by design: the report's
+*all of it* and month ranges read from it (D-063), both phones' copies are the
+disaster-recovery plan (`.specify/memory/event-model.md` § Export), and
+`replaceAll` notices deletes by absence, so a windowed pull would wipe every
+older row on each sync. Windowing would need incremental sync and a different
+delete signal. At this size a full paged pull is a few requests; revisit if it
+is ever slow.
+
+## D-072 — the feed timer is a setting, and it is off by default
+
+**2026-10-27, the owner's call.** Since D-053 every quick bottle is an open feed,
+and an open feed waited for someone to tap *end*. Parents were not tapping it,
+and they should not have to: the paper log never recorded when a feed ended. A
+feed is a time and a volume. So a shared setting, `baby.settings.feedTimer`,
+off unless someone turns it on.
+
+**Off, a feed with no end time is an instant, never a running feed.**
+`ongoingFeed` returns null, and everything downstream follows from that one
+rule: the bar keeps the bottle rather than *end feed*, the row has no live
+count, the mascot never says *feeding*, and the feed alert and the awake window
+no longer go quiet behind a bottle nobody ended. That last one was a real cost
+of D-053 and the strongest reason for the default: while a feed stayed the
+latest entry, the lock-screen bottle prompt and the love notes did not fire.
+
+**No data changes and no migration.** The bottle writes the same row it always
+did. The setting changes how `ended_at = null` is *read*, never what is written,
+so turning it on or off is reversible with nothing to repair. An end time is
+still optional on any feed through the sheet, and an ended feed still reads
+`fed 25 min`. Sleep is untouched: its timer, end and resume stay as D-053 built
+them.
+
+**Shared, not per device**, because the feed alert is shared: both phones
+publish its time from the same log and the last write wins (D-069), so two
+answers to "is a feed running" would have them overwriting each other.
+
+**The cost accepted.** Turning the timer *on* makes the latest unended feed read
+as running at once, possibly for hours. One tap on *end* clears it. Not worth
+logic of its own for a switch that is rarely flipped.
+
+**Two fixes it needed elsewhere.** `unsynced()` tested a row's key for falsy, so
+a row saying `false` read as a row saying nothing, and a phone holding *on*
+would have pushed over the other phone's *off*. It now tests `== null`, which
+also fixes the same latent hole for a prep lead of 0. And this is the first
+setting the bar renders from, so `write` now notifies `onSettingChange`
+listeners and the bar repaints on that. Before, it waited for a sync, and
+closing the sheet inside the 600 ms push delay meant no sync came.
+
+**Reversal condition.** If parents start wanting feed durations again, turn it
+on. That is the point of a setting. If it is never turned on, the timer path
+could later be removed, but nothing forces that.
+

@@ -10,7 +10,7 @@ claim elsewhere. If something here contradicts another document, this wins on
 
 Keep it under a screen. Update it before you finish.
 
-Last updated: 2026-10-11 (thirty Cantonese love-note lines — D-070)
+Last updated: 2026-10-27 (the feed timer is a setting, off by default — D-072)
 
 ---
 
@@ -18,7 +18,7 @@ Last updated: 2026-10-11 (thirty Cantonese love-note lines — D-070)
 
 **The app is built, deployed, in daily use by the owner, and syncing real data
 between two phones.** Phases 0-6 are done bar three items; Phase 7 was largely
-delivered by the second design handoff. **838 checks pass across twenty-six
+delivered by the second design handoff. **840 checks pass across twenty-six
 suites** — `verify-alerts` is the new one.
 
 **The multi-tenant work is merged to `main` and deploying.** `52b1fb8`, a
@@ -141,6 +141,13 @@ precache sits where it does; the 1024 is excluded, being needed only at install.
 Newest first, and **this is an index, not a record** — `docs/decisions.md`
 carries the reasoning for every one of these, and for everything older.
 
+- **D-072** — the feed timer is a shared setting, **off by default**. Off, a
+  feed is an instant: no *end feed*, no live count, and a bottle nobody ended
+  no longer silences the feed alert. No schema change. **Pushed 2026-10-29.**
+- **D-071** — production fault: the log passed 1000 events and new entries
+  vanished after syncing, leaving empty timeslots. Supabase caps a response at
+  *Max rows* and `pull()` read once. Owner raised *Max rows* in the dashboard
+  (live fix); `pull()` now pages. **Pushed 2026-10-29.**
 - **D-070** — the mascot is Liana (Q-003 closed), and she sends love notes: a
   push in her voice by caregiver name, twice a day per device in random
   *awake* windows, daytime only. Seventy lines in the service worker (thirty
@@ -374,8 +381,23 @@ server; none were reachable from a stub.
 
 ## In flight
 
-**Nothing uncommitted.** The thirty Cantonese lines are committed and pushed
-(2026-10-11).
+**Committed and pushed: D-072, the feed timer** (2026-10-29). `src/settings.ts`
+(`feedTimer`, `onSettingChange`, `unsynced` reads `false`), `src/derive.ts`,
+`src/alerts.ts`, `src/App.tsx`, `src/types.ts`, `src/log/SettingsSheet.tsx`;
+checks in `verify-s3`, `verify-s7`, `verify-alerts`, `verify-feed`,
+`verify-hero`; D-072, `settings.md`, `event-model.md`, `tasks.md`. `npm run
+verify` green. No schema change: `baby.settings` is `jsonb`, so nothing has to
+reach Supabase first. **Deploying it turns the timer off on both phones**, which
+is the owner's chosen default.
+
+**Committed and pushed: D-071, the paged pull** (2026-10-29, with D-072). `src/sync.ts` (`readAll`),
+two new checks in `verify-s2`, the `verify-baby` and `verify-welcome` fakes
+taught to answer the empty page after the first, D-071, and a line in
+`event-model.md` § Sync. `npm run verify` green, 840 checks. No schema change, so
+nothing has to reach Supabase first. Production is already fixed by the
+dashboard's *Max rows*; this removes the dependence on that setting.
+
+The thirty Cantonese lines are committed and pushed (2026-10-11).
 
 Love notes, D-070, are committed and pushed to `main`
 (`npm run verify` green, 838 checks). `0011` is applied and `feed-alert` is
@@ -485,26 +507,26 @@ Noticed, not blocking, no owner yet.
 Newest first. **Three entries maximum** — delete the oldest when adding a
 fourth. This is orientation, not history. `git log` is the history.
 
-### 2026-10-11 (latest) — Liana writes in Cantonese
+### 2026-10-27 (latest) — the feed timer becomes a setting
 
-The owner asked for thirty Cantonese love-note lines to review, then for them
-in baby talk, then for them added with 奶奶 (reads as *grandma*) taken out.
-Seventy lines now. Committed and pushed. D-070.
+The owner asked for the running feed to be optional, off by default, so a feed
+needs no *end* tap. Built as `feedTimer` on `baby.settings`, read in
+`ongoingFeed`. Two fixes it needed: a stored `false` read as absent in
+`unsynced()`, and the bar did not repaint on a setting change. Pushed with D-071 on
+2026-10-29. D-072.
 
-### 2026-10-09 — the mascot is Liana, and she writes
+### 2026-10-27 — both phones red: `JWT issued at future (PGRST303)`
 
-Server setup for the feed alert finished with the owner in the dashboard; it was
-committed as `75c0427`, and a test alert reached a phone. Then love notes: the
-owner closed Q-003 (she is Liana) and asked for a playful push in her voice,
-twice a day while she is awake. Built on the same pipe: `0011`, a second claim
-in the function, forty lines in the service worker. `0011` applied, function
-redeployed, committed and pushed. D-070.
+Not the app. Reproduced from the scripts' saved session: a token minted that
+second, and the same token minutes later, both refused by PostgREST, while
+Postgres, auth and the gateway all agreed on the time — PostgREST's clock had
+stalled. **Cure: Dashboard → Project Settings → General → Restart project.** No
+code changed. If it recurs, quote the error and request id
+`01a1802f-00c5-712d-96f5-5a0ee66075c9` to Supabase support.
 
-### 2026-10-08 — the bottle prompt reaches the lock screen
+### 2026-10-13 — new entries vanished: the 1000-row cap
 
-The owner asked for a feed alert. Built as the card's *make milk* prompt pushed
-to a phone: same instant, same words, once per target, opt-in per device in
-settings. Phones publish the next `fire_at` per baby after each sync; a minute
-`pg_cron` job calls a new `feed-alert` edge function that claims and sends.
-Uncommitted, and needs the server steps before it does anything. The playful
-message from the baby is discussed and deferred. D-069.
+Both parents' new feeds showed, then emptied after sync. The log had passed
+1000 events; Supabase returns at most *Max rows* per request and `pull()` read
+once, so `replaceAll` wiped the newest events locally. Owner raised *Max rows*;
+`pull()` now pages, verified live and with a 100-row page. Uncommitted. D-071.

@@ -53,6 +53,42 @@ const feedOf = async (digits: string) => {
   await p.waitForTimeout(900)
 }
 
+// --- with the timer off, a feed is an instant (D-072) -----------------------
+//
+// The default. The bottle writes the same row it always has — no end time — and
+// nothing reads it as running: the bottle stays, no end pill, no live count, no
+// *feeding* on the mascot. A bottle nobody ends can no longer hold the screen.
+await p.locator('nav.tabs').waitFor({ state: 'visible' })
+await p.getByLabel('log a feed').click()
+await p.waitForTimeout(900)
+check('with the timer off, the bottle stays on the bar',
+  (await p.locator('.quick.feed').count()) === 1 && (await p.locator('.endfeed').count()) === 0,
+  `${await p.locator('.endfeed').count()} end pill(s)`)
+check('the row carries no live count', (await p.locator('.chip-feeding').count()) === 0,
+  `${await p.locator('.chip-feeding').count()} running chip(s)`)
+check('and the mascot does not say feeding',
+  !(await p.locator('.statetag').innerText()).includes('feeding'),
+  await p.locator('.statetag').innerText())
+check('the feed still landed', /60 mL formula/.test(
+  (await p.locator('.chip-rose').first().innerText()).replace(/\n/g, ' ')),
+  (await p.locator('.chip-rose').first().innerText()).replace(/\n/g, ' '))
+
+// Turned on from settings, the way a parent would. The feed above has no end,
+// so it reads as running at once — the cost D-072 accepts — and the end pill is
+// how it is cleared.
+await p.getByLabel('settings', { exact: true }).click()
+await p.waitForTimeout(300)
+const timerOff = p.getByLabel('turn the feed timer off')
+check('the settings sheet offers the feed timer, off',
+  (await timerOff.getAttribute('aria-pressed')) === 'true', 'off is pressed')
+await p.getByLabel('turn the feed timer on').click()
+await p.getByRole('dialog', { name: 'settings' }).getByLabel('close').click()
+await p.waitForTimeout(900)
+check('turned on, the unended feed reads as running',
+  (await p.locator('.endfeed').count()) === 1, `${await p.locator('.endfeed').count()} end pill(s)`)
+await p.locator('.endfeed').click()
+await p.waitForTimeout(900)
+
 // --- a feed with no end time is running -------------------------------------
 //
 // One tap. The bottle writes 60 mL of formula straight to the log: that is the

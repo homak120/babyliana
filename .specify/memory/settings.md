@@ -43,6 +43,16 @@ rather than choking on it — that is what makes a new setting free.
 | `bottle` | `{ volume, source }` | 60 mL formula | the bar's bottle icon |
 | `supplement` | `{ name, amount }` | Vitamin D / 1 drop | the supplement block's prefill |
 | `prepLeadMinutes` | `number` | 15 | when *make a bottle* goes up |
+| `feedTimer` | `boolean` | off | whether a feed with no end reads as running — the bar's *end feed*, the row's count, the mascot's *feeding*, and the feed alert (D-072) |
+
+**`feedTimer` is shared because the feed alert is.** Both phones publish the
+alert's time from the same log, last write wins. Two answers to "is a feed still
+running" would have them overwriting each other's alert.
+
+**`feedTimer` is the first setting something *renders* from** — the bar, which
+is not behind the settings sheet. Every earlier one is read at the moment of a
+tap. So `write` now tells `onSettingChange` listeners, and the bar repaints on
+that rather than waiting for a sync.
 
 **`bottle` is one key, not two.** Volume and source are one answer to one
 question — what the quick icon means — so they are written together, reconciled

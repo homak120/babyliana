@@ -197,15 +197,19 @@ const eating = (occurred: string, endedAt: string | null): Moment => {
   return m
 }
 
-check('a feed with no end time is running',
-  ongoingFeed([eating(t20, null)], new Date(t23)) !== null)
+// The rules above hold with the feed timer on. Off — the default (D-072) — a
+// feed is an instant, and nothing is ever running.
+check('with the timer off, a feed with no end time is not running',
+  ongoingFeed([eating(t20, null)], new Date(t23)) === null)
+check('with it on, a feed with no end time is running',
+  ongoingFeed([eating(t20, null)], new Date(t23), true) !== null)
 check('one that has been given an end time is not',
-  ongoingFeed([eating(t20, t22)], new Date(t23)) === null)
+  ongoingFeed([eating(t20, t22)], new Date(t23), true) === null)
 check('a feed with something logged after it is over',
-  ongoingFeed([eating(t20, null), mom(t22, [diaper({ pee: true })])], new Date(t23)) === null)
+  ongoingFeed([eating(t20, null), mom(t22, [diaper({ pee: true })])], new Date(t23), true) === null)
 check('a feed starting in the future is ignored',
-  ongoingFeed([eating(at(23, 30), null)], new Date(t23)) === null)
-check('and a sleep is not a feed', ongoingFeed([sleepy(t20, null)], new Date(t23)) === null)
+  ongoingFeed([eating(at(23, 30), null)], new Date(t23), true) === null)
+check('and a sleep is not a feed', ongoingFeed([sleepy(t20, null)], new Date(t23), true) === null)
 
 check('a feed duration spells out the minutes', feedDuration(t20, at(20, 25)) === '25 min')
 check('and reads in hours past one', feedDuration(t20, t22) === '2h 30m')

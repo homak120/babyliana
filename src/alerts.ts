@@ -63,7 +63,7 @@ export function feedAlertFor(
   now = new Date(),
   settings?: BabySettings | null,
 ): { fire_at: string | null; target_at: string | null } {
-  const target = ongoingFeed(moments, now)
+  const target = ongoingFeed(moments, now, effective('feedTimer', settings))
     ? null
     : targetWake(lastFeedAt(moments), effective('cycles', settings))
   if (!target) return { fire_at: null, target_at: null }
@@ -86,7 +86,7 @@ export async function publishFeedAlert(): Promise<void> {
   const now = new Date()
   // The love note's window rides on the same row (D-070). The mascot's
   // thresholds are constants, not settings, so there is no row to read here.
-  const awake = awakeWindow(moments, now)
+  const awake = awakeWindow(moments, now, effective('feedTimer', baby?.settings))
   const next = {
     ...feedAlertFor(moments, now, baby?.settings),
     awake_from: awake?.from.toISOString() ?? null,

@@ -28,6 +28,7 @@ import './day/day.css'
 import { AddSheet } from './log/AddSheet'
 import { getMoments, endOpenPeriod, logQuick, resumeLastSleep } from './moments'
 import { feedDuration, ongoingFeed, ongoingSleep, sleepDuration } from './derive'
+import { onSettingChange } from './settings'
 import type { Moment } from './types'
 import { quickFeedEntries, quickSleepEntries, type Block } from './log/drafts'
 
@@ -148,6 +149,11 @@ export default function App() {
   const resumeSleep = useCallback(() => {
     void resumeLastSleep(new Date()).then(afterWrite)
   }, [afterWrite])
+
+  // The bar draws the bottle or *end feed* off the feed timer (D-072), so a
+  // change to it — from the settings sheet or the other phone — repaints here.
+  const [, setSettingTick] = useState(0)
+  useEffect(() => onSettingChange(() => setSettingTick((n) => n + 1)), [])
 
   const refreshMoments = useCallback(() => { void getMoments().then(setMoments) }, [])
   useEffect(refreshMoments, [refreshMoments])

@@ -24,6 +24,11 @@ const p = await ctx.newPage()
 await p.route('**://*.supabase.co/**', (r) => r.abort())
 await p.goto(`http://localhost:${PORT}/`, { waitUntil: 'load' })
 await enterApp(p)
+// This suite is about the card around a running feed, which only exists with the
+// feed timer on — off is the default (D-072). verify-feed covers off.
+await p.evaluate(() => localStorage.setItem('babyliana.feedTimer', 'true'))
+await p.reload({ waitUntil: 'load' })
+await p.locator('nav.tabs').waitFor({ state: 'visible' })
 await p.getByLabel('log a moment').click()
 await p.getByRole('button', { name: '+ milk' }).click()
 await p.getByRole('button', { name: '6', exact: true }).click()
@@ -389,14 +394,14 @@ await p.waitForTimeout(250)
 const before = await p.locator('.nextfeed b').innerText()
 await p.getByLabel('settings').click()
 await p.waitForTimeout(350)
-// The cycle is one section of six now (D-055, and the feed alert's switch in
-// D-069), and the button that opens them says `settings` rather than `feeding
+// The cycle is one section of seven now (D-055, the feed alert's switch in
+// D-069, the feed timer in D-072), and the button says `settings` rather than `feeding
 // cycle settings`.
 check('the tune button opens settings, with the cycle among them',
-  (await p.locator('.setsheet').count()) === 1 && (await p.locator('.setblock').count()) === 6,
+  (await p.locator('.setsheet').count()) === 1 && (await p.locator('.setblock').count()) === 7,
   `${await p.locator('.setblock').count()} section(s)`)
 check('and every section says whose setting it is',
-  (await p.locator('.scope.shared').count()) === 4
+  (await p.locator('.scope.shared').count()) === 5
   && (await p.locator('.scope.local').count()) === 2,
   `${await p.locator('.scope.shared').count()} shared, ${await p.locator('.scope.local').count()} local`)
 // **Neither a count nor a kind of hardware**, and both were shipped once.
